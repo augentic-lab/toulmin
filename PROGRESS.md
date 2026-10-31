@@ -1,0 +1,53 @@
+# Toulmin 开发进度
+
+## 2026-10-31 — T1：契约与可测试包
+
+- 状态：**Verified：T1 完成**；T2–T5 尚未开始，第 2 阶段未完成。
+- 用户授权：仅在本项目设置 Git 身份并继续推进；按 TODO Q1–Q9 的推荐方案执行。
+- Git 身份：Tianchi YU / yu-tianchi@outlook.com，`git config --show-origin` 确认两项均来自 `.git/config`；未修改全局配置。
+- 输出：正式 AGENTS、设计修订、docs/formats.md、docs/format-examples.md、docs/protocols.md、README、Python 包、uv.lock 和测试配置。
+- 代码范围：L1 的规范 ID/项目引用，L2 的会话读取顺序，L3 的 help/version 入口；完整文件编解码与四条研究命令尚未实现。
+- 隔离环境：uv 0.13.6、CPython 3.12.16 位于项目 .tools/，依赖在 .venv/，缓存位于 .uv-cache/；均已忽略，不替换系统 Python 或修改 shell 配置。
+- session ID：当前环境未提供，不编造。
+
+### 验证结果
+
+- **Verified**：`uv sync --locked --dev --offline` 成功，`uv run --locked --offline pytest -q` 为 **59 passed**；Ruff 检查/格式检查通过，mypy 对 7 个源文件无错误；CLI --help/--version 可运行。
+- **Verified**：测试覆盖非法/非规范 ID、路径型引用、会话读取顺序，以及 L1/L2 向上依赖检测；在 `python -I -S` 无第三方包且主动屏蔽 CLI 的子进程中导入并调用核心/协议成功。
+- **Verified**：全新虚拟环境从锁文件离线同步成功；构建 sdist/wheel，改为安装 wheel 后在仓库外运行入口与全部 59 项测试成功，导入位置为该环境 site-packages。
+- **Verified**：七类样本 YAML 头可解析，公共字段存在、类别完整、文档本地链接有效；此检查不等同于尚未实现的完整 schema/引用校验器。
+- **Verified**：wheel 和 sdist 不含 .tools、.venv、.uv-cache 或 .git。构建时的缓存路径提示经归档内容检查排除；跨文件系统硬链接退化为复制，不影响安装结果。
+- 首轮测试发现 CLI 帮助换行导致文本断言失败，已改为比较归一化空白；同时消除了 pytest 参数迭代器弃用提示。
+
+### 交接
+
+- 决定：Q1–Q9 按推荐方案采用；关键定义见 docs/formats.md 与 docs/protocols.md。L0 未变，L2 权限和阶段图已统一；没有旧研究数据需要迁移。
+- 提交范围：规划文档、T1 代码/测试/锁文件，以及本任务明确修订的设计文档；不包含隔离工具、缓存或打包产物。提交说明为 `feat: complete T1 contracts and testable package`。
+- 阻塞：none。
+- 下一步：执行 T2，生成独立研究工作台/项目模板并实现 init，按 TODO 的重复初始化、冲突、路径及项目隔离要求验收。
+- 阶段限制：真实研究项目的次日恢复与独立人工验收留在 T5，本 session 的自测不代替它们。
+
+## 2026-10-31 — 第 2 阶段实施前规划
+
+- 状态：规划草案已写；等待研究者确认，T1–T5 均未开始。
+- 本轮任务：阅读 `docs/design.md`，起草仓库规则、技术建议、任务验收标准与开工前待决事项；不实现代码。
+- 输出：`AGENTS.md`、`TODO.md`、本文件。设计原文未修改。
+- session ID：当前环境未提供，不编造。
+
+### 发现与验证
+
+- **Verified**：已完整读取设计文档；第 13 节前四项要求骨架前决定。第 7 节图与 gate 表存在阶段映射差异，第 6 节角色目录写权限与 AI 输出先归档 runs 的规则需要统一。
+- **Verified**：初始仓库没有提交；已有未跟踪文件 `docs/design.md`，本轮不擅自暂存该文件。
+- **Verified**：`python3 --version` 返回 3.7.5；`command -v uv` 未找到命令。建议工具链尚不能运行。
+- **Verified**：`git var GIT_AUTHOR_IDENT` 退出 128，报告 Author identity unknown；Git 姓名与邮箱未配置，不能完成本轮提交。
+- **Guess（建议）**：Python >=3.12 + Typer + ruamel.yaml + pytest；Markdown 正文原样保存，L1 不依赖任何 CLI。理由与官方资料链接见 TODO.md。
+- **Verified**：三份草案通过 UTF-8/LF、尾随空白、代码围栏及本地文档路径检查；TODO 恰有五项任务、每项含验收标准，Q1–Q10 齐全；`git diff --check --no-index /dev/null <文件>` 未报告格式问题。
+- 未运行代码测试：仓库没有实现、测试或依赖配置；上述检查只证明规划文档的结构，不代表骨架可用。
+
+### 决定与阻塞
+
+- 用户已确定：本轮只规划，完成后等待确认。
+- 尚未确认：TODO.md 的 Q1–Q9（类型、brief、证据等级、技术栈/MCP、知识库范围、生命周期、确认边界、ID、仓库与命令语义）。
+- 提交阻塞：Q10，缺少研究者提供的 Git 作者姓名和邮箱；未设置虚构身份，也未修改全局配置。
+- 尚无提交；文件留在工作区供审阅。未开始安装依赖、修改实现或研究状态。
+- 下一步：研究者确认规划并提供 Git 作者身份；按确认结果修订文档、提交规划，再开始 T1。
