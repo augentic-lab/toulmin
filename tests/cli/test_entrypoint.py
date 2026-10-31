@@ -12,7 +12,7 @@ def test_help_and_version():
     help_result = runner.invoke(app, ["--help"])
     assert help_result.exit_code == 0
     assert "Toulmin" in help_result.output
-    assert "not implemented yet" in " ".join(help_result.output.split())
+    assert "init" in help_result.output
     assert runner.invoke(app, ["--version"]).output.strip() == "0.1.0"
 
 
@@ -25,5 +25,5 @@ def test_installed_console_script_outside_repository(tmp_path):
 
 
 def test_unimplemented_command_does_not_report_success():
-    result = CliRunner().invoke(app, ["init"])
+    result = CliRunner().invoke(app, ["new"])
     assert result.exit_code != 0

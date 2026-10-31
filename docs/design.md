@@ -119,7 +119,7 @@ Each research workbench is a single git repository, separate from the Toulmin so
 research/
 ├── AGENTS.md                  # global rules and protocols, shared by all three tools
 ├── CLAUDE.md -> AGENTS.md     # symlink
-├── .gemini/settings.json      # contextFileName points to AGENTS.md
+├── .gemini/settings.json      # context.fileName points to AGENTS.md
 ├── framework/                 # the framework itself: principles, data model, protocols, changelog
 ├── roles/                     # role definitions, model-independent
 ├── global/
@@ -330,7 +330,7 @@ The adapter layer wraps the headless modes of the three CLIs behind a uniform in
 | --- | --- | --- | --- |
 | Claude Code | `claude -p`, with JSON output and session resume | `CLAUDE.md` (symlinked to `AGENTS.md`) | `--allowedTools` restricts available tools |
 | Codex CLI | `codex exec`, with JSONL event output and session resume | `AGENTS.md` (concatenated from the repo root down) | read-only by default; writes must be granted explicitly |
-| Gemini CLI | `gemini -p`, with JSON output | `GEMINI.md`, or `AGENTS.md` via `contextFileName` | an approval mode must be set for automation |
+| Gemini CLI | `gemini -p`, with JSON output | `GEMINI.md`, or `AGENTS.md` via `context.fileName` | an approval mode must be set for automation |
 
 **Orchestrator commands (first version)**
 

@@ -1,7 +1,7 @@
 # L2 骨架协议 v1
 
 本文件细化设计第 6–8 节；修订原因是统一草稿权限、人工裁决和阶段映射。
-CLI、Python 调用与手工编辑遵守同一协议；T1 提供读取顺序函数，其余命令在 T2–T5 实现。
+CLI、Python 调用与手工编辑遵守同一协议；T1 提供读取顺序函数，T2 实现 init，其余命令在 T3–T5 实现。
 
 ## 入场和退出
 
@@ -54,6 +54,12 @@ G2 的暂缺证据用 Claim.validation_plan 记录最小验证实验，不使用
 | new <type> <project> | 完整草稿与人工确认；返回新 ID/路径 | 只创建一个正式对象；AI 草稿必须先归档，目标已有则拒绝；无占位“有效对象” |
 | status <project> | PROJECT、相关对象及 brief 显式引用；返回摘要与诊断 | 完全只读，包括不写缓存/索引、不更新 mtime |
 | handoff <project> | 依据用户提供的完成内容生成可审阅草稿 | 默认只写 runs；--apply <draft> 确认后才写 sessions 与 PROJECT 的非裁决字段 |
+
+init 在写入前检查本次全部目标；已有文件必须与对应模板相同，否则报冲突且不写入任何计划文件。
+其他项目不在本次计划内，已有修改会保留；全局模板依旧检查冲突。已相同文件连 mtime 也不改变。
+发布完整文件时采用排他创建，常规 I/O 失败回滚本次新增项；强制结束进程不承诺事务完成，重试前须检查残留。
+目录 symlink 一律拒绝；唯一计划内链接是 CLAUDE.md → AGENTS.md。Git 只做本地 init，不提交或调用模型。
+Gemini 配置采用 `context.fileName`，见[官方配置说明](https://geminicli.com/docs/reference/configuration/)。
 
 handoff 生成草稿时保存 PROJECT 的原始字节摘要。应用前若摘要不同，拒绝覆盖并要求重新基于当前文件起草。
 应用必须保留 Goal/Constraints 等正文与其他 metadata；添加本次已有 Decision 引用、更新 next_step 和 last_handoff；禁止更新 stage。

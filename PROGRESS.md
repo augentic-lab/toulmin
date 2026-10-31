@@ -1,5 +1,30 @@
 # Toulmin 开发进度
 
+## 2026-10-31 — T2：工作台模板与 init
+
+- 状态：**Verified：T2 完成**；T3–T5 尚未开始，第 2 阶段未完成。
+- 用户授权：进行下一步研究和推进；本 session 实施 T2 并提交，未调用模型或建立真实研究项目。
+- 输出：`src/toulmin/cli/initialize.py`、打包模板、init 命令、专项测试、README 用法及协议细化；L1/L2 的 Python 模块未改变。
+- 模板：研究 AGENTS、CLAUDE 相对链接、Gemini 项目设置、L0 原则、L1/L2 发布文档、reviewer/scribe 契约、global 占位、项目章程/brief/八个对象与交接目录。
+- session ID：当前环境未提供，不编造。
+
+### 验证与实现边界
+
+- **Verified**：init 专项 **34 passed**；全部测试 **93 passed**，包含原有核心/协议分层检查。Ruff 检查/格式检查与 mypy 通过。
+- **Verified**：文件/链接/目录冲突在写入前拒绝；重复运行的文件字节及 mtime 不变；新项目保留旧项目修改，嵌套研究仓库不改变父 Git 元数据。
+- **Verified**：故障注入覆盖发布文件、创建符号链接和复制 Git 元数据失败；仅清理本次创建内容。并发抢占目标文件时保留另一写入者的文件，不宣称成功。
+- **Verified**：wheel 包含隐藏设置、空目录占位和完整框架文档。安装至新的虚拟环境，在源码目录之外成功运行 init、无变化重跑、新增项目与 Git status；新 Git 仓库没有初始提交。
+- **Verified**：Gemini 的 `context.fileName` 已核对官方配置说明；原设计中的 `contextFileName` 拼写已修正，来源链接记在 docs/protocols.md。
+- 文档发布副本通过测试与 docs 中原文比较，避免安装包依赖源码目录或契约漂移；README 说明同步要求。
+- 适用条件：需要本地 Git，以及支持符号链接/硬链接的文件系统；全局模板修改后重跑 init 会报冲突而保留文件。强制结束进程后可能残留文件/Git 元数据，需检查再重试；常规错误回滚已测试。
+
+### 交接
+
+- 本轮没有新增研究结论或 gate 裁决；初始化命令只生成模板与本地 Git，不自动提交、不调用模型。
+- 提交说明：`feat: complete T2 workbench templates and init`。
+- 阻塞：none。
+- 下一步：执行 T3，按 docs/formats.md 实现七类对象编解码、完整校验和 new，复用本轮模板建立测试项目。
+
 ## 2026-10-31 — T1：契约与可测试包
 
 - 状态：**Verified：T1 完成**；T2–T5 尚未开始，第 2 阶段未完成。

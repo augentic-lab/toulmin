@@ -1,0 +1,46 @@
+# Toulmin research workbench
+
+This repository is the researcher's file-based project state. Read framework/principles.md,
+framework/formats.md and framework/protocols.md when the task needs their details.
+Models are invoked manually. Decisions belong to the researcher.
+
+## Entry protocol
+
+1. Read this file.
+2. Read projects/<project>/PROJECT.md and the applied sessions file named by last_handoff;
+   a new project has no handoff. Do not substitute the newest unconfirmed draft.
+3. State one task, role, required inputs and output location for this session.
+4. Load only the relevant objects. Reviewers read brief and claims, not creation history
+   or other reviewers' outputs. Use roles/reviewer.md or roles/scribe.md as appropriate.
+
+## Research rules
+
+- Files are the source of truth. Preserve claims, evidence, objections, rejected approaches
+  and decisions with their origins. Do not erase failure history.
+- Archive AI research output in projects/<project>/runs/ first. The operator saves stdout
+  from read-only reviews and records a Run with model, role, inputs, output and session ID.
+- Only after explicit researcher confirmation may a draft enter a formal object directory.
+  A confirmation field records authorization; an AI cannot authorize itself by signing a name.
+- Only the researcher rules on object status or project stage. Record the Decision and its
+  rationale. Condition checks report facts and suggestions; they never advance a gate.
+- Evidence grades remain verified, model-asserted and intuition. The latter two cannot
+  alone satisfy supported. Invalidated evidence never counts as support.
+- Keep generation separate from evaluation. Independent review and acceptance need fresh
+  sessions. An implementer's tests do not constitute independent acceptance.
+- Keep PROJECT.md within 40 lines. Write the brief by hand; use [[C-001]] references.
+  Generated summary views are disposable, not another hand-maintained source of truth.
+- Prefer open text formats and tool-independent protocols. L1 format changes require an
+  impact assessment and migration for existing objects; L2 changes require a change note.
+
+## Exit protocol
+
+1. Save raw output and drafts in runs/ and record their provenance. Unknown session IDs
+   or duration remain null; never invent values or results.
+2. Draft a handoff with work done, decisions/pending decisions, open questions, next step
+   and session ID. See roles/scribe.md. Do not treat writing a draft as approval.
+3. After researcher review, apply it to sessions/ and update PROJECT.md recent_decisions,
+   next_step and last_handoff. Handoff never changes stage or object status.
+4. Inspect the diff and commit with related object IDs. Report identity/permission failures
+   truthfully and retain files. Push only when explicitly requested.
+
+Anything not written to a file did not happen.
