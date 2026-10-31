@@ -1,97 +1,97 @@
-# L2 骨架协议 v1
+# L2 skeleton protocols v1
 
-本文件细化设计第 6–8 节；修订原因是统一草稿权限、人工裁决和阶段映射。
-CLI、Python 调用与手工编辑遵守同一协议；T1 提供读取顺序函数，T2–T5 实现 init、new、status、handoff。阶段仍待真实研究项目人工验收。
+This document refines design sections 6–8 to unify draft permissions, human rulings and stage mappings.
+CLI use, Python calls and manual editing follow the same protocol. T1 provides the read-order function; T2–T5 implement init, new, status and handoff. Stage acceptance still requires a real research project's manual trial.
 
-## 入场和退出
+## Entry and exit
 
-1. 读取工作台 AGENTS.md。
-2. 读取 projects/<project>/PROJECT.md，再读取其 last_handoff 指向的 sessions 文件；新项目没有交接时明确说明。
-3. 声明本 session 的单一任务、角色、输入和输出位置；只读取所需对象，不加载全项目讨论史。
-4. 完成任务后把研究草稿/原始输出归档到 runs，记录模型、角色、输入、时间和可得的 session ID。
-5. 起草交接；研究者审阅并确认后写 sessions、更新 PROJECT 最近决定/下一步/last_handoff，阶段须另有明确裁决。
-6. 审查 diff 并提交，提交消息引用相关对象 ID；不自动 push。缺少身份或权限时保留内容并报告失败。
+1. Read the workbench AGENTS.md.
+2. Read projects/<project>/PROJECT.md, then the sessions file named by last_handoff. State explicitly when a new project has no handoff.
+3. State the session's single task, role, inputs and output location. Read only relevant objects, not the project's entire discussion history.
+4. After the task, archive research drafts/raw output in runs, recording model, role, inputs, time and the session ID if available.
+5. Draft a handoff. After researcher review and confirmation, write sessions and update PROJECT's recent decisions/next_step/last_handoff. Stage changes require a separate explicit ruling.
+6. Inspect the diff and commit with related object IDs in the message. Do not push automatically. If identity or permissions are missing, preserve the content and report the failure.
 
-上述 PROJECT/last_handoff 读取顺序适用于交互工作/恢复会话。独立任务会话的角色输入/排除清单优先：
-reviewer 只加载 AGENTS、角色契约、指定 brief/Claims，不加载交接或讨论历史。T5 明确这一例外，解决通用入场规则与评审独立性的冲突。
+The PROJECT/last_handoff read order above applies to interactive work/resumption. Independent task sessions give priority to their role's input/exclusion list:
+reviewers load only AGENTS, the role contract and specified brief/Claims, never handoffs or discussion history. T5 makes this exception explicit to resolve the conflict between general entry rules and review independence.
 
-研究工作台的会话记录为 PROJECT + sessions；本软件开发仓库仍使用 PROGRESS + TODO，二者不可混用。
+Research workbench session state lives in PROJECT + sessions; this software development repository uses PROGRESS + TODO. Do not mix the two.
 
-## 权限与确认
+## Permissions and confirmation
 
-reviewer 只读取 brief、相关 claims 和角色契约，不读取创作讨论、其他 reviewer 输出，也不改写对象。
-模型的只读会话通过终端输出研究草稿，由操作者保存至 runs；“只读”不要求模型自行写归档文件。
-scribe/expander/development lead 的研究草稿均先进入 runs，表格中的 sessions/explorations/specs 是确认后的目的地。
-实现者只改授权代码仓库；其测试报告先归档，不得自行修改验收条件或决定 passed。
+Reviewers read the brief, relevant claims and their role contract, excluding creation discussions and other reviewers' output. They never rewrite objects.
+Read-only model sessions emit research drafts through terminal output, which the operator saves in runs. Read-only does not require the model to write archive files itself.
+Research drafts from scribes, expanders and development leads also go to runs first; sessions/explorations/specs in the role table are their destinations after confirmation.
+Implementers change only the authorized code repository and archive test reports first. They must not revise acceptance criteria or rule passed themselves.
 
-new 的人工调用或明确确认参数记录 confirmed_by；来自模型的内容还必须指定可追溯 Run。
-确认标记不是身份认证，模型不得自行填一个研究者姓名当成授权。仅仅读取草稿不代表确认。
-对象初次创建与更改已有状态相区分：骨架不提供自动 rule，不自动采纳任何模型建议。
-手工改变已有状态或项目阶段时，研究者创建 Decision 并关联被修改对象/PROJECT.recent_decisions。
+Human invocation of new or explicit confirmation parameters records confirmed_by; model-derived content must also identify a traceable Run.
+Confirmation fields are not authentication. A model must not supply a researcher's name as if that grants authorization. Merely reading a draft is not confirmation.
+Initial object creation differs from changes to stored status: the skeleton has no automatic ruling and never adopts model suggestions automatically.
+When manually changing an existing status or project stage, the researcher creates a Decision and links the changed objects/PROJECT.recent_decisions.
 
-## Claim 条件与现存状态
+## Claim conditions and stored status
 
-- has_open_objection：至少一个指向该 Claim 的 open Objection。
-- eligible_for_supported：至少一个 valid + verified + supports Evidence，且无 open fatal/major Objection。
-- open minor 可与 eligible_for_supported 同时为真。status 同时报告这些事实，不强选 challenged 或 supported。
-- accepted 需要满足 supported 条件并有研究者 Decision；refuted 需要研究者 Decision 说明反证/已接受的异议。
-- refutes Evidence 不计作支持，invalidated Evidence 不参与判定，model-asserted/intuition 不能单独满足支持条件。
-- 已 accepted 的 Claim 失去证据后保留历史状态并报告不一致，不能自动降级。状态条件未满足属于待裁决诊断；语法、非法状态或断引用才是数据错误。
+- has_open_objection: at least one open Objection targets the Claim.
+- eligible_for_supported: at least one valid + verified + supports Evidence item exists, with no open fatal/major Objection.
+- An open minor objection may coexist with eligible_for_supported. status reports both facts without choosing challenged or supported.
+- accepted requires supported conditions and a researcher Decision; refuted requires a researcher Decision explaining refuting evidence/accepted objections.
+- refutes Evidence does not count as support. invalidated Evidence does not participate. model-asserted/intuition alone cannot satisfy support conditions.
+- An accepted Claim that loses evidence retains its historical status and receives an inconsistency notice, never an automatic downgrade. Unmet status conditions are ruling diagnostics; syntax errors, illegal statuses and broken references are data errors.
 
-## 阶段与 gates
+## Stages and gates
 
-Explore → G1 → Critique → G2 → Brief final → G3 → Build → G4 → Accept → G5 → Done。
-Spec 是 G3 前形成的产物，不单设阶段。G1–G5 的条件采用设计第 7 节表格。
-G2 的暂缺证据用 Claim.validation_plan 记录最小验证实验，不使用不存在的 pending Claim 状态。
-骨架 status 只显示事实与条件，不自动作出 gate 决定；handoff 不承担阶段推进。
+Explore → G1 → Critique → G2 → Brief final → G3 → Build → G4 → Accept → G5 → Done.
+Spec is an artifact prepared before G3, not a separate stage. G1–G5 conditions follow the table in design section 7.
+Record G2's missing-evidence plan as a minimal validation experiment in Claim.validation_plan, not a nonexistent pending Claim status.
+Skeleton status reports facts and conditions without automatic gate decisions; handoff does not advance stages.
 
-## 四条命令的契约
+## Four command contracts
 
-所有项目命令接受 `--root <research-root>`，默认当前目录；project 显式提供，不扫描猜测项目。
-成功退出 0，数据/文件/冲突错误退出 1，参数用法错误退出 2。建议或待裁决提示本身不使合法数据退出失败。
-错误写 stderr，结果写 stdout；默认不请求网络、不调用模型、不提交 git。
+All project commands accept `--root <research-root>`, defaulting to the current directory. Supply project explicitly; never guess by scanning.
+Success exits 0, data/file/conflict errors exit 1, and argument-usage errors exit 2. Suggestions or pending-ruling notices alone do not make valid data fail.
+Errors go to stderr and results to stdout. By default, commands request no network access, invoke no models and make no Git commits.
 
-| 命令 | 输入及输出 | 写入边界 |
+| Command | Input and output | Write boundary |
 | --- | --- | --- |
-| init <root> --project <name> | 初始化模板及项目，建立 Git 仓库但不提交 | 创建缺少项；已有相同模板无变化，冲突拒绝；再次新增项目不重写全局文件 |
-| new <type> <project> | 完整草稿与人工确认；返回新 ID/路径 | 只创建一个正式对象；AI 草稿必须先归档，目标已有则拒绝；无占位“有效对象” |
-| status <project> | PROJECT、相关对象及 brief 显式引用；返回摘要与诊断 | 完全只读，包括不写缓存/索引、不更新 mtime |
-| handoff <project> | 依据用户提供的完成内容生成可审阅草稿 | 默认只写 runs；--apply <draft> 确认后才写 sessions 与 PROJECT 的非裁决字段 |
+| init <root> --project <name> | Initialize templates/project and a Git repository, without committing | Create missing items; identical templates are unchanged and conflicts rejected; adding another project does not rewrite global files |
+| new <type> <project> | Complete draft and human confirmation; return new ID/path | Create one formal object only; archive AI drafts first and reject existing targets; no placeholder “valid objects” |
+| status <project> | PROJECT, relevant objects and explicit brief references; return summary/diagnostics | Entirely read-only, including no cache/index writes or mtime updates |
+| handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
 
-init 在写入前检查本次全部目标；已有文件必须与对应模板相同，否则报冲突且不写入任何计划文件。
-其他项目不在本次计划内，已有修改会保留；全局模板依旧检查冲突。已相同文件连 mtime 也不改变。
-发布完整文件时采用排他创建，常规 I/O 失败回滚本次新增项；强制结束进程不承诺事务完成，重试前须检查残留。
-目录 symlink 一律拒绝；唯一计划内链接是 CLAUDE.md → AGENTS.md。Git 只做本地 init，不提交或调用模型。
-Gemini 配置采用 `context.fileName`，见[官方配置说明](https://geminicli.com/docs/reference/configuration/)。
+init preflights every planned target before writing. Existing files must match their templates; otherwise report a conflict and write none of the planned files.
+Other projects are outside the plan and retain their changes; global templates still undergo conflict checks. Even mtime is unchanged for identical files.
+Publish complete files exclusively and roll back this invocation's additions on ordinary I/O failure. Forced termination does not guarantee transaction completion; inspect remaining files before retrying.
+Reject all directory symlinks; the only planned link is CLAUDE.md → AGENTS.md. Git is used only for local init, without commits or model calls.
+Gemini settings use `context.fileName`; see the [official configuration reference](https://geminicli.com/docs/reference/configuration/).
 
-T3 的 new 接口采用完整 Markdown 草稿文件（--input，路径相对 --root），需要 --confirm 与 --confirmed-by。
-无确认、不完整或引用无效时保留原稿并失败；仅创建初始状态。Run 还必须显式给出 completed/failed，失败记录不会被丢弃。
-遇到项目创建锁时等待操作者协调后重试，不自动移除锁；若进程被强制中止，须检查完整对象、临时文件和锁，再决定恢复。
-此项是 L2 入库协议的实现细化，未改变人工裁决权或入场/退出顺序。
+T3's new interface takes a complete Markdown draft file (--input, relative to --root), requiring --confirm and --confirmed-by.
+Missing confirmation, incomplete data or invalid references causes failure and preserves the draft. Create only initial statuses; Runs must explicitly specify completed/failed and failed records are retained.
+If a project creation lock exists, retry after operator coordination rather than removing it automatically. After forced termination, inspect complete objects, temporary files and the lock before deciding how to recover.
+This refines the L2 intake implementation without changing human ruling authority or entry/exit order.
 
-T4 的 status 只读取选定项目的 PROJECT、七类对象目录与 brief，并校验这些记录的直接引用。
-引用外部项目只加载明确指向的对象，不扫描其余对象或发现其他项目的入向证据/异议；条件统计只使用选定项目中的有效记录。
-open objections 按 fatal/major/minor、数值 ID 排序；Claims 按数值 ID 排序。本文的两个条件独立呈现，不据此改写 status 或 stage。
-任何数据/布局/引用错误或创建锁使退出码为 1，并把条件标为 unknown；可读取的状态与部分计数仍展示，计数不代表完整网络。
-合法数据的条件与已存状态不一致只是待裁决提示，退出 0。命令不创建缓存、索引、临时文件或修改 Git。
-brief 检查字面 [[reference]] 标记，报告非法/缺失/未闭合引用；围栏及行首四格/制表符缩进代码示例跳过。
-这只是引用完整性检查，不证明研究论断正确，也不检查自然语言与网络的语义一致性。
-这次 L2 修订明确检查范围与不完整数据的报告方式，不改变数据字段、人工裁决权或 gates。
+T4's status reads only the selected project's PROJECT, seven object directories and brief, validating those records' direct references.
+For external-project references, load only the explicitly targeted objects; do not scan other objects or discover incoming evidence/objections from other projects. Condition counts use valid records in the selected project only.
+Sort open objections by fatal/major/minor then numeric ID; sort Claims by numeric ID. Present the two conditions independently without rewriting status or stage.
+Any data/layout/reference error or creation lock causes exit 1 and unknown conditions. Readable statuses and partial counts remain visible, but counts do not represent the complete network.
+On valid data, a mismatch between conditions and stored status is only a pending-ruling notice and exits 0. Create no caches, indexes or temporary files, and do not modify Git.
+Check literal [[reference]] markers in brief, reporting invalid/missing/unclosed references. Skip fenced code and examples indented by four spaces/a tab.
+This is reference-integrity checking, not proof of scientific correctness or semantic consistency between prose and the network.
+This L2 revision clarifies scope and incomplete-data reporting without changing fields, human ruling authority or gates.
 
-handoff 生成草稿时保存 PROJECT 的原始字节摘要。应用前若摘要不同，拒绝覆盖并要求重新基于当前文件起草。
-应用必须保留 Goal/Constraints 等正文与其他 metadata；添加本次已有 Decision 引用、更新 next_step 和 last_handoff；禁止更新 stage。
-handoff 无输入时显式记录未知内容，不推测本次会话做过什么；--input 接收人工/模型提供的完整摘要，仍只生成 runs 草稿。
-应用及恢复均需 --apply <根相对草稿路径> --confirmed-by <研究者> --confirm；确认是操作者声明，不是身份认证。
-首次确认的 payload、确认人和时间先存入 .handoff-pending/；恢复同一草稿沿用该意图，不改变确认记录。
-session 完整发布和 PROJECT 原子替换后才退休恢复日志。进程强制退出后，重跑相同 --apply 命令恢复；其他草稿、损坏日志或外部 PROJECT 修改会明确报错并保留现场。
-同一草稿重复应用只返回已链接在当前交接历史中的记录，即使已有更晚的交接，也不倒退状态；孤立 session 不能单凭存在就认定应用完成。
-status 检查 last_handoff 及其归档原稿，重放校验所经的应用历史；被修改的对应记录/原稿会报错，不全量扫描无关历史。
-两文件更新不是一个文件系统原子操作；pending 期间 status 报数据不完整，不给出确定条件。
-散列检查提供乐观并发保护；应用时应停止手工编辑 PROJECT，外部编辑器不参与 handoff 的 POSIX 写入锁。
-T5 的交接写入需要 POSIX flock、硬链接、原子 rename 和文件/目录 fsync；无需模型、网络或自动 Git 提交。
-本次 L2 变更明确交互与独立会话的输入差异，以及确认、恢复和重放的可执行协议；不改变 gates 的人工裁决权。
+handoff saves the raw PROJECT byte digest when generating a draft. If the digest differs before application, refuse to overwrite and require a new draft based on the current file.
+Application preserves Goal/Constraints and other body content/metadata, adds this session's existing Decision references, and updates next_step and last_handoff. Changing stage is forbidden.
+Without input, handoff explicitly records unknown content rather than inferring session activity. --input accepts a complete human/model summary and still creates only a runs draft.
+Application and recovery require --apply <root-relative-draft-path> --confirmed-by <researcher> --confirm; confirmation is an operator declaration, not authentication.
+Persist the first confirmed payload, confirmer and time in .handoff-pending/ before writing. Recovery of the same draft reuses that intent without changing confirmation records.
+Retire the recovery journal only after publishing the complete session and atomically replacing PROJECT. After forced termination, rerun the same --apply command. Different drafts, corrupt journals or external PROJECT edits cause explicit errors and preserve the files.
+Repeated application returns only a record linked into current handoff history. Even with a newer handoff, it never reverts state; an orphan session's existence alone cannot prove completed application.
+status checks last_handoff and its archived draft; replay validates the traversed application history. Changes to those records/drafts cause errors, without scanning unrelated history.
+The two-file update is not one filesystem-atomic operation. While pending, status reports incomplete data rather than definite conditions.
+Hash checks provide optimistic concurrency protection. Pause manual PROJECT editing during application; external editors do not participate in handoff's POSIX write lock.
+T5 handoff writes require POSIX flock, hard links, atomic rename and file/directory fsync, with no models, networking or automatic Git commits.
+This L2 change defines input differences between interactive and independent sessions and executable confirmation/recovery/replay protocols, preserving human authority over gates.
 
-## 阶段验收
+## Stage acceptance
 
-先通过命令集成测试，再由研究者使用真实研究想法完成写 Claim → 独立手动评审 → 确认 Objection → 交接 → 次日新会话恢复。
-自动化只能模拟重启，不能替代真实两日试用或研究者最终验收。实施 session 的自测不算独立评审。
+Pass command integration tests first. Then use a real research idea for Claim writing → independent manual review → confirmed Objection → handoff → a fresh session the next day.
+Automation can simulate restarts, but cannot replace a real two-day trial or final researcher acceptance. Implementation-session self-tests do not count as independent review.

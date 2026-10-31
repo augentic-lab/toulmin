@@ -1,8 +1,8 @@
-# L1 v1：七类对象示例
+# L1 v1: examples of all seven object types
 
-以下是格式示例，不是已产生的研究证据。假设研究项目名为 demo，示例 Run 的输入/输出文件存在，研究者确实进行了所记录确认。
-所有字段约束见 [formats.md](formats.md)。每段完整 Markdown 为有效样本，紧随其后的单项替换构成该类无效样本。
-验证器须区分“结构有效”和“来源真实/结论正确”；本节不能证明后者。
+These are format examples, not actual research evidence. Assume the project is named demo, the sample Run's input/output files exist, and the researcher actually made the recorded confirmations.
+See [formats.md](formats.md) for all field constraints. Each complete Markdown block is a valid sample; the single replacement immediately after it creates an invalid sample of that type.
+Validation must distinguish structural validity from authentic provenance/correct conclusions; this section cannot prove the latter.
 
 ## Claim — C-001.md
 
@@ -17,13 +17,13 @@ confirmed_by: {actor: "Tianchi YU", at: "2026-10-31T09:00:00Z"}
 type: problem
 importance: core
 tags: [workload]
-validation_plan: "在固定输入 trace 下测量队列等待分布，保留脚本与原始样本。"
+validation_plan: "Measure the queueing-delay distribution with a fixed input trace; retain scripts and raw samples."
 ---
 ## Statement
-在指定负载下，排队等待是尾延迟的主要来源。
+Queueing delay is the main source of tail latency under the specified load.
 ````
 
-无效变体：将 `type: problem` 替换为 `type: workload`。应报告 type 非法；workload 只能是 tag。
+Invalid variant: replace `type: problem` with `type: workload`. Report an invalid type; workload may only be a tag.
 
 ## Run — R-001.md
 
@@ -43,10 +43,10 @@ session_id: null
 duration_seconds: null
 ---
 ## Summary
-人工调用独立 reviewer；原始回答保存在 output.md，未获得 session ID 与耗时。
+An independent reviewer was invoked manually. The raw response is saved in output.md; session ID and duration were unavailable.
 ````
 
-无效变体：将 `status: completed` 替换为 `status: running`。应拒绝未结束却声称可归档的 Run；不能自行补 completed。
+Invalid variant: replace `status: completed` with `status: running`. Reject an unfinished Run presented for archival; never fill in completed automatically.
 
 ## Evidence — E-001.md
 
@@ -66,14 +66,14 @@ direction: supports
 kind: derivation
 grade: model-asserted
 provenance:
-  - description: "reviewer 的推导，尚未独立验证。"
+  - description: "The reviewer's derivation, not yet independently verified."
     path: projects/demo/runs/20261031T100000Z-review/output.md
 ---
 ## Material
-reviewer 提供了排队影响的推导；这项材料不能单独支持 Claim。
+The reviewer derived the effect of queueing. This material alone cannot support the Claim.
 ````
 
-无效变体：仅把 grade 改为 verified 而不提供 verification。应报告缺少验证方法、结果与 artifacts。
+Invalid variant: change only grade to verified without supplying verification. Report missing verification method, result and artifacts.
 
 ## Objection — O-001.md
 
@@ -92,14 +92,14 @@ target: C-001
 severity: major
 ---
 ## Content
-固定请求分布不足以代表分布漂移时的生产负载。
+A fixed request distribution does not adequately represent production workloads with distribution drift.
 
 ## Response
 
 ## Ruling
 ````
 
-无效变体：将 target 改为 E-001。引用虽然存在，但 Objection 只能指向 Claim。
+Invalid variant: change target to E-001. The reference exists, but an Objection may target only a Claim.
 
 ## Decision — D-001.md
 
@@ -114,19 +114,19 @@ confirmed_by: {actor: "Tianchi YU", at: "2026-10-31T11:00:00Z"}
 related: [C-001, O-001]
 ---
 ## Context
-现有推导没有覆盖漂移负载。
+The existing derivation does not cover drifting workloads.
 
 ## Choice
-保留原 Claim 的 proposed 状态，先扩充实验计划。
+Keep the original Claim proposed and expand the experiment plan first.
 
 ## Rejected alternatives
-暂不把 Claim 标为 supported。
+Do not mark the Claim supported yet.
 
 ## Rationale
-没有 verified 支持证据，且仍有 open major Objection。
+There is no verified supporting evidence, and an open major Objection remains.
 ````
 
-无效变体：将 related 改为 []。应报告缺少所裁决的对象引用。
+Invalid variant: change related to []. Report missing references to the objects being ruled on.
 
 ## Exploration — X-001.md
 
@@ -141,10 +141,10 @@ confirmed_by: {actor: "Tianchi YU", at: "2026-10-31T11:10:00Z"}
 lens: workload-drift
 ---
 ## Content
-比较固定分布与渐变分布下的排队等待。
+Compare queueing delay under fixed and gradually changing distributions.
 ````
 
-无效变体：仅将 status 改为 adopted 而不提供 adopted_as。应报告缺少形成的 Claim 引用。
+Invalid variant: change only status to adopted without supplying adopted_as. Report the missing reference to the resulting Claim.
 
 ## Spec — S-001.md
 
@@ -160,12 +160,12 @@ target: C-001
 evidence: []
 ---
 ## Requirements
-实现可固定随机种子的请求回放器，记录逐请求排队与服务时间。
+Implement a request replayer with a fixed random seed, recording per-request queueing and service times.
 
 ## Acceptance criteria
-独立会话执行 python replay.py --seed 7 --trace drift.json；退出 0，输出逐请求 CSV。
-校验脚本必须验证 CSV 请求数量与 trace 一致、时间均非负，并报告 p99 及运行环境。
-这只是测量完整性的验收；是否支持 Claim 须由研究者依据实际结果裁决。
+An independent session runs python replay.py --seed 7 --trace drift.json; it exits 0 and produces per-request CSV.
+A validation script must check that CSV request counts match the trace and all times are nonnegative, and report p99 and the runtime environment.
+This accepts measurement integrity only. The researcher rules on Claim support from the actual results.
 ````
 
-无效变体：将 target 改为 X-001。Spec 必须对应 Claim，不能把尚未采纳的探索当作验证目标。
+Invalid variant: change target to X-001. A Spec must target a Claim, not an unadopted exploration.

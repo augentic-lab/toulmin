@@ -1,23 +1,23 @@
-# L1 文件契约 v1
+# L1 file contract v1
 
-状态：T1 冻结的骨架契约，依据 TODO.md Q1–Q9 的推荐方案及用户“继续推进”的授权。
-本文件定义 v1 格式；T1 实现 ID、引用和会话读取顺序，T3 实现文件编解码、对象字段及直接引用校验。
-英文机器字段是规范；Python 类与 CLI 均不能重新定义其含义。
+Status: skeleton contract frozen in T1, following TODO.md Q1–Q9 recommendations and the user's authorization to continue.
+This document defines the v1 format. T1 implements IDs, references and session read order; T3 implements file encoding/decoding, object fields and direct-reference validation.
+English machine fields are authoritative. Neither Python classes nor the CLI may redefine their meaning.
 
-## 文件和标识
+## Files and identifiers
 
-- UTF-8、LF；对象文件第一行必须是 `---`，下一条独立 `---` 行结束 YAML 头。余下所有字节是 Markdown 正文，读取、写回不得重排正文。
-- YAML 头为一个 mapping，只接受 string、bool、int、有限 float、null、list、string-keyed mapping。重复键、显式 tag、锚点/alias、merge key、多文档头均拒绝；不构造 Python 对象。
-- 每个对象必有整数 `schema_version: 1`；bool 不算 int。未知版本报错，不进行自动迁移。未知字段拒绝；自定义数据只放 `extensions`（可选 mapping，键采用 `namespace.name`）。
-- 日期/时间字段均为带引号的 RFC 3339 字符串，必须有时区；生成时使用 UTC `Z`。不依赖 YAML 自动日期转换。示例：`"2026-10-31T10:00:00Z"`。
-- 项目名是小写 ASCII 字母/数字组成的片段，以单个 `-` 分隔，例如 `tail-latency`；不允许斜杠、点、空格或空片段。
-- 七类对象在“项目 + 类型”内编号，从 1 开始，至少三位：`C-001`、`C-999`、`C-1000`。禁止 `C-1`、`C-000`、`C-0001` 等别名。
-- 文件名必须等于 ID 加 `.md`，且位于类型对应目录。删除不作为正常操作，旧对象应保留，因此已用编号不回收。并发创建必须排他分配或明确冲突失败。
-- 引用为 `C-001` 或 `other-project/C-001`；前者在当前项目解析，后者相对同一工作台根目录解析。绝对路径、`..` 与符号链接逃逸不允许。
-- 机器记录的文件路径统一相对工作台根目录，以 `/` 分隔；引用外部来源使用单独的 URL 字段，不混为本地路径。
-- 对象文件中不维护重复的 ID 索引。跨对象引用存在性、类型与来源文件存在性由仓库校验层检查，不由字符串解析器判断。
+- Use UTF-8 and LF. The first line of an object file must be `---`; the next standalone `---` line ends the YAML header. All remaining bytes form the Markdown body, which must not be rearranged when read or written back.
+- The YAML header is a mapping accepting only strings, booleans, integers, finite floats, null, lists and string-keyed mappings. Reject duplicate keys, explicit tags, anchors/aliases, merge keys and multi-document headers. Never construct Python objects.
+- Every object requires integer `schema_version: 1`; booleans do not count as integers. Reject unknown versions without automatic migration. Reject unknown fields; custom data belongs only in optional `extensions` mappings with `namespace.name` keys.
+- Date/time fields are quoted RFC 3339 strings with time zones; generated values use UTC `Z`. Do not rely on YAML date conversion. Example: `"2026-10-31T10:00:00Z"`.
+- Project names consist of lowercase ASCII letter/digit segments separated by single hyphens, such as `tail-latency`. Slashes, dots, spaces and empty segments are forbidden.
+- Number each of the seven object types within its project, starting at 1 with at least three digits: `C-001`, `C-999`, `C-1000`. Reject aliases such as `C-1`, `C-000` and `C-0001`.
+- Filenames must be the ID plus `.md` in the corresponding type directory. Deletion is not a normal operation: retain old objects and do not recycle used IDs. Concurrent creation must allocate exclusively or fail with an explicit conflict.
+- References use `C-001` or `other-project/C-001`. Resolve the former within the current project and the latter within the same workbench root. Absolute paths, `..` and symlink escapes are forbidden.
+- Machine-recorded file paths are relative to the workbench root and use `/` separators. External sources use separate URL fields, never local-path fields.
+- Do not maintain a duplicate ID index in object files. Repository validation checks reference existence/type and source-file existence; string parsing alone does not.
 
-| kind（new 参数） | 前缀 / 目录 | 初始 status | 可读取的 status |
+| kind (new argument) | Prefix / directory | Initial status | Readable statuses |
 | --- | --- | --- | --- |
 | claim | C / claims | proposed | proposed, challenged, supported, accepted, refuted |
 | evidence | E / evidence | valid | valid, invalidated |
@@ -25,104 +25,104 @@
 | decision | D / decisions | active | active, superseded |
 | exploration | X / explorations | pending | pending, adopted, dropped |
 | spec | S / specs | todo | todo, in-progress, awaiting-acceptance, passed, failed |
-| run | R / runs | 显式提供 completed 或 failed | completed, failed |
+| run | R / runs | Explicit completed or failed | completed, failed |
 
-类型由 ID 前缀及目录确定，不在 metadata 再写 `kind`；Evidence 的 `kind` 字段专指证据种类。
-Run 归档发生在人工模型会话结束后，不虚构 running/completed。原始输出放在 `runs/YYYYMMDDTHHMMSSZ-name/`（有效 UTC 时间、ASCII 字母数字/下划线/连字符名称），Run 元数据为 `runs/R-001.md`。
-草稿只用 Run 内局部标识，确认进入正式对象目录时才取得对象 ID。
+The ID prefix and directory determine the object type; do not add a metadata `kind`. Evidence's `kind` field refers specifically to the evidence category.
+Archive Runs after the manual model session ends; never invent running/completed outcomes. Raw output goes in `runs/YYYYMMDDTHHMMSSZ-name/` (valid UTC timestamp, ASCII alphanumeric/underscore/hyphen name); Run metadata goes in `runs/R-001.md`.
+Drafts use only Run-local labels and receive object IDs upon confirmed intake into formal directories.
 
-## 公共字段与来源
+## Common fields and provenance
 
-所有对象必填：`schema_version`、`id`、`status`、`created`、`source`、`confirmed_by`。
-所有非 Run 对象可选 `decisions`（Decision 引用列表，默认空）；所有对象可选 `extensions`。
+Every object requires `schema_version`, `id`, `status`, `created`, `source` and `confirmed_by`.
+All non-Run objects may have `decisions` (a list of Decision references, empty by default). All objects may have `extensions`.
 
-`source` 为以下二选一，不接受混合或缺项：
+`source` must be exactly one of the following forms, without mixed or missing fields:
 
-- 人工原创/人工归档：`{kind: human, actor: "Tianchi YU"}`；actor 是非空署名。
-- 取自模型 Run：`{kind: run, ref: R-001, path: "projects/demo/runs/20261031T100000Z-review/output.md"}`。
-  ref 必须指向 Run，path 必须存在且属于该 Run.output 下；模型、角色与 session 通过 Run 追溯，不复制可漂移字段。
+- Human-authored/human-archived: `{kind: human, actor: "Tianchi YU"}`; actor is a nonempty attribution.
+- Derived from a model Run: `{kind: run, ref: R-001, path: "projects/demo/runs/20261031T100000Z-review/output.md"}`.
+  ref must identify a Run; path must exist under that Run.output. Trace model, role and session through the Run rather than duplicating fields that could drift.
 
-`confirmed_by` 为 `{actor: "Tianchi YU", at: "2026-10-31T11:00:00Z"}`，表示人工确认入库的记录，不是身份认证。
-Run 自身由人工归档，source 必须是 human，不能自引用；model、role、session_id 由 Run 元数据记录。
-所有字符串除明确允许空的章节和 null 字段外，必须在去除空白后非空；列表元素按规定类型逐项校验。
+`confirmed_by` is `{actor: "Tianchi YU", at: "2026-10-31T11:00:00Z"}`, recording human confirmation of intake, not authentication.
+Runs themselves are archived by a human, so their source must be human and cannot self-reference. Run metadata records model, role and session_id.
+All strings must be nonempty after trimming, except explicitly permitted empty sections and null fields. Validate each list element against its specified type.
 
-## 各类型字段与正文
+## Type-specific fields and body
 
-正文使用下面规定的唯一二级标题。规定的必填章节需有非空内容；章节名区分大小写，不能重复。
-正文中的 Claim statement、Objection content 等只保存一次，不再放 metadata；程序不根据自由文本自动认定“结论已证实”。
+Use the unique level-two headings specified below. Required sections must contain nonempty content; section names are case-sensitive and must not repeat.
+Store Claim statements, Objection content and similar body content only once, never again in metadata. The program does not infer that a conclusion is established from free text.
 
-| 类型 | 额外必填 metadata | 可选或条件字段 | 必填正文章节 |
+| Type | Additional required metadata | Optional or conditional fields | Required body sections |
 | --- | --- | --- | --- |
-| Claim | `type`、`importance` | `tags: list[str]` 默认空；`validation_plan: str`；`decisions` | `Statement` |
-| Evidence | `target: Claim引用`、`direction`、`kind`、`grade`、`provenance` | grade=verified 时必须有 `verification` | `Material`；invalidated 时另需 `Invalidation` |
-| Objection | `target: Claim引用`、`severity` | `decisions` | `Content`；另保留 `Response`、`Ruling`，初始可空 |
-| Decision | `related: list[对象引用]`（非空） | superseded 时需 `superseded_by: Decision引用` | `Context`、`Choice`、`Rejected alternatives`、`Rationale` |
-| Exploration | `lens: str` | adopted 时需 `adopted_as: Claim引用` | `Content`；dropped 时另需 `Rationale` |
-| Spec | `target: Claim引用` | `evidence: list[Evidence引用]` 默认空，passed 时非空 | `Requirements`、`Acceptance criteria` |
-| Run | `model: str`、`role: str`、`input_files: list[str]`、`output: str`、`session_id: str或null`、`duration_seconds: 非负数或null` | input_files 可空；未知 session/耗时填 null，不猜测 | `Summary`；failed 时另需 `Failure` |
+| Claim | `type`, `importance` | `tags: list[str]`, empty by default; `validation_plan: str`; `decisions` | `Statement` |
+| Evidence | `target: Claim reference`, `direction`, `kind`, `grade`, `provenance` | `verification` required when grade=verified | `Material`; also `Invalidation` when invalidated |
+| Objection | `target: Claim reference`, `severity` | `decisions` | `Content`; retain `Response` and `Ruling`, initially allowed to be empty |
+| Decision | Nonempty `related: list[object reference]` | `superseded_by: Decision reference` required when superseded | `Context`, `Choice`, `Rejected alternatives`, `Rationale` |
+| Exploration | `lens: str` | `adopted_as: Claim reference` required when adopted | `Content`; also `Rationale` when dropped |
+| Spec | `target: Claim reference` | `evidence: list[Evidence reference]`, empty by default, nonempty when passed | `Requirements`, `Acceptance criteria` |
+| Run | `model: str`, `role: str`, `input_files: list[str]`, `output: str`, `session_id: str or null`, `duration_seconds: nonnegative number or null` | input_files may be empty; use null for unknown session/duration, never guesses | `Summary`; also `Failure` when failed |
 
-枚举：
+Enums and nested fields:
 
-- Claim.type：problem、magnitude、mechanism、novelty、assumption、deployability。workload/hardware 作为 tags，不新增类型。
-- Claim.importance：core、secondary。G2 的 pending 用非空 `validation_plan` 表示，Claim.status 不增加 pending。
-- Evidence.direction：supports、refutes；kind：measurement、literature、derivation、experiment、computation；grade：verified、model-asserted、intuition。
-- Objection.severity：fatal、major、minor。
-- Evidence.provenance：非空记录列表，每条含非空 `description`，并且有且仅有 `path` 或 `url`。path 必须存在；url 为 http/https URL，骨架不联网验证其内容。
-- Evidence.verification：`{method: str, result: str, artifacts: list[str]}`；artifacts 非空、文件存在。格式完整只证明提供了验证记录，不证明科学结论正确，证据等级仍由研究者确认。
+- Claim.type: problem, magnitude, mechanism, novelty, assumption, deployability. Use tags for workload/hardware rather than adding types.
+- Claim.importance: core, secondary. Represent G2's pending validation with a nonempty `validation_plan`, not a new pending Claim.status.
+- Evidence.direction: supports, refutes; kind: measurement, literature, derivation, experiment, computation; grade: verified, model-asserted, intuition.
+- Objection.severity: fatal, major, minor.
+- Evidence.provenance: a nonempty list of records, each with a nonempty `description` and exactly one of `path` or `url`. Paths must exist. URLs must use http/https; the skeleton does not verify their content over the network.
+- Evidence.verification: `{method: str, result: str, artifacts: list[str]}`; artifacts must be nonempty and files must exist. Structural completeness proves only that a verification record was supplied, not that the scientific conclusion is correct. The researcher still confirms the evidence grade.
 
-条件规则：answered Objection 的 Response 非空；accepted/deferred 的 Ruling 非空，accepted 还需 Decision 引用。
-accepted/refuted Claim 必须关联至少一个 Decision；refuted 的决定应说明反证或接受的异议。
-superseded Decision 必须保留旧正文；禁止自动删除失效证据或被否决的探索。
+Conditional rules: answered Objections require a nonempty Response; accepted/deferred require a nonempty Ruling, and accepted also requires a Decision reference.
+Accepted/refuted Claims must reference at least one Decision; a refutation decision should explain the refuting evidence or accepted objection.
+Superseded Decisions retain their old body. Never automatically delete invalidated evidence or rejected explorations.
 
-## PROJECT.md 与 brief
+## PROJECT.md and brief
 
-PROJECT 的 YAML 头必填：`schema_version: 1`、`project`、`stage`、`recent_decisions: list[Decision引用]`、`next_step: str`、`last_handoff: str或null`。
-stage 枚举：explore、critique、brief-final、build、accept、done。模板初值 explore，recent_decisions=[]，last_handoff=null。
-正文必填 `Goal`、`Constraints`，文件保持 40 行以内；不能为了缩短而丢弃手写内容，超出限制时报告而非截断。
-`last_handoff` 是 sessions 下的文件名；只指向已确认应用的交接，不指向草稿。废弃项目保留原阶段并在 Decision 中记原因，不自行添加 abandoned 阶段。
+PROJECT's YAML header requires `schema_version: 1`, `project`, `stage`, `recent_decisions: list[Decision reference]`, `next_step: str` and `last_handoff: str or null`.
+Stage values: explore, critique, brief-final, build, accept, done. Template defaults: explore, recent_decisions=[], last_handoff=null.
+The body requires `Goal` and `Constraints`. Keep the file within 40 lines; report excess length rather than truncating handwritten content.
+`last_handoff` is a filename under sessions, pointing only to a confirmed applied handoff, never a draft. Retain an abandoned project's stage and record the reason in a Decision; do not invent an abandoned stage.
 
-brief 手写，章节包括 Problem、Why now、Magnitude、Closest prior work、Objections and responses、Kill criteria、Minimal validation experiment。
-显式对象引用写为 `[[C-001]]` 或 `[[other-project/E-001]]`；只检查这些标记的语法、对象存在性，代码块内的标记不作为引用。
-其他 Markdown 链接与自然语言不属于骨架一致性校验范围。
+Write the brief by hand, with Problem, Why now, Magnitude, Closest prior work, Objections and responses, Kill criteria and Minimal validation experiment sections.
+Explicit object references use `[[C-001]]` or `[[other-project/E-001]]`. Check only these markers' syntax and object existence; markers in code blocks are not references.
+Other Markdown links and natural language fall outside the skeleton's consistency checks.
 
-## 交接草稿与已应用记录
+## Handoff drafts and applied records
 
-草稿不是第八类研究对象：保存在 runs 的独立归档目录，带格式版本、project、session_id（未知为 null）、created、
-`base_project_sha256`、`recent_decisions`、`next_step`。正文为 Done、Decisions、Open questions、Next step 四节。
-recent_decisions 只能引用已存在的研究者决定，空列表表示本次无新增决定；next_step 为应用时更新的唯一下一步文本，正文 Next step 指向该字段避免双份事实。
-草稿目录为 runs/YYYYMMDDTHHMMSSZ-handoff-<随机值>/，文件名 draft.md。
-已应用记录保留草稿全部字段和正文，并增加 source_draft（根相对路径）、source_sha256、applied_by、applied_at、project_sha256、previous_handoff（前一交接文件名，首次为 null）。
-source_sha256 是原稿完整字节摘要；project_sha256 是应用时 PROJECT 的字节摘要，用于历史追溯，不要求后续手工修改仍与其相同。
-应用后 PROJECT.last_handoff 指向 sessions/YYYYMMDDTHHMMSSZ-<完整草稿SHA256>.md；UTC 时间为首次确认应用时间。
-重复应用按完整内容摘要识别，包含已有更晚交接时也不得重写旧记录或倒退 PROJECT。
-重放还须沿 PROJECT.last_handoff/previous_handoff 找到该记录；孤立 session 不能证明两文件更新已完成，缺少恢复意图时保留现场并报错。
-T5 将此前计划的随机 session 后缀明确为内容摘要，便于无索引查找已应用记录；没有已有正式交接数据需要迁移，对象 v1 字段/版本未变。
+Drafts are not an eighth research object type. Save them in separate archive directories under runs, with schema_version, project, session_id (null if unknown), created,
+`base_project_sha256`, `recent_decisions` and `next_step`. Body sections: Done, Decisions, Open questions, Next step.
+recent_decisions may reference only existing researcher decisions; an empty list means no new decisions are included. next_step is the sole next-step text applied to PROJECT; the body Next step points to that field to avoid duplicate facts.
+Draft directories use runs/YYYYMMDDTHHMMSSZ-handoff-<random-value>/, with filename draft.md.
+Applied records retain every draft field and the body, adding source_draft (root-relative path), source_sha256, applied_by, applied_at, project_sha256 and previous_handoff (previous handoff filename, null for the first).
+source_sha256 hashes the original draft's complete bytes. project_sha256 hashes PROJECT at application time for historical traceability; later manual edits need not match it.
+After application, PROJECT.last_handoff points to sessions/YYYYMMDDTHHMMSSZ-<full-draft-SHA256>.md; the UTC time is the first confirmed application time.
+Identify repeated application by the full content digest. Even when a later handoff exists, never rewrite the old record or revert PROJECT.
+Replay must also find the record through PROJECT.last_handoff/previous_handoff. An orphan session does not prove both public files were updated; without a recovery intent, preserve the files and report an error.
+T5 replaces the previously planned random session suffix with a content digest to locate applied records without an index. No existing formal handoff data needs migration; object v1 fields/version are unchanged.
 
-输入摘要只允许可选 session_id、recent_decisions、next_step；正文必填 Done、Decisions、Open questions。
-命令添加唯一 Next step 章节，固定内容为 `See metadata next_step.`。无输入时，前三节写明未知，session_id=null，
-recent_decisions=[]，next_step 继承当前 PROJECT 值；这不表示会话中实际没有决定。
+Input summaries permit only optional session_id, recent_decisions and next_step metadata; the body requires Done, Decisions and Open questions.
+The command adds the sole Next step section with fixed text `See metadata next_step.`. Without input, the first three sections explicitly record unknown information, session_id=null,
+recent_decisions=[], and next_step inherits the current PROJECT value. This does not assert that the session actually made no decisions.
 
-## 交接恢复记录（内部文件）
+## Handoff recovery records (internal files)
 
-应用前将完整 before.md、after.md、session.md、draft.md 与 intent.md 保存到项目的 .handoff-pending/。
-intent 头包含 schema_version、project、session_filename 和四份图像的 <name>_sha256；这些是可恢复写入记录，不是第八类研究对象。
-每份完整文件写入并 fsync 后发布，再发布 session、原子替换 PROJECT；仅允许 recent_decisions、next_step、last_handoff 改变，正文与其他字段必须一致。
-恢复比较校验和和当前 PROJECT：只接受 before 或 after 原样，否则保留全部恢复记录并报冲突。
-两份公共文件完成后，原子改名退休日志再清理，避免中断清理留下半份 pending 日志；日志由研究工作台 .gitignore 排除。
-POSIX flock 协调 handoff 写入，锁文件在系统临时目录，进程死亡自动释放锁；锁文件保留以避免 inode 竞争。
-交接的 POSIX 文件/目录同步实现是 L1 文件存储的本地实现条件，模型与协议不依赖任何具体 CLI。
+Before application, save complete before.md, after.md, session.md, draft.md and intent.md under the project's .handoff-pending/.
+The intent header contains schema_version, project, session_filename and the four images' <name>_sha256 values. These are recovery records, not an eighth research object type.
+Write and fsync each complete file before publishing the journal, then publish the session and atomically replace PROJECT. Only recent_decisions, next_step and last_handoff may change; the body and other fields must match.
+Recovery checks checksums and current PROJECT bytes, accepting only the exact before or after image. Otherwise preserve every recovery record and report a conflict.
+After both public files are complete, atomically rename the journal to retire it before cleanup, so interrupted cleanup cannot leave a partial pending journal. The research workbench .gitignore excludes journals.
+POSIX flock coordinates handoff writers using a lock file in the system temporary directory. Process death releases the lock automatically; retain the file to avoid inode races.
+POSIX file/directory synchronization is a local implementation requirement of L1 file storage. Models and protocols depend on no specific CLI.
 
-## 错误与兼容性
+## Errors and compatibility
 
-语法/字段错误必须包含文件路径、字段名，能定位时给出行号；不得跳过坏文件后宣称整个项目有效。
-读文件允许所有合法现存状态；new 只创建初始状态（Run 必须明确提供结果）。状态变化由研究者裁决并记录 Decision。
-不导入没有 schema_version 的旧草案；本仓库尚无已持久化的 v0 研究对象，因此本次无数据迁移脚本。未来版本变更需要影响评估与针对已有数据的迁移脚本。
+Syntax/field errors must include the file path and field name, with a line number when available. Never skip corrupt files and then declare the entire project valid.
+Reading permits all valid stored statuses; new creates only initial statuses (Runs must explicitly state their outcome). The researcher rules on status changes and records a Decision.
+Do not import old drafts lacking schema_version. This repository has no persisted v0 research objects, so no data migration script is needed for this revision. Future version changes require an impact assessment and migration scripts for existing data.
 
-T3 实现说明：new 的输入是工作台内的草稿，包含 source、类型专属字段和正文，不包含 id、created、confirmed_by。
-schema_version 可省略或写 1；除 Run 须明确给出结果外，status 可省略，new 只允许初始状态。
-入库分配 ID、UTC 创建时间并记录确认人；不修改原稿。显式 --confirm 和 --confirmed-by 只记录授权声明，不是身份认证。
-项目级临时目录锁协调创建；锁已存在时明确失败，不删除其他 session 的锁。完整文件 fsync 后通过排他硬链接发布，不能覆盖已有对象。
-new 校验候选对象的直接引用和 Run 来源，不递归遍历可能循环的整个网络；全项目诊断属于 T4。重复提交同一草稿会得到新 ID，不覆盖已有记录。
-本次只明确草稿接口与归档目录命名，没有变更既有对象字段或版本；仓库尚无实际研究数据需要迁移。
+T3 implementation notes: new takes a draft inside the workbench, containing source, type-specific fields and body, without id, created or confirmed_by.
+schema_version may be omitted or set to 1; status may be omitted except for Run outcomes. new permits only initial statuses.
+Intake assigns an ID and UTC creation time and records the confirmer without changing the original draft. Explicit --confirm and --confirmed-by record an authorization declaration, not authentication.
+A project-level temporary directory lock coordinates creation. Fail explicitly if it exists; do not delete another session's lock. After fsync, publish the complete file through an exclusive hard link, never overwriting existing objects.
+new validates the candidate's direct references and Run source, without recursively traversing a potentially cyclic network. Whole-project diagnostics belong to T4. Submitting the same draft again allocates a new ID without overwriting prior records.
+This clarification covers only the draft interface and archive naming, without changing existing object fields/version. No actual research data in the repository needs migration.
 
-七类有效示例与逐类无效变体见 [format-examples.md](format-examples.md)。
+See [format-examples.md](format-examples.md) for seven valid examples and an invalid variant of each.

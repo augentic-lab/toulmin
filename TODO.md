@@ -1,123 +1,132 @@
-# 第 2 阶段：骨架实施计划
+# Stage 2: skeleton implementation plan
 
-依据：`docs/design.md` 第 3–8、10、12、13 节。2026-10-31 用户提供项目 Git 身份并要求继续推进，按下列推荐方案实施 T1。
-本文件集中保存技术选型、验收标准和决定；设计修订及格式/协议细节分别保存在 docs/design.md、docs/formats.md、docs/protocols.md。
+Basis: `docs/design.md` sections 3–8, 10, 12 and 13. On 2026-10-31, the user supplied the project Git identity and authorized proceeding with T1 using the recommendations below.
+This file collects technology choices, acceptance criteria and decisions. Design revisions and format/protocol details live in docs/design.md, docs/formats.md and docs/protocols.md.
 
-## 技术选型建议
+## Technology recommendations
 
-选型已采用；适用性的理由是工程判断，实际工具链验证结果见 PROGRESS.md。
+These choices have been adopted. Their suitability is engineering judgment; PROGRESS.md records actual toolchain verification.
 
-| 部分 | 推荐 | 理由与取舍 |
+| Area | Recommendation | Rationale and tradeoffs |
 | --- | --- | --- |
-| 语言 | Python >=3.12；开发先固定 3.12，uv 管理环境与锁文件 | 当前任务以文本、文件、协议和测试为主；以后可接实验脚本。比 Go/Rust 少一些开发负担，代价是需要 Python 运行环境；没有前端需求，不优先 TypeScript。版本是保守基线，不代表最新版。 |
-| CLI | Typer，仅置于 L3 | 类型注解驱动参数定义，适合四个子命令；支持 CliRunner 测试。argparse 可减少依赖，但参数与帮助维护更繁琐；不同时叠加多个 CLI 框架。 |
-| Markdown | 正文视为不透明文本；只识别文件起始处的 YAML front matter 边界 | 骨架不需要渲染或分析 Markdown AST，避免重排正文、代码块和手写说明。缺少结束分隔符应报错；正文内的 `---` 不得误判。以后需要分析 brief 链接时再评估 markdown-it-py。 |
-| YAML | ruamel.yaml，明确采用安全的标准类型子集并拒绝重复键 | 提供重复键检查和保留注释的编辑能力；不允许任意对象构造或未知 YAML tag。比简单 PyYAML 配置多一些约束，但更适合人机共同编辑。正文完整保留；不承诺 YAML 头字节级往返不变。 |
-| 数据模型 | 标准库 dataclasses + Enum + 显式校验 | 七类对象规模可控，保持 L1 与框架解耦；语法校验与跨对象语义校验分开。暂不增加 Pydantic。 |
-| 测试 | pytest + tmp_path + Typer CliRunner | 可隔离真实仓库、测试错误路径和命令输出；补充安装后的子进程冒烟测试，防止只测到进程内调用。 |
-| 开发检查 | Ruff、mypy、uv.lock | 格式、静态检查、类型与环境复现各自有明确职责；T1 才解析具体依赖版本。 |
+| Language | Python >=3.12; start development on 3.12, with uv managing environments and the lockfile | The current work centers on text, files, protocols and tests, with future experiment-script integration. Less implementation overhead than Go/Rust, at the cost of a Python runtime. No frontend requirement justifies prioritizing TypeScript. The version is a conservative baseline, not a claim to be latest. |
+| CLI | Typer, confined to L3 | Type annotations define arguments for four subcommands, with CliRunner testing support. argparse reduces dependencies but requires more argument/help maintenance. Do not stack multiple CLI frameworks. |
+| Markdown | Treat bodies as opaque text; recognize only initial YAML front-matter boundaries | The skeleton needs neither rendering nor Markdown AST analysis. Preserve prose, code blocks and handwritten notes. Missing closing delimiters are errors; body `---` lines must not be mistaken for headers. Reconsider markdown-it-py if future brief-link analysis needs it. |
+| YAML | ruamel.yaml with an explicit safe standard-type subset and duplicate-key rejection | Supports duplicate-key checks and comment-preserving edits. Forbid arbitrary object construction and unknown YAML tags. More constraints than a simple PyYAML setup, but better suited to shared human/machine editing. Preserve the entire body; do not promise byte-identical YAML-header round trips. |
+| Data model | Standard-library dataclasses + Enum + explicit validation | Seven object types are manageable without coupling L1 to a framework. Separate syntax validation from cross-object semantics; do not add Pydantic yet. |
+| Tests | pytest + tmp_path + Typer CliRunner | Isolate real repositories and cover errors/command output. Add installed-package subprocess smoke checks to avoid testing only in-process invocation. |
+| Development checks | Ruff, mypy, uv.lock | Formatting, static analysis, types and reproducible environments have separate responsibilities. Resolve concrete dependency versions in T1. |
 
-已查阅的官方依据（2026-10-31；这些能力有文档依据，适合本项目仍属建议）：
+Official references reviewed on 2026-10-31 (documented capabilities, with project fit still a recommendation):
 
-- [Python 版本状态](https://devguide.python.org/versions/)；[uv 锁定与同步](https://docs.astral.sh/uv/concepts/projects/sync/)。
-- [Typer 类型注解](https://typer.tiangolo.com/tutorial/)；[Typer 测试接口](https://typer.tiangolo.com/tutorial/testing/)。
-- [ruamel.yaml 重复键规则](https://yaml.dev/doc/ruamel.yaml/api/)；[编辑保留能力及限制](https://yaml.dev/doc/ruamel.yaml/detail/)。
-- [pytest 临时目录](https://docs.pytest.org/en/stable/how-to/tmp_path.html)。
+- [Python version status](https://devguide.python.org/versions/); [uv locking and synchronization](https://docs.astral.sh/uv/concepts/projects/sync/).
+- [Typer type annotations](https://typer.tiangolo.com/tutorial/); [Typer testing interface](https://typer.tiangolo.com/tutorial/testing/).
+- [ruamel.yaml duplicate-key rules](https://yaml.dev/doc/ruamel.yaml/api/); [editing preservation and limitations](https://yaml.dev/doc/ruamel.yaml/detail/).
+- [pytest temporary directories](https://docs.pytest.org/en/stable/how-to/tmp_path.html).
 
-环境事实：**Verified**：原默认 Python 为 3.7.5；T1 在 .tools/ 安装 uv 与 Python 3.12，并使用项目 .venv，不替换系统 Python、不修改全局 PATH。
+Environment fact: **Verified**: the original default Python was 3.7.5. T1 installed uv and Python 3.12 under .tools/ and uses the project .venv, without replacing system Python or changing global PATH.
 
-## 开工决定记录
+## Pre-implementation decisions
 
-Q1–Q9 按用户“继续推进”的授权采用推荐方案；Q10 已按用户明确给出的姓名邮箱仅设置于本仓库。
-Q1–Q4 对应第 13 节明确要求先解决的四项；其余是阅读设计时发现的骨架契约缺口。
+Q1–Q9 adopted the recommendations under the user's authorization to continue. Q10 uses the explicitly supplied name/email in this repository only.
+Q1–Q4 correspond to the four questions section 13 required resolving before the skeleton; the rest fill contract gaps found during design review.
 
-| 编号 | 必须决定的问题 | 推荐方案 | 影响 |
+| ID | Required decision | Recommendation adopted | Impact |
 | --- | --- | --- | --- |
-| Q1 | Claim type 是否针对系统研究细化？ | 固定 problem、magnitude、mechanism、novelty、assumption、deployability 六类；workload/hardware 等作为 tags，避免不断扩张枚举。 | L1 schema、模板、G1 检查。 |
-| Q2 | brief 从网络生成初稿，还是手写并检查一致性？ | 手写 brief；骨架只提供结构与显式对象引用检查，status 另行生成网络摘要。不从正文语义推断一致性，也不回写 brief。 | Markdown 处理、模板与 status 范围。 |
-| Q3 | Evidence grade 是否细化？ | 保持 verified / model-asserted / intuition 三档；重复次数、方差、环境、复现方法记在 provenance/正文，重复测量不另设等级。verified 仍需可追溯的验证方法与结果。 | Evidence schema、supported 判定。 |
-| Q4 | 语言与交互接口是否采用上表？本阶段是否提供 MCP？ | 采用 Python 技术栈；骨架仅 CLI + 可导入的 L1/L2，MCP 推迟。不预建空泛插件体系。 | 包布局、安装与测试。 |
-| Q5 | 全球知识库现在实现多少？第 13 节第六项是否提前影响模板？ | 只创建 global/profile.md 与 papers、assumptions、calibration 占位目录；本阶段文献使用项目内 Evidence，知识库功能留到第 6 阶段。 | init 的输出范围。 |
-| Q6 | 第 7 节阶段图与 gate 表如何统一？G2 的 pending 如何表达？ | 采用表格口径：Explore → Critique → Brief final → Build → Accept → Done，对应 G1–G5；Spec 是 Brief final 后、G3 前准备的产物，不单设阶段。G2 的待验证用独立验证计划字段表达，不新增 Claim 的 pending 状态。 | PROJECT.stage、模板、status、handoff。 |
-| Q7 | 第 6 节角色权限与“所有 AI 输出先进 runs”冲突；第 4 节状态条件是否自动生效？ | 研究产物一律先写 runs，角色目录表示确认后的目的地；人工确认后 new 才创建正式对象。status 只报告条件与现存状态不一致，绝不自动升降级；阶段及已有状态由研究者修改并记录 Decision。 | new、status、权限与追溯。 |
-| Q8 | 第 5 节递增 ID 与示例中带日期的 Run ID 如何统一？草稿何时获得正式 ID？ | 七类对象均在“项目 + 类型”内递增（C-001、R-001 等）；runs/R-001.md 保存 Run 元数据，原始输出置于带时间的子目录并被引用。草稿使用 Run 内局部标识，确认入库时分配正式 ID；跨项目引用使用 project/ID。 | 文件布局、来源引用、分配冲突测试。 |
-| Q9 | 软件仓库与研究仓库是否分开？谁创建项目，handoff 是否直接改文件/提交？ | 本仓库维护软件与模板；init 在指定目录生成独立研究仓库，并以 --project 创建首个项目，后续可复用。handoff 默认生成草稿，人工确认后 --apply 写交接与 PROJECT 的非裁决字段；阶段不自动改，git commit 按退出协议人工/显式执行。 | 模板归属、四条命令契约、写入边界。 |
-| Q10 | 规划及后续提交使用哪个 Git 姓名与邮箱？ | Tianchi YU / yu-tianchi@outlook.com；仅配置本仓库 user.name / user.email，已核对来源为 .git/config。 | 本轮与每个 session 的提交。 |
+| Q1 | Should Claim types be specialized for systems research? | Fix six types: problem, magnitude, mechanism, novelty, assumption, deployability. Represent workload/hardware as tags to avoid continually expanding the enum. | L1 schema, templates, G1 checks. |
+| Q2 | Generate a brief draft from the network, or write it by hand and check consistency? | Handwrite the brief. The skeleton supplies structure and explicit object-reference checks; status generates a separate network summary. Do not infer semantic consistency from prose or rewrite brief. | Markdown handling, templates, status scope. |
+| Q3 | Refine Evidence grades? | Keep verified / model-asserted / intuition. Record repetitions, variance, environment and reproduction methods in provenance/body rather than new grades. verified still requires traceable verification methods/results. | Evidence schema, supported conditions. |
+| Q4 | Adopt the language/interface above? Include MCP in this stage? | Use the Python stack, exposing only CLI + importable L1/L2 in the skeleton. Defer MCP; do not prebuild an abstract plugin system. | Package layout, installation, tests. |
+| Q5 | How much global knowledge-base functionality is needed now? Does section 13's sixth item affect templates early? | Create only global/profile.md and papers, assumptions, calibration placeholder directories. Initially keep literature as project Evidence; defer knowledge-base features to stage 6. | init output scope. |
+| Q6 | Reconcile section 7's stage diagram and gate table? Represent G2 pending work? | Follow the table: Explore → Critique → Brief final → Build → Accept → Done, with G1–G5. Spec is an artifact prepared after Brief final and before G3, not a stage. Represent G2 pending validation in a separate validation-plan field, without a pending Claim status. | PROJECT.stage, templates, status, handoff. |
+| Q7 | Reconcile section 6's role permissions with archiving all AI output in runs first? Apply section 4 conditions automatically? | All research output goes to runs first; role directories mean confirmed destinations. new creates formal objects after human confirmation. status reports condition/state mismatches without promoting/demoting anything. Researchers change stages/stored statuses and record a Decision. | new, status, permissions, traceability. |
+| Q8 | Reconcile section 5's sequential IDs with dated Run examples? When do drafts receive formal IDs? | Number all seven types within project + type (C-001, R-001, etc.). Store Run metadata in runs/R-001.md and raw output in referenced timestamped subdirectories. Drafts use Run-local labels until confirmed intake assigns an ID. Cross-project references use project/ID. | File layout, provenance references, allocation-conflict tests. |
+| Q9 | Separate software and research repositories? Who creates projects? Does handoff directly edit files/commit? | This repository maintains software/templates. init creates a separate research repository at the specified location and its first --project; reuse it for later projects. handoff creates drafts by default; confirmed --apply writes handoffs and non-ruling PROJECT fields. Never change stage automatically; Git commits follow the exit protocol through manual/explicit action. | Template ownership, four command contracts, write boundaries. |
+| Q10 | Which Git name/email authors planning and future commits? | Tianchi YU / yu-tianchi@outlook.com. Configure only this repository's user.name / user.email; their source was verified as .git/config. | This session's and future session commits. |
 
-Q7 的实现限制：本地 CLI 的确认参数只是记录使用者声明，不能证明操作者必然是研究者；骨架依赖人工流程与 git 审查，不设计身份认证系统。
+Q7 implementation limit: local CLI confirmation parameters record the operator's declaration, not proof that the operator is the researcher. The skeleton relies on human workflow and Git review, without an authentication system.
 
-可后置问题：第 13 节的 synthesizer 轮换及校准统计格式留到第 3 阶段（Decision 基础来源/理由字段现在确定）；Zotero 留到第 6 阶段；配额策略留到自动编排前；外部 prompt 复用留到角色扩充时。骨架只提供最小手动 reviewer 与 scribe 契约，先自行编写。
+Deferred questions: section 13's synthesizer rotation and calibration-statistics format belong to stage 3 (Decision provenance/rationale fields are fixed now); Zotero belongs to stage 6; quota policies precede automatic orchestration; external prompt reuse can wait for role expansion. The skeleton provides only minimal, originally written manual reviewer/scribe contracts.
 
-## 五个实施任务
+## Five implementation tasks
 
-顺序：T1 → T2 → T3 → T4 → T5。T1–T4 已完成；T5 程序与自动验证完成，真实项目人工验收待执行。
-每项代码交付均须通过 AGENTS.md 中全套检查；任务完成不自动代表阶段通过研究者验收。
+Order: T1 → T2 → T3 → T4 → T5. T1–T4 are complete; T5 software and automated checks are complete, with the real-project manual trial pending.
+Every code delivery must pass AGENTS.md's full checks. Completing a task does not automatically establish researcher acceptance of the stage.
 
-### T1 — 冻结骨架契约与建立可测试包
+### T1 — Freeze skeleton contracts and establish a testable package
 
-- [x] 输出：确认后的设计修订、L1 格式说明、L2 协议说明、AGENTS.md 正式版、Python 包与测试/检查配置。
-- [x] 文档验收：Q1–Q9 均有决定与理由；明确七类对象必填字段、正文职责、字段类型、状态初值、非法状态处理、来源格式、schema_version、日期格式及引用规则。给每类对象至少一个有效/无效示例。
-- [x] 数据边界验收：来源中的 model/role/run/session、人工 actor 与原始输出路径可追溯；Claim.statement 等正文内容有明确位置，不维护两份不一致副本。Run 元数据与原始输出相区分。
-- [x] 工具链验收：干净环境运行 `uv sync --locked --dev` 成功；`uv run --locked toulmin --help` 退出 0；开发检查全部通过。
-- [x] 分层验收：`uv run --locked pytest -q tests/unit/test_architecture.py` 在屏蔽 CLI/适配器导入的条件下仍能导入并调用 L1/L2；静态依赖检查能发现向上依赖及 L1 的外部命令调用。
+- [x] Outputs: agreed design revisions, L1 format specification, L2 protocols, finalized AGENTS.md, Python package and test/check configuration.
+- [x] Documentation acceptance: Q1–Q9 have decisions and rationale. Specify required fields, body responsibilities, field types, initial statuses, invalid-status handling, source formats, schema_version, dates and references for seven types. Include at least one valid/invalid example per type.
+- [x] Data-boundary acceptance: trace model/role/run/session, human actor and raw-output paths through provenance. Give body content such as Claim.statement one explicit location without inconsistent duplicates. Distinguish Run metadata from raw output.
+- [x] Toolchain acceptance: `uv sync --locked --dev` succeeds in a clean environment; `uv run --locked toulmin --help` exits 0; development checks pass.
+- [x] Layering acceptance: `uv run --locked pytest -q tests/unit/test_architecture.py` imports/calls L1/L2 while CLI/adapter imports are blocked. Static dependency checks detect upward imports and external command execution in L1.
 
-T1 验证：59 项测试通过，Ruff/mypy 通过；全新环境安装 wheel 后再次通过 59 项测试。七类示例已检查 YAML 语法，完整 schema 校验器属于 T3，未声称其已实现。
+T1 verification: 59 tests and Ruff/mypy passed; all 59 passed again after wheel installation in a fresh environment. YAML syntax of seven examples was checked. Full schema validation belongs to T3 and was not claimed implemented in T1.
 
-### T2 — 仓库模板、项目模板与 init
+### T2 — Repository/project templates and init
 
-- [x] 输出：独立研究 AGENTS.md 模板、CLAUDE.md 链接、Gemini 指令文件配置、framework/、roles/、global/、tools/ 与项目布局。只生成配置，不调用任何模型工具。
-- [x] 行为验收：在临时目录执行 `toulmin init <root> --project demo`，第 5 节目录齐全；PROJECT 包含目标、阶段、约束、最近决定、下一步且模板不超过 40 行；brief 有第 1 节要求的各项结构；Git 可追踪空目录所用占位文件。
-- [x] 协议验收：生成的工作台指令包含入场顺序、退出步骤、人工确认边界与最小手动 reviewer/scribe 契约；不混入本软件仓库的 TODO/PROGRESS 开发流程。
-- [x] 写入验收：重复 init 不改变任何已有文件字节；冲突文件报错且不覆盖；路径逃逸及跨根目录符号链接报错。无法创建链接时给出明确失败，不留下声称成功的半成品。
-- [x] 项目验收：对同一 root 再指定新项目只添加该项目；其他项目内容不变。init 可建立 git 仓库，但不自动制造初始提交。
-- [x] 执行：`uv run --locked pytest -q tests/cli/test_init.py`。
+- [x] Outputs: separate research AGENTS.md template, CLAUDE.md link, Gemini instruction-file settings, framework/, roles/, global/, tools/ and project layout. Generate configuration only, without invoking model tools.
+- [x] Behavior acceptance: `toulmin init <root> --project demo` in a temporary directory creates section 5's layout. PROJECT has goal, stage, constraints, recent decisions and next step, with a template of at most 40 lines. brief has section 1's required structure. Placeholders make empty directories trackable in Git.
+- [x] Protocol acceptance: generated instructions include entry order, exit steps, human-confirmation boundaries and minimal manual reviewer/scribe contracts, without this software repository's TODO/PROGRESS workflow.
+- [x] Write acceptance: repeated init changes no existing file bytes; conflicting files fail without overwriting. Reject path escapes and cross-root symlinks. If links cannot be created, fail explicitly without claiming a partial result succeeded.
+- [x] Project acceptance: adding a new project to the same root adds only that project and preserves others. init may initialize Git but never creates an initial commit automatically.
+- [x] Run: `uv run --locked pytest -q tests/cli/test_init.py`.
 
-T2 验证：init 专项 34 项、全套 93 项测试通过；Ruff/mypy 通过。安装 wheel 后在仓库外验证初始化、重复运行、新增项目和 Git 状态。
-适用条件：本地 Git，文件系统支持符号链接/硬链接；全局模板编辑后重跑 init 会报冲突，保留已有内容。常规 I/O 错误回滚不等于强制终止进程后的恢复保证。
+T2 verification: 34 init-specific and 93 total tests passed, along with Ruff/mypy. After wheel installation, initialization, repetition, adding a project and Git status were verified outside the repository.
+Requirements: local Git and a filesystem with symbolic/hard links. Reinitializing edited global templates fails with conflicts and preserves content. Ordinary I/O rollback is not a guarantee of recovery from forced termination.
 
-### T3 — 七类对象读写、校验与 new
+### T3 — Seven object types: read/write, validation and new
 
-- [x] 输出：文件格式编解码、引用/来源校验、ID 分配与 `toulmin new <type> <project>`；必填内容经提示或文件输入提供，不把占位符伪装为有效研究对象。
-- [x] 类型验收：参数化测试覆盖 Claim、Evidence、Objection、Decision、Exploration、Spec、Run；生成文件可重新读取，ID 前缀、必填字段、初始状态及目录符合 T1 契约。
-- [x] 解析验收：中文正文、代码块、正文中的 `---` 往返保留；重复 YAML 键、未知 tag、错误字段类型、缺失头结束符、未知格式版本均报错并显示文件与字段位置。
-- [x] 引用验收：支持同项目与跨项目引用；不存在的项目/目标、错误对象类型、不完整 provenance 均不生成正式对象；人工从 Run 导入 Objection 后能沿来源找到原始输出。
-- [x] 写入验收：不同项目/类型各自递增，已用 ID 不覆盖；两个并发创建不能占用同一 ID（可安全重试或明确失败）。写入失败不留下半个对象，输入路径不能逃逸工作台根目录。
-- [x] 确认验收：未确认的 AI 草稿留在 runs；确认入库记录 actor、来源与相关决定/确认记录，重放不覆盖原对象。
-- [x] 执行：`uv run --locked pytest -q tests/unit/test_objects.py tests/cli/test_new.py`。
+- [x] Outputs: file encoding/decoding, reference/provenance checks, ID allocation and `toulmin new <type> <project>`. Required content comes from prompts or file input, without treating placeholders as valid research objects.
+- [x] Type acceptance: parameterized tests cover Claim, Evidence, Objection, Decision, Exploration, Spec and Run. Generated files can be reread, with ID prefixes, required fields, initial statuses and directories matching T1.
+- [x] Parsing acceptance: preserve Chinese body text, code blocks and body `---` on round trips. Duplicate YAML keys, unknown tags, wrong field types, missing closing header delimiters and unknown versions fail with file/field locations.
+- [x] Reference acceptance: support same-project and cross-project references. Missing projects/targets, wrong object types or incomplete provenance create no formal object. After manual Run-to-Objection intake, provenance leads back to raw output.
+- [x] Write acceptance: allocate independently by project/type without overwriting used IDs. Two concurrent creates cannot claim one ID (safe retry or explicit failure). Failed writes leave no partial object. Inputs cannot escape the workbench root.
+- [x] Confirmation acceptance: unconfirmed AI drafts remain in runs. Confirmed intake records actor, provenance and related decisions/confirmation; replay never overwrites an existing object.
+- [x] Run: `uv run --locked pytest -q tests/unit/test_objects.py tests/cli/test_new.py`.
 
-T3 验证：全套 218 项测试通过，Ruff/mypy 通过。安装 wheel 后在独立工作台从零创建七类对象并校验来源/引用，阶段保持 explore。
-边界：new 只做已确认初始对象的入库与直接引用检查，不裁决状态或扫描全项目；强制终止遗留的项目锁须经操作者检查，不能自动删锁。
+T3 verification: all 218 tests and Ruff/mypy passed. After wheel installation, a separate workbench created all seven types from scratch and validated provenance/references; stage stayed explore.
+Boundary: new intakes only confirmed initial objects and checks direct references. It neither rules on statuses nor scans the whole project. An operator must inspect project locks left by forced termination; never delete them automatically.
 
-### T4 — 只读 status 与条件一致性诊断
+### T4 — Read-only status and condition-consistency diagnostics
 
-- [x] 输出：`toulmin status <project>` 展示阶段、Claim 状态、按严重度排列的 open objections、下一步及数据问题；输出从当前文件生成。
-- [x] 判定验收：只有 model-asserted/intuition、仅有 refutes 证据、证据 invalidated、存在 open fatal/major 时均不能判为满足 supported；有效 verified supports 且无上述阻碍时才报告满足条件。
-- [x] 人工边界验收：满足条件只输出建议，不写回 supported/accepted，不自动推进 gate；accepted 之后证据失效时保留记录并显示不一致。open minor 与 supported 条件的交叉按 T1 确认规则报告，不暗自选择状态。
-- [x] 完整性验收：悬空引用、重复 ID、无法解析对象或无效现存状态给出可定位诊断和非零退出码，不能静默跳过并显示成功；合法数据的待裁决建议不当作解析失败。
-- [x] brief 验收：检查约定格式的显式对象引用并报告不存在的对象；不声称验证了手写论断与证据的语义一致性。
-- [x] 只读验收：运行前后目录清单、文件内容哈希及 mtime 不变；不生成缓存/索引。测试覆盖多个项目的隔离与确定性排序。
-- [x] 执行：`uv run --locked pytest -q tests/cli/test_status.py`。
+- [x] Outputs: `toulmin status <project>` shows stage, Claim statuses, open objections ordered by severity, next step and data issues, generated from current files.
+- [x] Condition acceptance: model-asserted/intuition alone, refutes-only evidence, invalidated evidence or open fatal/major objections cannot satisfy supported. Report eligibility only with valid verified supports evidence and no such blockers.
+- [x] Human-boundary acceptance: eligibility produces suggestions, never stored supported/accepted updates or gate advancement. Retain accepted history and report inconsistency if evidence is invalidated. Report the overlap between open minor and supported conditions according to T1, without choosing a status.
+- [x] Integrity acceptance: dangling references, duplicate IDs, unparseable objects and invalid stored statuses produce locatable diagnostics and nonzero exits. Never silently skip them and report success. Suggestions on valid data are not parsing errors.
+- [x] Brief acceptance: check explicit object references in the agreed syntax and report missing objects. Do not claim semantic consistency between handwritten claims and evidence.
+- [x] Read-only acceptance: directory listings, file hashes and mtimes stay unchanged. Generate no cache/index. Cover multi-project isolation and deterministic ordering.
+- [x] Run: `uv run --locked pytest -q tests/cli/test_status.py`.
 
-T4 验证：status 专项 40 项、全套 258 项测试通过，Ruff/mypy 通过；安装 wheel 后在源码外验证正常与断引用状态，文件字节与 mtime 不变。
-边界：条件仅使用选定项目中的有效证据/异议，不扫描其他项目的入向关系；任何数据错误或创建锁使条件变为 unknown 并退出 1。纯待裁决提示退出 0。
+T4 verification: 40 status-specific and 258 total tests and Ruff/mypy passed. After wheel installation, valid/broken-reference statuses were verified outside the checkout with bytes/mtimes preserved.
+Boundary: conditions use valid evidence/objections from the selected project only, without scanning other projects' incoming relationships. Any data error or creation lock makes conditions unknown and exits 1. Pure pending-ruling notices exit 0.
 
-### T5 — handoff、恢复流程与真实项目试用
+### T5 — handoff, recovery and real-project trial
 
-- [ ] 输出：`toulmin handoff <project>`、人工应用步骤、入场/退出文档及手动试用记录。指定项目后命令无需猜测当前项目，不依赖网络或模型。（命令与步骤已交付；真实手动试用记录待执行。）
-- [x] 草稿验收：默认只在 runs 中形成可审阅草稿，含做了什么、决定/待决、开放问题、下一步、session ID；不能自动虚构讨论内容或未知 ID，未知项明确标注。
-- [x] 应用验收：确认后用 `--apply <draft>` 写 sessions 与 PROJECT 的最近决定/下一步，保留目标/约束/手写内容；不得改变阶段或对象状态。草稿生成后 PROJECT 被改动时拒绝覆盖；重复应用不产生重复交接，写入中断可恢复且无静默数据损失。
-- [x] 自动验收：`uv run --locked pytest -q tests/cli/test_handoff.py tests/integration/test_resume.py`；安装后的子进程测试依次执行 init → new claim → 归档手动评审输出 → 确认创建 objection → status → handoff → 全新进程恢复，仅靠落盘文件得到相同待办与来源链。
-- [ ] 人工阶段验收：研究者选一个真实研究想法，当日写 Claim、在独立会话手动评审、确认纳入 Objection、交接并提交；**次日**用新的会话仅按入场协议恢复，正确说出目标、未决反对意见和下一步，并定位原始评审记录。
-- [ ] 通过凭据：两日日期/session 信息、相关对象与交接路径、实际命令结果、研究者明确验收及一次阶段回顾。不得用模拟次日测试替代真实试用；没有研究者确认时任务保持“程序完成、阶段待验收”。
+- [ ] Outputs: `toulmin handoff <project>`, manual application steps, entry/exit documentation and a manual trial record. Explicit projects avoid guessing; no network/models are required. (Command and steps delivered; actual manual trial record pending.)
+- [x] Draft acceptance: by default, create a reviewable draft only in runs, covering work done, decisions/pending decisions, open questions, next step and session ID. Never invent discussion content or unknown IDs; mark unknown information explicitly.
+- [x] Application acceptance: confirmed `--apply <draft>` writes sessions and PROJECT's recent decisions/next step, preserving goal/constraints/handwritten content. Never change stage or object status. Reject overwrites if PROJECT changed after drafting. Repetition adds no duplicate handoff; interrupted writes recover without silent data loss.
+- [x] Automated acceptance: `uv run --locked pytest -q tests/cli/test_handoff.py tests/integration/test_resume.py`. Installed subprocess checks execute init → new claim → archive manual review output → confirmed objection intake → status → handoff → fresh-process resume, recovering the same pending work/provenance from files alone.
+- [ ] Manual stage acceptance: the researcher chooses a real idea, writes Claims, invokes an independent manual review, confirms Objections, applies a handoff and commits that day. **The next day**, a fresh session uses only the entry protocol to recover the goal, unresolved objections and next step, locating the raw review.
+- [ ] Acceptance evidence: both dates/session details, object/handoff paths, actual command results, explicit researcher acceptance and a stage retrospective. Never replace a real trial with simulated next-day tests. Without researcher confirmation, retain “software complete, stage acceptance pending.”
 
-T5 自动验证：交接/恢复与端到端专项 34 项、全套 292 项测试通过，Ruff/mypy 通过；真实进程在 session/PROJECT 写入后强制退出再重跑，能完成应用且不重复追加。
-安装 wheel 后在源码目录之外验证全部四条命令、交接重放、入场文件恢复与 status。人工步骤和结果模板见 docs/manual-acceptance.md，尚无真实试用记录。
-运行条件：交接写入使用 POSIX flock 与文件/目录 fsync；两文件不是单次原子操作，pending 期间 status 报不完整。外部编辑冲突或损坏日志保留现场，不自动猜测合并。
+T5 automated verification: 34 handoff/recovery/end-to-end and 292 total tests and Ruff/mypy passed. Actual processes forced to exit after session/PROJECT writes recovered on retry without duplicate appends.
+After wheel installation, all four commands, handoff replay, entry-file recovery and status were verified outside the checkout. See docs/manual-acceptance.md for steps/result template; no real trial record exists yet.
+Requirements: POSIX flock and file/directory fsync for handoff writes. The two files are not one atomic operation; pending status reports incomplete data. External edits or corrupt journals preserve the files for inspection rather than guessing a merge.
 
-## 规划交付状态
+## Planning delivery status
 
-- [x] 阅读设计并起草 AGENTS.md、技术建议、五项任务与待决清单。
-- [x] 创建 PROGRESS.md 记录实际验证与环境阻塞。
-- [x] 研究者要求继续推进，Q1–Q9 按推荐方案实施。
-- [x] 提供 Git 作者身份（Q10），仅配置本项目。
-- [x] 开始 T1；实现进度与验收结果见各任务及 PROGRESS.md。
+- [x] Read the design; draft AGENTS.md, technology recommendations, five tasks and pending decisions.
+- [x] Create PROGRESS.md recording actual checks and environment blockers.
+- [x] Researcher authorized proceeding with Q1–Q9 recommendations.
+- [x] Git author identity supplied (Q10) and configured only for this project.
+- [x] Begin T1; implementation progress/acceptance results appear above and in PROGRESS.md.
+
+## D1 — English documentation
+
+- [x] Translate all maintained documentation, historical progress, planning decisions, format examples and packaged document copies into English, preserving facts, task checkboxes and pending manual acceptance.
+- [x] Record English as the documentation language in development/workbench instructions, retaining Unicode test fixtures and the user's conversational language.
+- [x] Verify document language, links, template equality, packaged assets and existing checks; prepare the changes for the requested commit and push.
+
+D1 verification: all 20 tracked Markdown documents are in English, 16 local links resolve, and the three published contract copies match. All 292 tests, Ruff lint/format checks and mypy passed. Built wheel/sdist, checked all 25 template assets, and verified generated English documentation plus the README example and all four commands from an installed wheel outside the checkout.
+Delivery: the user explicitly requested a commit and push to the existing origin/main branch; verify the remote commit after pushing.

@@ -1,29 +1,29 @@
 # Toulmin
 
-以文件保存研究状态、由研究者裁决的个人研究工作台。
+A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
-T1–T5 的程序实现已完成：模板、对象格式/校验、`init`、`new`、只读 `status` 与 `handoff`。
-路线图第 2 阶段仍等待真实研究项目的次日恢复和研究者验收，自动测试不替代这一条件。
+The T1–T5 software is implemented: templates, object formats/validation, `init`, `new`, read-only `status` and `handoff`.
+Roadmap stage 2 still requires a real research project to resume the next day and receive researcher acceptance; automated tests cannot replace that condition.
 
-## 初始化研究工作台
+## Initialize a research workbench
 
 ```sh
 uv run --locked toulmin init /path/to/research --project tail-latency
 uv run --locked toulmin init /path/to/research --project second-project
 ```
 
-需要本地 Git 和支持符号链接、硬链接的文件系统。命令创建研究 AGENTS、CLAUDE 链接、Gemini 配置、
-framework/、roles/、global/ 以及项目目录，并建立一个尚无提交的独立 Git 仓库。
-模型由人手动调用，按生成的 AGENTS 和 reviewer/scribe 角色契约工作。
+Requires local Git and a filesystem supporting symbolic and hard links. The command creates research AGENTS,
+a CLAUDE symlink, Gemini settings, framework/, roles/, global/ and project directories, and initializes a separate Git repository without a commit.
+Invoke models manually, following the generated AGENTS and reviewer/scribe role contracts.
 
-相同内容再次初始化不写文件；任何目标文件内容冲突均报错并保留原文件。
-新增项目不检查或重写其他项目的文件；全局模板仍接受相同的冲突检查。
-目录符号链接会被拒绝，CLAUDE.md 必须是指向根目录 AGENTS.md 的相对链接。
-常规写入失败会回滚本次新增内容；强制结束进程后需检查残留文件再重试。
+Reinitializing identical content writes nothing. Any conflicting target file causes an error and is preserved.
+Adding a project neither checks nor rewrites other projects' files; global templates still undergo the same conflict checks.
+Directory symlinks are rejected. CLAUDE.md must be a relative link to the root AGENTS.md.
+Ordinary write failures roll back additions from that invocation; after a forced process termination, inspect remaining files before retrying.
 
-## 确认创建对象
+## Create a confirmed object
 
-先在工作台的项目 runs 子目录保存 Markdown 草稿，例如 `projects/tail-latency/runs/manual/claim.md`：
+First save a Markdown draft under the project's runs directory, for example `projects/tail-latency/runs/manual/claim.md`:
 
 ```markdown
 ---
@@ -32,7 +32,7 @@ type: problem
 importance: core
 ---
 ## Statement
-在目标 trace 下，排队等待是尾延迟的主要来源。（示例：待验证的命题。）
+Queueing delay is the main source of tail latency in the target trace. (Example: a proposition to validate.)
 ```
 
 ```sh
@@ -41,52 +41,53 @@ uv run --locked toulmin new claim tail-latency --root /path/to/research \
   --confirmed-by "Researcher" --confirm
 ```
 
-命令返回新文件路径；ID、创建时间和确认记录在入库时生成，不改写草稿。
-支持 claim、evidence、objection、decision、exploration、spec、run；具体字段见 [格式说明](docs/formats.md)。
-模型产物必须先归档原始输出并记录 Run，再以 source.ref/path 追溯来源；Run 结果须明确写 completed 或 failed。
-本地文件路径均相对工作台根目录；跨项目对象引用写为 project/ID。
-遇到 `.toulmin-new.lock` 时会失败而保留锁，确认没有运行中的写入 session 并检查残留后再恢复；工具不擅自移除其他 session 的锁。
+The command returns the new file path. Intake generates the ID, creation time and confirmation record without modifying the draft.
+Supported types: claim, evidence, objection, decision, exploration, spec, run. See the [format contract](docs/formats.md) for fields.
+For model output, archive the raw response and record a Run first, then trace its provenance through source.ref/path. Run outcomes must explicitly be completed or failed.
+Local file paths are relative to the workbench root; cross-project object references use project/ID.
+An existing `.toulmin-new.lock` causes failure and is preserved. Confirm no writing session is active and inspect remaining files before recovery; the tool never removes another session's lock automatically.
 
-## 查看状态与一致性问题
+## Inspect status and consistency
 
 ```sh
 uv run --locked toulmin status tail-latency --root /path/to/research
 ```
 
-显示已存阶段、下一步、Claim 状态、有效 verified 支持证据数量，以及按 fatal/major/minor 排序的 open objections。
-是否存在 open objection 与是否满足 supported 条件分别显示，minor objection 可以与满足 supported 条件同时存在。
-满足或失去条件只产生人工复核提示，已有状态和阶段始终保留。
+Shows the stored stage, next step, Claim statuses, counts of valid verified supporting evidence, and open objections ordered fatal/major/minor.
+Open-objection presence and eligibility for supported are reported separately; a minor objection can coexist with eligibility.
+Gaining or losing eligibility produces a manual-review notice. Stored statuses and stages are preserved.
 
-检查范围为选定项目的七类对象、PROJECT、brief 显式引用及直接跨项目引用；不扫描其他项目来发现入向证据/异议，
-也不推断 brief 自然语言与证据的语义一致性。围栏代码块和行首缩进四格/制表符的代码示例不检查引用。
-损坏文件、断引用、无效 ID/状态、缺失目录或创建锁会退出 1，条件显示 unknown；此时计数仅表示已校验部分。
-合法数据的待裁决提示退出 0；参数用法错误退出 2。命令不写对象、缓存、索引或 Git 元数据。
+Checks cover the selected project's seven object types, PROJECT, explicit brief references and direct cross-project references.
+They do not scan other projects for incoming evidence/objections or infer semantic consistency between brief prose and evidence.
+References in fenced code blocks or examples indented by four spaces/a tab are skipped.
+Corrupt files, broken references, invalid IDs/statuses, missing directories or creation locks cause exit 1 and unknown conditions; counts then cover only validated records.
+Ruling notices on valid data exit 0; argument-usage errors exit 2. The command writes no objects, caches, indexes or Git metadata.
 
-## 交接和恢复
+## Handoff and recovery
 
 ```sh
 uv run --locked toulmin handoff tail-latency --root /path/to/research
 uv run --locked toulmin handoff tail-latency --root /path/to/research \
-  --apply "projects/tail-latency/runs/<生成的目录>/draft.md" \
+  --apply "projects/tail-latency/runs/<generated-directory>/draft.md" \
   --confirmed-by "Researcher" --confirm
 ```
 
-第一条命令只生成可审阅草稿，打印的根相对路径可直接用于 --apply；上例的目录需换成实际输出。
-未提供会话内容时明确写未知，不推测完成情况。
-实际交接用 `--input <根相对摘要路径>`：YAML 可含 session_id（未知填 null）、recent_decisions（已有 Decision 引用）、
-next_step；正文必含 Done、Decisions、Open questions。Next step 章节由命令添加并指向 metadata，避免两份事实。
-审阅生成的草稿后才应用。应用只更新 PROJECT 的最近决定、下一步和交接指针，保留正文、注释及阶段。
+The first command only creates a reviewable draft. Its printed root-relative path can be passed directly to --apply; replace the example directory with the actual output.
+Without session content, it records unknown information explicitly rather than inferring completed work.
+For an actual handoff, use `--input <root-relative-summary-path>`. YAML may contain session_id (null if unknown), recent_decisions (existing Decision references)
+and next_step; the body must contain Done, Decisions and Open questions. The command adds a Next step section pointing to metadata to avoid duplicate facts.
+Review the generated draft before applying it. Application updates only PROJECT's recent decisions, next step and handoff pointer, preserving its body, comments and stage.
 
-进程中断后重跑同一 --apply 命令，按完整恢复记录完成写入；重复应用只返回旧记录，不重复追加或倒退下一步。
-PROJECT 与草稿基准不同、日志损坏或 session 文件冲突时，工具保留恢复记录并拒绝覆盖。
-pending 期间 status 报数据不完整。不要删日志或在应用过程中手工编辑 PROJECT。
-交接写入目前需要 POSIX 文件同步、原子 rename、硬链接与 flock；不会调用模型或自动提交 Git。
+After interruption, rerun the same --apply command to finish from the complete recovery record. Repeated application returns the existing record without appending again or reverting the next step.
+If PROJECT differs from the draft's baseline, the journal is corrupt or a session file conflicts, recovery records are preserved and overwriting is refused.
+While pending, status reports incomplete data. Do not delete the journal or edit PROJECT during application.
+Handoff writes currently require POSIX file synchronization, atomic rename, hard links and flock. They invoke no model and make no automatic Git commit.
 
-真实项目试用的首日/次日步骤及记录要求见 [人工验收清单](docs/manual-acceptance.md)。
+See the [manual acceptance checklist](docs/manual-acceptance.md) for the real project's first-day/next-day trial and required records.
 
-## 开发
+## Development
 
-需要 Python >=3.12 和 uv；`.python-version` 将开发解释器固定到 3.12 系列。
+Requires Python >=3.12 and uv. `.python-version` pins the development interpreter to the 3.12 series.
 
 ```sh
 uv sync --locked --dev
@@ -97,8 +98,8 @@ uv run --locked ruff format --check .
 uv run --locked mypy src/toulmin
 ```
 
-本机为避免修改系统解释器与 shell 配置，将 uv/Python 安装在被 git 忽略的 `.tools/`。
-在本机 shell 中可先设置（仅影响当前 shell；其他机器已有 uv 时无需设置）：
+On this machine, uv/Python are installed under the Git-ignored `.tools/` to avoid changing the system interpreter or shell configuration.
+Set the following in the current shell if using that installation; machines with uv already installed do not need these settings:
 
 ```sh
 export PATH="$PWD/.tools/bin:$PATH"
@@ -106,13 +107,14 @@ export UV_CACHE_DIR="$PWD/.uv-cache"
 export UV_PYTHON_INSTALL_DIR="$PWD/.tools/python"
 ```
 
-## 项目文档
+## Project documentation
 
-- [设计](docs/design.md)、[L1 格式](docs/formats.md)、[七类示例](docs/format-examples.md)、[L2 协议](docs/protocols.md)。
-- [仓库协作规则](AGENTS.md)、[实施任务](TODO.md)、[会话进度](PROGRESS.md)。
+- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md).
+- [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 
-发布模板的 framework/formats.md、format-examples.md、protocols.md 是 docs 中同名文件的发布副本，
-修改契约时须同步；测试会检查它们一致，安装后的 CLI 不依赖源码目录。
+Maintain documentation, templates and progress records in English. Conversation follows the user's language.
+The published templates framework/formats.md, format-examples.md and protocols.md are copies of their namesakes in docs/.
+Synchronize them when editing contracts; tests check equality, and the installed CLI does not depend on the source checkout.
 
-代码依赖只向下：`cli`（L3）→ `protocols`（L2）→ `core`（L1），L3 可直接使用 L1。
-核心与协议不依赖 Typer、具体模型工具或网络；研究工作台模板与软件开发仓库分开管理。
+Dependencies point downward: `cli` (L3) → `protocols` (L2) → `core` (L1); L3 may also use L1 directly.
+Core and protocols do not depend on Typer, specific model tools or networking. Research workbench templates and the software development repository are managed separately.

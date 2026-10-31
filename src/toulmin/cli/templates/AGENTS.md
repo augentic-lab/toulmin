@@ -17,6 +17,8 @@ Models are invoked manually. Decisions belong to the researcher.
 
 ## Research rules
 
+- Write maintained documentation and handoff notes in English. Preserve original source
+  quotations and raw outputs; use the user's language in conversation.
 - Files are the source of truth. Preserve claims, evidence, objections, rejected approaches
   and decisions with their origins. Do not erase failure history.
 - Archive AI research output in projects/<project>/runs/ first. The operator saves stdout
