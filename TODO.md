@@ -50,7 +50,7 @@ Q7 的实现限制：本地 CLI 的确认参数只是记录使用者声明，不
 
 ## 五个实施任务
 
-顺序：T1 → T2 → T3 → T4 → T5。T1–T3 已完成；T4–T5 的命令与测试路径尚为拟议验收接口。
+顺序：T1 → T2 → T3 → T4 → T5。T1–T4 已完成；T5 的命令与测试路径尚为拟议验收接口。
 每项代码交付均须通过 AGENTS.md 中全套检查；任务完成不自动代表阶段通过研究者验收。
 
 ### T1 — 冻结骨架契约与建立可测试包
@@ -90,13 +90,16 @@ T3 验证：全套 218 项测试通过，Ruff/mypy 通过。安装 wheel 后在�
 
 ### T4 — 只读 status 与条件一致性诊断
 
-- [ ] 输出：`toulmin status <project>` 展示阶段、Claim 状态、按严重度排列的 open objections、下一步及数据问题；输出从当前文件生成。
-- [ ] 判定验收：只有 model-asserted/intuition、仅有 refutes 证据、证据 invalidated、存在 open fatal/major 时均不能判为满足 supported；有效 verified supports 且无上述阻碍时才报告满足条件。
-- [ ] 人工边界验收：满足条件只输出建议，不写回 supported/accepted，不自动推进 gate；accepted 之后证据失效时保留记录并显示不一致。open minor 与 supported 条件的交叉按 T1 确认规则报告，不暗自选择状态。
-- [ ] 完整性验收：悬空引用、重复 ID、无法解析对象或无效现存状态给出可定位诊断和非零退出码，不能静默跳过并显示成功；合法数据的待裁决建议不当作解析失败。
-- [ ] brief 验收：检查约定格式的显式对象引用并报告不存在的对象；不声称验证了手写论断与证据的语义一致性。
-- [ ] 只读验收：运行前后目录清单、文件内容哈希及 mtime 不变；不生成缓存/索引。测试覆盖多个项目的隔离与确定性排序。
-- [ ] 执行：`uv run --locked pytest -q tests/cli/test_status.py`。
+- [x] 输出：`toulmin status <project>` 展示阶段、Claim 状态、按严重度排列的 open objections、下一步及数据问题；输出从当前文件生成。
+- [x] 判定验收：只有 model-asserted/intuition、仅有 refutes 证据、证据 invalidated、存在 open fatal/major 时均不能判为满足 supported；有效 verified supports 且无上述阻碍时才报告满足条件。
+- [x] 人工边界验收：满足条件只输出建议，不写回 supported/accepted，不自动推进 gate；accepted 之后证据失效时保留记录并显示不一致。open minor 与 supported 条件的交叉按 T1 确认规则报告，不暗自选择状态。
+- [x] 完整性验收：悬空引用、重复 ID、无法解析对象或无效现存状态给出可定位诊断和非零退出码，不能静默跳过并显示成功；合法数据的待裁决建议不当作解析失败。
+- [x] brief 验收：检查约定格式的显式对象引用并报告不存在的对象；不声称验证了手写论断与证据的语义一致性。
+- [x] 只读验收：运行前后目录清单、文件内容哈希及 mtime 不变；不生成缓存/索引。测试覆盖多个项目的隔离与确定性排序。
+- [x] 执行：`uv run --locked pytest -q tests/cli/test_status.py`。
+
+T4 验证：status 专项 40 项、全套 258 项测试通过，Ruff/mypy 通过；安装 wheel 后在源码外验证正常与断引用状态，文件字节与 mtime 不变。
+边界：条件仅使用选定项目中的有效证据/异议，不扫描其他项目的入向关系；任何数据错误或创建锁使条件变为 unknown 并退出 1。纯待裁决提示退出 0。
 
 ### T5 — handoff、恢复流程与真实项目试用
 

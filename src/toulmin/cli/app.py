@@ -8,9 +8,10 @@ import typer
 from toulmin.cli.initialize import initialize
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.intake import create_object
+from toulmin.protocols.status import project_status
 
 app = typer.Typer(
-    help="Toulmin research workbench. Initialize workbenches and create research objects.",
+    help="Toulmin research workbench. Initialize, create objects and inspect project state.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -69,3 +70,50 @@ def new_object(
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(str(path))
+
+
+@app.command("status")
+def show_status(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+) -> None:
+    """Show stored state, conditions and data problems without changing files."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    try:
+        report = project_status(root, project)
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(
+        f"Project: {report.project}\nStage: {report.stage or 'unknown'}\n"
+        f"Next step: {report.next_step or 'unknown'}"
+    )
+    typer.echo(
+        "Data: valid (project files and direct references)"
+        if not report.errors
+        else "Data: INVALID; conditions unknown (partial view)"
+    )
+    typer.echo("Claims:" + ("" if report.claims else " none"))
+
+    def flag(value: bool | None) -> str:
+        return "unknown" if value is None else "yes" if value else "no"
+
+    for claim in report.claims:
+        typer.echo(
+            f"  {claim.object_id} | stored={claim.stored_status} | "
+            f"verified_support={claim.verified_support_count} | "
+            f"open_objection={flag(claim.has_open_objection)} | "
+            f"eligible_supported={flag(claim.eligible_for_supported)}"
+        )
+    typer.echo("Open objections:" + ("" if report.open_objections else " none"))
+    for objection in report.open_objections:
+        typer.echo(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
+    for notice in report.notices:
+        typer.echo(f"Notice: {notice}")
+    for message in report.errors:
+        typer.echo(f"Error: {message}", err=True)
+    if report.errors:
+        raise typer.Exit(1)

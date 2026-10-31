@@ -1,5 +1,33 @@
 # Toulmin 开发进度
 
+## 2026-10-31 — T4：只读状态与一致性诊断
+
+- 状态：**Verified：T4 完成**；T5 尚未开始，第 2 阶段未完成。
+- 用户授权：继续推进；本 session 实施 T4，记录实际验证并提交。
+- L1 输出：core/project.py 校验项目章程，core/inspection.py 读取选定项目并检查文件布局、对象、直接引用和 brief 标记。
+- L2 输出：protocols/status.py 返回结构化状态、条件和诊断；L3 新增 status 命令。没有新增依赖或改变 L1 对象字段/版本。
+- 文档：README 补充用法；docs/protocols.md 和模板发布副本同步明确检查范围、unknown 与退出码；本文件和 TODO 更新。
+- session ID：当前环境未提供，不编造。
+
+### 验证结果
+
+- **Verified**：status 专项 **40 passed**，全部 **258 passed**；Ruff 检查/格式检查与 mypy 通过（16 个源文件）。
+- **Verified**：覆盖三种证据等级、支持/反对方向、证据失效，以及 fatal/major/minor 和非 open 异议。minor 与 supported 条件同时成立时分别展示，不替研究者选择状态。
+- **Verified**：supported/accepted 失去支持时保留历史状态并提示人工复核；合法数据中的待裁决提示退出 0，不改阶段或对象。
+- **Verified**：断引用、重复 ID、坏文件/非法状态、错误目录/文件名、缺失章程字段、非法阶段/超长章程和创建锁都明确报错，退出 1；条件变为 unknown，不宣称完整有效。
+- **Verified**：brief 的本地/跨项目、非法/未闭合引用有文件及行号诊断；围栏和缩进代码示例不参与检查。未声称验证论断与证据的语义一致性。
+- **Verified**：成功与错误路径前后完整目录、文件字节及 mtime 不变；不写缓存、索引、临时文件或 Git 元数据。严重度及数值 ID 排序确定，多项目互相隔离。
+- **Verified**：新虚拟环境安装 wheel，在源码目录之外依次运行 init/new/status；正常路径成功、断引用路径退出 1 且条件 unknown，两条路径均保留字节和 mtime。
+- 原有分层/无 CLI 可导入测试继续通过；没有调用网络、模型或独立验收 session。
+
+### 交接
+
+- 范围：检查选定项目的七类对象、PROJECT、brief 以及直接跨项目引用；不遍历其他项目发现入向证据/异议。错误时计数仅代表已校验部分，不是完整网络。
+- L2 变更记录：明确待裁决提示与数据错误分开、不完整条件显示 unknown；只读命令不裁决 gates。L1 字段/版本未变，无数据迁移。
+- 提交说明：`feat: complete T4 read-only status and consistency diagnostics`。
+- 阻塞：none。
+- 下一步：执行 T5，实现 handoff 草稿/确认应用、可恢复写入和全新进程恢复测试；真实研究想法的次日恢复仍须研究者试用验收。
+
 ## 2026-10-31 — T3：对象编解码、校验与确认入库
 
 - 状态：**Verified：T3 完成**；T4–T5 尚未开始，第 2 阶段未完成。

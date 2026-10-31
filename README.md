@@ -2,8 +2,8 @@
 
 以文件保存研究状态、由研究者裁决的个人研究工作台。
 
-当前已完成 T1–T3：格式/协议契约、分层包与工具链、研究工作台模板、`init` 和七类对象的 `new`。
-`status`、`handoff` 在 T4–T5 实现；第 2 阶段尚未完成。
+当前已完成 T1–T4：格式/协议契约、分层包与工具链、研究工作台模板，以及 `init`、`new`、只读 `status`。
+`handoff` 在 T5 实现；第 2 阶段尚未完成。
 
 ## 初始化研究工作台
 
@@ -46,6 +46,21 @@ uv run --locked toulmin new claim tail-latency --root /path/to/research \
 模型产物必须先归档原始输出并记录 Run，再以 source.ref/path 追溯来源；Run 结果须明确写 completed 或 failed。
 本地文件路径均相对工作台根目录；跨项目对象引用写为 project/ID。
 遇到 `.toulmin-new.lock` 时会失败而保留锁，确认没有运行中的写入 session 并检查残留后再恢复；工具不擅自移除其他 session 的锁。
+
+## 查看状态与一致性问题
+
+```sh
+uv run --locked toulmin status tail-latency --root /path/to/research
+```
+
+显示已存阶段、下一步、Claim 状态、有效 verified 支持证据数量，以及按 fatal/major/minor 排序的 open objections。
+是否存在 open objection 与是否满足 supported 条件分别显示，minor objection 可以与满足 supported 条件同时存在。
+满足或失去条件只产生人工复核提示，已有状态和阶段始终保留。
+
+检查范围为选定项目的七类对象、PROJECT、brief 显式引用及直接跨项目引用；不扫描其他项目来发现入向证据/异议，
+也不推断 brief 自然语言与证据的语义一致性。围栏代码块和行首缩进四格/制表符的代码示例不检查引用。
+损坏文件、断引用、无效 ID/状态、缺失目录或创建锁会退出 1，条件显示 unknown；此时计数仅表示已校验部分。
+合法数据的待裁决提示退出 0；参数用法错误退出 2。命令不写对象、缓存、索引或 Git 元数据。
 
 ## 开发
 
