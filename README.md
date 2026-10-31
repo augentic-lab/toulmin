@@ -2,8 +2,8 @@
 
 以文件保存研究状态、由研究者裁决的个人研究工作台。
 
-当前已完成 T1–T2：格式/协议契约、分层包与工具链，以及独立研究工作台模板和 `init`。
-`new`、`status`、`handoff` 在 T3–T5 实现；第 2 阶段尚未完成。
+当前已完成 T1–T3：格式/协议契约、分层包与工具链、研究工作台模板、`init` 和七类对象的 `new`。
+`status`、`handoff` 在 T4–T5 实现；第 2 阶段尚未完成。
 
 ## 初始化研究工作台
 
@@ -20,6 +20,32 @@ framework/、roles/、global/ 以及项目目录，并建立一个尚无提交�
 新增项目不检查或重写其他项目的文件；全局模板仍接受相同的冲突检查。
 目录符号链接会被拒绝，CLAUDE.md 必须是指向根目录 AGENTS.md 的相对链接。
 常规写入失败会回滚本次新增内容；强制结束进程后需检查残留文件再重试。
+
+## 确认创建对象
+
+先在工作台的项目 runs 子目录保存 Markdown 草稿，例如 `projects/tail-latency/runs/manual/claim.md`：
+
+```markdown
+---
+source: {kind: human, actor: "Researcher"}
+type: problem
+importance: core
+---
+## Statement
+在目标 trace 下，排队等待是尾延迟的主要来源。（示例：待验证的命题。）
+```
+
+```sh
+uv run --locked toulmin new claim tail-latency --root /path/to/research \
+  --input projects/tail-latency/runs/manual/claim.md \
+  --confirmed-by "Researcher" --confirm
+```
+
+命令返回新文件路径；ID、创建时间和确认记录在入库时生成，不改写草稿。
+支持 claim、evidence、objection、decision、exploration、spec、run；具体字段见 [格式说明](docs/formats.md)。
+模型产物必须先归档原始输出并记录 Run，再以 source.ref/path 追溯来源；Run 结果须明确写 completed 或 failed。
+本地文件路径均相对工作台根目录；跨项目对象引用写为 project/ID。
+遇到 `.toulmin-new.lock` 时会失败而保留锁，确认没有运行中的写入 session 并检查残留后再恢复；工具不擅自移除其他 session 的锁。
 
 ## 开发
 

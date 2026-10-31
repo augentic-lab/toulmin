@@ -12,7 +12,21 @@ SOURCE = ROOT / "src"
 
 # An intentional allowlist makes adding a dependency a reviewable change.
 # This is an architecture check, not a sandbox for arbitrary hostile Python.
-DATA_MODULES = {"collections", "dataclasses", "datetime", "enum", "pathlib", "re", "typing"}
+DATA_MODULES = {
+    "collections",
+    "contextlib",
+    "dataclasses",
+    "datetime",
+    "enum",
+    "io",
+    "math",
+    "os",
+    "pathlib",
+    "re",
+    "ruamel",
+    "tempfile",
+    "typing",
+}
 
 
 def violations(source: str, package: str) -> list[str]:
@@ -34,6 +48,11 @@ def violations(source: str, package: str) -> list[str]:
                 prefix = ".".join(parents[: len(parents) - node.level + 1])
                 module = f"{prefix}.{module}".rstrip(".")
             modules = [module]
+            if module == "os" and any(
+                alias.name in {"system", "popen", "spawnl", "spawnv", "execv", "execve"}
+                for alias in node.names
+            ):
+                errors.append("external command import")
         for module in modules:
             internal = any(
                 module == layer or module.startswith(layer + ".") for layer in allowed_layers
@@ -43,6 +62,9 @@ def violations(source: str, package: str) -> list[str]:
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             if node.func.id in {"__import__", "eval", "exec"}:
                 errors.append(f"dynamic execution: {node.func.id}")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr in {"system", "popen", "execv", "execve", "spawnl", "spawnv"}:
+                errors.append("external command call")
     return errors
 
 
@@ -109,3 +131,38 @@ print('portable')
         check=True,
     )
     assert result.stdout.strip() == "portable"
+
+
+def test_confirmed_intake_can_execute_with_adapters_unavailable(workbench):
+    script = """
+import sys
+from pathlib import Path
+class BlockAdapters:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.startswith(('typer', 'click', 'toulmin.cli', 'toulmin.adapters')):
+            raise ImportError('adapter unavailable: ' + fullname)
+sys.meta_path.insert(0, BlockAdapters())
+from toulmin.core.codec import encode
+from toulmin.core.documents import Document
+from toulmin.core.identifiers import ObjectKind
+from toulmin.protocols.intake import create_object
+root = Path(sys.argv[1])
+relative = 'projects/demo/runs/portable/draft.md'
+path = root / relative
+path.parent.mkdir()
+path.write_bytes(encode(Document(
+    {'source': {'kind': 'human', 'actor': 'Researcher'}, 'type': 'problem', 'importance': 'core'},
+    '## Statement\\nA test fixture claim.\\n',
+)))
+created = create_object(root, 'demo', ObjectKind.CLAIM, relative, 'Researcher', True)
+assert created.name == 'C-001.md'
+assert not any(name.startswith(('typer', 'click', 'toulmin.cli')) for name in sys.modules)
+print('portable intake')
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", script, str(workbench)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.strip() == "portable intake"

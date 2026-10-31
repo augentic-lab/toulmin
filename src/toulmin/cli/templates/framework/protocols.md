@@ -1,7 +1,7 @@
 # L2 骨架协议 v1
 
 本文件细化设计第 6–8 节；修订原因是统一草稿权限、人工裁决和阶段映射。
-CLI、Python 调用与手工编辑遵守同一协议；T1 提供读取顺序函数，T2 实现 init，其余命令在 T3–T5 实现。
+CLI、Python 调用与手工编辑遵守同一协议；T1 提供读取顺序函数，T2 实现 init，T3 实现 new，status/handoff 在 T4–T5 实现。
 
 ## 入场和退出
 
@@ -60,6 +60,11 @@ init 在写入前检查本次全部目标；已有文件必须与对应模板相
 发布完整文件时采用排他创建，常规 I/O 失败回滚本次新增项；强制结束进程不承诺事务完成，重试前须检查残留。
 目录 symlink 一律拒绝；唯一计划内链接是 CLAUDE.md → AGENTS.md。Git 只做本地 init，不提交或调用模型。
 Gemini 配置采用 `context.fileName`，见[官方配置说明](https://geminicli.com/docs/reference/configuration/)。
+
+T3 的 new 接口采用完整 Markdown 草稿文件（--input，路径相对 --root），需要 --confirm 与 --confirmed-by。
+无确认、不完整或引用无效时保留原稿并失败；仅创建初始状态。Run 还必须显式给出 completed/failed，失败记录不会被丢弃。
+遇到项目创建锁时等待操作者协调后重试，不自动移除锁；若进程被强制中止，须检查完整对象、临时文件和锁，再决定恢复。
+此项是 L2 入库协议的实现细化，未改变人工裁决权或入场/退出顺序。
 
 handoff 生成草稿时保存 PROJECT 的原始字节摘要。应用前若摘要不同，拒绝覆盖并要求重新基于当前文件起草。
 应用必须保留 Goal/Constraints 等正文与其他 metadata；添加本次已有 Decision 引用、更新 next_step 和 last_handoff；禁止更新 stage。

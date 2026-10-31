@@ -25,5 +25,5 @@ def test_installed_console_script_outside_repository(tmp_path):
 
 
 def test_unimplemented_command_does_not_report_success():
-    result = CliRunner().invoke(app, ["new"])
+    result = CliRunner().invoke(app, ["status"])
     assert result.exit_code != 0
