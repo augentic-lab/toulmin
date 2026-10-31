@@ -6,10 +6,11 @@ from toulmin.core.identifiers import validate_project_name
 
 
 def entry_files(project: str, latest_handoff: str | None = None) -> tuple[PurePosixPath, ...]:
-    """Return resident context in protocol order, relative to the workbench root.
+    """Return interactive resident context, relative to the workbench root.
 
     PROJECT.md records the last applied handoff filename. A new project has none.
     This function neither scans a repository nor loads the project's objects.
+    Independent task sessions follow the role's restricted input list instead.
     """
     project_dir = PurePosixPath("projects", validate_project_name(project))
     paths = (PurePosixPath("AGENTS.md"), project_dir / "PROJECT.md")

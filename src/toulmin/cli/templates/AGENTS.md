@@ -7,8 +7,10 @@ Models are invoked manually. Decisions belong to the researcher.
 ## Entry protocol
 
 1. Read this file.
-2. Read projects/<project>/PROJECT.md and the applied sessions file named by last_handoff;
-   a new project has no handoff. Do not substitute the newest unconfirmed draft.
+2. For interactive work, read projects/<project>/PROJECT.md and the applied sessions file
+   named by last_handoff; a new project has none. Never substitute an unconfirmed draft.
+   For independent task sessions, the role's explicit input/exclusion list takes priority:
+   reviewers must not load handoffs or discussion history, or other unapproved inputs.
 3. State one task, role, required inputs and output location for this session.
 4. Load only the relevant objects. Reviewers read brief and claims, not creation history
    or other reviewers' outputs. Use roles/reviewer.md or roles/scribe.md as appropriate.
@@ -40,6 +42,8 @@ Models are invoked manually. Decisions belong to the researcher.
    and session ID. See roles/scribe.md. Do not treat writing a draft as approval.
 3. After researcher review, apply it to sessions/ and update PROJECT.md recent_decisions,
    next_step and last_handoff. Handoff never changes stage or object status.
+   The operator uses handoff --apply with explicit confirmation; retry the same draft
+   after an interrupted application. Do not discard a pending recovery journal.
 4. Inspect the diff and commit with related object IDs. Report identity/permission failures
    truthfully and retain files. Push only when explicitly requested.
 

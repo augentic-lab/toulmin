@@ -7,6 +7,7 @@ import typer
 
 from toulmin.cli.initialize import initialize
 from toulmin.core.identifiers import ObjectKind, validate_project_name
+from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.status import project_status
 
@@ -117,3 +118,44 @@ def show_status(
         typer.echo(f"Error: {message}", err=True)
     if report.errors:
         raise typer.Exit(1)
+
+
+@app.command("handoff")
+def handoff(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    input_path: Annotated[
+        str | None, typer.Option("--input", help="Session summary path relative to --root.")
+    ] = None,
+    apply_path: Annotated[
+        str | None,
+        typer.Option("--apply", help="Archived draft to apply or recover, relative to --root."),
+    ] = None,
+    actor: Annotated[
+        str | None, typer.Option("--confirmed-by", help="Researcher authorizing application.")
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Confirm application of this draft.")
+    ] = False,
+) -> None:
+    """Archive a handoff draft, or explicitly apply/recover an approved draft."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    if apply_path is not None and input_path is not None:
+        raise typer.BadParameter("--apply and --input are mutually exclusive")
+    if apply_path is None and (confirm or actor is not None):
+        raise typer.BadParameter("--confirm/--confirmed-by require --apply")
+    if apply_path is not None and actor is None:
+        raise typer.BadParameter("--apply requires --confirmed-by")
+    try:
+        path = (
+            draft_handoff(root, project, input_path)
+            if apply_path is None
+            else apply_handoff(root, project, apply_path, actor or "", confirm)
+        )
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(str(path.relative_to(root.absolute())))

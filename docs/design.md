@@ -279,6 +279,8 @@ One session handles one task with a clear output. It reads state in a fixed orde
 3. State the task for this session and where its output goes.
 4. Read only the object files the task needs; never load the whole project.
 
+For independent task sessions, the role contract's explicit input/exclusion list takes precedence over resident context: reviewers load the supplied brief/claims and role contract, not handoffs or discussion history. The resident entry sequence above applies to interactive work and recovery.
+
 **Exit protocol**
 
 1. Write this session's output to the right place (AI output goes to `runs/` first).

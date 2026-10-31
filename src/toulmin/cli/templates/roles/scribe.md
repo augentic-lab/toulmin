@@ -11,3 +11,9 @@
   approved, altering goals/constraints, or overwriting a PROJECT changed since drafting.
 - Completion: the next session can identify current state and next step using only files.
   The draft remains pending until researcher review; inspect the diff before committing.
+
+To supply a summary to handoff --input, use YAML next_step, recent_decisions and session_id
+(null if unknown), and Markdown sections Done, Decisions and Open questions. Do not add a
+Next step section: the command adds a pointer to the metadata, keeping one source of truth.
+Unknown work or decisions must be labelled unknown, never invented. Only reference existing
+researcher Decisions. The handoff command neither invokes a model nor makes a new ruling.

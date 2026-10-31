@@ -2,8 +2,8 @@
 
 以文件保存研究状态、由研究者裁决的个人研究工作台。
 
-当前已完成 T1–T4：格式/协议契约、分层包与工具链、研究工作台模板，以及 `init`、`new`、只读 `status`。
-`handoff` 在 T5 实现；第 2 阶段尚未完成。
+T1–T5 的程序实现已完成：模板、对象格式/校验、`init`、`new`、只读 `status` 与 `handoff`。
+路线图第 2 阶段仍等待真实研究项目的次日恢复和研究者验收，自动测试不替代这一条件。
 
 ## 初始化研究工作台
 
@@ -61,6 +61,28 @@ uv run --locked toulmin status tail-latency --root /path/to/research
 也不推断 brief 自然语言与证据的语义一致性。围栏代码块和行首缩进四格/制表符的代码示例不检查引用。
 损坏文件、断引用、无效 ID/状态、缺失目录或创建锁会退出 1，条件显示 unknown；此时计数仅表示已校验部分。
 合法数据的待裁决提示退出 0；参数用法错误退出 2。命令不写对象、缓存、索引或 Git 元数据。
+
+## 交接和恢复
+
+```sh
+uv run --locked toulmin handoff tail-latency --root /path/to/research
+uv run --locked toulmin handoff tail-latency --root /path/to/research \
+  --apply "projects/tail-latency/runs/<生成的目录>/draft.md" \
+  --confirmed-by "Researcher" --confirm
+```
+
+第一条命令只生成可审阅草稿，打印的根相对路径可直接用于 --apply；上例的目录需换成实际输出。
+未提供会话内容时明确写未知，不推测完成情况。
+实际交接用 `--input <根相对摘要路径>`：YAML 可含 session_id（未知填 null）、recent_decisions（已有 Decision 引用）、
+next_step；正文必含 Done、Decisions、Open questions。Next step 章节由命令添加并指向 metadata，避免两份事实。
+审阅生成的草稿后才应用。应用只更新 PROJECT 的最近决定、下一步和交接指针，保留正文、注释及阶段。
+
+进程中断后重跑同一 --apply 命令，按完整恢复记录完成写入；重复应用只返回旧记录，不重复追加或倒退下一步。
+PROJECT 与草稿基准不同、日志损坏或 session 文件冲突时，工具保留恢复记录并拒绝覆盖。
+pending 期间 status 报数据不完整。不要删日志或在应用过程中手工编辑 PROJECT。
+交接写入目前需要 POSIX 文件同步、原子 rename、硬链接与 flock；不会调用模型或自动提交 Git。
+
+真实项目试用的首日/次日步骤及记录要求见 [人工验收清单](docs/manual-acceptance.md)。
 
 ## 开发
 

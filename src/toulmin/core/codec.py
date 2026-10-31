@@ -71,3 +71,26 @@ def encode(document: Document) -> bytes:
     stream = io.StringIO()
     yaml.dump(document.header, stream)
     return ("---\n" + stream.getvalue() + "---\n" + document.body).encode("utf-8")
+
+
+def patch_header(data: bytes, changes: dict[str, Any]) -> bytes:
+    """Edit selected metadata, retaining YAML comments/quotes and exact body bytes."""
+    from ruamel.yaml import YAML
+
+    decode(data)  # Apply the same restricted input syntax before round-trip loading.
+    header, _, body = data.decode("utf-8")[4:].partition("\n---\n")
+    yaml = YAML(typ="rt")
+    yaml.preserve_quotes = True
+    yaml.width = 4096
+    metadata = yaml.load(header)
+    for key, value in changes.items():
+        old = metadata.get(key)
+        if isinstance(old, list) and isinstance(value, list) and value[: len(old)] == old:
+            old.extend(value[len(old) :])
+        else:
+            metadata[key] = value
+    stream = io.StringIO()
+    yaml.dump(metadata, stream)
+    result = ("---\n" + stream.getvalue() + "---\n" + body).encode("utf-8")
+    decode(result)
+    return result

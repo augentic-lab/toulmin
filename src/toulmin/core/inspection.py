@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from toulmin.core.documents import DIRECTORIES, Document
+from toulmin.core.handoffs import validate_applied
 from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
 from toulmin.core.project import validate_project
 from toulmin.core.repository import Repository
@@ -78,9 +79,10 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
                 charter.fail(f"recent_decisions[{index}]", str(error))
         if charter.header["last_handoff"] is not None:
             try:
-                repository.path(
-                    f"projects/{project}/sessions/{charter.header['last_handoff']}", "file"
+                handoff = repository.read(
+                    f"projects/{project}/sessions/{charter.header['last_handoff']}"
                 )
+                validate_applied(repository, handoff, project)
             except (OSError, ValueError) as error:
                 charter.fail("last_handoff", str(error))
     except (OSError, ValueError) as error:
@@ -127,6 +129,9 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
         errors.append(
             f"{lock}: creation: active or interrupted writer; condition results incomplete"
         )
+    pending = repository.root / "projects" / project / ".handoff-pending"
+    if pending.exists() or pending.is_symlink():
+        errors.append(f"{pending}: handoff: interrupted application requires explicit recovery")
     return ProjectSnapshot(charter, tuple(objects), tuple(sorted(set(errors))))
 
 

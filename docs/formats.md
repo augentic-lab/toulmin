@@ -90,9 +90,27 @@ brief 手写，章节包括 Problem、Why now、Magnitude、Closest prior work�
 草稿不是第八类研究对象：保存在 runs 的独立归档目录，带格式版本、project、session_id（未知为 null）、created、
 `base_project_sha256`、`recent_decisions`、`next_step`。正文为 Done、Decisions、Open questions、Next step 四节。
 recent_decisions 只能引用已存在的研究者决定，空列表表示本次无新增决定；next_step 为应用时更新的唯一下一步文本，正文 Next step 指向该字段避免双份事实。
-应用后 sessions 记录保存草稿路径/摘要、应用者与应用时间；PROJECT 的 last_handoff 指向它。
-会话文件名以 UTC 时间加随机后缀避免碰撞；重复应用按草稿内容摘要识别，不能重复追加。
-T5 负责定义并测试两文件更新的可恢复事务实现；格式不把“进程退出成功”等同于完整写入。
+草稿目录为 runs/YYYYMMDDTHHMMSSZ-handoff-<随机值>/，文件名 draft.md。
+已应用记录保留草稿全部字段和正文，并增加 source_draft（根相对路径）、source_sha256、applied_by、applied_at、project_sha256、previous_handoff（前一交接文件名，首次为 null）。
+source_sha256 是原稿完整字节摘要；project_sha256 是应用时 PROJECT 的字节摘要，用于历史追溯，不要求后续手工修改仍与其相同。
+应用后 PROJECT.last_handoff 指向 sessions/YYYYMMDDTHHMMSSZ-<完整草稿SHA256>.md；UTC 时间为首次确认应用时间。
+重复应用按完整内容摘要识别，包含已有更晚交接时也不得重写旧记录或倒退 PROJECT。
+重放还须沿 PROJECT.last_handoff/previous_handoff 找到该记录；孤立 session 不能证明两文件更新已完成，缺少恢复意图时保留现场并报错。
+T5 将此前计划的随机 session 后缀明确为内容摘要，便于无索引查找已应用记录；没有已有正式交接数据需要迁移，对象 v1 字段/版本未变。
+
+输入摘要只允许可选 session_id、recent_decisions、next_step；正文必填 Done、Decisions、Open questions。
+命令添加唯一 Next step 章节，固定内容为 `See metadata next_step.`。无输入时，前三节写明未知，session_id=null，
+recent_decisions=[]，next_step 继承当前 PROJECT 值；这不表示会话中实际没有决定。
+
+## 交接恢复记录（内部文件）
+
+应用前将完整 before.md、after.md、session.md、draft.md 与 intent.md 保存到项目的 .handoff-pending/。
+intent 头包含 schema_version、project、session_filename 和四份图像的 <name>_sha256；这些是可恢复写入记录，不是第八类研究对象。
+每份完整文件写入并 fsync 后发布，再发布 session、原子替换 PROJECT；仅允许 recent_decisions、next_step、last_handoff 改变，正文与其他字段必须一致。
+恢复比较校验和和当前 PROJECT：只接受 before 或 after 原样，否则保留全部恢复记录并报冲突。
+两份公共文件完成后，原子改名退休日志再清理，避免中断清理留下半份 pending 日志；日志由研究工作台 .gitignore 排除。
+POSIX flock 协调 handoff 写入，锁文件在系统临时目录，进程死亡自动释放锁；锁文件保留以避免 inode 竞争。
+交接的 POSIX 文件/目录同步实现是 L1 文件存储的本地实现条件，模型与协议不依赖任何具体 CLI。
 
 ## 错误与兼容性
 

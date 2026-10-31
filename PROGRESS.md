@@ -1,5 +1,40 @@
 # Toulmin 开发进度
 
+## 2026-10-31 — T5：交接、恢复与端到端验证
+
+- 状态：**Verified：T5 程序和自动验证完成；阶段待人工验收。** 路线图第 2 阶段尚未宣布通过。
+- 用户授权：继续开发；本 session 实现 handoff，准备人工试用步骤，更新进度并提交。
+- L1 输出：保留 YAML 注释/引号和完整正文的 metadata 更新；交接草稿/已应用记录格式；完整写入、POSIX 写入锁与可恢复事务。
+- L2 输出：protocols/handoff.py 生成草稿、确认应用、按完整草稿摘要重放与恢复；L3 增加 handoff 的 --input/--apply/--confirmed-by/--confirm。
+- 输出位置：代码与测试、README、docs/formats.md、docs/protocols.md、docs/manual-acceptance.md、工作台模板；handoff 打印可直接用于 --apply 的根相对路径。
+- session ID：当前环境未提供，不编造。
+
+### 实际验证
+
+- **Verified**：最终交接/恢复与端到端专项 **34 passed**，全套 **292 passed**；Ruff 检查/格式检查及 mypy 通过（20 个源文件），已验证两种真实进程强制退出与端到端恢复。
+- **Verified**：默认草稿仅写 runs，缺少会话内容时明确写未知；未知 session ID 为 null。显式确认后才更新 sessions/PROJECT，保留正文、注释、阶段、其他 metadata 和原稿。
+- **Verified**：同一草稿重放不增加记录；有更新交接后重放旧稿也不倒退 PROJECT。草稿基准变化、错误字段、错误项目/路径、断决定引用均拒绝写入。
+- **Verified**：孤立 session 且恢复日志缺失时不误报已完成，旧记录重放须在当前交接历史中可达；已有 recent_decisions 顺序及手写重复项保留。
+- **Verified**：真实子进程用 os._exit 在 session 发布后、PROJECT 发布后强制结束；重试同一草稿能恢复并只留一条应用记录，POSIX 锁由系统释放。
+- **Verified**：准备/PROJECT 写入故障保存原文与完整恢复图像；外部修改、损坏校验和、冲突 session、试图改变阶段的恢复意图均拒绝覆盖并保留现场。status 会报告 pending 或被修改的应用来源。
+- **Verified**：端到端测试用合成研究数据，分进程执行 init → new Claim → 归档模拟 review/Run → 确认 Objection → status → handoff → Git 提交 → 新进程按 C0 读取恢复目标、未决异议、下一步及来源。它不是实际独立模型评审或次日人工验收。
+- **Verified**：新虚拟环境安装 wheel，在源码目录外运行全部四条命令、交接重放和入场恢复；确认阶段不变，PROJECT 字节/mtime 在重放时不变，status 有效。
+
+### 协议与条件
+
+- L1：实现此前尚未落盘的交接格式，session 文件名后缀明确为完整草稿 SHA256，记录 previous_handoff 以验证重放确实属于当前应用历史，新增内部恢复记录；七类对象字段/版本未变，仓库内没有实际旧交接数据需迁移。
+- L2：独立评审的角色输入排除清单优先于交互 C0 入场顺序；修复默认读取交接与 reviewer 排除历史的冲突，工作台 AGENTS/文档已同步。
+- 两文件更新不是单次原子操作：完整 before/after/session/draft 图像先持久化，pending 期间 status 报不完整；完成后退休日志再清理。
+- 交接写入当前需要 POSIX flock、硬链接、原子 rename 与文件/目录 fsync。恢复沿用首次确认的 payload/确认人；损坏或外部编辑冲突需操作者处理，不自动删日志或覆盖。
+- 程序不调用模型、不联网、不自动提交研究仓库；恢复保护是乐观并发检查，外部编辑器不参与锁，应用时应暂停手工编辑 PROJECT。
+
+### 交接与待办
+
+- 人工验收尚未执行：真实研究想法和独立研究目录待研究者提供；已通过交互提问请求这两项，没有以模拟数据替代。
+- 下一步：按 docs/manual-acceptance.md 用真实想法完成首日写 Claim、独立手动评审、确认 Objection 和交接；实际次日新会话恢复，再由研究者验收并回顾。
+- 程序阻塞：none；阶段通过条件：真实两日试用、研究者明确裁决及记录。
+- 提交说明：`feat: implement T5 handoff and recoverable session updates`。
+
 ## 2026-10-31 — T4：只读状态与一致性诊断
 
 - 状态：**Verified：T4 完成**；T5 尚未开始，第 2 阶段未完成。

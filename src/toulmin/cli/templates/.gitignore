@@ -1,0 +1,6 @@
+.toulmin-new.lock/
+.handoff-pending/
+.handoff-prepare-*/
+.handoff-completed-*/
+.handoff-*.tmp
+.new-*.tmp

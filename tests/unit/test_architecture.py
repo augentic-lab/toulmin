@@ -18,14 +18,18 @@ DATA_MODULES = {
     "dataclasses",
     "datetime",
     "enum",
+    "fcntl",
+    "hashlib",
     "io",
     "math",
     "os",
     "pathlib",
     "re",
     "ruamel",
+    "shutil",
     "tempfile",
     "typing",
+    "uuid",
 }
 
 
