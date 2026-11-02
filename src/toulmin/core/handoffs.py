@@ -9,7 +9,8 @@ from toulmin.core.identifiers import ObjectKind
 from toulmin.core.repository import Repository
 from toulmin.core.schema import mapping, reference, strings, text, timestamp
 
-DRAFT_FIELDS = {
+# Tuples fix the generated field order; the sets are used for validation.
+DRAFT_ORDER = (
     "schema_version",
     "project",
     "session_id",
@@ -17,15 +18,17 @@ DRAFT_FIELDS = {
     "base_project_sha256",
     "recent_decisions",
     "next_step",
-}
-RECORD_FIELDS = {
+)
+RECORD_ORDER = (
     "source_draft",
     "source_sha256",
     "applied_by",
     "applied_at",
     "project_sha256",
     "previous_handoff",
-}
+)
+DRAFT_FIELDS = set(DRAFT_ORDER)
+RECORD_FIELDS = set(RECORD_ORDER)
 NEXT_STEP_TEXT = "See metadata next_step."
 
 

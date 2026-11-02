@@ -57,7 +57,7 @@ def test_new_creates_each_type_with_canonical_header_and_body(populated, example
     result = CliRunner().invoke(app, arguments(populated, kind, path))
     assert result.exit_code == 0, result.output
     target = populated / "projects/demo" / DIRECTORIES[kind] / f"{ObjectId(kind, 2)}.md"
-    assert str(target) in result.stdout
+    assert result.stdout == f"{target.relative_to(populated)}\n"
     document = decode(target.read_bytes())
     validate(document)
     Repository(populated).validate_links(document, "demo")

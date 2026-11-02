@@ -55,7 +55,7 @@ uv run --locked toulmin new claim tail-latency --root /path/to/research \
   --confirmed-by "Researcher" --confirm
 ```
 
-The command returns the new file path. Intake generates the ID, creation time and confirmation record without modifying the draft.
+The command prints the new file's root-relative path. Intake generates the ID, creation time (whole seconds, UTC) and confirmation record without modifying the draft; the generated header lists fields in contract order.
 Supported types: claim, evidence, objection, decision, exploration, spec, run. See the [format contract](docs/formats.md) for fields.
 For model output, archive the raw response and record a Run first, then trace its provenance through source.ref/path. Run outcomes must explicitly be completed or failed.
 Local file paths are relative to the workbench root; cross-project object references use project/ID.
@@ -80,7 +80,10 @@ The command preserves comments and other text, writes atomically, and prints sta
 
 ```sh
 uv run --locked toulmin status tail-latency --root /path/to/research
+uv run --locked toulmin status tail-latency --root /path/to/research --verbose
 ```
+
+`--verbose` (`-v`) also prints the first paragraph (shortened to 100 characters) of each Claim statement and open Objection, and the root-relative path of the last applied handoff.
 
 Shows the stored stage, next step, Claim statuses, counts of valid verified supporting evidence, and open objections ordered fatal/major/minor.
 Open-objection presence and eligibility for supported are reported separately; a minor objection can coexist with eligibility.

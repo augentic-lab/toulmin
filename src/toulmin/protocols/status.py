@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from toulmin.core.documents import Document, sections
 from toulmin.core.identifiers import ObjectId, ObjectKind
 from toulmin.core.inspection import inspect_project, local_target
 from toulmin.core.repository import Repository
@@ -15,6 +16,7 @@ class ClaimStatus:
     verified_support_count: int
     has_open_objection: bool | None
     eligible_for_supported: bool | None
+    summary: str = ""
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,7 @@ class OpenObjection:
     object_id: ObjectId
     target: str
     severity: str
+    summary: str = ""
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,22 @@ class StatusReport:
     open_objections: tuple[OpenObjection, ...]
     notices: tuple[str, ...]
     errors: tuple[str, ...]
+    last_handoff: str | None = None
+
+
+SUMMARY_LENGTH = 100
+
+
+def summary(document: Document, section: str) -> str:
+    """First paragraph of a body section on one line, shortened for a terminal."""
+    paragraph: list[str] = []
+    for line in sections(document).get(section, "").splitlines():
+        if line.strip():
+            paragraph.append(line.strip())
+        elif paragraph:
+            break
+    text = " ".join(paragraph)
+    return text if len(text) <= SUMMARY_LENGTH else text[: SUMMARY_LENGTH - 3] + "..."
 
 
 def project_status(root: Path, project: str) -> StatusReport:
@@ -69,6 +88,7 @@ def project_status(root: Path, project: str) -> StatusReport:
                 supports,
                 bool(attacks) if complete else None,
                 eligible if complete else None,
+                summary(claim, "Statement"),
             )
         )
         if not complete:
@@ -93,7 +113,12 @@ def project_status(root: Path, project: str) -> StatusReport:
             )
     priority = {"fatal": 0, "major": 1, "minor": 2}
     open_objections = tuple(
-        OpenObjection(doc.object_id, doc.header["target"], doc.header["severity"])
+        OpenObjection(
+            doc.object_id,
+            doc.header["target"],
+            doc.header["severity"],
+            summary(doc, "Content"),
+        )
         for doc in sorted(
             objections, key=lambda doc: (priority[doc.header["severity"]], doc.object_id.number)
         )
@@ -107,4 +132,9 @@ def project_status(root: Path, project: str) -> StatusReport:
         open_objections,
         tuple(notices),
         snapshot.errors,
+        (
+            f"projects/{project}/sessions/{charter['last_handoff']}"
+            if charter.get("last_handoff")
+            else None
+        ),
     )

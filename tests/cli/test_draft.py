@@ -93,7 +93,7 @@ def test_filled_skeleton_passes_intake_for_every_kind(populated, kind):
     result = new(populated, kind, relative, "--confirmed-by", "Tianchi YU", "--confirm")
     assert result.exit_code == 0, result.output
     created = populated / "projects/demo" / DIRECTORIES[kind]
-    assert result.stdout.strip().startswith(str(created))
+    assert (populated / result.stdout.strip()).parent == created
 
 
 def test_placeholder_in_any_body_section_is_located(populated):
@@ -161,10 +161,10 @@ def test_default_actor_prefills_draft_and_confirms_intake(populated):
     assert unconfirmed.exit_code == 1 and "explicit researcher confirmation" in unconfirmed.output
     result = new(populated, "claim", relative, "--confirm", env=env)
     assert result.exit_code == 0, result.output
-    created = decode(open(result.stdout.strip(), "rb").read())
+    created = decode((populated / result.stdout.strip()).read_bytes())
     assert created.header["confirmed_by"]["actor"] == "Tianchi YU"
     explicit = new(populated, "claim", relative, "--confirmed-by", "Other", "--confirm", env=env)
-    created = decode(open(explicit.stdout.strip(), "rb").read())
+    created = decode((populated / explicit.stdout.strip()).read_bytes())
     assert created.header["confirmed_by"]["actor"] == "Other"
 
 

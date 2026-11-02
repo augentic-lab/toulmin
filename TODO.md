@@ -119,7 +119,7 @@ Not covered by the accepted evidence: a cross-model review (reviewer and author 
 
 ## Stage 2 follow-up: usability (U1–U3)
 
-Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance. The researcher confirmed Q11–Q13 as recommended on 2026-11-02; U1 and U2 are complete. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
+Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance. The researcher confirmed Q11–Q13 as recommended on 2026-11-02; U1–U3 are complete. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
 Order: U1 → U2 → U3, one task per session. U1 removes the largest friction. U2 adds the most common next-day action. U3 is cosmetic and changes no format.
 
 ### Pending decisions
@@ -153,9 +153,12 @@ Implementation choices within Q13: the Decision's `related` must name the object
 
 ### U3 — Readable generated files and status output
 
-- [ ] Outputs: generated headers in the formats.md field order (common fields first), without line folding and with second-precision UTC timestamps. `new`, `draft` and `handoff` all print root-relative paths. `status --verbose` shows the first line of each Claim Statement and Objection Content plus the resolved `last_handoff` path.
-- [ ] Compatibility acceptance: existing v1 files with microsecond timestamps or other key orders still validate. No migration is needed because YAML key order and timestamp precision are not format semantics.
-- [ ] Run: affected unit/CLI tests; full checks.
+- [x] Outputs: generated headers in the formats.md field order (common fields first), without line folding and with second-precision UTC timestamps. `new`, `draft` and `handoff` all print root-relative paths. `status --verbose` shows the first line of each Claim Statement and Objection Content plus the resolved `last_handoff` path.
+- [x] Compatibility acceptance: existing v1 files with microsecond timestamps or other key orders still validate. No migration is needed because YAML key order and timestamp precision are not format semantics.
+- [x] Run: affected unit/CLI tests; full checks.
+
+U3 verification: 6 readability tests and 361 total tests and Ruff/mypy passed. An installed wheel created a Claim in a copy of the S1 workbench (ordered header, whole-second timestamps, root-relative output); `status -v` showed statement/objection summaries and the last handoff path alongside S1's older-style files.
+Deviation: handoff draft `created` and record `applied_at` keep sub-second precision. Drafts are identified by content digest, and whole seconds made two same-second drafts byte-identical, breaking an existing T5 test. Summaries use the first paragraph rather than the first line, because hand-wrapped statements were cut mid-sentence.
 
 ## Planning delivery status
 

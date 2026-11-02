@@ -9,7 +9,9 @@ from toulmin.core.codec import decode, encode, patch_header
 from toulmin.core.documents import Document, FormatError, sections
 from toulmin.core.handoff_transaction import PENDING, finish, prepare
 from toulmin.core.handoffs import (
+    DRAFT_ORDER,
     NEXT_STEP_TEXT,
+    RECORD_ORDER,
     append_decisions,
     validate_applied,
     validate_decisions,
@@ -17,7 +19,7 @@ from toulmin.core.handoffs import (
 )
 from toulmin.core.project import validate_project
 from toulmin.core.repository import Repository
-from toulmin.core.schema import mapping, text
+from toulmin.core.schema import in_order, mapping, text
 
 
 def draft_handoff(root: Path, project: str, input_path: str | None = None) -> Path:
@@ -56,10 +58,12 @@ def draft_handoff(root: Path, project: str, input_path: str | None = None) -> Pa
     header.update(
         schema_version=1,
         project=project,
+        # Sub-second precision keeps same-second drafts distinct: drafts are identified
+        # by their content digest, so the timestamp must not collapse them.
         created=now.isoformat().replace("+00:00", "Z"),
         base_project_sha256=digest(original),
     )
-    document = Document(header, body, input_path or "<handoff>")
+    document = Document(in_order(header, DRAFT_ORDER), body, input_path or "<handoff>")
     validate_handoff(document, project)
     validate_decisions(repository, document, project)
     directory = repository.path(f"projects/{project}/runs", "directory") / (
@@ -155,7 +159,7 @@ def apply_handoff(root: Path, project: str, draft_path: str, actor: str, confirm
             project_sha256=digest(after),
             previous_handoff=charter.header["last_handoff"],
         )
-        record = Document(record_header, draft.body)
+        record = Document(in_order(record_header, DRAFT_ORDER + RECORD_ORDER), draft.body)
         validate_handoff(record, project, applied=True)
         prepare(repository, project, before, after, encode(record), raw, filename)
         return finish(repository, project, fingerprint)

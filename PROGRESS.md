@@ -1,5 +1,28 @@
 # Toulmin development progress
 
+## 2026-11-02 — U3: readable generated files and status output
+
+- Status: **Verified: U3 complete.** The usability follow-up U1–U3 is finished.
+- User authorization: implement U3.
+- L1:
+  - `codec.encode` keeps the caller's key order and no longer folds long strings.
+  - `schema.py` adds the contract field order (`ORDER`, `KIND_ORDER`, `object_order`, `in_order`) and `utc_text` for whole-second UTC timestamps.
+  - `handoffs.py` defines `DRAFT_ORDER`/`RECORD_ORDER` tuples; the field sets are derived from them.
+- L2:
+  - Intake writes headers in contract order with whole-second `created`/`confirmed_by.at`.
+  - Handoff drafts and records use contract order.
+  - `project_status` adds a first-paragraph summary (100 characters) for each Claim and open Objection, plus the root-relative `last_handoff` path.
+- L3: `new` prints root-relative paths (all writing commands now do), and `status --verbose/-v` shows the summaries and last handoff.
+- Deviations from the plan, recorded in TODO U3:
+  - Handoff `created`/`applied_at` keep sub-second precision. Drafts are identified by content digest, and whole seconds made two same-second drafts identical; an existing T5 test caught this.
+  - Summaries use the first paragraph instead of the first line, which a smoke test showed cut hand-wrapped statements mid-sentence.
+- Compatibility: presentation only. Readers already accept any key order and fractional seconds, so older files (including S1's) stay valid without migration. formats.md and its packaged copy gained a note, and the framework CHANGELOG template has a U3 entry; the usual `init --project` conflict behavior applies to older workbenches.
+- **Verified**: `tests/cli/test_readable.py` **6 passed**. It covers ordered, unfolded, second-precise headers; root-relative `new` output from `--root` and from the default root; legacy sorted, folded, microsecond files staying valid; verbose summaries (truncation, hand-wrapped paragraphs, objections) and last handoff before and after applying; and handoff draft field order. Existing tests were updated for root-relative `new` output. Full suite **361 passed**; Ruff lint/format and mypy (23 source files) passed.
+- **Verified**: a wheel installed outside the checkout created C-004 in a copy of the S1 workbench via draft → new; the header was ordered with whole-second times, and `status -v` read new and old-style files together.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: per design §12, hold a short retrospective on stage 2 plus U1–U3, then decide stage 3 (critique: review/crossval/synthesizer) scope with the researcher.
+
 ## 2026-11-02 — U2: confirmed status and response updates
 
 - Status: **Verified: U2 complete.** U3 has not started.

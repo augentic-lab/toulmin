@@ -6,7 +6,7 @@ from pathlib import Path
 from toulmin.core.documents import STATUSES, Document
 from toulmin.core.identifiers import SCHEMA_VERSION, ObjectKind
 from toulmin.core.repository import Repository
-from toulmin.core.schema import text, validate
+from toulmin.core.schema import in_order, object_order, text, utc_text, validate
 from toulmin.core.skeletons import unfilled
 
 
@@ -40,7 +40,7 @@ def create_object(
             "status",
             "new only creates initial states; changes require a researcher Decision",
         )
-    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    now = utc_text(datetime.now(UTC))
     with repository.creation_lock(project):
         object_id = repository.next_id(project, kind)
         header = dict(draft.header)
@@ -51,6 +51,7 @@ def create_object(
             created=now,
             confirmed_by={"actor": actor, "at": now},
         )
+        header = in_order(header, object_order(kind))
         document = Document(header, draft.body, draft.location, draft.lines, draft.body_line)
         validate(document)
         return repository.publish(project, document)

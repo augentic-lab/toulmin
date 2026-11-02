@@ -132,7 +132,7 @@ def new_object(
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
-    typer.echo(str(path))
+    typer.echo(display(path, root))
 
 
 @app.command("rule")
@@ -222,6 +222,12 @@ def rule_object(
 def show_status(
     project: Annotated[str, typer.Argument(help="Project name.")],
     root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    verbose: Annotated[
+        bool,
+        typer.Option(
+            "--verbose", "-v", help="Also show statements, objection text and last handoff."
+        ),
+    ] = False,
 ) -> None:
     """Show stored state, conditions and data problems without changing files."""
     try:
@@ -237,6 +243,8 @@ def show_status(
         f"Project: {report.project}\nStage: {report.stage or 'unknown'}\n"
         f"Next step: {report.next_step or 'unknown'}"
     )
+    if verbose:
+        typer.echo(f"Last handoff: {report.last_handoff or 'none'}")
     typer.echo(
         "Data: valid (project files and direct references)"
         if not report.errors
@@ -254,9 +262,13 @@ def show_status(
             f"open_objection={flag(claim.has_open_objection)} | "
             f"eligible_supported={flag(claim.eligible_for_supported)}"
         )
+        if verbose and claim.summary:
+            typer.echo(f"      {claim.summary}")
     typer.echo("Open objections:" + ("" if report.open_objections else " none"))
     for objection in report.open_objections:
         typer.echo(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
+        if verbose and objection.summary:
+            typer.echo(f"      {objection.summary}")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

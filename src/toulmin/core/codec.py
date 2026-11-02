@@ -68,6 +68,10 @@ def encode(document: Document) -> bytes:
     yaml = YAML(typ="safe", pure=True)
     yaml.allow_unicode = True
     yaml.default_flow_style = False
+    # Keep the caller's (contract) field order and never fold long strings, so generated
+    # files read and diff like hand-written ones.
+    yaml.width = 4096
+    yaml.representer.sort_base_mapping_type_on_output = False
     stream = io.StringIO()
     yaml.dump(document.header, stream)
     return ("---\n" + stream.getvalue() + "---\n" + document.body).encode("utf-8")

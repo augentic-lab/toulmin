@@ -16,3 +16,5 @@
   `<fill: ...>` placeholders; `TOULMIN_ACTOR` may supply the default confirmer. v1 unchanged.
 - U2 (L2 note): `toulmin rule` records a confirmed status change, Response or Ruling. Status
   changes need an active Decision naming the object; text is appended, never deleted.
+- U3 (presentation only): generated headers follow contract field order without folding;
+  object timestamps use whole seconds. Older files stay valid; no migration.

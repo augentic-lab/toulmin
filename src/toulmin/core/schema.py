@@ -2,7 +2,7 @@
 
 import math
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from toulmin.core.documents import STATUSES, Document, sections, validate_values
@@ -21,6 +21,35 @@ FIELDS = {
         set(),
     ),
 }
+# Field order for generated headers: common fields, then formats.md's type-specific
+# columns. Order is presentation only; readers accept any key order.
+ORDER = ("schema_version", "id", "status", "created", "source", "confirmed_by")
+KIND_ORDER = {
+    ObjectKind.CLAIM: ("type", "importance", "tags", "validation_plan"),
+    ObjectKind.EVIDENCE: ("target", "direction", "kind", "grade", "provenance", "verification"),
+    ObjectKind.OBJECTION: ("target", "severity"),
+    ObjectKind.DECISION: ("related", "superseded_by"),
+    ObjectKind.EXPLORATION: ("lens", "adopted_as"),
+    ObjectKind.SPEC: ("target", "evidence"),
+    ObjectKind.RUN: ("model", "role", "input_files", "output", "session_id", "duration_seconds"),
+}
+
+
+def in_order(header: dict[str, Any], order: tuple[str, ...]) -> dict[str, Any]:
+    """Return header with keys in `order` first; unknown keys keep their relative order."""
+    known = {key: header[key] for key in order if key in header}
+    return known | {key: value for key, value in header.items() if key not in known}
+
+
+def object_order(kind: ObjectKind) -> tuple[str, ...]:
+    return ORDER + KIND_ORDER[kind] + ("decisions", "extensions")
+
+
+def utc_text(moment: datetime) -> str:
+    """Generated timestamps: UTC, second precision, `Z` suffix."""
+    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 # Enumerations are shared with draft skeletons so the two cannot drift apart.
 CLAIM_TYPES = ("problem", "magnitude", "mechanism", "novelty", "assumption", "deployability")
 IMPORTANCE = ("core", "secondary")
