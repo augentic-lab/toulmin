@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI1 visual inspiration research
+
+- User requested design inspiration after rejecting the current TUI appearance. No application code changed; UI2 implementation paused for this design discussion.
+- Consulted official Posting, Superfile, Crush and Cogmind pages and screenshot search results. Recorded sources, interpretation, current layout issues and a proposed retro research terminal direction in docs/tui-design.md section 14.
+- Direct reference-image downloads returned HTTP 403/406; no successful local inspection of those originals is claimed. No tools were installed and no background processes remain from this research.
+- Validation: documentation diff whitespace; no code tests needed for this documentation-only change. Visual preference and usability remain unverified.
+- Session ID unavailable. Blockers: none for reference research. Next: compare two static visual concepts before implementation. No push.
+
 ## 2026-11-02 — UI1 verification-process cleanup
 
 - Verified three leftover sandbox processes from UI1 verification: targeted pytest (PID 4110036), full pytest (4119865), and terminal smoke TUI (4139178). These were abandoned hung attempts, not the successful final validation run.

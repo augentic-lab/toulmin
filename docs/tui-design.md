@@ -218,3 +218,36 @@ Official Textual references reviewed for this proposal:
 - [TextArea](https://textual.textualize.io/widgets/text_area/): multiline editing.
 - [Workers](https://textual.textualize.io/guide/workers/): background work and UI messaging; thread cancellation needs explicit cooperation.
 - [Testing](https://textual.textualize.io/guide/testing/): headless interaction, terminal-size tests and optional visual snapshots.
+
+## 14. Visual direction research after UI1
+
+Status: research and recommendations only; the researcher rejected the current visual result.
+No replacement theme or layout has been approved or implemented in this session.
+
+References consulted:
+
+| Reference | Proposed lesson for Toulmin | Boundary |
+| --- | --- | --- |
+| [Posting](https://posting.sh/) and its [themes guide](https://posting.sh/guide/themes/) | Clear work areas, contextual keyboard actions and semantic theme colors; keep the central task visually dominant | An API client's dense controls should not become the research conversation layout |
+| [Superfile](https://superfile.dev/) | Use a consistent panel/preview system and a restrained theme; differentiate focus from inactive surfaces | Multiple equally prominent file panes are unsuitable for a conversation-led workflow |
+| [Cogmind official press kit](https://www.gridsagegames.com/press/sheet.php?p=cogmind) | Explore character-grid identity, compact status labels and retro game framing for Home and navigation | This is a game reference, not evidence of compatibility with ordinary terminal rendering; avoid copying its density, effects or assets |
+| [Crush](https://github.com/charmbracelet/crush) | Further reference for a conversational terminal tool's identity and model/session context | Its implementation stack is not a reason to replace Textual |
+
+Verified: official project pages were consulted; image search supplied additional screenshot references.
+Direct downloads of the Superfile and Cogmind images were refused (403/406); no local visual
+inspection of those originals or installation of these tools was completed. These references
+support a direction to explore, not a claim that the proposed Toulmin design is validated.
+
+Design judgment from the UI1 renders: oversized top controls compete with content; duplicate
+step navigation wastes space; uniformly bordered panels flatten hierarchy; saturated Markdown
+accents compete with body text. A replacement should address hierarchy before adding decoration.
+
+Recommended direction (Guess): a quiet retro research terminal. Use a compact title/status line,
+a narrow step rail, dominant conversation space and a subordinate brief inspector. Place a small
+character emblem and New Project/Open Project choices on Home. Keep body text neutral, reserve
+one accent for focus and a second for status, and style Markdown explicitly. At narrow widths,
+show one primary reading surface with switchable context. Pixel details belong at the edges.
+
+Next deliverable: two comparable static Home/workspace concepts using the same English sample
+content: a restrained modern terminal and a retro laboratory terminal. Review these before code
+changes; do not treat generic visual examples or high-resolution artwork as tested TUI output.
