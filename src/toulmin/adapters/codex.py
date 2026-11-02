@@ -41,6 +41,7 @@ class Codex:
                 session.prompt,
                 session.timeout_seconds,
                 directory,
+                session.env,
             )
             message = directory / LAST_MESSAGE
             text = message.read_text("utf-8", errors="replace") if message.is_file() else ""

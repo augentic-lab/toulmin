@@ -27,6 +27,7 @@ class Session:
     timeout_seconds: float
     command: str  # executable name or path
     extra_args: tuple[str, ...] = ()
+    env: tuple[tuple[str, str], ...] = ()  # added to the inherited environment
 
 
 class Adapter(Protocol):
@@ -44,12 +45,19 @@ class Finished:
     duration_seconds: float
 
 
-def run_process(arguments: list[str], prompt: str, timeout: float, cwd: Path) -> Finished:
+def run_process(
+    arguments: list[str],
+    prompt: str,
+    timeout: float,
+    cwd: Path,
+    env: tuple[tuple[str, str], ...] = (),
+) -> Finished:
     """Run with the prompt on stdin in a new process group; kill the group on timeout."""
     started = time.monotonic()
     process = subprocess.Popen(
         arguments,
         cwd=cwd,
+        env={**os.environ, **dict(env)},
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

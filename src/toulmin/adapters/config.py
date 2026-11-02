@@ -25,6 +25,7 @@ class ModelConfig:
     model: str
     command: str
     extra_args: tuple[str, ...]
+    env: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,7 @@ def load_config(root: Path) -> ReviewConfig:
         field = f"models.{name}"
         if not MODEL_NAME.fullmatch(name):
             raise fail(field, "expected lowercase letters, digits and hyphens")
-        entry = table(entry, field, {"adapter", "model", "command", "extra_args"})
+        entry = table(entry, field, {"adapter", "model", "command", "extra_args", "env"})
         adapter = ADAPTERS.get(entry.get("adapter", ""))
         if adapter is None:
             raise fail(f"{field}.adapter", f"expected one of {sorted(ADAPTERS)}")
@@ -88,7 +89,17 @@ def load_config(root: Path) -> ReviewConfig:
         if not isinstance(model, str) or not isinstance(command, str) or not command.strip():
             raise fail(field, "model and command must be strings; command nonempty")
         extra = names(entry.get("extra_args", []), f"{field}.extra_args")
-        available[name] = ModelConfig(name, adapter, model.strip(), command, extra)
+        env = entry.get("env", {})
+        if not isinstance(env, dict) or not all(
+            isinstance(key, str) and key and "=" not in key and isinstance(value, str)
+            for key, value in env.items()
+        ):
+            raise fail(f"{field}.env", "expected a table of string variables")
+        variables = tuple(
+            (key, str(Path(value).expanduser()) if value.startswith("~") else value)
+            for key, value in sorted(env.items())
+        )
+        available[name] = ModelConfig(name, adapter, model.strip(), command, extra, variables)
     return ReviewConfig(
         max_runs=int(positive(review.get("max_runs"), "review.max_runs", True)),
         parallel=int(positive(review.get("parallel", 1), "review.parallel", True)),

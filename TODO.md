@@ -203,7 +203,7 @@ Delivery: the user explicitly requested a commit and push to the existing origin
 
 # Stage 3: critique — plan
 
-Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02. The researcher confirmed Q19–Q24 as recommended on 2026-11-02; C1 and C2 are complete; C3 is implemented with its live smoke runs pending approval.
+Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02. The researcher confirmed Q19–Q24 as recommended on 2026-11-02; C1 and C2 are complete; C3 is complete (live smoke runs done; one Codex isolation follow-up open).
 Stage done criterion (design §12): one brief goes through three rounds of multi-model review, and every Objection has a complete, traceable status (Run → raw output → draft label → Objection → ruling/Decision).
 Environment fact, verified 2026-11-02: Claude Code 2.1.316 (`claude -p`) and Codex CLI 0.165.0 (`codex exec`, `--sandbox read-only`, `--ephemeral`, `-o`) are installed. Gemini CLI is not installed. Exact flags are re-checked in C3, and no model was invoked for this plan.
 
@@ -239,11 +239,12 @@ Design notes: the manifest is the role file's YAML header, checked against a fix
 ### C3 — Adapters and `toulmin review`
 
 - [x] `src/toulmin/adapters/` (L3): Claude Code (`claude -p`, read-only tools, JSON output) and Codex (`codex exec --sandbox read-only --ephemeral -o`), behind one small interface (run(prompt, files, model) → raw text, session ID, duration, exit status). `toulmin review <project> --personas … --models …` runs every persona × model pair in fresh, mutually invisible sessions, archives each raw output under `runs/<UTC>-review-<persona>-<model>/` and records each Run (completed/failed) automatically. It never writes Objections.
-- [ ] Acceptance: tests use fake CLIs on PATH and never call real tools. Failures, timeouts and empty output become failed Runs. Inputs come from the manifest. The run cap is enforced. One supervised live smoke run per adapter needs explicit researcher approval because it uses quota.
+- [x] Acceptance: tests use fake CLIs on PATH and never call real tools. Failures, timeouts and empty output become failed Runs. Inputs come from the manifest. The run cap is enforced. One supervised live smoke run per adapter needs explicit researcher approval because it uses quota.
 
 C3 verification: `tests/cli/test_review.py` (23 tests) uses fake `claude`/`codex` executables on PATH. It covers four completed Runs with manifest inputs and inlined prompts, isolation flags (no tools, safe mode, read-only, ephemeral, empty working directory, identical prompts), six failure modes, timeout with process-group kill, output without a draft block, eleven pre-run refusals that start and write nothing, dry run and confirmation, the init template, and review → intake provenance. Flags were checked against Claude Code 2.1.316 and Codex CLI 0.166.0 (`--help` only).
 Design notes: inputs are inlined into the prompt rather than read by the model, so isolation does not depend on tool permissions. Claude Code runs with `--tools ""`. Codex's read-only sandbox blocks writes but not reads, so for Codex isolation relies on the instruction plus the empty working directory; this is recorded as a known boundary.
-Pending: the live smoke run per adapter (researcher approval required; not yet run). The acceptance box stays open until then.
+Live smoke (approved 2026-11-02, 2 sessions): `review --personas reviewer-skeptic --models claude,codex` on a copy of the S2/R1 workbench. Claude Code completed in 86 s with 7 drafts and model claude-opus-5-5 reported. Codex completed in 114 s with 5 drafts; it reported no model, so the Run says "codex default (not reported)". Both outputs parsed, and intake of one Claude draft produced O-005 citing R-002.
+Open follow-up: the Codex output followed the operator's global `~/.codex/AGENTS.md` (thin-first style, Verified labels). Claude's output showed no such influence. Mitigations added after the live run: a per-model `env` (for a review-only `CODEX_HOME`) and a prompt line saying the role contract overrides general reply-style instructions. Neither has been verified live; this needs a one-time `CODEX_HOME=~/.codex-toulmin codex login` by the researcher plus one more Codex session. Also set an explicit Codex `model` so Runs record it.
 
 ### C4 — Synthesizer and `crossval`
 

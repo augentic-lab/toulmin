@@ -1,5 +1,24 @@
 # Toulmin development progress
 
+## 2026-11-02 — C3 live smoke runs (approved) and Codex isolation follow-up
+
+- Status: **Verified: both adapters work against the real tools; C3 acceptance ticked. Paused here at the researcher's request.**
+- User authorization: "批准，跑真实冒烟测试" (approve and run the real smoke test). Exactly 2 sessions were used.
+- Run: `toulmin review sqpoll-cost --personas reviewer-skeptic --models claude,codex --confirm` on a scratch copy of the R1/S2 workbench, with models.toml defaults (empty model = tool default).
+- **Verified** results:
+  - R-002 Claude Code: completed, 86.4 s, model `claude-opus-5-5` reported, session ID recorded, 7 drafts with descriptive labels.
+  - R-003 Codex: completed, 113.7 s, model not reported, thread ID recorded, 5 drafts.
+  - Both outputs parsed. Intake of one Claude draft created O-005 citing R-002, and status listed the six remaining drafts as pending.
+- Finding: the Codex review followed the operator's global `~/.codex/AGENTS.md` (thin-first structure, "Verified by inspection" labels), so the session was not instruction-neutral. Claude's output showed no comparable influence, consistent with `--safe-mode` skipping CLAUDE.md (**Inferred** from the output).
+- Changes after the live run:
+  - `tools/models.toml` gains a per-model `env` table (`~` expanded) for a review-only `CODEX_HOME`, documented in the template, formats.md and README.
+  - The review prompt now states that the role contract overrides general reply-style instructions.
+  - Tests cover env passthrough and invalid env: `tests/cli/test_review.py` **24 passed**; full suite **478 passed**; Ruff and mypy passed.
+- Not verified: whether the env/prompt mitigations remove the Codex influence (needs the researcher's one-time `CODEX_HOME=~/.codex-toulmin codex login` and one more Codex session).
+- Session ID: unavailable in the current environment.
+- Blockers: none for C4; the Codex follow-up needs the researcher's login.
+- Next step (on resume): either verify the Codex follow-up, or start C4 (synthesizer and crossval). Set an explicit Codex model in models.toml so Runs record it.
+
 ## 2026-11-02 — C3: adapters and `toulmin review`
 
 - Status: **Verified with fake CLIs; live smoke runs pending researcher approval.** The C3 acceptance box stays open until one supervised live run per adapter.

@@ -60,7 +60,7 @@ def run_round(
     def session(task: ReviewTask) -> Session:
         entry: ModelConfig = config.available[task.model]
         return Session(task.prompt, entry.model, config.timeout_seconds, entry.command,
-                       entry.extra_args)  # fmt: skip
+                       entry.extra_args, entry.env)  # fmt: skip
 
     def execute(task: ReviewTask) -> ReviewOutcome:
         entry = config.available[task.model]

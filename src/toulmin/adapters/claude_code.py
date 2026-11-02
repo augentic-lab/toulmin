@@ -34,7 +34,11 @@ class ClaudeCode:
     def run(self, session: Session) -> ReviewOutcome:
         def call(directory: Path) -> Finished:
             return run_process(
-                self.arguments(session), session.prompt, session.timeout_seconds, directory
+                self.arguments(session),
+                session.prompt,
+                session.timeout_seconds,
+                directory,
+                session.env,
             )
 
         finished = in_empty_directory(call)

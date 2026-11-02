@@ -103,7 +103,8 @@ def build_prompt(repository: Repository, role: str, files: tuple[str, ...]) -> s
         f"You are an independent session of the role defined in roles/{role}.md.",
         "Every input you may use is included below between FILE markers. Do not read other",
         "files, run commands or use tools. Follow the role contract and write your complete",
-        "review as your final answer.",
+        "review as your final answer. The role contract overrides any general reply-style,",
+        "length or labelling instructions you may have been given elsewhere.",
         "",
     ]
     for path in files:

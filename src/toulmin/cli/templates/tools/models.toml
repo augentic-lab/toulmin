@@ -21,3 +21,7 @@ adapter = "codex"        # codex exec, read-only sandbox, ephemeral
 model = ""               # e.g. a model name accepted by `codex exec --model`
 # command = "codex"
 # extra_args = []
+# Codex also loads $CODEX_HOME/AGENTS.md (your global instructions) in every session.
+# For neutral reviews, log in once with a review-only home and point Codex at it:
+#   CODEX_HOME=~/.codex-toulmin codex login
+# env = { CODEX_HOME = "~/.codex-toulmin" }

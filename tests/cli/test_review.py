@@ -46,7 +46,8 @@ import json, os, sys, uuid, pathlib
 mode = os.environ.get("FAKE_CODEX", "ok")
 prompt = sys.stdin.read()
 log = pathlib.Path(os.environ["FAKE_LOG"])
-record = {"argv": sys.argv, "cwd": os.getcwd(), "files": os.listdir("."), "prompt": prompt}
+record = {"argv": sys.argv, "cwd": os.getcwd(), "files": os.listdir("."), "prompt": prompt,
+          "codex_home": os.environ.get("CODEX_HOME")}
 (log / f"codex-{uuid.uuid4().hex}.json").write_text(json.dumps(record))
 print(json.dumps({"type": "thread.started", "thread_id": "thread-codex"}))
 if mode == "fail":
@@ -71,6 +72,7 @@ adapter = "claude-code"
 adapter = "codex"
 model = "codex-test-model"
 extra_args = ["--ignore-user-config"]
+env = {{ CODEX_HOME = "~/.codex-toulmin" }}
 """
 
 
@@ -183,6 +185,8 @@ def test_sessions_are_isolated_read_only_and_tool_free(bench, fakes):
     assert codex["argv"][1:5] == ["exec", "--sandbox", "read-only", "--ephemeral"]
     assert codex["argv"][codex["argv"].index("--model") + 1] == "codex-test-model"
     assert codex["argv"][-2:] == ["--ignore-user-config", "-"]
+    assert codex["codex_home"] == os.path.expanduser("~/.codex-toulmin")
+    assert "overrides any general reply-style" in codex["prompt"]
     for call in (claude, codex):
         assert call["files"] == [] and not call["cwd"].startswith(str(bench))
         assert call["prompt"] == claude["prompt"]  # same input for every model
@@ -279,6 +283,13 @@ def test_output_without_a_draft_block_is_completed_but_flagged(bench, monkeypatc
             ),
             "command 'no-such-tool' not found on PATH",
         ),  # fmt: skip
+        (
+            [],
+            lambda root: (root / "tools/models.toml").write_text(
+                CONFIG.format(cap=8, timeout=5).replace('"~/.codex-toulmin"', "1")
+            ),
+            "models.codex.env: expected a table of string variables",
+        ),
     ],
 )
 def test_invalid_rounds_start_nothing_and_write_nothing(bench, fakes, arguments, setup, message):
