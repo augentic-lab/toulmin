@@ -45,6 +45,9 @@ def run_round(
         entry = config.available[name]
         if shutil.which(entry.command) is None:
             raise FormatError(f"{name}: command {entry.command!r} not found on PATH")
+        problem = entry.adapter.preflight(entry.command, entry.env)
+        if problem is not None:
+            raise FormatError(f"{name}: {problem}; nothing run")
 
     echo(f"Plan: {len(tasks)} sessions (cap {config.max_runs}, parallel {config.parallel})")
     for task in tasks:

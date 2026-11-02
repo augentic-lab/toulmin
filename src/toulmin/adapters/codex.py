@@ -7,6 +7,7 @@ directory keeps project AGENTS.md files out of discovery.
 """
 
 import json
+import os
 from pathlib import Path
 
 from toulmin.adapters.base import (
@@ -20,11 +21,38 @@ from toulmin.adapters.base import (
 from toulmin.protocols.review import ReviewOutcome
 
 LAST_MESSAGE = ".toulmin-last-message.txt"
+# Codex adds these from CODEX_HOME to every session as the operator's own instructions.
+INSTRUCTION_FILES = ("AGENTS.md", "AGENTS.override.md")
+LOGIN_TIMEOUT = 30.0
 
 
 class Codex:
     name = "codex"
     default_command = "codex"
+
+    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+        """Refuse a home with global instructions, or one that is not logged in."""
+        configured = dict(env).get("CODEX_HOME") or os.environ.get("CODEX_HOME")
+        home = Path(configured) if configured else Path.home() / ".codex"
+        login = f"run once: CODEX_HOME={home} {command} login"
+        for name in INSTRUCTION_FILES:
+            if (home / name).exists():
+                return (
+                    f"{home / name} would add the operator's global instructions to every "
+                    'review; set env = { CODEX_HOME = "~/.codex-toulmin" } for this model in '
+                    "tools/models.toml and log in there once: mkdir -p ~/.codex-toulmin && "
+                    f"CODEX_HOME=~/.codex-toulmin {command} login"
+                )
+        if not home.is_dir():
+            return f"CODEX_HOME {home} does not exist; {login}"
+
+        def status(directory: Path) -> Finished:
+            return run_process([command, "login", "status"], "", LOGIN_TIMEOUT, directory, env)
+
+        finished = in_empty_directory(status)
+        if finished.exit_status != 0:
+            return f"not logged in for CODEX_HOME {home}; {login}"
+        return None
 
     def arguments(self, session: Session, directory: Path) -> list[str]:
         arguments = [session.command, "exec", "--sandbox", "read-only", "--ephemeral"]

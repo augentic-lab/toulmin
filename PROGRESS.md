@@ -35,6 +35,22 @@
 - Blockers: none for the design deliverable; implementation awaits review of the proposed scope/contracts.
 - Next step: researcher reviews Q25–Q29, then UI1 can begin if approved. No automatic push.
 
+## 2026-11-02 — C3 follow-up: Codex home preflight
+
+- Status: **Verified: review refuses a Codex home with global instructions or without a login.**
+- User authorization: "加上运行前检查，然后开始 C4" (add the preflight check, then start C4).
+- Change (L3):
+  - Adapters gain `preflight(command, env)`, run during planning, before any session and also on `--dry-run`. Claude Code needs none because `--safe-mode` covers it.
+  - The Codex preflight refuses a `CODEX_HOME` containing AGENTS.md or AGENTS.override.md, or one that is missing. It then runs `codex login status`, which uses no quota, and refuses a home that is not logged in.
+  - Each refusal message gives the one-time login command.
+  - The models.toml template now enables `env = { CODEX_HOME = "~/.codex-toulmin" }` by default. Protocols, README and CHANGELOG were updated.
+- **Verified**: `tests/cli/test_review.py` **29 passed**, using a temporary Codex home, never the operator's: instruction files, missing home, logged out, per-adapter scope and `~` expansion. Full suite with `--extra tui` **532 passed**; Ruff and mypy (39 source files) passed.
+- **Verified** against the real tools, dry run only: `~/.codex-toulmin` passed (logged in, no AGENTS.md). Without the env line, the default `~/.codex` was refused because of its AGENTS.md. That refusal's first hint wrongly suggested logging in to `~/.codex`; this was fixed and rechecked.
+- Note: commits 8e6420d/c41ef80/ae52061 (UI0/UI1, another session) landed during the pause. They are untouched here.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: C4, as the researcher instructed. This takes C4 ahead of UI2, changing Q29's order (UI1–UI5 first, C4/C5 pending).
+
 ## 2026-11-02 — C3 follow-up: Codex isolation verified
 
 - Status: **Verified: Codex reviews run without the operator's global instructions.**

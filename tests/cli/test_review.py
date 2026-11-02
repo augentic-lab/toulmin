@@ -43,6 +43,10 @@ print(json.dumps({"type": "result", "is_error": mode == "error", "result": resul
 
 FAKE_CODEX = """
 import json, os, sys, uuid, pathlib
+if sys.argv[1:3] == ["login", "status"]:  # preflight; uses no quota and is not logged
+    logged_in = os.environ.get("FAKE_CODEX_LOGIN", "in") == "in"
+    print("Logged in using ChatGPT" if logged_in else "Not logged in")
+    sys.exit(0 if logged_in else 1)
 mode = os.environ.get("FAKE_CODEX", "ok")
 prompt = sys.stdin.read()
 log = pathlib.Path(os.environ["FAKE_LOG"])
@@ -72,7 +76,7 @@ adapter = "claude-code"
 adapter = "codex"
 model = "codex-test-model"
 extra_args = ["--ignore-user-config"]
-env = {{ CODEX_HOME = "~/.codex-toulmin" }}
+env = {{ CODEX_HOME = "@CODEX_HOME@" }}
 """
 
 
@@ -103,8 +107,14 @@ def bench(populated, fakes):
     return populated
 
 
+def codex_home(root):
+    return root.parent / "codex-home"  # never the operator's real Codex home
+
+
 def configure(root, cap=8, timeout=30):
-    (root / "tools/models.toml").write_text(CONFIG.format(cap=cap, timeout=timeout))
+    codex_home(root).mkdir(exist_ok=True)
+    text = CONFIG.format(cap=cap, timeout=timeout).replace("@CODEX_HOME@", str(codex_home(root)))
+    (root / "tools/models.toml").write_text(text)
 
 
 def calls(log, tool):
@@ -185,7 +195,7 @@ def test_sessions_are_isolated_read_only_and_tool_free(bench, fakes):
     assert codex["argv"][1:5] == ["exec", "--sandbox", "read-only", "--ephemeral"]
     assert codex["argv"][codex["argv"].index("--model") + 1] == "codex-test-model"
     assert codex["argv"][-2:] == ["--ignore-user-config", "-"]
-    assert codex["codex_home"] == os.path.expanduser("~/.codex-toulmin")
+    assert codex["codex_home"] == str(codex_home(bench))
     assert "overrides any general reply-style" in codex["prompt"]
     for call in (claude, codex):
         assert call["files"] == [] and not call["cwd"].startswith(str(bench))
@@ -286,10 +296,21 @@ def test_output_without_a_draft_block_is_completed_but_flagged(bench, monkeypatc
         (
             [],
             lambda root: (root / "tools/models.toml").write_text(
-                CONFIG.format(cap=8, timeout=5).replace('"~/.codex-toulmin"', "1")
+                CONFIG.format(cap=8, timeout=5).replace('"@CODEX_HOME@"', "1")
             ),
             "models.codex.env: expected a table of string variables",
         ),
+        (
+            [],
+            lambda root: (codex_home(root) / "AGENTS.md").write_text("Reply briefly.\n"),
+            "AGENTS.md would add the operator's global instructions to every review; set env",
+        ),
+        (
+            [],
+            lambda root: (codex_home(root) / "AGENTS.override.md").write_text("Be terse.\n"),
+            "AGENTS.override.md would add the operator's global instructions",
+        ),
+        ([], lambda root: codex_home(root).rmdir(), "codex-home does not exist; run once:"),
     ],
 )
 def test_invalid_rounds_start_nothing_and_write_nothing(bench, fakes, arguments, setup, message):
@@ -300,6 +321,26 @@ def test_invalid_rounds_start_nothing_and_write_nothing(bench, fakes, arguments,
     assert result.exit_code == 1
     assert message in result.output
     assert files(bench) == before and not list(fakes.iterdir())
+
+
+def test_codex_home_must_be_logged_in(bench, fakes, monkeypatch):
+    monkeypatch.setenv("FAKE_CODEX_LOGIN", "out")
+    before = files(bench)
+    result = review(bench, "--models", "codex")
+    assert result.exit_code == 1
+    assert f"not logged in for CODEX_HOME {codex_home(bench)}" in result.output
+    assert f"CODEX_HOME={codex_home(bench)} codex login" in result.output
+    assert files(bench) == before and not list(fakes.iterdir())
+    claude_only = review(bench, "--models", "claude", "--personas", "reviewer-skeptic")
+    assert claude_only.exit_code == 0, claude_only.output  # the check is per adapter
+
+
+def test_config_expands_home_in_env(workbench):
+    text = (workbench / "tools/models.toml").read_text()
+    assert 'env = { CODEX_HOME = "~/.codex-toulmin" }' in text  # template default
+    assert load_config(workbench).available["codex"].env == (
+        ("CODEX_HOME", os.path.expanduser("~/.codex-toulmin")),
+    )
 
 
 def test_dry_run_and_missing_confirmation_start_nothing(bench, fakes):

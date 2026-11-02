@@ -24,6 +24,9 @@ class ClaudeCode:
     name = "claude-code"
     default_command = "claude"
 
+    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+        return None  # --safe-mode already skips CLAUDE.md files and other customizations
+
     def arguments(self, session: Session) -> list[str]:
         arguments = [session.command, "-p", "--output-format", "json", "--tools", ""]
         arguments += ["--safe-mode", "--no-session-persistence"]

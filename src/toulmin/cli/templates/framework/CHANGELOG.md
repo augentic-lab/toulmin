@@ -29,6 +29,8 @@
 - C3 (L2/L3): `toulmin review` runs read-only headless reviews (Claude Code, Codex) per
   persona x model, archives prompt/output/log and records completed or failed Runs.
   Configuration in tools/models.toml. Object formats unchanged; no migration.
+  Codex runs from a review-only CODEX_HOME; review refuses a home with global
+  instructions or without a login (preflight, no quota).
 
 ## UI1 — Optional terminal workspace
 

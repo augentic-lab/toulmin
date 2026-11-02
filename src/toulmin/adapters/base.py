@@ -34,6 +34,10 @@ class Adapter(Protocol):
     name: str
     default_command: str
 
+    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+        """Return why sessions would not be clean or could not start, without using quota."""
+        ...
+
     def run(self, session: Session) -> ReviewOutcome: ...
 
 

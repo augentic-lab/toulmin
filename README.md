@@ -104,7 +104,7 @@ uv run --locked toulmin review tail-latency --root /path/to/research \
 Each persona × model pair runs once in a fresh, tool-free (Claude Code) or read-only sandboxed (Codex) session, from an empty temporary directory, with the persona's manifest files inlined in the prompt.
 Every session becomes a Run with `prompt.md`, `output.md` and, on failure, `tool.log`; failures and timeouts are recorded as failed Runs and make the command exit 1. Reviews use subscription quota: the plan is printed first and `max_runs` caps one round.
 review never writes Objections; take drafts in with `toulmin intake`.
-Codex loads `$CODEX_HOME/AGENTS.md` in every session; for neutral reviews, log in once with `CODEX_HOME=~/.codex-toulmin codex login` and set `env = { CODEX_HOME = "~/.codex-toulmin" }` for that model.
+Codex loads `$CODEX_HOME/AGENTS.md` in every session, so the template points Codex at a review-only home (`env = { CODEX_HOME = "~/.codex-toulmin" }`). Log in there once with `mkdir -p ~/.codex-toulmin && CODEX_HOME=~/.codex-toulmin codex login`; review refuses to start if that home holds AGENTS.md or is not logged in.
 
 ## Take in review drafts
 
