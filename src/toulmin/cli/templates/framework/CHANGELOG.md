@@ -10,3 +10,5 @@
   content digests and previous_handoff identify applied history without an index.
 - Independent roles follow their input exclusions; interactive resident context must not
   cause reviewers to load handoffs or discussion history.
+- 2026-11-02 (L2 note): stage acceptance is a researcher ruling on recorded trial evidence,
+  not necessarily a human two-day trial. No object format or command behavior changed.

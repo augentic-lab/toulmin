@@ -1,7 +1,7 @@
 # L2 skeleton protocols v1
 
 This document refines design sections 6–8 to unify draft permissions, human rulings and stage mappings.
-CLI use, Python calls and manual editing follow the same protocol. T1 provides the read-order function; T2–T5 implement init, new, status and handoff. Stage acceptance still requires a real research project's manual trial.
+CLI use, Python calls and manual editing follow the same protocol. T1 provides the read-order function; T2–T5 implement init, new, status and handoff. Stage acceptance is an explicit researcher ruling on recorded trial evidence.
 
 ## Entry and exit
 
@@ -93,5 +93,5 @@ This L2 change defines input differences between interactive and independent ses
 
 ## Stage acceptance
 
-Pass command integration tests first. Then use a real research idea for Claim writing → independent manual review → confirmed Objection → handoff → a fresh session the next day.
-Automation can simulate restarts, but cannot replace a real two-day trial or final researcher acceptance. Implementation-session self-tests do not count as independent review.
+Pass command integration tests first. Then run a research idea through Claim writing → independent manual review → confirmed Objection → handoff → a fresh session that recovers state from files alone.
+The researcher decides what trial evidence suffices and rules on acceptance. Stage 2 was accepted on an agent-run trial with fresh-context sessions; record what any accepted trial did not cover. Implementation-session self-tests do not count as independent review.

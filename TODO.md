@@ -50,7 +50,7 @@ Deferred questions: section 13's synthesizer rotation and calibration-statistics
 
 ## Five implementation tasks
 
-Order: T1 → T2 → T3 → T4 → T5. T1–T4 are complete; T5 software and automated checks are complete, with the real-project manual trial pending.
+Order: T1 → T2 → T3 → T4 → T5. All five are complete. The researcher accepted roadmap stage 2 on 2026-11-02 on the basis of the agent-run trial (see T5).
 Every code delivery must pass AGENTS.md's full checks. Completing a task does not automatically establish researcher acceptance of the stage.
 
 ### T1 — Freeze skeleton contracts and establish a testable package
@@ -103,16 +103,53 @@ Boundary: conditions use valid evidence/objections from the selected project onl
 
 ### T5 — handoff, recovery and real-project trial
 
-- [ ] Outputs: `toulmin handoff <project>`, manual application steps, entry/exit documentation and a manual trial record. Explicit projects avoid guessing; no network/models are required. (Command and steps delivered; actual manual trial record pending.)
+- [x] Outputs: `toulmin handoff <project>`, manual application steps, entry/exit documentation and a manual trial record. Explicit projects avoid guessing; no network/models are required. (Trial record: docs/manual-acceptance.md and PROGRESS S1.)
 - [x] Draft acceptance: by default, create a reviewable draft only in runs, covering work done, decisions/pending decisions, open questions, next step and session ID. Never invent discussion content or unknown IDs; mark unknown information explicitly.
 - [x] Application acceptance: confirmed `--apply <draft>` writes sessions and PROJECT's recent decisions/next step, preserving goal/constraints/handwritten content. Never change stage or object status. Reject overwrites if PROJECT changed after drafting. Repetition adds no duplicate handoff; interrupted writes recover without silent data loss.
 - [x] Automated acceptance: `uv run --locked pytest -q tests/cli/test_handoff.py tests/integration/test_resume.py`. Installed subprocess checks execute init → new claim → archive manual review output → confirmed objection intake → status → handoff → fresh-process resume, recovering the same pending work/provenance from files alone.
-- [ ] Manual stage acceptance: the researcher chooses a real idea, writes Claims, invokes an independent manual review, confirms Objections, applies a handoff and commits that day. **The next day**, a fresh session uses only the entry protocol to recover the goal, unresolved objections and next step, locating the raw review.
-- [ ] Acceptance evidence: both dates/session details, object/handoff paths, actual command results, explicit researcher acceptance and a stage retrospective. Never replace a real trial with simulated next-day tests. Without researcher confirmation, retain “software complete, stage acceptance pending.”
+- [x] Manual stage acceptance (criterion revised 2026-11-02, see below): the researcher chooses a real idea, writes Claims, invokes an independent manual review, confirms Objections, applies a handoff and commits that day. **The next day**, a fresh session uses only the entry protocol to recover the goal, unresolved objections and next step, locating the raw review.
+- [x] Acceptance evidence (criterion revised 2026-11-02, see below): both dates/session details, object/handoff paths, actual command results, explicit researcher acceptance and a stage retrospective. Never replace a real trial with simulated next-day tests. Without researcher confirmation, retain “software complete, stage acceptance pending.”
 
 T5 automated verification: 34 handoff/recovery/end-to-end and 292 total tests and Ruff/mypy passed. Actual processes forced to exit after session/PROJECT writes recovered on retry without duplicate appends.
-After wheel installation, all four commands, handoff replay, entry-file recovery and status were verified outside the checkout. See docs/manual-acceptance.md for steps/result template; no real trial record exists yet.
+After wheel installation, all four commands, handoff replay, entry-file recovery and status were verified outside the checkout. See docs/manual-acceptance.md for steps and the recorded trial.
 Requirements: POSIX flock and file/directory fsync for handoff writes. The two files are not one atomic operation; pending status reports incomplete data. External edits or corrupt journals preserve the files for inspection rather than guessing a merge.
+
+Acceptance criterion revision (2026-11-02, researcher decision): the original wording above required a human researcher's real idea, resumed on the actual next day, and forbade substituting simulated next-day tests. After reviewing the agent-run trial (PROGRESS S1), the researcher said no human trial is needed, judged the simulation accurate enough, and explicitly declared roadmap stage 2 accepted. The two items above are checked under this revised criterion; their original text is kept as history.
+Not covered by the accepted evidence: a cross-model review (reviewer and author were the same model), a human researcher's real next-day memory loss, and genuine researcher confirmations (they were simulated). Stage 3 multi-model review partly covers the first.
+
+## Stage 2 follow-up: usability (U1–U3)
+
+Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance; implementation has not started. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
+Order: U1 → U2 → U3, one task per session. U1 removes the largest friction. U2 adds the most common next-day action. U3 is cosmetic and changes no format.
+
+### Pending decisions
+
+| ID | Required decision | Recommendation | Impact |
+| --- | --- | --- | --- |
+| Q11 | Where does a default confirmer come from? | An optional `TOULMIN_ACTOR` environment variable used when `--confirmed-by` is omitted. `--confirm` stays mandatory. Operator identity is local, not research state, so it does not go in workbench files. | L3 only. |
+| Q12 | Where do draft skeletons go, and how are they created? | `toulmin draft <kind> <project> [--name N]` writes a commented skeleton to `projects/<p>/runs/drafts/<kind>-<UTC>[-N].md` without overwriting, and prints the root-relative path. `runs/drafts/` becomes the documented draft location, replacing ad hoc `runs/manual/`. | L3, L2 note, templates/README. |
+| Q13 | How are stored statuses, Objection Responses and Rulings changed? | `toulmin rule <project> <ID> --status S --decision D-NNN [--response FILE] [--ruling FILE] --confirmed-by A --confirm`. Every status change needs an existing active Decision reference, which the command appends to `decisions` (Run status is immutable). A Response alone (no status change) needs no Decision. Body sections other than the targeted ones, other fields and comments are preserved. | New L2 protocol (change note), L1 conditional rules reused unchanged. |
+| Q14 | Should `last_handoff` become a root-relative path, and should Objections allow several targets? | Neither, for now. Both are L1 format changes that require migration. U3 makes status print the resolved handoff path instead. Revisit multi-target after stage 3 shows how often reviews span several Claims. | None now. |
+
+### U1 — Draft skeletons and simpler intake
+
+- [ ] Outputs: the Q12 `draft` command for all seven kinds; skeletons list required fields and sections with short comments and allowed enum values. `new --input` also accepts an absolute path inside the workbench root. The Q11 default confirmer is supported.
+- [ ] Behavior acceptance: a skeleton filled in without consulting formats.md passes `new` for every kind. Unfilled placeholders fail validation with a located error rather than being accepted. `draft` never overwrites and never creates a formal object.
+- [ ] Boundary acceptance: absolute paths outside the root, symlink escapes and `..` stay rejected. Without `--confirm`, intake still fails. A missing actor (no flag, no variable) fails with a clear message.
+- [ ] Run: `uv run --locked pytest -q tests/cli/test_new.py` plus new draft tests; full AGENTS.md checks.
+
+### U2 — Confirmed status and response updates
+
+- [ ] Outputs: the Q13 `rule` command, plus a protocols.md section and a framework CHANGELOG entry.
+- [ ] Behavior acceptance: an Objection moves open → answered (Response required), accepted (Ruling and Decision required) or deferred (Ruling required). A Claim moves to challenged, supported, accepted or refuted with a Decision. All formats.md conditional rules hold after the update. status reflects the change.
+- [ ] Integrity acceptance: the update preserves comments, field order, unrelated body sections and bytes outside the patched regions. A missing or superseded Decision, a wrong project or an invalid transition creates no write. The write is atomic and never leaves a partial file. The tool never chooses a status on the researcher's behalf.
+- [ ] Run: new `tests/cli/test_rule.py`; full checks.
+
+### U3 — Readable generated files and status output
+
+- [ ] Outputs: generated headers in the formats.md field order (common fields first), without line folding and with second-precision UTC timestamps. `new`, `draft` and `handoff` all print root-relative paths. `status --verbose` shows the first line of each Claim Statement and Objection Content plus the resolved `last_handoff` path.
+- [ ] Compatibility acceptance: existing v1 files with microsecond timestamps or other key orders still validate. No migration is needed because YAML key order and timestamp precision are not format semantics.
+- [ ] Run: affected unit/CLI tests; full checks.
 
 ## Planning delivery status
 

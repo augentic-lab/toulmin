@@ -1,6 +1,6 @@
 # Toulmin: Design Document (Draft)
 
-*Status: stage-2 skeleton contracts agreed; later stages remain draft · Last updated: 2026-10-31 · Organization: [augentic-lab](https://github.com/augentic-lab)*
+*Status: roadmap stage 2 accepted on 2026-11-02; later stages remain draft · Last updated: 2026-11-02 · Organization: [augentic-lab](https://github.com/augentic-lab)*
 
 *T1 revision:* The researcher authorized continuing with the proposed skeleton plan on 2026-10-31. [L1 file contracts](formats.md), [examples](format-examples.md) and [L2 protocols](protocols.md) specify the v1 format and resolve the skeleton questions below. There are no existing persisted v0 objects to migrate. L0 is unchanged; L2 now consistently separates draft output from confirmed intake.
 
@@ -383,6 +383,7 @@ Build the skeleton first and run it by hand on a real research project, then add
    *Done when:* L0, L1 and L2 are agreed.
 2. **Skeleton.** Repository template, `AGENTS.md`, object file formats, entry and exit protocols, `init`, `new`, `status` and `handoff`. Models are invoked by hand.
    *Done when:* a real research idea goes through "write claims → manual review → objection intake → handoff → resume the next day".
+   *Accepted 2026-11-02:* the researcher accepted an agent-run, same-day trial (fresh-context reviewer and resume sessions) in place of a human next-day trial. See TODO.md T5 for what that evidence does not cover.
 3. **Critique.** Reviewer roles, the `review` and `crossval` commands, the synthesizer, and the objection intake flow.
    *Done when:* one brief has gone through three rounds of multi-model review, and every objection has a complete, traceable status.
 4. **Expansion and checking.** Expander, novelty checker (citations verified via API), estimator (numbers computed by code).

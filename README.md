@@ -3,7 +3,7 @@
 A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
 The T1–T5 software is implemented: templates, object formats/validation, `init`, `new`, read-only `status` and `handoff`.
-Roadmap stage 2 still requires a real research project to resume the next day and receive researcher acceptance; automated tests cannot replace that condition.
+The researcher accepted roadmap stage 2 on 2026-11-02 after an agent-run workflow trial. Usability follow-ups U1–U3 are planned in TODO.md.
 
 ## Initialize a research workbench
 
@@ -83,7 +83,7 @@ If PROJECT differs from the draft's baseline, the journal is corrupt or a sessio
 While pending, status reports incomplete data. Do not delete the journal or edit PROJECT during application.
 Handoff writes currently require POSIX file synchronization, atomic rename, hard links and flock. They invoke no model and make no automatic Git commit.
 
-See the [manual acceptance checklist](docs/manual-acceptance.md) for the real project's first-day/next-day trial and required records.
+See the [manual acceptance record](docs/manual-acceptance.md) for the accepted trial, its retrospective and a reusable two-day checklist.
 
 ## Development
 

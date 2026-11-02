@@ -1,4 +1,6 @@
-# Stage 2 manual acceptance (pending)
+# Stage 2 manual acceptance
+
+**Accepted on 2026-11-02 under a revised criterion.** The researcher accepted the agent-run trial recorded below and declared that no human two-day trial is needed. The procedure below remains a reusable checklist for a human trial; it was not executed as written.
 
 Passing software and automated recovery tests does not satisfy this criterion. The researcher must choose a real systems-research idea and resume it in a fresh session on the actual next day.
 This checklist is not an executed experiment record. Unfilled results must not be reported as passing. Keep the research workbench separate from the Toulmin software repository.
@@ -32,12 +34,19 @@ Save actual records in a dated runs subdirectory of the research workbench. Reco
 
 | Item | Information to fill in |
 | --- | --- |
-| Real idea and research directory | Researcher selection pending |
-| First-day date / session ID | Not performed; do not supply simulated values |
-| Claim / Run / Objection / Decision paths | Not created |
-| Raw output / applied handoff / Git commit | Not created |
-| Next-day date / new session ID / entry files | Not performed |
-| Recovery check: goal / unresolved objections / next step / provenance | Not performed |
-| Researcher ruling and stage retrospective | Acceptance pending |
+| Real idea and research directory | Idea chosen by the agent: whether RocksDB compaction stalls dominate p99 write latency on NVMe. Project `compaction-tail` in a scratch workbench outside this repository (not durable). |
+| First-day date / session ID | 2026-11-02; session ID unavailable. The agent acted as researcher; confirmations were simulated. |
+| Claim / Run / Objection / Decision paths | claims/C-001..C-003, runs/R-001.md, objections/O-001..O-004, decisions/D-001 under `projects/compaction-tail/` |
+| Raw output / applied handoff / Git commit | runs/20261102T134731Z-review/output.md; one applied record in sessions/; workbench commit 82ef3a8 |
+| Next-day date / new session ID / entry files | Same day (2026-11-02), fresh-context session, ID unavailable. Read AGENTS.md, PROJECT.md, the last_handoff session file, O-001..O-004, R-001 and D-001. |
+| Recovery check: goal / unresolved objections / next step / provenance | All four answered correctly from files and matched `status`. |
+| Researcher ruling and stage retrospective | Accepted by the researcher on 2026-11-02. Retrospective below. |
 
-Completing four commands and automated tests neither advances the research PROJECT.stage nor establishes manual acceptance of software roadmap stage 2.
+## Retrospective (2026-11-02)
+
+- Objections that changed direction: O-001 (the p99 "share" was undefined) forced D-001 to redefine the C-002 metric before any experiment. O-003 exposed a contradiction between the brief and C-003.
+- Steps that were too burdensome: hand-writing YAML drafts for every object, and the lack of any command to record a Response, Ruling or status change. These are planned as TODO.md U1–U2.
+- Lost in handoff: nothing that blocked recovery. The resume session could not tell whether D-001 resolved O-001/O-002, because their statuses stayed open. U2 addresses this.
+- Not covered: cross-model review, a human's real next-day memory loss, and genuine researcher confirmations.
+
+Completing four commands and automated tests does not advance the research PROJECT.stage. Software stage acceptance is always an explicit researcher ruling.

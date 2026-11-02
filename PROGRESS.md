@@ -1,5 +1,18 @@
 # Toulmin development progress
 
+## 2026-11-02 — Stage 2 acceptance and U1–U3 usability plan
+
+- Status: **Verified**: the researcher explicitly accepted roadmap stage 2. The usability follow-up U1–U3 is planned in TODO.md; implementation has not started.
+- User authorization: "Agreed: declare stage 2 accepted, then plan the usability tasks" (the user's request, translated from Chinese), following the S1 trial below.
+- Decision: the acceptance criterion changed from a human real-idea, actual-next-day trial to the agent-run trial in S1. TODO.md T5 keeps the original wording as history, with a dated revision note listing what the evidence does not cover (cross-model review, real human next-day memory loss, genuine confirmations).
+- Updated: TODO.md (T5 items checked under the revised criterion; U1–U3 with decisions Q11–Q14), docs/design.md §12 and status line, docs/manual-acceptance.md (filled record and retrospective), docs/protocols.md and its packaged copy (stage-acceptance wording), framework CHANGELOG template (L2 note), README.md and AGENTS.md (scope and next work).
+- Compatibility: wording only; no object fields, formats or command behavior changed, so no data migration is needed. Because two packaged framework templates changed, running `init --project` on a workbench created before this commit reports conflicts on framework/protocols.md and framework/CHANGELOG.md and preserves them (existing init behavior). The only such workbench is the S1 scratch trial.
+- **Verified**: `uv sync --locked --dev`; **292 passed**; Ruff lint/format checks, mypy (20 source files) and CLI help passed. The docs and packaged protocols.md are byte-identical. The edited documents contain no Chinese text.
+- Pending decisions: Q11–Q13 (default confirmer, `draft` command, `rule` command) need confirmation before U1/U2 start. Q14 recommends deferring both L1 changes.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: confirm Q11–Q13, then implement U1 in its own session.
+
 ## 2026-11-02 — S1: agent-run workflow trial
 
 - Status: **Verified**: an agent-run, same-day simulation of the stage-2 workflow completed end to end, and a fresh session recovered the project from files alone. This is a simulation, not the next-day human trial in docs/manual-acceptance.md.
