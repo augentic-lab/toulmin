@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-03 — UI-R3 purpose review after researcher feedback
+
+- Researcher feedback: the current flow remains unclear and may be less useful than direct AI-agent conversation. Prototype behavior checks did not establish product usability; UI-R2/UI-R3 are not accepted as the production interaction model.
+- Re-read docs/design.md sections 1, 2, 4, 6 and 8. The original main workbench is an interactive researcher/model working session, supplemented by fresh, restricted-input task sessions for independent review and verification. The primary artifact is a defensible brief; the network records its arguments and provenance, connects to engineering verification, and survives session/model changes.
+- Diagnosis (inference): the prototypes displaced the central collaboration with fixed samples and mandatory-looking forms/action choices, while exposing protocol administration as ordinary research work. The latest iteration further attempted generic scientific-method guidance. These were prototype design choices, not requirements of the original document.
+- Product correction to discuss: preserve fluid researcher/AI collaboration, make the current goal, artifacts, unresolved questions and next step visible, and let protocols support archiving, independent tasks and explicit rulings. Do not treat more pages, buttons or passing interaction tests as evidence of greater research value.
+- No new prototype or application changes. Existing prototypes retained as unaccepted experiments. Validation: original-source review and documentation diff only; no code tests required. Session ID unavailable. Blockers: none for this retrospective. Next: re-establish the primary interaction around the original purpose before further implementation. No push.
+
 ## 2026-11-03 — UI-R3: uncertainty-driven inquiry prototype
 
 - Authorization: researcher approved trying the proposed scientific-workflow adjustments. This iteration remains a standalone, memory-only prototype; production src/, schemas, adapters and Q30/Q31 production scope are unchanged.

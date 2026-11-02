@@ -301,4 +301,4 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 
 - [x] Update the standalone prototype: observation versus hypotheses, editable AI-style suggestions and feedback, early data/literature/experiment checks, explicit interpretation with reasons, and next actions driven by the researcher's choice.
 - [x] Verify divergent/insufficient fixtures, no automatic research rulings, source/plan freshness, accessible controls at three terminal sizes, and preserve optional review.
-- [ ] Researcher tries the revised flow; actual model collaboration and production integration remain outside this prototype.
+- [ ] Researcher usability acceptance of the revised flow. Feedback on 2026-11-03: still unclear and may be less useful than direct agent conversation. UI-R2/UI-R3 are not accepted production designs; revisit the original interactive-workbench purpose before further implementation. Actual model collaboration and production integration remain untested.
