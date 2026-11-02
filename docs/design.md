@@ -72,7 +72,7 @@ Research thinking is modeled as a network centered on **claims**. Evidence suppo
 
 | Object | ID prefix | Meaning | Key fields | Status |
 | --- | --- | --- | --- | --- |
-| Claim | `C-` | A testable statement, e.g. "this bottleneck exists in real workloads", "it causes 30% of tail latency" | statement, type, importance (core / secondary), origin | proposed → challenged → supported → accepted; can become refuted at any stage |
+| Claim | `C-` | A testable statement, e.g. "this bottleneck exists in real workloads", "it causes 30% of tail latency" | statement, type, importance (core / secondary), origin | proposed → challenged → supported → accepted; can become refuted or superseded (revised as a new claim) at any stage |
 | Evidence | `E-` | Material that supports or refutes a claim | target claim, direction (supports / refutes), kind (measurement / literature / derivation / experiment / computation), grade (verified / model-asserted / intuition), provenance | valid / invalidated |
 | Objection | `O-` | An attack on a claim | target claim, content, severity (fatal / major / minor), raised by, response | open / answered / accepted (claim revised) / deferred |
 | Decision | `D-` | The researcher's ruling at a gate | context, choice, rejected alternatives, rationale, related objects | active / superseded |
@@ -86,6 +86,7 @@ Research thinking is modeled as a network centered on **claims**. Evidence suppo
 - **Supported:** at least one piece of verified supporting evidence, and no open fatal or major objections.
 - **Accepted:** supported, and confirmed by the researcher.
 - **Refuted:** the researcher rules so, based on refuting evidence or an accepted objection, and a decision is recorded.
+- **Superseded:** the researcher restates the claim as a new claim and records a decision; the old claim keeps its wording and history (see [claim-revision.md](claim-revision.md)).
 
 These are conditions to report, not automatic transitions. A valid verified supporting evidence item is required for supported; invalidated evidence never counts. An open minor objection can coexist with eligibility for supported, so both facts are shown without selecting a new status. Every stored status change remains a researcher decision. Claim types are problem, magnitude, mechanism, novelty, assumption and deployability; workload/hardware distinctions use tags.
 

@@ -77,8 +77,12 @@ def encode(document: Document) -> bytes:
     return ("---\n" + stream.getvalue() + "---\n" + document.body).encode("utf-8")
 
 
-def patch_header(data: bytes, changes: dict[str, Any]) -> bytes:
-    """Edit selected metadata, retaining YAML comments/quotes and exact body bytes."""
+def patch_header(data: bytes, changes: dict[str, Any], order: tuple[str, ...] = ()) -> bytes:
+    """Edit selected metadata, retaining YAML comments/quotes and exact body bytes.
+
+    A key that does not exist yet is inserted before the first existing key that follows
+    it in `order` (appended when none does), so contract field order survives edits.
+    """
     from ruamel.yaml import YAML
 
     decode(data)  # Apply the same restricted input syntax before round-trip loading.
@@ -91,6 +95,11 @@ def patch_header(data: bytes, changes: dict[str, Any]) -> bytes:
         old = metadata.get(key)
         if isinstance(old, list) and isinstance(value, list) and value[: len(old)] == old:
             old.extend(value[len(old) :])
+        elif key not in metadata and key in order:
+            later = order[order.index(key) + 1 :]
+            keys = list(metadata)
+            position = next((keys.index(k) for k in keys if k in later), len(keys))
+            metadata.insert(position, key, value)
         else:
             metadata[key] = value
     stream = io.StringIO()

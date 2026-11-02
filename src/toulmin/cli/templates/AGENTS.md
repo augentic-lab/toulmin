@@ -28,6 +28,8 @@ Models are invoked manually. Decisions belong to the researcher.
 - Only the researcher rules on object status or project stage. Record the Decision and its
   rationale, then apply it with `toulmin rule` (or by hand). Condition checks report facts
   and suggestions; they never advance a gate.
+- Revise a Claim by superseding it with a new Claim, never by rewriting its Statement;
+  keep Objections and Evidence on the wording they addressed. Fix typos in place.
 - Evidence grades remain verified, model-asserted and intuition. The latter two cannot
   alone satisfy supported. Invalidated evidence never counts as support.
 - Keep generation separate from evaluation. Independent review and acceptance need fresh

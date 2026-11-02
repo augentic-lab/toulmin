@@ -73,7 +73,17 @@ uv run --locked toulmin rule tail-latency O-001 --root /path/to/research \
 
 Every status change needs an active Decision naming the object; the command appends it to the object's `decisions`.
 `--response`/`--ruling` (Objections) and `--section Invalidation=FILE` / `--section Rationale=FILE` add text to that section without deleting earlier text.
-A Response alone needs no Decision. Run outcomes cannot be changed. Fields such as adopted_as, superseded_by or Spec evidence are still edited by hand.
+A Response alone needs no Decision. Run outcomes cannot be changed.
+`--superseded-by`, `--adopted-as` and `--evidence` set the links that superseded, adopted and passed statuses need; rule never replaces an existing link.
+
+To revise a Claim, supersede it instead of rewriting its Statement:
+
+```sh
+uv run --locked toulmin rule tail-latency C-001 --root /path/to/research \
+  --status superseded --superseded-by C-004 --decision D-003 --confirm
+```
+
+D-003's `related` must list both C-001 and C-004. Objections and Evidence stay on C-001; status lists `C-001 -> C-004` under `Superseded:` and points each dependent at C-004.
 The command preserves comments and other text, writes atomically, and prints status notices for the object and its target Claim.
 
 ## Inspect status and consistency

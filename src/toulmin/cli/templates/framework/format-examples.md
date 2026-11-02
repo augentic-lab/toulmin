@@ -25,6 +25,8 @@ Queueing delay is the main source of tail latency under the specified load.
 
 Invalid variant: replace `type: problem` with `type: workload`. Report an invalid type; workload may only be a tag.
 
+Superseded variant (valid once C-002 and D-002 exist): set `status: superseded`, add `superseded_by: C-002` and `decisions: [D-002]`. Removing `superseded_by`, or keeping it while the status is not superseded, is invalid.
+
 ## Run — R-001.md
 
 ````markdown

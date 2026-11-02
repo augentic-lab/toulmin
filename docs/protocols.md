@@ -42,6 +42,12 @@ The update preserves YAML comments, field order and every other body byte, holds
 Reference fields that some statuses need (Exploration adopted_as, Decision superseded_by, Spec evidence) are still edited by hand; rule reports them as missing rather than inventing values.
 This L2 change adds a write path for researcher rulings only; object fields and the v1 format are unchanged.
 
+Claim revision (R1): revise a Claim by superseding it. Create the successor with new, write a Decision whose `related` lists both Claims, then run `rule <old> --status superseded --superseded-by <new> --decision <D>`.
+The successor must be a current (non-superseded) Claim in the same project. `superseded` is final for rule; correct a mistake by hand with a Decision. Fix typos in place; supersede whenever a change could alter what existing Evidence or Objections mean.
+Nothing is retargeted: open Objections stay open until ruled (usually accepted, "claim revised") or re-raised against the successor, and Evidence on the old Claim does not count for the successor.
+status lists revision chains under `Superseded:`, leaves superseded Claims out of condition checks, and adds notices for every dependent Objection, Evidence, Spec, adopted Exploration and brief reference. Cycles and foreign successors are data errors.
+rule also sets other status-required links with a Decision: `--superseded-by` (Claim or Decision), `--adopted-as` (Exploration) and `--evidence` (Spec, appended). It never replaces or removes an existing link.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

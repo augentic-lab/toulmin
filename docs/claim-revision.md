@@ -1,6 +1,6 @@
 # Claim revision (R1) — design proposal
 
-Status: **proposal, pending researcher decisions Q15–Q18 in TODO.md.** Nothing here is implemented.
+Status: **implemented (R1, 2026-11-02).** Q15–Q18 were confirmed as recommended. formats.md and protocols.md hold the normative text.
 Basis: PROGRESS S2 finding 1; design.md §4 (Objection "accepted (claim revised)"), L0 principles 2, 5 and 6.
 
 ## Problem

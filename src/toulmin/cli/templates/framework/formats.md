@@ -20,7 +20,7 @@ English machine fields are authoritative. Neither Python classes nor the CLI may
 
 | kind (new argument) | Prefix / directory | Initial status | Readable statuses |
 | --- | --- | --- | --- |
-| claim | C / claims | proposed | proposed, challenged, supported, accepted, refuted |
+| claim | C / claims | proposed | proposed, challenged, supported, accepted, refuted, superseded |
 | evidence | E / evidence | valid | valid, invalidated |
 | objection | O / objections | open | open, answered, accepted, deferred |
 | decision | D / decisions | active | active, superseded |
@@ -54,7 +54,7 @@ Store Claim statements, Objection content and similar body content only once, ne
 
 | Type | Additional required metadata | Optional or conditional fields | Required body sections |
 | --- | --- | --- | --- |
-| Claim | `type`, `importance` | `tags: list[str]`, empty by default; `validation_plan: str`; `decisions` | `Statement` |
+| Claim | `type`, `importance` | `tags: list[str]`, empty by default; `validation_plan: str`; `superseded_by: Claim reference` required when superseded; `decisions` | `Statement` |
 | Evidence | `target: Claim reference`, `direction`, `kind`, `grade`, `provenance` | `verification` required when grade=verified | `Material`; also `Invalidation` when invalidated |
 | Objection | `target: Claim reference`, `severity` | `decisions` | `Content`; retain `Response` and `Ruling`, initially allowed to be empty |
 | Decision | Nonempty `related: list[object reference]` | `superseded_by: Decision reference` required when superseded | `Context`, `Choice`, `Rejected alternatives`, `Rationale` |
@@ -72,7 +72,8 @@ Enums and nested fields:
 - Evidence.verification: `{method: str, result: str, artifacts: list[str]}`; artifacts must be nonempty and files must exist. Structural completeness proves only that a verification record was supplied, not that the scientific conclusion is correct. The researcher still confirms the evidence grade.
 
 Conditional rules: answered Objections require a nonempty Response; accepted/deferred require a nonempty Ruling, and accepted also requires a Decision reference.
-Accepted/refuted Claims must reference at least one Decision; a refutation decision should explain the refuting evidence or accepted objection.
+Accepted/refuted/superseded Claims must reference at least one Decision; a refutation decision should explain the refuting evidence or accepted objection.
+R1 (additive within v1): a Claim whose wording is revised becomes `superseded`, and `superseded_by` names the successor Claim in the same project. The field is forbidden for other statuses and cannot name the Claim itself. The successor carries no back-reference, and revision chains must not loop. Objections, Evidence and Specs keep their original targets; nothing is retargeted. Older toolkit builds reject the new status, but no existing file changes meaning, so no migration is needed.
 Superseded Decisions retain their old body. Never automatically delete invalidated evidence or rejected explorations.
 
 ## PROJECT.md and brief

@@ -15,7 +15,7 @@ DIRECTORIES = dict(
     )
 )
 STATUSES = {
-    ObjectKind.CLAIM: ("proposed", "challenged", "supported", "accepted", "refuted"),
+    ObjectKind.CLAIM: ("proposed", "challenged", "supported", "accepted", "refuted", "superseded"),
     ObjectKind.EVIDENCE: ("valid", "invalidated"),
     ObjectKind.OBJECTION: ("open", "answered", "accepted", "deferred"),
     ObjectKind.DECISION: ("active", "superseded"),

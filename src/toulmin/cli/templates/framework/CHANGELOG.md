@@ -18,3 +18,5 @@
   changes need an active Decision naming the object; text is appended, never deleted.
 - U3 (presentation only): generated headers follow contract field order without folding;
   object timestamps use whole seconds. Older files stay valid; no migration.
+- R1 (L1, additive within v1): Claim status `superseded` with `superseded_by`; rule sets it
+  and the other status-required links. Older builds reject the new status; no migration.

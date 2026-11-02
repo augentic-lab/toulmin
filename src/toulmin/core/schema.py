@@ -10,7 +10,7 @@ from toulmin.core.identifiers import SCHEMA_VERSION, ObjectId, ObjectKind, Objec
 
 COMMON = {"schema_version", "id", "status", "created", "source", "confirmed_by"}
 FIELDS = {
-    ObjectKind.CLAIM: ({"type", "importance"}, {"tags", "validation_plan"}),
+    ObjectKind.CLAIM: ({"type", "importance"}, {"tags", "validation_plan", "superseded_by"}),
     ObjectKind.EVIDENCE: ({"target", "direction", "kind", "grade", "provenance"}, {"verification"}),
     ObjectKind.OBJECTION: ({"target", "severity"}, set()),
     ObjectKind.DECISION: ({"related"}, {"superseded_by"}),
@@ -25,7 +25,7 @@ FIELDS = {
 # columns. Order is presentation only; readers accept any key order.
 ORDER = ("schema_version", "id", "status", "created", "source", "confirmed_by")
 KIND_ORDER = {
-    ObjectKind.CLAIM: ("type", "importance", "tags", "validation_plan"),
+    ObjectKind.CLAIM: ("type", "importance", "tags", "validation_plan", "superseded_by"),
     ObjectKind.EVIDENCE: ("target", "direction", "kind", "grade", "provenance", "verification"),
     ObjectKind.OBJECTION: ("target", "severity"),
     ObjectKind.DECISION: ("related", "superseded_by"),
@@ -181,8 +181,17 @@ def validate(doc: Document) -> None:
         strings(doc, h.get("tags", []), "tags")
         if "validation_plan" in h:
             text(doc, h["validation_plan"], "validation_plan")
-        if h["status"] in {"accepted", "refuted"}:
+        if h["status"] in {"accepted", "refuted", "superseded"}:
             refs("decisions", ObjectKind.DECISION, True)
+        # A revision is recorded on the old Claim only; status derives the reverse link.
+        if h["status"] == "superseded" and "superseded_by" not in h:
+            doc.fail("superseded_by", "required for superseded claim")
+        if "superseded_by" in h:
+            if h["status"] != "superseded":
+                doc.fail("superseded_by", "allowed only when status is superseded")
+            successor = reference(doc, h["superseded_by"], "superseded_by", ObjectKind.CLAIM)
+            if successor.object_id == object_id and successor.project is None:
+                doc.fail("superseded_by", "a claim cannot supersede itself")
     elif kind == ObjectKind.EVIDENCE:
         enum("direction", DIRECTIONS)
         enum("kind", EVIDENCE_KINDS)

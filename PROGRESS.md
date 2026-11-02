@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-02 — R1: Claim revision by supersession
+
+- Status: **Verified: R1 complete.**
+- User authorization: Q15–Q18 confirmed as recommended; implement R1.
+- L1 (additive within v1):
+  - Claim gains the status `superseded` and the field `superseded_by`. The field is required only for superseded Claims, must reference another Claim, and a superseded Claim requires a Decision.
+  - `inspection` reports revision cycles and foreign successors as data errors, captures resolved brief references, and adds `current_claim()` to follow chains.
+  - `patch_header` inserts new keys in contract order.
+- L2:
+  - status leaves superseded Claims out of condition checks and returns `superseded` chains. It adds notices for open Objections, valid Evidence, Specs, adopted Explorations and brief references that point at superseded Claims.
+  - rule gains links (`superseded_by`, `adopted_as`, Spec `evidence`) that require a Decision. A successor must be a current object of the same kind in the same project and must be named by the Decision. `superseded` is final for Claims and Decisions, and rule never replaces existing links.
+- L3: `rule --superseded-by/--adopted-as/--evidence` and a `Superseded:` section in status (summaries with `-v`). rule notices now include any notice that mentions the object.
+- Docs: formats.md, format-examples.md (superseded variant), protocols.md (each with packaged copies), design.md §4, docs/claim-revision.md (marked implemented), framework CHANGELOG, workbench AGENTS guidance and README.
+- Compatibility: existing files stay valid and no migration is needed, as verified on S2 files written by the pre-R1 build. Older builds reject `superseded`, as recorded in the CHANGELOG. Changed templates cause the usual `init --project` conflicts on older workbenches.
+- **Verified**: `tests/cli/test_revision.py` **20 passed**: successful supersession with field order and dependent/brief notices; chains; nine refusal paths that write nothing; final status and no link replacement; hand-edited cycles and foreign successors; Claim schema conditions; Exploration and Spec links; Decision supersession. Full suite **381 passed**; Ruff lint/format and mypy (23 source files) passed.
+- **Verified**: an installed wheel replayed S2's revision (C-004 created, D-003, C-001 superseded, O-001 accepted) on a copy of the S2 workbench. Status showed `C-001 -> C-004` without S2's contradictory notice.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: per design §11–12, a short retrospective on stage 2 plus U1–U3/R1, then agree the stage 3 scope. Remaining S2 findings 2–4 (settled objections in status, draft/new friction, consumed drafts) are candidates.
+
 ## 2026-11-02 — R1 design: Claim revision by supersession (proposal)
 
 - Status: **design proposal written; not implemented.** It awaits researcher decisions Q15–Q18.

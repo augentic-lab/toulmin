@@ -1,6 +1,7 @@
 """Installed CLI entry point."""
 
 import os
+import re
 from pathlib import Path
 from typing import Annotated
 
@@ -159,6 +160,17 @@ def rule_object(
         list[str] | None,
         typer.Option("--section", help="NAME=FILE for Invalidation or Rationale; may be repeated."),
     ] = None,
+    superseded_by: Annotated[
+        str | None,
+        typer.Option("--superseded-by", help="Successor Claim/Decision for status superseded."),
+    ] = None,
+    adopted_as: Annotated[
+        str | None, typer.Option("--adopted-as", help="Claim an adopted Exploration became.")
+    ] = None,
+    evidence: Annotated[
+        list[str] | None,
+        typer.Option("--evidence", help="Evidence to append to a Spec; may be repeated."),
+    ] = None,
     actor: Annotated[
         str | None,
         typer.Option(
@@ -194,7 +206,16 @@ def rule_object(
             raise typer.BadParameter(f"{name} given twice", param_hint="--section")
         texts[name] = source
     try:
-        result = apply_ruling(root, project, object_id, actor, confirm, status, decision, texts)
+        links: dict[str, str | list[str]] = {}
+        if superseded_by is not None:
+            links["superseded_by"] = superseded_by
+        if adopted_as is not None:
+            links["adopted_as"] = adopted_as
+        if evidence:
+            links["evidence"] = list(evidence)
+        result = apply_ruling(
+            root, project, object_id, actor, confirm, status, decision, texts, links
+        )
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
@@ -205,16 +226,18 @@ def rule_object(
         else f"status unchanged ({result.status})"
     )
     added = f"; added to {', '.join(result.sections)}" if result.sections else ""
+    linked = f"; linked {', '.join(result.links)}" if result.links else ""
     via = f" by {result.decision}" if result.decision else ""
-    typer.echo(f"{result.object_id}: {change}{via}{added}")
+    typer.echo(f"{result.object_id}: {change}{via}{added}{linked}")
     try:
         report = project_status(root, project)
     except (OSError, ValueError):
         return
     # Show condition notices for the ruled object and the Claim it targets, if any.
     subjects = {result.object_id} | ({result.target} if result.target else set())
+    pattern = re.compile(r"\b(" + "|".join(map(re.escape, sorted(subjects))) + r")\b")
     for notice in report.notices:
-        if notice.split(":", 1)[0] in subjects:
+        if pattern.search(notice):
             typer.echo(f"Notice: {notice}")
 
 
@@ -264,6 +287,12 @@ def show_status(
         )
         if verbose and claim.summary:
             typer.echo(f"      {claim.summary}")
+    if report.superseded:
+        typer.echo("Superseded:")
+    for revised in report.superseded:
+        typer.echo("  " + " -> ".join(str(item) for item in revised.chain))
+        if verbose and revised.summary:
+            typer.echo(f"      {revised.summary}")
     typer.echo("Open objections:" + ("" if report.open_objections else " none"))
     for objection in report.open_objections:
         typer.echo(f"  {objection.object_id} | {objection.severity} | target={objection.target}")

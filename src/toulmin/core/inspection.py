@@ -16,9 +16,13 @@ class ProjectSnapshot:
     charter: Document | None
     objects: tuple[Document, ...]
     errors: tuple[str, ...]
+    # Explicit [[...]] references in brief.md that resolved, as (line, reference).
+    brief_references: tuple[tuple[int, str], ...] = ()
 
 
-def _brief_errors(repository: Repository, project: str) -> list[str]:
+def _brief_errors(
+    repository: Repository, project: str, found: list[tuple[int, str]] | None = None
+) -> list[str]:
     errors: list[str] = []
     path = repository.path(f"projects/{project}/brief.md", "file")
     try:
@@ -54,6 +58,8 @@ def _brief_errors(repository: Repository, project: str) -> list[str]:
             value = line[start + 2 : end]
             try:
                 repository.resolve(project, value)
+                if found is not None:
+                    found.append((line_number, value))
             except (OSError, ValueError) as error:
                 errors.append(f"{field}: [[{value}]]: {error}")
             position = end + 2
@@ -120,10 +126,12 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
                 objects.append(doc)
             except (OSError, ValueError) as error:
                 errors.append(str(error))
+    references: list[tuple[int, str]] = []
     try:
-        errors.extend(_brief_errors(repository, project))
+        errors.extend(_brief_errors(repository, project, references))
     except (OSError, ValueError) as error:
         errors.append(str(error))
+    errors.extend(_supersession_errors(objects, project))
     lock = repository.root / "projects" / project / ".toulmin-new.lock"
     if lock.exists() or lock.is_symlink():
         errors.append(
@@ -132,7 +140,48 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
     pending = repository.root / "projects" / project / ".handoff-pending"
     if pending.exists() or pending.is_symlink():
         errors.append(f"{pending}: handoff: interrupted application requires explicit recovery")
-    return ProjectSnapshot(charter, tuple(objects), tuple(sorted(set(errors))))
+    return ProjectSnapshot(charter, tuple(objects), tuple(sorted(set(errors))), tuple(references))
+
+
+def _supersession_errors(objects: list[Document], project: str) -> list[str]:
+    """Revision chains must stay inside the project and must not loop."""
+    errors: list[str] = []
+    successors: dict[ObjectId, ObjectId] = {}
+    for doc in objects:
+        if doc.object_id.kind != ObjectKind.CLAIM or "superseded_by" not in doc.header:
+            continue
+        reference = ObjectRef.parse(doc.header["superseded_by"])
+        if reference.project not in {None, project}:
+            errors.append(
+                f"{doc.location}:{doc.lines.get('superseded_by', 2)}: superseded_by: "
+                "successor must be a Claim in the same project"
+            )
+            continue
+        successors[doc.object_id] = reference.object_id
+    for start in successors:
+        seen = [start]
+        current = successors[start]
+        while current in successors:
+            if current in seen:
+                chain = " -> ".join(str(item) for item in [*seen, current])
+                errors.append(f"{start}: superseded_by: revision cycle {chain}")
+                break
+            seen.append(current)
+            current = successors[current]
+    return errors
+
+
+def current_claim(objects: tuple[Document, ...], claim: ObjectId) -> tuple[ObjectId, ...]:
+    """The revision chain from `claim` to its current (non-superseded) successor."""
+    successors = {
+        doc.object_id: ObjectRef.parse(doc.header["superseded_by"]).object_id
+        for doc in objects
+        if doc.object_id.kind == ObjectKind.CLAIM and "superseded_by" in doc.header
+    }
+    chain = [claim]
+    while chain[-1] in successors and successors[chain[-1]] not in chain:
+        chain.append(successors[chain[-1]])
+    return tuple(chain)
 
 
 def local_target(document: Document, project: str) -> ObjectId | None:
