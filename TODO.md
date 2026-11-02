@@ -261,7 +261,15 @@ Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/
 ## UI0 — Python/Textual TUI proposal
 
 - [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.
-- [ ] Researcher reviews Q25–Q29 in the proposal before implementation.
-- [ ] Implement UI1–UI5 only after approval; C4/C5 remain pending, not superseded by this planning task.
+- [x] Researcher approved Q25–Q29 and authorized implementation on 2026-11-02.
+- [ ] Complete UI1–UI5; C4/C5 remain pending.
 
-UI0 is documentation only. Python/TUI is the agreed direction; detailed scope and contracts are still proposed.
+UI0 delivered the design. Q25–Q29 are approved; UI1 is implemented and UI2 is next.
+
+### TUI implementation
+
+- [x] UI1: shell, create/open, recoverable setup, responsive navigation and theme. Automated creation/import/reopen, recovery and keyboard tests cover 120×36, 80×24 and 60×20; actual PTY launch/quit restores terminal settings. Researcher usability acceptance remains in UI5.
+- [ ] UI2: durable discussion and cancellable model jobs.
+- [ ] UI3: brief proposals and confirmed key Claims.
+- [ ] UI4: snapshot-based reviews and resolution.
+- [ ] UI5: handoff, upgrades and researcher trial.

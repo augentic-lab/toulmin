@@ -26,6 +26,33 @@ app = typer.Typer(
 ACTOR_VARIABLE = "TOULMIN_ACTOR"
 
 
+@app.command("tui")
+def interactive_workspace(
+    root: Annotated[Path | None, typer.Option("--root", help="Research workbench root.")] = None,
+    project: Annotated[str | None, typer.Option("--project", help="Project to open.")] = None,
+) -> None:
+    """Open the interactive terminal research workspace (requires the tui extra)."""
+    if project is not None:
+        try:
+            validate_project_name(project)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--project") from error
+        if root is None:
+            raise typer.BadParameter("--project requires --root")
+    try:
+        from toulmin.tui.app import launch
+    except ModuleNotFoundError as error:
+        if error.name != "textual" and not (error.name or "").startswith("textual."):
+            raise
+        typer.echo(
+            "The terminal UI requires Textual. Install the tui extra "
+            "(from a checkout: uv sync --locked --extra tui).",
+            err=True,
+        )
+        raise typer.Exit(1) from error
+    launch(root=root, project=project)
+
+
 def confirmer(value: str | None) -> str | None:
     """Explicit --confirmed-by wins; otherwise the operator's local default, if any."""
     if value is not None:

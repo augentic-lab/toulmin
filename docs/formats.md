@@ -152,3 +152,23 @@ new validates the candidate's direct references and Run source, without recursiv
 This clarification covers only the draft interface and archive naming, without changing existing object fields/version. No actual research data in the repository needs migration.
 
 See [format-examples.md](format-examples.md) for seven valid examples and an invalid variant of each.
+
+## UI1 project setup archive
+
+The optional TUI records researcher-supplied setup input under `projects/<project>/runs/setup/`.
+This auxiliary archive is not a research object and does not change object schema_version 1.
+`intent.md` has a restricted YAML header with required `schema_version: 1`, `project`, timezone-aware `created`, nonempty
+`goal` and `motivation`, `source_name`, `source_file`, `source_sha256`, and SHA-256 fields
+`project-before_sha256`, `project-after_sha256`, `brief-before_sha256`, `brief-after_sha256`.
+Source fields are all null without import; otherwise source_file is `source.md` or `source.txt`,
+source_name is the original filename and source_sha256 hashes the original UTF-8 file bytes.
+The four image files use those names with `.md` extensions. Validation reconstructs expected
+after-images from the supplied values and verifies every checksum before recovery.
+`scaffold-ready` contains `1` followed by LF; `complete` contains the intent byte digest followed
+by LF. Complete setup input is published before scaffolding or target replacement. Recovery
+accepts only exact before/after target bytes and refuses externally edited targets.
+Goal content must fit PROJECT's existing 40-line limit. Motivation is quoted in the initial
+brief so imported Markdown headings cannot change its section structure; raw source is retained.
+Existing objects and workbenches require no migration. Older commands ignore the setup archive
+as raw material in a runs subdirectory. This is a UI1 storage addition; conversation and report
+proposal formats remain for subsequent UI slices.

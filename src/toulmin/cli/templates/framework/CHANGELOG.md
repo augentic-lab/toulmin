@@ -29,3 +29,11 @@
 - C3 (L2/L3): `toulmin review` runs read-only headless reviews (Claude Code, Codex) per
   persona x model, archives prompt/output/log and records completed or failed Runs.
   Configuration in tools/models.toml. Object formats unchanged; no migration.
+
+## UI1 — Optional terminal workspace
+
+- Q25–Q29 approve a Python/Textual interface with researcher-controlled assisted authoring.
+- UI1 adds project create/open and versioned auxiliary setup archives under runs/setup/.
+  Existing object fields/version are unchanged; no existing research data needs migration.
+- Setup recovery preserves exact before/after files and conflicts. Opening projects never
+  rewrites workbench templates. Conversation and review UI actions remain later work.

@@ -85,6 +85,9 @@ def test_core_and_protocol_dependencies_point_downward():
     "source,package",
     [
         ("import typer", "toulmin.core"),
+        ("import textual", "toulmin.core"),
+        ("import toulmin.tui", "toulmin.protocols"),
+        ("import toulmin.application", "toulmin.core"),
         ("from toulmin.cli import app", "toulmin.core"),
         ("from ..cli import app", "toulmin.core"),
         ("from toulmin import cli", "toulmin.core"),
@@ -112,7 +115,10 @@ sys.path.insert(0, sys.argv[1])
 
 class BlockAdapters:
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(('typer', 'click', 'toulmin.cli', 'toulmin.adapters')):
+        if fullname.startswith((
+            'typer', 'click', 'textual', 'toulmin.cli', 'toulmin.adapters',
+            'toulmin.tui', 'toulmin.application',
+        )):
             raise ImportError('adapter unavailable: ' + fullname)
 
 sys.meta_path.insert(0, BlockAdapters())
@@ -144,7 +150,10 @@ import sys
 from pathlib import Path
 class BlockAdapters:
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(('typer', 'click', 'toulmin.cli', 'toulmin.adapters')):
+        if fullname.startswith((
+            'typer', 'click', 'textual', 'toulmin.cli', 'toulmin.adapters',
+            'toulmin.tui', 'toulmin.application',
+        )):
             raise ImportError('adapter unavailable: ' + fullname)
 sys.meta_path.insert(0, BlockAdapters())
 from toulmin.core.codec import encode

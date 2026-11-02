@@ -127,3 +127,23 @@ This L2 change defines input differences between interactive and independent ses
 
 Pass command integration tests first. Then run a research idea through Claim writing → independent manual review → confirmed Objection → handoff → a fresh session that recovers state from files alone.
 The researcher decides what trial evidence suffices and rules on acceptance. Stage 2 was accepted on an agent-run trial with fresh-context sessions; record what any accepted trial did not cover. Implementation-session self-tests do not count as independent review.
+
+## UI1 terminal project setup and inspection
+
+Q25–Q29 authorize the Python/Textual interface and future archived exploration, brief proposals
+and Claim extraction. UI1 implements only create/open, import preview, recovery and navigation;
+no model is invoked and no research gate is advanced. Later views clearly state their availability.
+
+The L3 workspace service reuses initialization and core validation. It validates typed input
+before creating a project, archives an explicitly selected UTF-8 Markdown/text source unchanged,
+and publishes a complete setup intent before initialization. Explicit Resume Setup completes
+an interrupted scaffold and two-file setup using exact known images. It preserves conflicts
+for inspection; process-death-safe locking coordinates setup writers for a workbench.
+A failure before publishing the complete intent is a preparation failure, not a completed
+research project. Retained pre-initialization remnants must be diagnosed before operator cleanup.
+Opening a project is read-only and never runs init over edited templates. Project data errors
+remain visible, as does incomplete setup. Navigation is independent of PROJECT.stage.
+
+This L2 behavior note explains the UI1 setup contract and Q25–Q29 scope approval. Existing
+confirmed object intake, rulings, handoff and review protocols remain authoritative. Model
+conversation and automatic draft saving have not been implemented by this slice.

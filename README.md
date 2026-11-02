@@ -2,8 +2,26 @@
 
 A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
-The T1–T5 software is implemented: templates, object formats/validation, `init`, `new`, read-only `status` and `handoff`.
-The researcher accepted roadmap stage 2 on 2026-11-02 after an agent-run workflow trial. Usability follow-ups U1–U3 are planned in TODO.md.
+Stage 2 is accepted; structured review, reviewer personas and model adapters (C1–C3) are implemented. The approved next priority is the Python/Textual terminal workspace (UI1–UI5), with C4/C5 still pending.
+
+## Terminal workspace
+
+Install the optional interface and launch from the software checkout:
+
+```sh
+uv sync --locked --dev --extra tui
+uv run --locked --extra tui toulmin tui
+# Open a specific existing project:
+uv run --locked --extra tui toulmin tui --root /path/to/research --project tail-latency
+```
+
+After activating the environment, `toulmin tui` works directly. Keep `--extra tui` on subsequent uv commands that synchronize the environment; a base-only sync may remove the optional interface.
+
+UI1 provides New Project/Open Project, a typed goal and typed or imported motivation, read-only project inspection, navigation and a responsive retro terminal layout. Later workflow views are explicitly marked as not implemented. Model conversation, report proposals, review execution and handoff within the TUI arrive in UI2–UI5; existing CLI commands remain available. Set `TOULMIN_ASCII=1` for ASCII borders/branding if your terminal font lacks box-drawing glyphs. The interface uses no animations. Opening a project never rewrites its templates. Interrupted project setup can be resumed explicitly.
+
+All interface labels are English. Keyboard navigation is available; F2 toggles the inspector and Ctrl+Q starts the exit flow. Terminal/IME and long-session usability still require researcher trial; headless tests do not establish those experiences.
+
+For interface validation use `uv run --locked --extra tui pytest -q` and include the extra when running mypy. Base installation and CLI help continue to work without Textual. The selected dependency versions are recorded in uv.lock.
 
 ## Initialize a research workbench
 
@@ -193,7 +211,7 @@ export UV_PYTHON_INSTALL_DIR="$PWD/.tools/python"
 
 ## Project documentation
 
-- [Python/Textual TUI proposal](docs/tui-design.md): proposed workflow, architecture and implementation plan; not implemented.
+- [Python/Textual TUI design](docs/tui-design.md): approved workflow, architecture and implementation plan.
 
 - [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).

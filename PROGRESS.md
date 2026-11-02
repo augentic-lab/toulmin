@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI1: terminal project workspace
+
+- Status: **Verified**: UI1 implemented and integration checks passed; researcher usability acceptance remains pending UI5.
+- Authorization: researcher approved Q25–Q29 and implementation, including GPT-6.1 Sol/high development subagents with root-agent verification. This session completes UI1 only; UI2–UI5 and C4/C5 remain pending.
+- Delivered: optional Textual extra and lazy `toulmin tui` command; English Home/New/Open screens; typed goal and motivation, editable UTF-8 Markdown/text import preview with exact source archival, saved-state preview, seven workflow views, three-pane retro theme, compact inspector toggle, keyboard navigation and quit/discard confirmation. Future research actions are explicitly unavailable; no model calls were made.
+- Service boundary: L3 application service coordinates existing initialization and read-only inspection. L1 defines setup intent/images and validation without CLI/Textual dependencies. Opening preserves edited templates and project files. Explicit Resume Setup checks intent/source/image digests and refuses external target edits.
+- Compatibility: additive `runs/setup/` auxiliary archive with UTC creation time, original input, exact before/after images and completion markers. No object-schema migration. Initial motivation is quoted to preserve Markdown section structure. Hard termination before input-bundle publication can leave a hidden `.setup-*` archive; diagnostics require manual preservation/inspection and a new-slug retry. Ordinary staging failures clean only owned empty directories.
+- Development review findings fixed: stale Open selection after a failed selection, missing Git errors escaping recovery, malformed source filename validation after mutation, stale initial motivation hiding later brief edits, import changes after preview, and omitted next-step/open-objection preview.
+- Environment finding: sandbox execution hung during Python executor shutdown and terminal input handling; a minimal executor example completed immediately outside it. Final full-suite and PTY validation ran outside the sandbox. Read-only document views use synchronous Rich Markdown; the file picker uses a keyboard list.
+- Verification: locked offline sync with the tui extra succeeded; full pytest reported **527 passed in 102.32 s**, including 14 UI tests. Ruff lint and format passed (86 files), strict mypy passed (39 source files), CLI and TUI help passed, and git diff whitespace checks passed; root verified installed-wheel create/open/render/shutdown outside the checkout, base-only installation help without Textual and actionable missing-extra errors, included theme assets and excluded caches/tools in distributions, canonical format/protocol template equality, and PTY confirmed quit with exact terminal attributes and alternate screen restored. Colored wide/compact snapshots were inspected; temporary screenshots are not committed.
+- Limits: actual user terminal font, paste and CJK/IME behavior still require researcher trial. Development-agent review and root verification are not independent researcher acceptance. No quota was consumed for research model calls; no automatic push.
+- Session ID: unavailable in this environment.
+- Blockers: none.
+- Next: UI2 durable discussion, saved conversations and cancellable model jobs, tested first with fake adapters.
+
 ## 2026-11-02 — UI0: Python/Textual TUI design proposal
 
 - Status: **Verified**: design document written and checked; implementation has not started.

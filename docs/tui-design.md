@@ -1,7 +1,7 @@
 # Toulmin TUI design proposal
 
-Status: proposed, not implemented. Date: 2026-11-02.
-Task: UI0. Python and a terminal interface are agreed directions; the detailed contracts below await review.
+Status: Q25–Q29 approved for implementation on 2026-11-02. UI1 is in development.
+Task: UI0. Python and a terminal interface are agreed directions; the researcher approved Q25–Q29 and authorized implementation. Auxiliary file contracts are specified and validated in their implementation slices.
 Basis: [design](design.md), [formats](formats.md), [protocols](protocols.md), and the researcher's requested create → discuss → brief → claims → review → resolve workflow.
 
 ## 1. Product goal and scope
@@ -204,13 +204,13 @@ The initial vertical slice is UI1–UI3 with fake model output, followed by a su
 | Q28 | Require explicit application of AI report proposals and formal objects; auto-save only conversation and working drafts | Revises the handwritten-brief convention to researcher-controlled assisted authoring; no automatic gates. |
 | Q29 | Implement UI1–UI5 next, leaving C4/C5 pending; retain terminal login and Git for the first release | Defines a bounded usable product slice instead of adding all remaining automation. |
 
-Recommended: accept Q25–Q29 together as the implementation baseline. They are proposals in this document, not decisions inferred from the request to write a design.
+Q25–Q29 were explicitly accepted together on 2026-11-02. They are the implementation baseline; completion of each slice still requires its stated validation.
 
 ## 13. Evidence and references
 
-Verified by repository inspection: current object/claim-revision protocols, draft/intake/rule/status/handoff commands, review manifests and completed/failed Runs exist. The current adapter uses process.communicate and returns a complete response; persistent exploration, streaming events and TUI components are absent. The prior C3 progress entry records live reviews and 478 passing tests; these were not rerun for this design.
+Verified by repository inspection: current object/claim-revision protocols, draft/intake/rule/status/handoff commands, review manifests and completed/failed Runs exist. At design time, the adapter used process.communicate and returned a complete response; persistent exploration, streaming events and TUI components were absent. UI1 now implements the terminal shell, setup and inspection; persistent exploration and streaming remain pending. The prior C3 progress entry records live reviews and 478 passing tests; these were not rerun for this design.
 
-The architecture, record layout, visual style and acceptance targets above are design proposals, not measured performance or implemented behavior.
+UI1 implements the shell, setup archive and inspection described above. UI2–UI5 remain an approved plan, not implemented behavior; acceptance results are recorded in PROGRESS.md.
 
 Official Textual references reviewed for this proposal:
 

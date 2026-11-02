@@ -13,6 +13,11 @@ dependencies = ["typer>=0.12,<1", "ruamel.yaml>=0.18,<0.20"]
 [project.scripts]
 toulmin = "toulmin.cli.app:app"
 
+[project.optional-dependencies]
+tui = [
+    "textual>=8.2.8",
+]
+
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.9,<1", "mypy>=1.14,<2"]
 
