@@ -1,5 +1,33 @@
 # Toulmin development progress
 
+## 2026-11-02 — S2: agent-run trial after U1–U3
+
+- Status: **Verified**: a second agent-run, same-day trial using `draft`, `rule` and `status -v` completed end to end. A fresh session recovered the project correctly from files and `status -v`.
+- User authorization: run one more simulated round with the new commands, then record it here.
+- Setup: a fresh scratch workbench outside this repository with project `sqpoll-cost` (whether io_uring SQPOLL's polling core is worth its CPU). It used a wheel built from `9ed1797`. As in S1, the agent acted as researcher with simulated confirmations; the reviewer and resume sessions were fresh-context subagents of the same model (claude-opus-5-5). The scratch location is not durable.
+- Session ID: unavailable in the current environment.
+
+### Actual run
+
+- **Verified**: `draft` → edit → `new` for 3 Claims, Run R-001 (raw review archived), 4 Objections (O-001/O-003 fatal, O-002/O-004 major) and 2 Decisions → five `rule` calls (O-001 answered by D-001, O-003 deferred by D-002, C-001/C-003 challenged). A sixth was correctly refused because D-001's `related` did not name C-002. Then `handoff --input` → `--apply` → workbench commit.
+- **Verified**: the resume session answered the goal, open majors (O-002, O-004), settled objections with their Decisions, next step and raw-review location correctly. It read 9 files plus `status -v` (about 1,600 words), against S1's 10 files and about 2,500 words.
+
+### Comparison with S1
+
+- Object creation: about 46 field values filled in skeletons, against 114 hand-written lines; no formats.md lookups and no intake errors.
+- Rulings are now recordable, so the resume session could distinguish answered/deferred from open (S1 could not).
+
+### Remaining findings (inputs for later work; no code changed)
+
+1. No way to revise a Claim. D-001 calls for rewriting C-001, but v1 has no Claim supersession. Marking C-001 challenged after answering O-001 produced "challenged but no open objections", so no correct move existed. This is an L1 gap.
+2. `status` lists only open Objections; answered/deferred ones are only findable through handoff text and the directory.
+3. Remaining manual steps: two commands per object plus copying timestamped paths; list fields (`related`, `input_files`) lack placeholder support; no handoff-summary skeleton; consumed drafts accumulate in `runs/drafts/` (13 here).
+4. A Decision relating O-004 is invisible on O-004 until `rule` links it.
+
+- Checks: no code or tests changed, so the software checks were not rerun. The diff contains only this file.
+- Blockers: none.
+- Next step: design Claim revision (finding 1) as its own L1 task before stage 3.
+
 ## 2026-11-02 — U3: readable generated files and status output
 
 - Status: **Verified: U3 complete.** The usability follow-up U1–U3 is finished.
