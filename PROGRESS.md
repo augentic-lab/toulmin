@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-02 — Minimal CLI reuse smoke trial
+
+- Scope: user requested a quick, simple reuse trial. Ran a synthetic cache/p95-latency case in disposable /tmp workbenches, using actual CLI subprocesses and one fixed-output fake reviewer. No real AI terminal conversation, editor interaction or paid model invocation was tested; this establishes plumbing only, not replacement usability.
+- Verified final path: init; prepare brief and Claim draft; confirm C-001; review creates R-001 and raw output without Objections; intake without confirmation refuses; confirmed intake creates O-001 citing R-001; create/apply handoff; a fresh status process reports valid data, O-001 and the saved next step. Research stage remains explore and the Claim remains proposed.
+- Fake reviewer asserted that the private discussion marker was absent and C-001 content present in its supplied prompt. This verifies prompt construction, not real model isolation.
+- Final run: 9 CLI invocations including one deliberate refusal, plus scripted document/config preparation. Evidence: /tmp/toulmin-reuse-4248oumg/commands.json and its research/ directory (temporary, not durable repository artifacts). Every subprocess had a 15-second timeout; outer runner had a 50-second timeout and exited 0; no background tasks remain from this trial.
+- Friction observed during two preliminary attempts: invented Claim type solution was rejected (correct type mechanism); summary.md directly under runs/ was interpreted as a Run and rejected (correct location runs/manual/summary.md). Both mistakes were in the trial driver, not silently repaired by Toulmin. No application changes made.
+- Inference: existing commands can provide the structured backend without a custom chat window. A small command/role integration may remove path/schema friction, but real terminal behavior and researcher effort remain untested. Do not claim that this trial proves a TUI is unnecessary.
+- Validation: final end-to-end assertions and documentation diff; full regression not rerun because application code was unchanged. Session ID unavailable. Blockers: none for this smoke trial. Next: assess whether a minimal command guide in an existing AI terminal is sufficient before resuming UI2. No push.
+
 ## 2026-11-02 — UI1 visual inspiration research
 
 - User requested design inspiration after rejecting the current TUI appearance. No application code changed; UI2 implementation paused for this design discussion.
