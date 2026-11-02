@@ -11,6 +11,7 @@ from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.intake import create_object
+from toulmin.protocols.ruling import apply_ruling
 from toulmin.protocols.status import project_status
 
 app = typer.Typer(
@@ -132,6 +133,89 @@ def new_object(
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(str(path))
+
+
+@app.command("rule")
+def rule_object(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    object_id: Annotated[str, typer.Argument(help="Object ID in this project, e.g. O-001.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    status: Annotated[
+        str | None, typer.Option("--status", help="New stored status chosen by the researcher.")
+    ] = None,
+    decision: Annotated[
+        str | None,
+        typer.Option(
+            "--decision", help="Active Decision naming this object; required for --status."
+        ),
+    ] = None,
+    response: Annotated[
+        str | None, typer.Option("--response", help="File whose text is added to Response.")
+    ] = None,
+    ruling: Annotated[
+        str | None, typer.Option("--ruling", help="File whose text is added to Ruling.")
+    ] = None,
+    section: Annotated[
+        list[str] | None,
+        typer.Option("--section", help="NAME=FILE for Invalidation or Rationale; may be repeated."),
+    ] = None,
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher making this ruling. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Explicitly confirm this ruling.")
+    ] = False,
+) -> None:
+    """Record a researcher's status change, Response or Ruling on one object."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    actor = confirmer(actor)
+    if actor is None:
+        raise typer.BadParameter(
+            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
+        )
+    texts: dict[str, str] = {}
+    pairs: list[tuple[str, str | None]] = [("Response", response), ("Ruling", ruling)]
+    for item in section or []:
+        label, separator, path = item.partition("=")
+        if not separator or not label.strip() or not path:
+            raise typer.BadParameter("expected NAME=FILE", param_hint="--section")
+        pairs.append((label.strip(), path))
+    for name, source in pairs:
+        if source is None:
+            continue
+        if name in texts:
+            raise typer.BadParameter(f"{name} given twice", param_hint="--section")
+        texts[name] = source
+    try:
+        result = apply_ruling(root, project, object_id, actor, confirm, status, decision, texts)
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(display(result.path, root))
+    change = (
+        f"{result.previous_status} -> {result.status}"
+        if result.status != result.previous_status
+        else f"status unchanged ({result.status})"
+    )
+    added = f"; added to {', '.join(result.sections)}" if result.sections else ""
+    via = f" by {result.decision}" if result.decision else ""
+    typer.echo(f"{result.object_id}: {change}{via}{added}")
+    try:
+        report = project_status(root, project)
+    except (OSError, ValueError):
+        return
+    # Show condition notices for the ruled object and the Claim it targets, if any.
+    subjects = {result.object_id} | ({result.target} if result.target else set())
+    for notice in report.notices:
+        if notice.split(":", 1)[0] in subjects:
+            typer.echo(f"Notice: {notice}")
 
 
 @app.command("status")

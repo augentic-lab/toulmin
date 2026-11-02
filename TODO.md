@@ -119,7 +119,7 @@ Not covered by the accepted evidence: a cross-model review (reviewer and author 
 
 ## Stage 2 follow-up: usability (U1–U3)
 
-Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance. The researcher confirmed Q11–Q13 as recommended on 2026-11-02; U1 is complete. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
+Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance. The researcher confirmed Q11–Q13 as recommended on 2026-11-02; U1 and U2 are complete. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
 Order: U1 → U2 → U3, one task per session. U1 removes the largest friction. U2 adds the most common next-day action. U3 is cosmetic and changes no format.
 
 ### Pending decisions
@@ -143,10 +143,13 @@ Scope note: `new` still prints an absolute path; U3 unifies root-relative output
 
 ### U2 — Confirmed status and response updates
 
-- [ ] Outputs: the Q13 `rule` command, plus a protocols.md section and a framework CHANGELOG entry.
-- [ ] Behavior acceptance: an Objection moves open → answered (Response required), accepted (Ruling and Decision required) or deferred (Ruling required). A Claim moves to challenged, supported, accepted or refuted with a Decision. All formats.md conditional rules hold after the update. status reflects the change.
-- [ ] Integrity acceptance: the update preserves comments, field order, unrelated body sections and bytes outside the patched regions. A missing or superseded Decision, a wrong project or an invalid transition creates no write. The write is atomic and never leaves a partial file. The tool never chooses a status on the researcher's behalf.
-- [ ] Run: new `tests/cli/test_rule.py`; full checks.
+- [x] Outputs: the Q13 `rule` command, plus a protocols.md section and a framework CHANGELOG entry.
+- [x] Behavior acceptance: an Objection moves open → answered (Response required), accepted (Ruling and Decision required) or deferred (Ruling required). A Claim moves to challenged, supported, accepted or refuted with a Decision. All formats.md conditional rules hold after the update. status reflects the change.
+- [x] Integrity acceptance: the update preserves comments, field order, unrelated body sections and bytes outside the patched regions. A missing or superseded Decision, a wrong project or an invalid transition creates no write. The write is atomic and never leaves a partial file. The tool never chooses a status on the researcher's behalf.
+- [x] Run: new `tests/cli/test_rule.py`; full checks.
+
+U2 verification: 36 rule-specific and 356 total tests and Ruff/mypy passed. An installed wheel outside the checkout answered an Objection and changed a Claim status on a copy of the S1 trial workbench; status showed the resulting notices without changing anything else.
+Implementation choices within Q13: the Decision's `related` must name the object; nonempty sections gain text after a blank line rather than being replaced; `--section` covers the Invalidation/Rationale reason sections. Reference fields (adopted_as, superseded_by, Spec evidence) remain hand edits.
 
 ### U3 — Readable generated files and status output
 

@@ -26,7 +26,8 @@ Models are invoked manually. Decisions belong to the researcher.
 - Only after explicit researcher confirmation may a draft enter a formal object directory.
   A confirmation field records authorization; an AI cannot authorize itself by signing a name.
 - Only the researcher rules on object status or project stage. Record the Decision and its
-  rationale. Condition checks report facts and suggestions; they never advance a gate.
+  rationale, then apply it with `toulmin rule` (or by hand). Condition checks report facts
+  and suggestions; they never advance a gate.
 - Evidence grades remain verified, model-asserted and intuition. The latter two cannot
   alone satisfy supported. Invalidated evidence never counts as support.
 - Keep generation separate from evaluation. Independent review and acceptance need fresh

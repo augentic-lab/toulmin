@@ -61,6 +61,21 @@ For model output, archive the raw response and record a Run first, then trace it
 Local file paths are relative to the workbench root; cross-project object references use project/ID.
 An existing `.toulmin-new.lock` causes failure and is preserved. Confirm no writing session is active and inspect remaining files before recovery; the tool never removes another session's lock automatically.
 
+## Record a ruling
+
+After writing a Decision whose `related` list names the object, record the researcher's choice:
+
+```sh
+uv run --locked toulmin rule tail-latency O-001 --root /path/to/research \
+  --status answered --decision D-001 \
+  --response projects/tail-latency/runs/drafts/o1-response.md --confirm
+```
+
+Every status change needs an active Decision naming the object; the command appends it to the object's `decisions`.
+`--response`/`--ruling` (Objections) and `--section Invalidation=FILE` / `--section Rationale=FILE` add text to that section without deleting earlier text.
+A Response alone needs no Decision. Run outcomes cannot be changed. Fields such as adopted_as, superseded_by or Spec evidence are still edited by hand.
+The command preserves comments and other text, writes atomically, and prints status notices for the object and its target Claim.
+
 ## Inspect status and consistency
 
 ```sh

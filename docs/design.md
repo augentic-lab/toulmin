@@ -339,6 +339,7 @@ The adapter layer wraps the headless modes of the three CLIs behind a uniform in
 - `toulmin init`: create the research repository layout and the shared instruction files
 - `toulmin draft <type> <project>`: write a fillable draft skeleton under the project's `runs/drafts/`
 - `toulmin new <type> <project>`: create an object file with the next ID and a filled-in header
+- `toulmin rule <project> <id>`: record the researcher's confirmed status change, response or ruling on one object, citing a Decision
 - `toulmin status <project>`: show the stage, open objections, claim statuses and next step
 - `toulmin handoff <project>`: archive a draft; `--apply <draft>` updates sessions and non-ruling PROJECT fields only after researcher confirmation
 - `toulmin review <project>`: run three independent reviews in parallel, write them to `runs/`, then synthesize and propose objections for intake

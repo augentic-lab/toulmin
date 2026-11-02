@@ -34,6 +34,14 @@ Skeleton values that need human input contain `<fill: ...>`. Intake rejects any 
 A default confirmer may come from the operator's `TOULMIN_ACTOR` environment variable when `--confirmed-by` is omitted; it is local operator configuration, not workbench state. `--confirm` remains mandatory.
 This L2 change adds a draft location and an intake precondition only; object fields and the v1 format are unchanged.
 
+Confirmed rulings (U2): `toulmin rule <project> <ID>` records the researcher's explicit choice on one object in that project; it never selects a status itself.
+Every status change requires `--decision` naming an active Decision whose `related` list includes the object; the reference is appended to the object's `decisions` once. Run outcomes are immutable.
+Text from `--response`, `--ruling` or `--section Invalidation|Rationale=FILE` is added to that section: an empty section is filled, a nonempty one keeps its text and gains the new text after a blank line, and a missing reason section is appended. Nothing is deleted.
+Text alone (for example a Response without a status change) needs no Decision. The result must pass the same formats.md conditional rules as any stored object, or nothing is written.
+The update preserves YAML comments, field order and every other body byte, holds the project creation lock, refuses to write if the file changed meanwhile, and replaces the file atomically. Afterwards the command prints status notices for the object and its target Claim.
+Reference fields that some statuses need (Exploration adopted_as, Decision superseded_by, Spec evidence) are still edited by hand; rule reports them as missing rather than inventing values.
+This L2 change adds a write path for researcher rulings only; object fields and the v1 format are unchanged.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

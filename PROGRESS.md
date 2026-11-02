@@ -1,5 +1,30 @@
 # Toulmin development progress
 
+## 2026-11-02 — U2: confirmed status and response updates
+
+- Status: **Verified: U2 complete.** U3 has not started.
+- User authorization: implement U2 per confirmed Q13.
+- L1: `documents.put_section()` is a pure, fence-aware body edit. It fills an empty section, appends after a blank line to a nonempty one, adds a missing section at the end, and never deletes text. Content containing level-two headings is rejected. Header changes reuse the comment-preserving `patch_header`, and writes reuse the atomic `write_atomic` (replace mode).
+- L2: `protocols/ruling.py` `apply_ruling()` validates everything before writing:
+  - Status changes require an active Decision whose `related` list names the object; that Decision is appended once to the object's `decisions`.
+  - Run outcomes cannot be changed, and setting the status the object already has is refused.
+  - Only Response/Ruling (Objection), Invalidation (Evidence) and Rationale (Exploration) may receive text, and the text must not contain placeholders.
+  - The result must pass full validation and link validation.
+  - The function holds the project creation lock, compares file bytes before replacing (refusing if they changed) and writes atomically.
+- L3: `toulmin rule <project> <ID> [--status] [--decision] [--response] [--ruling] [--section NAME=FILE]` with `--confirmed-by`/`TOULMIN_ACTOR` and mandatory `--confirm`. It prints the root-relative path, a one-line change summary and status notices for the object and its target Claim.
+- Implementation choices recorded in TODO U2: Decision `related` must name the object; appending instead of replacing preserves earlier responses; reference fields (adopted_as, superseded_by, Spec evidence) remain hand edits.
+- Compatibility: v1 object fields and formats are unchanged; no migration is needed. The changed packaged templates (AGENTS, framework protocols/CHANGELOG) cause the same `init --project` conflict behavior on older workbenches.
+- **Verified**: `tests/cli/test_rule.py` **36 passed**. Coverage:
+  - Objection answered/accepted/deferred, together with their required sections.
+  - Claim rulings with condition notices, no duplicate Decision references, and the Response-only path.
+  - Ten invalid-input cases plus foreign, Run and missing IDs, all writing nothing.
+  - The confirmation/actor rules, bad section text, preservation of comments, field order, fenced pseudo-headings and following sections, and appending.
+  - Adding an Invalidation section, a failed replace, a held lock, an external edit during ruling, and absolute input paths.
+- **Verified**: full suite **356 passed**; Ruff lint/format and mypy (23 source files) passed. A wheel installed outside the checkout ruled on a copy of the S1 workbench; status reflected the change, and only the two targeted files changed.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: U3 readable generated headers, root-relative output for every command, and `status --verbose`.
+
 ## 2026-11-02 — U1: draft skeletons and simpler intake
 
 - Status: **Verified: U1 complete.** U2–U3 have not started.

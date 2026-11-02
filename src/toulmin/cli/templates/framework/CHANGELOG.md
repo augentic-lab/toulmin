@@ -14,3 +14,5 @@
   not necessarily a human two-day trial. No object format or command behavior changed.
 - U1 (L2 note): `toulmin draft` writes skeletons to runs/drafts/; intake rejects unfilled
   `<fill: ...>` placeholders; `TOULMIN_ACTOR` may supply the default confirmer. v1 unchanged.
+- U2 (L2 note): `toulmin rule` records a confirmed status change, Response or Ruling. Status
+  changes need an active Decision naming the object; text is appended, never deleted.
