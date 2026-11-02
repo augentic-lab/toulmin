@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-02 — R1 design: Claim revision by supersession (proposal)
+
+- Status: **design proposal written; not implemented.** It awaits researcher decisions Q15–Q18.
+- User authorization: design Claim revision as a separate task.
+- Outputs: docs/claim-revision.md (problem, proposal, worked S2 example, alternatives, compatibility/migration) and TODO.md R1 (decisions Q15–Q18 and implementation tasks).
+- Summary: an old Claim becomes `superseded` with `superseded_by` pointing to a new Claim, under a Decision. Nothing is retargeted automatically, and status derives chains and notices. The change is additive within v1 with no migration; older builds would reject the new status.
+- Checks: documentation only. The new links resolve and code tests were not run because no code changed. The diff contains only docs/claim-revision.md, TODO.md and PROGRESS.md.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: researcher confirms or amends Q15–Q18, then R1 implementation in its own session.
+
 ## 2026-11-02 — S2: agent-run trial after U1–U3
 
 - Status: **Verified**: a second agent-run, same-day trial using `draft`, `rule` and `status -v` completed end to end. A fresh session recovered the project correctly from files and `status -v`.

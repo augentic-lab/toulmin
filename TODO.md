@@ -160,6 +160,27 @@ Implementation choices within Q13: the Decision's `related` must name the object
 U3 verification: 6 readability tests and 361 total tests and Ruff/mypy passed. An installed wheel created a Claim in a copy of the S1 workbench (ordered header, whole-second timestamps, root-relative output); `status -v` showed statement/objection summaries and the last handoff path alongside S1's older-style files.
 Deviation: handoff draft `created` and record `applied_at` keep sub-second precision. Drafts are identified by content digest, and whole seconds made two same-second drafts byte-identical, breaking an existing T5 test. Summaries use the first paragraph rather than the first line, because hand-wrapped statements were cut mid-sentence.
 
+## R1 — Claim revision by supersession (proposal)
+
+Basis: PROGRESS S2 finding 1. The full design, alternatives and compatibility assessment are in [docs/claim-revision.md](docs/claim-revision.md). Implementation waits for Q15–Q18.
+
+### Pending decisions
+
+| ID | Required decision | Recommendation | Impact |
+| --- | --- | --- | --- |
+| Q15 | How is a Claim revised? | Supersede: new Claim + old Claim status `superseded` with required `superseded_by: C-NNN` and a Decision; no back-reference on the successor; `superseded` is terminal for `rule`. | L1 Claim schema, L2 status/rule. |
+| Q16 | Version strategy for this L1 change? | Additive within `schema_version: 1`; no migration (no existing file changes meaning); record the forward incompatibility in the framework CHANGELOG. | Format docs, CHANGELOG. |
+| Q17 | What happens to Objections/Evidence on a superseded Claim? | Nothing moves automatically. Open Objections stay open until ruled or re-raised against the successor; Evidence does not count for the successor; status notices name the successor for every dependent and brief reference. | L2 status only. |
+| Q18 | Should `rule` set the other status-required reference fields too? | Yes: `--superseded-by` (Claim, and Decision for consistency), `--adopted-as` (Exploration), `--evidence` (Spec, appended). Closes U2's hand-edit limitation in one change. | L2/L3 rule. |
+
+### Tasks (after confirmation)
+
+- [ ] L1: add the `superseded` Claim status and `superseded_by` field with conditional rules (required iff superseded, Claim-typed, not self, Decision required). Add contract field order. Update formats.md, the format-examples variant and packaged copies.
+- [ ] L2 rule: the reference-field options from Q18; successor checks (exists, same project, not superseded, named by the Decision); terminal superseded. Every refusal writes nothing.
+- [ ] L2/L3 status: a `Superseded:` chain list; superseded Claims excluded from conditions; dependent and brief notices; cycles and broken chains as data errors; read-only guarantees unchanged.
+- [ ] Docs: protocols.md change note, CHANGELOG, workbench AGENTS guidance (supersede vs typo fix), README example.
+- [ ] Tests: every rule success and refusal path; preservation; old-format files still valid; status chains, notices and cycles; a full S2-style replay (C-001 → C-004, O-001 accepted) through an installed wheel.
+
 ## Planning delivery status
 
 - [x] Read the design; draft AGENTS.md, technology recommendations, five tasks and pending decisions.
