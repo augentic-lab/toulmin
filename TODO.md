@@ -276,9 +276,9 @@ Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/
 
 - [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.
 - [x] Researcher approved Q25–Q29 and authorized implementation on 2026-11-02.
-- [ ] Complete UI1–UI5; C4/C5 remain pending.
+- [ ] Complete UI1–UI5; C4 is implemented, C5 remains pending.
 
-UI0 delivered the design. Q25–Q29 are approved; UI1 is implemented and UI2 is next.
+UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. UI2 implementation is paused for the researcher-requested UI-R1 interaction redesign; Q30–Q31 are proposals, not approved scope changes.
 
 ### TUI implementation
 
@@ -287,3 +287,11 @@ UI0 delivered the design. Q25–Q29 are approved; UI1 is implemented and UI2 is 
 - [ ] UI3: brief proposals and confirmed key Claims.
 - [ ] UI4: snapshot-based reviews and resolution.
 - [ ] UI5: handoff, upgrades and researcher trial.
+
+### UI-R1 — Guided research interaction redesign
+
+- [x] Write [the v2 workflow proposal](docs/tui-workflow-design.md): product goals, explicit actions/readiness, a complete small-case walkthrough, triage versus ruling, manual validation, stage/handoff boundaries, adaptive layout, implementation gaps and measurable acceptance.
+- [ ] Researcher review of Q30 (activity-oriented guidance) and Q31 (bounded validation/evidence and G1/G2 ruling scope).
+- [ ] UI-R2: low-fidelity task walkthrough at wide/medium sizes and a compact task case, before visual-theme selection or application changes.
+
+The CLI smoke trial proved plumbing only. The researcher explicitly needs a visible research process and discoverable actions; replacing that experience with natural-language-only interaction is not the product direction.

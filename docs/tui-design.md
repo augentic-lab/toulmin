@@ -1,6 +1,8 @@
 # Toulmin TUI design proposal
 
-Status: Q25–Q29 approved for implementation on 2026-11-02. UI1 is in development.
+Status: Q25–Q29 approved on 2026-11-02; UI1 is implemented. The researcher requested an interaction redesign after rejecting the visual result and clarifying the need for explicit research guidance.
+
+Read [TUI v2: guided research workbench](tui-workflow-design.md) for the current proposed interaction model (UI-R1, Q30–Q31 pending). This document retains the earlier baseline and technical contracts; the v2 proposal revises product navigation, guidance and first-release scope, not existing file/protocol authority.
 Task: UI0. Python and a terminal interface are agreed directions; the researcher approved Q25–Q29 and authorized implementation. Auxiliary file contracts are specified and validated in their implementation slices.
 Basis: [design](design.md), [formats](formats.md), [protocols](protocols.md), and the researcher's requested create → discuss → brief → claims → review → resolve workflow.
 
@@ -12,7 +14,7 @@ The first release covers project creation/opening, exploration chat, brief editi
 
 Pixel styling means block borders, restrained colors, geometric icons and optional small activity animations. Body text stays legible. No game engine, browser, web server, score, experience meter or rewards for generating more claims are needed.
 
-Not part of this release: automatic gate decisions, autonomous research, web browsing by the exploration model, reference-manager integration, multi-user editing, automated synthesis/crossval/calibration (unfinished C4/C5), or Build/Accept workflows. Existing CLI operations remain available.
+Not part of this release: automatic gate decisions, autonomous research, web browsing by the exploration model, reference-manager integration, multi-user editing, calibration (unfinished C5), and first-release TUI integration of synthesis/crossval (C4 CLI support now exists), or Build/Accept workflows. Existing CLI operations remain available.
 
 ## 2. Starting and opening projects
 
@@ -105,7 +107,7 @@ Once reviewed or linked, substantive Claim changes use the existing supersession
 
 Snapshot the approved inputs before starting. All members of a round use that snapshot even if the researcher later edits the report. Preserve the input paths and hashes with the archived prompt. The existing prompt already inlines inputs; a structured snapshot manifest adds an inspectable record.
 
-Exploration history, handoffs and other reviews are excluded from reviewer inputs. Current manifest constraints remain authoritative. Keep discussion-model and reviewer configurations separate. Codex global-instruction isolation is an existing unresolved live-verification issue and must be shown as such, not advertised as proven isolation.
+Exploration history, handoffs and other reviews are excluded from reviewer inputs. Current manifest constraints remain authoritative. Keep discussion-model and reviewer configurations separate. The dedicated Codex home and preflight have since had a successful live smoke test recorded in PROGRESS.md. Reuse that configuration; do not generalize a single observed run into a guarantee of model or filesystem isolation.
 
 Each task card shows persona, configured/reported model, queued/running/completed/failed/cancelled status, elapsed time and archive links. A parser failure is distinct from a failed model invocation: preserve raw output and offer manual intake. No fabricated percent-complete indicator for model generation.
 
@@ -113,7 +115,7 @@ Each task card shows persona, configured/reported model, queued/running/complete
 
 After intake, the researcher may draft a response or Decision and use the existing ruling protocol. The screen explains required fields and preserves earlier responses. Existing immutable intake outcomes remain immutable; later judgments are Decisions rather than edits to history. Pending drafts must be listed by parsing the selected reviews even before their first intake record, filling the current status-view discoverability gap without inventing a second index.
 
-Automatic synthesis, crossval and calibration stay unavailable until C4/C5 exist. Show raw reviews individually rather than presenting an unimplemented combined verdict.
+C4 synthesis and crossval are now implemented in the CLI; calibration remains pending C5. The v2 proposal treats comparison as an optional secondary action and preserves intake from original review sources, never a combined automatic verdict.
 
 ## 8. Python/Textual architecture
 
@@ -176,7 +178,7 @@ Exit flow: flush drafts, offer `Handoff`, `Quit without Handoff`, or `Cancel`; w
 
 Opening a workbench must not call init over edited templates. Compare required role/config capabilities and offer a migration preview: add missing files, show diffs for changed templates, preserve backups and require explicit choices for conflicts. Until a reviewed update is applied, disable only the affected features; allow inspection and existing functions.
 
-Fresh workbenches receive the new exploration role and reviewed templates. Old workbenches must remain readable without the TUI. The TUI extra must not make existing CLI use depend on Textual. Shipping a TUI does not complete C4/C5 or constitute research-stage acceptance.
+Fresh workbenches receive the new exploration role and reviewed templates. Old workbenches must remain readable without the TUI. The TUI extra must not make existing CLI use depend on Textual. Shipping a TUI does not complete C5 or constitute research-stage acceptance; C4 completion is independently recorded in PROGRESS.md.
 
 ## 11. Implementation slices and executable acceptance
 
@@ -248,6 +250,6 @@ character emblem and New Project/Open Project choices on Home. Keep body text ne
 one accent for focus and a second for status, and style Markdown explicitly. At narrow widths,
 show one primary reading surface with switchable context. Pixel details belong at the edges.
 
-Next deliverable: two comparable static Home/workspace concepts using the same English sample
-content: a restrained modern terminal and a retro laboratory terminal. Review these before code
-changes; do not treat generic visual examples or high-resolution artwork as tested TUI output.
+Superseded next step: the researcher clarified that research guidance takes priority over style.
+Review the [v2 workflow proposal](tui-workflow-design.md), then use low-fidelity task walkthroughs
+before comparing visual themes. Do not treat artwork as tested TUI behavior.

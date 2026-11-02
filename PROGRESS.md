@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI-R1: guided research workbench redesign
+
+- User direction: retain a TUI to externalize the research process and available actions; prioritize purpose, actual user experience, flow and guidance before visual style. This supersedes the proposed AI-terminal replacement trial as the product direction. No application code changed.
+- Delivered docs/tui-workflow-design.md: separate stored stage/current activity/action state; five task views; deterministic, source-backed next-action guidance; a cache-question walkthrough; precise draft/confirmation/ruling contracts; manual validation and evidence entry; gate review; handoff/resume; low-fidelity layout; failure/compact-mode behavior and researcher usability criteria.
+- Inferred from code: status currently computes Claim conditions, while a dedicated stage-write service, guided validation-plan update, durable discussion and brief proposals are still gaps. Existing C4 synthesis and the successful Codex isolation smoke were found in current repository records; corrected stale statements in the prior TUI design.
+- Proposed decisions: Q30 interaction structure; Q31 bounded manual validation/evidence and G1/G2 stage-ruling scope. Neither is treated as approved. No changes to L0, object schema or canonical protocols; exact new auxiliary/L2 contracts precede eventual implementation.
+- Validation: read design goals/gates, formats, current protocols, status/project/ruling code and current progress; checked documentation links, Markdown fences and diff whitespace. No code tests or model calls: this is a design-only change. No user usability or rendered-prototype acceptance claimed.
+- Session ID unavailable. Blockers: none for design delivery. Next: researcher review, then a low-fidelity task walkthrough before theme selection. No push.
+
 ## 2026-11-02 — Minimal CLI reuse smoke trial
 
 - Scope: user requested a quick, simple reuse trial. Ran a synthetic cache/p95-latency case in disposable /tmp workbenches, using actual CLI subprocesses and one fixed-output fake reviewer. No real AI terminal conversation, editor interaction or paid model invocation was tested; this establishes plumbing only, not replacement usability.
