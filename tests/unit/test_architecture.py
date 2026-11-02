@@ -19,6 +19,7 @@ DATA_MODULES = {
     "datetime",
     "enum",
     "fcntl",
+    "fnmatch",  # pure string matching for role manifest patterns (C2)
     "hashlib",
     "io",
     "math",

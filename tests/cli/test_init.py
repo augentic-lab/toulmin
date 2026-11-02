@@ -100,7 +100,17 @@ def test_workspace_rules_and_role_contracts_are_independent_of_development(tmp_p
     assert "PROGRESS.md" not in rules and "TODO.md" not in rules
     for phrase in ("Entry protocol", "Exit protocol", "last_handoff", "researcher confirmation"):
         assert phrase in rules
-    for role in ("reviewer", "scribe"):
+    roles = sorted(path.stem for path in (root / "roles").glob("*.md"))
+    assert roles == [
+        "reviewer",
+        "reviewer-industry",
+        "reviewer-skeptic",
+        "reviewer-theorist",
+        "reviewer-why-not-x",
+        "scribe",
+        "synthesizer",
+    ]
+    for role in roles:
         text = (root / "roles" / f"{role}.md").read_text()
         for field in (
             "Operation:",

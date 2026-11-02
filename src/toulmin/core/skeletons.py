@@ -46,8 +46,20 @@ def _run(project: str) -> str:
     )
 
 
-def skeleton(kind: ObjectKind, project: str, path: str, actor: str | None = None) -> str:
-    """Return a commented draft for `toulmin new` that fails intake until filled."""
+def skeleton(
+    kind: ObjectKind,
+    project: str,
+    path: str,
+    actor: str | None = None,
+    role_inputs: tuple[str, tuple[str, ...]] | None = None,
+) -> str:
+    """Return a commented draft for `toulmin new` that fails intake until filled.
+
+    For a Run, `role_inputs` (role, files) fills role and input_files from a resolved
+    role manifest instead of leaving them to be retyped.
+    """
+    if role_inputs is not None and kind != ObjectKind.RUN:
+        raise ValueError("role: only a Run draft takes a role's inputs")
     human, run = _human(actor), _run(project)
     alternative = {
         True: f"# Model-derived alternative: {run}",
@@ -114,8 +126,7 @@ def skeleton(kind: ObjectKind, project: str, path: str, actor: str | None = None
             human,
             f"status: {_choices(('completed', 'failed'))}",
             f"model: {_fill('model name as reported by the tool')}",
-            f"role: {_fill('e.g. reviewer')}",
-            "input_files: []  # root-relative paths given to the model",
+            *_role_fields(role_inputs),
             f"output: {_fill(f'projects/{project}/runs/YYYYMMDDTHHMMSSZ-name')}",
             "session_id: null  # keep null when unknown; never guess",
             "duration_seconds: null  # keep null when unknown",
@@ -133,6 +144,20 @@ def skeleton(kind: ObjectKind, project: str, path: str, actor: str | None = None
     ]
     text = [f"## {name}\n" + (f"{PLACEHOLDER} {hint}>\n" if hint else "") for name, hint in body]
     return "\n".join(header) + "\n" + "\n".join(text)
+
+
+def _role_fields(role_inputs: tuple[str, tuple[str, ...]] | None) -> list[str]:
+    if role_inputs is None:
+        return [
+            f"role: {_fill('e.g. reviewer')}",
+            "input_files: []  # root-relative paths given to the model",
+        ]
+    role, files = role_inputs
+    return [
+        f"role: {_quote(role)}",
+        f"input_files:  # from the {role} manifest; edit only if the session received others",
+        *(f"  - {_quote(file)}" for file in files),
+    ]
 
 
 def unfilled(document: Document) -> str | None:

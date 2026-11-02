@@ -13,7 +13,9 @@ Models are invoked manually. Decisions belong to the researcher.
    reviewers must not load handoffs or discussion history, or other unapproved inputs.
 3. State one task, role, required inputs and output location for this session.
 4. Load only the relevant objects. Reviewers read brief and claims, not creation history
-   or other reviewers' outputs. Use roles/reviewer.md or roles/scribe.md as appropriate.
+   or other reviewers' outputs. Independent roles (roles/reviewer*.md, synthesizer.md)
+   receive exactly the files `toulmin inputs <project> <role>` lists; see roles/scribe.md
+   for handoffs.
 
 ## Research rules
 

@@ -23,3 +23,6 @@
 - C1 (L1/L2, additive within v1): reviews end with a fenced yaml draft block; `toulmin intake`
   takes chosen drafts in as Objections and appends outcomes to intake.md beside the raw
   output. Object fields unchanged; no migration.
+- C2 (L1/L2, additive): role files for independent sessions carry an input manifest;
+  `toulmin inputs` and `draft run --role` compute input_files. Adds four reviewer personas
+  and the synthesizer contract. Object formats unchanged; no migration.

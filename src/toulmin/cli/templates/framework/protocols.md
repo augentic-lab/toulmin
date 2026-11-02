@@ -53,6 +53,10 @@ Nothing is taken by default; unlisted drafts stay pending and status reports the
 Under the project creation lock, each taken draft becomes an open Objection and its outcome is appended to intake.md atomically. A replay reports `already-<outcome>` for recorded labels, never changes an outcome, and reuses an Objection created from the same draft before an interruption instead of creating another.
 The intake does not rule on anything: Objection status, Claim status and gates still change only through rule with a Decision. This L2 change adds a write path for confirmed drafts; object fields and v1 are unchanged.
 
+Role inputs (C2): `toulmin inputs <project> <role> [--claim C-NNN]...` prints the files a session of that role receives, resolved from its manifest: literal paths must exist, wildcard matches are regular files (no symlinks, no dotfiles) in natural order, and duplicates appear once.
+Superseded Claims are left out and named on stderr. An explicit `--claim` selection replaces the full Claim set; every selected Claim must be current and inside the manifest. `toulmin draft run <project> --role <role> [--claim ...]` writes the same list into the Run draft's role and input_files.
+Personas (`reviewer-skeptic`, `reviewer-industry`, `reviewer-theorist`, `reviewer-why-not-x`) extend roles/reviewer.md and include it in their inputs; the synthesizer's raw review outputs are named per invocation, not in its manifest. This L2 change computes inputs only; it invokes no model.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

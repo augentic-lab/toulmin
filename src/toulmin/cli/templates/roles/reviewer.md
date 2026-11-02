@@ -1,7 +1,19 @@
-# Manual independent reviewer
+---
+schema_version: 1
+role: reviewer
+operation: critique
+# Files an independent session receives; `toulmin inputs <project> reviewer` lists them.
+inputs:
+  - AGENTS.md
+  - roles/reviewer.md
+  - projects/{project}/brief.md
+  - projects/{project}/claims/*.md
+---
+# Independent reviewer
 
 - Operation: Critique.
-- Inputs: this contract, AGENTS.md, the selected project's brief and explicitly selected Claims.
+- Inputs: exactly the files in this header's manifest: this contract, AGENTS.md, the project's
+  brief and its current Claims (or an explicit selection). Superseded Claims are left out.
 - Excluded inputs: creation discussion, prior handoffs, other reviewers' drafts and synthesis.
 - Permissions: read-only. Emit the review to stdout; the operator archives it in runs/.
 - Output: prose review first, including model/role, input files and session ID when

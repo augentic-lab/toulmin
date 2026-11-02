@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-02 — C2: reviewer personas and role manifests
+
+- Status: **Verified: C2 complete.** Researcher acceptance of stage 3 is pending until C5.
+- User authorization: implement C2 (Q19–Q24 already confirmed).
+- L1 (additive): new `core/roles.py` parses the role-file YAML header (`schema_version`, `role`, `operation` critique/synthesize, `inputs`). Patterns use only `{project}`, put wildcards in the last component only, and must stay inside a fixed allowlist (AGENTS.md, roles, framework, global/papers, global/assumptions, the project's brief and claims). Sessions, handoffs, Runs, Decisions, Objections, PROJECT.md, calibration and other projects cannot be named.
+- L2: new `protocols/inputs.py` resolves a manifest for one project. It applies natural order, skips dotfiles, refuses symlinks, leaves out superseded Claims and handles an optional current-Claim selection. `write_draft` can fill a Run draft's role and input_files from it.
+- L3: `toulmin inputs <project> <role> [--claim]` and `toulmin draft run <project> --role <role> [--claim]`.
+- Templates: manifest added to roles/reviewer.md; new reviewer-skeptic, reviewer-industry, reviewer-theorist and reviewer-why-not-x (extending reviewer.md) and synthesizer.md (groups disagreements first, then a yaml group block that C4 will parse); workbench AGENTS points independent roles at `toulmin inputs`.
+- Docs: formats.md and protocols.md (with packaged copies), framework CHANGELOG, README. The architecture allowlist gains `fnmatch` (pure string matching).
+- Compatibility: object formats unchanged; no migration. Changed reviewer.md and AGENTS.md templates conflict with `init --project` on workbenches created earlier (**Inferred from code**).
+- **Verified**: `tests/cli/test_inputs.py` **40 passed**; full suite **454 passed**; Ruff lint/format and mypy (27 source files) passed; `toulmin --help` lists inputs.
+- **Verified**: an installed wheel outside the checkout created all seven role files and resolved the six manifests; the packaged protocols.md matches docs. On a copy of the R1 workbench, `inputs` left out superseded C-001 and `draft run --role reviewer-theorist --claim C-004` produced the five input files.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: C3 (Claude Code and Codex adapters, `toulmin review`) in its own session. Re-check the exact headless flags first.
+
 ## 2026-11-02 — C1: structured review intake
 
 - Status: **Verified: C1 complete.** Researcher acceptance of stage 3 is pending until C5.

@@ -203,7 +203,7 @@ Delivery: the user explicitly requested a commit and push to the existing origin
 
 # Stage 3: critique — plan
 
-Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02. The researcher confirmed Q19–Q24 as recommended on 2026-11-02; C1 is complete.
+Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02. The researcher confirmed Q19–Q24 as recommended on 2026-11-02; C1 and C2 are complete.
 Stage done criterion (design §12): one brief goes through three rounds of multi-model review, and every Objection has a complete, traceable status (Run → raw output → draft label → Objection → ruling/Decision).
 Environment fact, verified 2026-11-02: Claude Code 2.1.316 (`claude -p`) and Codex CLI 0.165.0 (`codex exec`, `--sandbox read-only`, `--ephemeral`, `-o`) are installed. Gemini CLI is not installed. Exact flags are re-checked in C3, and no model was invoked for this plan.
 
@@ -230,8 +230,11 @@ Boundary: a raw output with no intake record yet produces no pending notice, bec
 
 ### C2 — Reviewer personas and role manifests (no models)
 
-- [ ] Templates: `roles/reviewer-skeptic.md`, `reviewer-industry.md`, `reviewer-theorist.md` and `reviewer-why-not-x.md` (design §6), plus `synthesizer.md`, each with the Q21 output block. Each role gets a machine-readable input manifest (which project files it receives), so Run `input_files` is computed, not retyped.
-- [ ] Acceptance: the manifest resolves to the exact files for a project; reviewers never receive sessions, handoffs or other runs; the template contract tests pass.
+- [x] Templates: `roles/reviewer-skeptic.md`, `reviewer-industry.md`, `reviewer-theorist.md` and `reviewer-why-not-x.md` (design §6), plus `synthesizer.md`, each with the Q21 output block. Each role gets a machine-readable input manifest (which project files it receives), so Run `input_files` is computed, not retyped.
+- [x] Acceptance: the manifest resolves to the exact files for a project; reviewers never receive sessions, handoffs or other runs; the template contract tests pass.
+
+C2 verification: `tests/cli/test_inputs.py` (40 tests) covers exact resolution and order, every shipped independent role against a forbidden-path list, superseded Claims and selections, symlinks, 18 manifest-contract violations, and `draft run --role` through `new run`. The init contract test now covers all seven role files. An installed wheel resolved all six manifests on a fresh workbench, and a copy of the R1 workbench left out superseded C-001.
+Design notes: the manifest is the role file's YAML header, checked against a fixed allowlist rather than a denylist. The personas extend roles/reviewer.md, so the Q21 block is defined once. The synthesizer's review outputs are given per invocation (C4), and its yaml group block is parsed in C4. The scribe has no manifest because its inputs are session-specific.
 
 ### C3 — Adapters and `toulmin review`
 

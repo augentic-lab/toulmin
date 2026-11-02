@@ -125,6 +125,15 @@ Output without such a block is still archived as a Run; its drafts are taken in 
 An Objection taken in from a draft has source `{kind: run, ref, path}`, the draft's target and severity (a researcher override is recorded as `partly`), status open, and the body `## Content` (content, then `Grounds:` and `Uncertainty:` paragraphs), empty `## Response` and `## Ruling`.
 Compatibility: additive within v1. Object fields are unchanged; older builds ignore intake.md. No migration.
 
+## Role input manifests (C2)
+
+A role file `roles/<role>.md` used by an independent session starts with a YAML header (same restricted subset) that lists exactly the files the session receives. It is a template contract, not a research object.
+Header: `schema_version: 1`, `role` (the filename stem: lowercase letters, digits and hyphens), `operation` (`critique` or `synthesize`) and `inputs`, a nonempty list of unique root-relative patterns that must include `roles/<role>.md`.
+`{project}` is the only placeholder. `*`, `?` and `[...]` may appear in the last path component only. Every pattern must stay inside this allowlist: `AGENTS.md`, `roles/*.md`, `framework/*.md`, `global/papers/*`, `global/assumptions/*`, `projects/{project}/brief.md`, `projects/{project}/claims/*.md`.
+A pattern may narrow an allowlisted wildcard while keeping its suffix (for example `claims/C-00?.md`). Sessions, handoffs, Runs, Decisions, Objections, PROJECT.md, calibration reports and other projects therefore cannot be named.
+Roles without a header (for example the scribe) have no manifest and are not independent sessions.
+Compatibility: additive. Object formats are unchanged; no migration.
+
 ## Errors and compatibility
 
 Syntax/field errors must include the file path and field name, with a line number when available. Never skip corrupt files and then declare the entire project valid.

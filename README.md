@@ -61,6 +61,18 @@ For model output, archive the raw response and record a Run first, then trace it
 Local file paths are relative to the workbench root; cross-project object references use project/ID.
 An existing `.toulmin-new.lock` causes failure and is preserved. Confirm no writing session is active and inspect remaining files before recovery; the tool never removes another session's lock automatically.
 
+## Prepare an independent review
+
+Each independent role file in `roles/` lists the files its session receives. Reviewer personas (`reviewer-skeptic`, `reviewer-industry`, `reviewer-theorist`, `reviewer-why-not-x`) extend `roles/reviewer.md`; `synthesizer.md` compares review outputs.
+
+```sh
+uv run --locked toulmin inputs tail-latency reviewer-skeptic --root /path/to/research
+uv run --locked toulmin draft run tail-latency --root /path/to/research --role reviewer-skeptic
+```
+
+`inputs` prints the brief, current Claims (superseded ones are left out) and the role contracts; `--claim C-002` (repeatable) selects Claims.
+`draft run --role` writes the same list into the Run draft, so `input_files` is not retyped. Manifests cannot name sessions, handoffs, Runs, Decisions, Objections or other projects.
+
 ## Take in review drafts
 
 A reviewer following `roles/reviewer.md` ends its output with a fenced `yaml` list of drafts (label, target, severity, content, grounds, uncertainty).

@@ -11,6 +11,7 @@ from toulmin.cli.initialize import initialize
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
+from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import intake_review
 from toulmin.protocols.ruling import apply_ruling
@@ -76,6 +77,14 @@ def draft_object(
     name: Annotated[
         str | None, typer.Option("--name", help="Optional filename suffix, e.g. tail-cause.")
     ] = None,
+    role: Annotated[
+        str | None,
+        typer.Option("--role", help="Run only: fill role and input_files from this role."),
+    ] = None,
+    claims: Annotated[
+        list[str] | None,
+        typer.Option("--claim", help="With --role: give only these Claims; may be repeated."),
+    ] = None,
 ) -> None:
     """Write a fillable draft skeleton under the project's runs/drafts/."""
     try:
@@ -83,7 +92,7 @@ def draft_object(
     except ValueError as error:
         raise typer.BadParameter(str(error), param_hint="project") from error
     try:
-        path = write_draft(root, project, kind, name, confirmer(None))
+        path = write_draft(root, project, kind, name, confirmer(None), role=role, claims=claims)
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
@@ -95,6 +104,32 @@ def draft_object(
         f"--input {relative} --confirm",
         err=True,
     )
+
+
+@app.command("inputs")
+def role_inputs(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    role: Annotated[str, typer.Argument(help="Role with an input manifest, e.g. reviewer.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    claims: Annotated[
+        list[str] | None,
+        typer.Option("--claim", help="Give only these Claims; may be repeated."),
+    ] = None,
+) -> None:
+    """List the files an independent session of a role receives, one per line."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    try:
+        result = resolve_inputs(root, project, role, claims)
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    for path in result.files:
+        typer.echo(path)
+    if result.superseded:
+        typer.echo(f"Left out superseded Claims: {', '.join(result.superseded)}", err=True)
 
 
 @app.command("new")
