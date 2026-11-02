@@ -61,6 +61,11 @@ Automated review (C3): `toulmin review <project> [--personas a,b] [--models x,y]
 Each session gets the same self-contained prompt (inputs inlined) in an empty temporary directory: Claude Code with no tools, safe mode and no session persistence; Codex in a read-only, ephemeral sandbox. Sessions never see one another's output. A non-zero exit, timeout (the process group is killed), unreadable or empty output becomes a failed Run; output without a valid draft block is a completed Run whose drafts are taken in by hand. Interrupting the command kills running sessions.
 Runs are archived one at a time under the creation lock as sessions finish; the command exits 1 if any session failed. review never creates or changes Objections, statuses or gates: drafts enter only through intake. The L2 part (planning, prompts, archiving) invokes no model; adapters are L3.
 
+Synthesis and cross-validation (C4): `toulmin synthesize <project> R-NNN R-NNN... [--model M] [--dry-run] --confirm` gives one fresh synthesizer session its static manifest plus exactly the raw outputs of the named Runs (at least two, all completed, all reviews or all crossval answers, each with a valid item block) and a list of every `R-NNN/label` to group.
+The synthesizer model rotates deterministically (Q23): the next model in `[review] models` after the one named by the project's latest synthesis archive, or the first one; `--model` overrides it. The Run summary records which applied and why. An invalid group block leaves a completed Run flagged for manual comparison.
+`toulmin crossval <project> <runs/drafts/question.md> [--models a,b] [--synthesizer M] [--no-synthesis] --confirm` asks each model the same question independently (role `crossval`, same prompt), then synthesizes the usable answers; with fewer than two, synthesis is skipped. The run cap counts the synthesis session.
+Neither command creates or changes objects. Researchers take drafts in from the original review output a group cites; intake refuses synthesizer and crossval outputs. Both reuse the C3 planning, preflight and archiving, so nothing starts unless every check passes.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

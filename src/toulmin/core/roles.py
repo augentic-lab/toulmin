@@ -17,7 +17,7 @@ from toulmin.core.codec import decode
 from toulmin.core.documents import Document
 from toulmin.core.schema import mapping, strings, text
 
-OPERATIONS = ("critique", "synthesize")
+OPERATIONS = ("critique", "synthesize", "answer")
 ROLE_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 PLACEHOLDER = "{project}"
 GLOB = re.compile(r"[*?\[]")

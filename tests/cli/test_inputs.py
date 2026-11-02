@@ -64,7 +64,8 @@ def test_every_shipped_independent_role_resolves_without_discussion_history(benc
     assert not any(marker in path for path in result.files for marker in FORBIDDEN)
     if role.startswith("reviewer-"):
         assert "roles/reviewer.md" in result.files  # personas extend the base contract
-    assert result.operation == ("synthesize" if role == "synthesizer" else "critique")
+    expected = {"synthesizer": "synthesize", "crossval": "answer"}.get(role, "critique")
+    assert result.operation == expected
 
 
 def test_superseded_claims_are_left_out_and_selection_narrows(bench):

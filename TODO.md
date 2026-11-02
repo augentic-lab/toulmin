@@ -248,8 +248,21 @@ Follow-up (closed 2026-11-02): the Codex output followed the operator's global `
 
 ### C4 — Synthesizer and `crossval`
 
-- [ ] `toulmin synthesize <project> <run>…` runs the Q23-rotated synthesizer over the given Run outputs and archives agreements, disagreements and singletons with draft labels. `toulmin crossval <project> <question-file>` sends one question to each model independently, then synthesizes.
-- [ ] Acceptance: the synthesizer sees only the listed outputs; rotation is deterministic and recorded; synthesis never creates Objections; intake from a synthesis still points to the original Run and draft label.
+- [x] `toulmin synthesize <project> <run>…` runs the Q23-rotated synthesizer over the given Run outputs and archives agreements, disagreements and singletons with draft labels. `toulmin crossval <project> <question-file>` sends one question to each model independently, then synthesizes.
+- [x] Acceptance: the synthesizer sees only the listed outputs; rotation is deterministic and recorded; synthesis never creates Objections; intake from a synthesis still points to the original Run and draft label.
+
+C4 verification: `tests/cli/test_synthesis.py` (29 tests, fake executables only) covers:
+- only the named outputs inlined; R-001 and session text absent; every `R-NNN/label` listed;
+- rotation claude → codex → override, recorded in each Run;
+- intake refusing a synthesis output while intake from the original Run works;
+- incomplete synthesis flagged; six refused syntheses and five refused crossval rounds that start and write nothing;
+- failed and mixed sources; crossval with identical prompts, then synthesis; synthesis skipped with fewer than two answers; the cap including the synthesis;
+- the group and point block contracts.
+No live model was run for C4.
+Design notes:
+- Rotation reads the local model name from the latest `*-synthesis-<model>` archive, because a Run's `model` field holds the tool's model ID.
+- Crossval answers use a new `crossval` role (operation `answer`) with a point block. The question must be a file directly in the project's `runs/drafts/`.
+- Order change: the researcher asked for C4 on 2026-11-02 after UI1, ahead of UI2 (Q29 had ordered UI1–UI5 first).
 
 ### C5 — Calibration report and stage trial
 

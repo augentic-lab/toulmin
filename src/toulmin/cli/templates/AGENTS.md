@@ -2,8 +2,9 @@
 
 This repository is the researcher's file-based project state. Read framework/principles.md,
 framework/formats.md and framework/protocols.md when the task needs their details.
-Models are invoked manually, or headlessly by `toulmin review` for read-only reviews
-(tools/models.toml). Decisions belong to the researcher.
+Models are invoked manually, or headlessly by `toulmin review`, `synthesize` and
+`crossval` for read-only work archived in runs/ (tools/models.toml).
+Decisions belong to the researcher.
 
 ## Entry protocol
 
@@ -14,9 +15,9 @@ Models are invoked manually, or headlessly by `toulmin review` for read-only rev
    reviewers must not load handoffs or discussion history, or other unapproved inputs.
 3. State one task, role, required inputs and output location for this session.
 4. Load only the relevant objects. Reviewers read brief and claims, not creation history
-   or other reviewers' outputs. Independent roles (roles/reviewer*.md, synthesizer.md)
-   receive exactly the files `toulmin inputs <project> <role>` lists; see roles/scribe.md
-   for handoffs.
+   or other reviewers' outputs. Independent roles (roles/reviewer*.md, synthesizer.md,
+   crossval.md) receive exactly the files `toulmin inputs <project> <role>` lists; see
+   roles/scribe.md for handoffs.
 
 ## Research rules
 

@@ -59,6 +59,12 @@ def find_run(repository: Repository, project: str, output: str) -> tuple[str, st
             f"{output}: run: expected exactly one Run whose output is {path.parent} "
             f"(found {found}); archive the Run first"
         )
+    role = repository.load(project, ObjectId.parse(owners[0])).header["role"]
+    if role in {"synthesizer", "crossval"}:
+        raise FormatError(
+            f"{output}: run: {owners[0]} is a {role} output, not a review; take drafts in from "
+            "the original review output each synthesis group cites (R-NNN/label)"
+        )
     return owners[0], str(path.parent)
 
 

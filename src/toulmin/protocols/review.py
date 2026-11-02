@@ -17,6 +17,7 @@ from toulmin.core.documents import Document, FormatError
 from toulmin.core.identifiers import ObjectKind
 from toulmin.core.repository import Repository
 from toulmin.core.review import parse_review
+from toulmin.core.synthesis import GROUP_KINDS, parse_points, parse_synthesis
 from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.intake import publish_locked
 
@@ -28,11 +29,14 @@ LOG_FILE = "tool.log"
 
 @dataclass(frozen=True)
 class ReviewTask:
-    persona: str
+    persona: str  # the role the session plays, recorded as Run role
     model: str  # the workbench's local model name, e.g. "claude"
     archive: str  # root-relative archive directory, not yet created
     files: tuple[str, ...]
     prompt: str
+    kind: str = "review"  # review, crossval or synthesis: selects the output check
+    items: tuple[str, ...] = ()  # synthesis only: every R-NNN/label it must group
+    note: str = ""  # added to the Run summary, e.g. how the synthesizer was chosen
 
 
 @dataclass(frozen=True)
@@ -97,20 +101,47 @@ def plan_review(
     return tuple(tasks)
 
 
-def build_prompt(repository: Repository, role: str, files: tuple[str, ...]) -> str:
+def build_prompt(
+    repository: Repository, role: str, files: tuple[str, ...], preface: str = ""
+) -> str:
     """Inline every input file, so the session needs no file access at all."""
     parts = [
         f"You are an independent session of the role defined in roles/{role}.md.",
         "Every input you may use is included below between FILE markers. Do not read other",
         "files, run commands or use tools. Follow the role contract and write your complete",
-        "review as your final answer. The role contract overrides any general reply-style,",
+        "output as your final answer. The role contract overrides any general reply-style,",
         "length or labelling instructions you may have been given elsewhere.",
         "",
     ]
+    if preface:
+        parts += [preface.rstrip("\n"), ""]
     for path in files:
         text = repository.path(path, "file").read_text(encoding="utf-8")
         parts += [f"<<<FILE {path}>>>", text.rstrip("\n"), f"<<<END FILE {path}>>>", ""]
     return "\n".join(parts)
+
+
+BLOCKS = {"review": "draft", "crossval": "point", "synthesis": "group"}
+COMMANDS = {"review": "review", "crossval": "crossval", "synthesis": "synthesize"}
+FALLBACK = {
+    "review": "take drafts in by hand",
+    "crossval": "read the answer as prose",
+    "synthesis": "compare the cited outputs by hand",
+}
+
+
+def check_output(task: ReviewTask, text: str, location: str) -> tuple[int, str]:
+    """Validate the final block for the task's kind; return (item count, summary note)."""
+    if task.kind == "synthesis":
+        groups = parse_synthesis(text, location, task.items)
+        counts = {kind: sum(group.kind == kind for group in groups) for kind in GROUP_KINDS}
+        detail = ", ".join(f"{counts[kind]} {kind}" for kind in GROUP_KINDS)
+        return len(groups), f"{len(groups)} groups ({detail}) covering {len(task.items)} items"
+    if task.kind == "crossval":
+        points = parse_points(text, location)
+        return len(points), f"{len(points)} points"
+    drafts = parse_review(text, location)
+    return len(drafts), f"{len(drafts)} drafts ready for intake"
 
 
 def archive_review(
@@ -136,16 +167,16 @@ def archive_review(
     note = ""
     if failure is None:
         try:
-            drafts = len(parse_review(outcome.text, f"{task.archive}/{OUTPUT_FILE}"))
-            note = f"{drafts} drafts ready for intake"
+            drafts, note = check_output(task, outcome.text, f"{task.archive}/{OUTPUT_FILE}")
         except FormatError as error:
-            note = f"no usable draft block ({error}); take drafts in by hand"
+            note = f"no usable {BLOCKS[task.kind]} block ({error}); {FALLBACK[task.kind]}"
     status = "completed" if failure is None else "failed"
     duration = outcome.duration_seconds
     summary = (
-        f"Automated read-only review by `toulmin review`: persona {task.persona}, "
-        f"model {task.model}. The exact prompt is in {PROMPT_FILE}"
+        f"Automated read-only {task.kind} by `toulmin {COMMANDS[task.kind]}`: role "
+        f"{task.persona}, model {task.model}. The exact prompt is in {PROMPT_FILE}"
         + (f"; the raw answer is in {OUTPUT_FILE}." if outcome.text else ".")
+        + (f" {task.note}" if task.note else "")
         + (f" {note}." if note else "")
     )
     body = f"## Summary\n{summary}\n"

@@ -342,6 +342,116 @@ def review_project(
         raise typer.Exit(1)
 
 
+@app.command("synthesize")
+def synthesize_runs(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    runs: Annotated[
+        list[str], typer.Argument(help="Completed review or crossval Runs, e.g. R-002.")
+    ],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    model: Annotated[
+        str | None,
+        typer.Option("--model", help="Override the rotated synthesizer model ([models] name)."),
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show the planned session; run nothing.")
+    ] = False,
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher starting this synthesis. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Confirm starting the session (uses quota).")
+    ] = False,
+) -> None:
+    """Group the drafts of several archived outputs into disagreements, agreements, singletons."""
+    from toulmin.adapters.review import run_synthesis
+
+    actor = _round_actor(project, actor, dry_run)
+    try:
+        failed = run_synthesis(
+            root, project, runs, model, actor, dry_run=dry_run, confirmed=confirm, echo=typer.echo
+        )
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    if failed:
+        raise typer.Exit(1)
+
+
+@app.command("crossval")
+def crossval_question(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    question: Annotated[
+        str, typer.Argument(help="Question file in the project's runs/drafts/, root-relative.")
+    ],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    models: Annotated[
+        str | None,
+        typer.Option("--models", help="Comma list of [models] names; default from models.toml."),
+    ] = None,
+    model: Annotated[
+        str | None,
+        typer.Option("--synthesizer", help="Override the rotated synthesizer model."),
+    ] = None,
+    synthesize: Annotated[
+        bool, typer.Option("--synthesis/--no-synthesis", help="Synthesize the answers afterwards.")
+    ] = True,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show the planned sessions; run nothing.")
+    ] = False,
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Confirm starting the sessions (uses quota).")
+    ] = False,
+) -> None:
+    """Ask every model the same question independently, then synthesize the answers."""
+    from toulmin.adapters.review import run_crossval
+
+    actor = _round_actor(project, actor, dry_run)
+    chosen = None if models is None else [m.strip() for m in models.split(",") if m.strip()]
+    try:
+        failed = run_crossval(
+            root,
+            project,
+            question,
+            chosen,
+            model,
+            synthesize,
+            actor,
+            dry_run=dry_run,
+            confirmed=confirm,
+            echo=typer.echo,
+        )
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    if failed:
+        raise typer.Exit(1)
+
+
+def _round_actor(project: str, actor: str | None, dry_run: bool) -> str:
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    actor = confirmer(actor)
+    if actor is None and not dry_run:
+        raise typer.BadParameter(
+            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
+        )
+    return actor or ""
+
+
 @app.command("rule")
 def rule_object(
     project: Annotated[str, typer.Argument(help="Project name.")],

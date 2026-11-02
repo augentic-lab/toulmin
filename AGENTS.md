@@ -6,6 +6,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-02: The researcher confirmed Q19–Q24 and started stage 3 (critique), tasks C1–C5 in TODO.md, in order.
 
 2026-11-02: The researcher approved TUI decisions Q25–Q29. Implement UI1–UI5 next, one task per session; C4/C5 remain pending. Development may be delegated to GPT-6.1 Sol with high reasoning, with root-agent integration and verification.
+2026-11-02: The researcher then asked for C4 (synthesize, crossval) ahead of UI2; it is implemented. UI2–UI5 and C5 remain.
 
 ## Project goals and scope
 

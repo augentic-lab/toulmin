@@ -31,6 +31,9 @@
   Configuration in tools/models.toml. Object formats unchanged; no migration.
   Codex runs from a review-only CODEX_HOME; review refuses a home with global
   instructions or without a login (preflight, no quota).
+- C4 (L1/L2/L3, additive): `toulmin synthesize` (rotated synthesizer over named Runs) and
+  `toulmin crossval` (one question to each model, then synthesis); crossval role template;
+  point and group blocks. Synthesis never creates objects. No migration.
 
 ## UI1 — Optional terminal workspace
 

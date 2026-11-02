@@ -54,18 +54,25 @@ def _fences(text: str) -> list[tuple[str, int, int]]:
     return blocks
 
 
-def parse_review(raw: str, location: str) -> tuple[ReviewDraft, ...]:
-    """Parse the last fenced yaml block of a raw review into validated drafts."""
+def final_yaml_list(raw: str, location: str, name: str) -> tuple[list[Any], dict[str, int], int]:
+    """The last top-level fenced yaml block as a nonempty list, its line map and first line."""
     blocks = [block for block in _fences(raw) if block[0] in {"yaml", "yml"}]
     if not blocks:
-        raise FormatError(f"{location}:1: drafts: no final fenced yaml block of review drafts")
+        raise FormatError(f"{location}:1: {name}: no final fenced yaml block of {name}")
     _, start, end = blocks[-1]
     lines = raw.splitlines()
     value, positions = load_restricted(
-        "\n".join(lines[start:end]) + "\n", location, start + 1, "drafts"
+        "\n".join(lines[start:end]) + "\n", location, start + 1, name
     )
     if not isinstance(value, list) or not value:
-        raise FormatError(f"{location}:{start + 1}: drafts: expected a nonempty list")
+        raise FormatError(f"{location}:{start + 1}: {name}: expected a nonempty list")
+    return value, positions, start + 1
+
+
+def parse_review(raw: str, location: str) -> tuple[ReviewDraft, ...]:
+    """Parse the last fenced yaml block of a raw review into validated drafts."""
+    value, positions, first = final_yaml_list(raw, location, "drafts")
+    start = first - 1
     drafts: list[ReviewDraft] = []
     seen: set[str] = set()
     for index, item in enumerate(value):

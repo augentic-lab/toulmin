@@ -106,6 +106,18 @@ Every session becomes a Run with `prompt.md`, `output.md` and, on failure, `tool
 review never writes Objections; take drafts in with `toulmin intake`.
 Codex loads `$CODEX_HOME/AGENTS.md` in every session, so the template points Codex at a review-only home (`env = { CODEX_HOME = "~/.codex-toulmin" }`). Log in there once with `mkdir -p ~/.codex-toulmin && CODEX_HOME=~/.codex-toulmin codex login`; review refuses to start if that home holds AGENTS.md or is not logged in.
 
+## Synthesize and cross-validate
+
+```sh
+uv run --locked toulmin synthesize tail-latency R-002 R-003 --root /path/to/research --confirm
+uv run --locked toulmin crossval tail-latency projects/tail-latency/runs/drafts/question.md \
+  --root /path/to/research --confirm
+```
+
+`synthesize` gives one fresh session the brief, current Claims and exactly the named Runs' outputs, and asks it to place every `R-NNN/label` into disagreements (listed first), agreements or singletons.
+The synthesizer model rotates through `[review] models` across a project's syntheses (`--model` overrides; the Run records which and why).
+`crossval` sends one question from `runs/drafts/` to each model independently, then synthesizes their answers. Neither command writes Objections: take drafts in from the original review output a group cites.
+
 ## Take in review drafts
 
 A reviewer following `roles/reviewer.md` ends its output with a fenced `yaml` list of drafts (label, target, severity, content, grounds, uncertainty).

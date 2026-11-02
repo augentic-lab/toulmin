@@ -138,6 +138,11 @@ Automated review archives (C3): `toulmin review` writes `runs/<UTC>-review-<pers
 Its Run is an ordinary v1 Run: source `{kind: human, actor}` (the operator who started the round), `model` as configured or as reported by the tool (otherwise `<adapter> default (not reported)`), `role` = persona, `input_files` from the manifest, `session_id` as reported or null, `duration_seconds` measured. A failed Run states the reason under `## Failure`.
 `tools/models.toml` (workbench configuration, not research state) holds `[review]` max_runs, parallel, timeout_seconds and default personas/models, and `[models.<name>]` adapter (`claude-code` or `codex`), model, optional command, extra_args and env (variables added to the session environment, `~` expanded; e.g. a review-only `CODEX_HOME`). Model names are plain strings.
 
+Cross-validation answers and syntheses (C4) are archived like reviews: `runs/<UTC>-crossval-<model>/` (Run role `crossval`) and `runs/<UTC>-synthesis-<model>/` (Run role `synthesizer`; the archive name carries the local model name that rotation reads).
+An answer ends with a final fenced yaml list of points: `label` (unique), `position`, `grounds`, optional `uncertainty` and optional `target` (a Claim in this project).
+A synthesis ends with a final fenced yaml list of groups: `group` (unique label), `kind` (`disagreement`, `agreement` or `singleton`), `drafts` (items cited as `R-NNN/label`), `note` and optional `target`. Every item of the round appears in exactly one group; a singleton cites one item; agreements and disagreements cite items from at least two Runs.
+These blocks are commentary on archived outputs: they never become objects, and intake refuses synthesizer and crossval outputs. Additive; object formats unchanged; no migration.
+
 ## Errors and compatibility
 
 Syntax/field errors must include the file path and field name, with a line number when available. Never skip corrupt files and then declare the entire project valid.

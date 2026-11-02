@@ -102,6 +102,7 @@ def test_workspace_rules_and_role_contracts_are_independent_of_development(tmp_p
         assert phrase in rules
     roles = sorted(path.stem for path in (root / "roles").glob("*.md"))
     assert roles == [
+        "crossval",
         "reviewer",
         "reviewer-industry",
         "reviewer-skeptic",

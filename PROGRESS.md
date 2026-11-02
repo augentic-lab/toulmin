@@ -35,6 +35,26 @@
 - Blockers: none for the design deliverable; implementation awaits review of the proposed scope/contracts.
 - Next step: researcher reviews Q25–Q29, then UI1 can begin if approved. No automatic push.
 
+## 2026-11-02 — C4: synthesizer and crossval
+
+- Status: **Verified with fake CLIs.** No live model was run for C4.
+- User authorization: "加上运行前检查，然后开始 C4" (add the preflight check, then start C4). This takes C4 ahead of UI2, changing Q29's order (recorded in AGENTS.md and TODO). The UI0/UI1 commits from another session were not touched.
+- L1:
+  - `review.final_yaml_list` is shared by every block parser.
+  - New `core/synthesis.py` parses crossval point blocks and synthesis group blocks. Group kinds, single-item singletons, items from at least two Runs for agreements and disagreements, every round item placed exactly once, optional Claim target.
+  - `roles.OPERATIONS` gains `answer`.
+- L2:
+  - New `protocols/synthesis.py`. `round_sources` validates two or more completed, non-synthesis Runs of one kind with valid item blocks. `choose_model` implements Q23 rotation (or override) with a recorded reason. `plan_synthesis` builds the manifest, the named outputs and the item list. `plan_crossval` takes a question under `runs/drafts/`, with the cap counting the synthesis.
+  - `ReviewTask` gains kind, items and note; archiving checks the block for each kind.
+  - Intake refuses synthesizer and crossval outputs.
+- L3: `adapters/review.py` shares plan → preflight → show → confirm → execute across `review`, `synthesize` and `crossval`. New commands `toulmin synthesize` and `toulmin crossval`.
+- Templates: new roles/crossval.md; synthesizer.md matches the parsed group format and cites `R-NNN/label`; the workbench AGENTS template names the new commands.
+- Docs: formats.md and protocols.md (with packaged copies), CHANGELOG, README.
+- **Verified**: `tests/cli/test_synthesis.py` **29 passed**, rerun three times after fixing one order-dependent assertion (fake log files were read in random order). Full suite with `--extra tui` **562 passed**. An installed wheel created the crossval role, resolved its inputs, and ships a packaged protocols.md identical to docs. Ruff and mypy (41 source files) passed.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: optionally one supervised live synthesis over R-002/R-003/R-004 on the scratch workbench (needs quota approval), then UI2 or C5 as the researcher chooses.
+
 ## 2026-11-02 — C3 follow-up: Codex home preflight
 
 - Status: **Verified: review refuses a Codex home with global instructions or without a login.**
