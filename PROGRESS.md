@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI1 verification-process cleanup
+
+- Verified three leftover sandbox processes from UI1 verification: targeted pytest (PID 4110036), full pytest (4119865), and terminal smoke TUI (4139178). These were abandoned hung attempts, not the successful final validation run.
+- Matched exact command lines and working directory before stopping them; verified all three stopped. No researcher project or application code changed.
+- The previous session failed to clean up these attempts before reporting completion. Future verification commands must have bounded timeouts and all started sessions must be checked at close.
+- Validation: process identity and post-stop state; documentation diff check. Code tests were not rerun for process cleanup.
+- Session ID unavailable. Blockers: none. Next: UI2 as previously planned. No push.
+
 ## 2026-11-02 — UI1: terminal project workspace
 
 - Status: **Verified**: UI1 implemented and integration checks passed; researcher usability acceptance remains pending UI5.
