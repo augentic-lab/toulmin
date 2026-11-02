@@ -1,5 +1,6 @@
 """Installed CLI entry point."""
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -7,6 +8,7 @@ import typer
 
 from toulmin.cli.initialize import initialize
 from toulmin.core.identifiers import ObjectKind, validate_project_name
+from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.status import project_status
@@ -16,6 +18,22 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
 )
+
+ACTOR_VARIABLE = "TOULMIN_ACTOR"
+
+
+def confirmer(value: str | None) -> str | None:
+    """Explicit --confirmed-by wins; otherwise the operator's local default, if any."""
+    if value is not None:
+        return value
+    return os.environ.get(ACTOR_VARIABLE) or None
+
+
+def display(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root.absolute()))
+    except ValueError:
+        return str(path)
 
 
 @app.callback(invoke_without_command=True)
@@ -47,14 +65,52 @@ def init_workbench(
     typer.echo(f"Workbench: {root.absolute()} | project: {project} | created entries: {created}")
 
 
+@app.command("draft")
+def draft_object(
+    kind: Annotated[ObjectKind, typer.Argument(help="Object type.")],
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    name: Annotated[
+        str | None, typer.Option("--name", help="Optional filename suffix, e.g. tail-cause.")
+    ] = None,
+) -> None:
+    """Write a fillable draft skeleton under the project's runs/drafts/."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    try:
+        path = write_draft(root, project, kind, name, confirmer(None))
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    relative = display(path, root)
+    typer.echo(relative)
+    location = "" if root == Path(".") else f" --root {root}"
+    typer.echo(
+        f"Fill every <fill: ...> value, then: toulmin new {kind.value} {project}{location} "
+        f"--input {relative} --confirm",
+        err=True,
+    )
+
+
 @app.command("new")
 def new_object(
     kind: Annotated[ObjectKind, typer.Argument(help="Object type.")],
     project: Annotated[str, typer.Argument(help="Project name.")],
     input_path: Annotated[
-        str, typer.Option("--input", help="Markdown draft path relative to --root.")
+        str,
+        typer.Option(
+            "--input", help="Markdown draft path, relative to --root or absolute inside it."
+        ),
     ],
-    actor: Annotated[str, typer.Option("--confirmed-by", help="Researcher authorizing intake.")],
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher authorizing intake. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
     root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
     confirm: Annotated[
         bool, typer.Option("--confirm", help="Explicitly confirm this draft's intake.")
@@ -65,6 +121,11 @@ def new_object(
         validate_project_name(project)
     except ValueError as error:
         raise typer.BadParameter(str(error), param_hint="project") from error
+    actor = confirmer(actor)
+    if actor is None:
+        raise typer.BadParameter(
+            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
+        )
     try:
         path = create_object(root, project, kind, input_path, actor, confirm)
     except (OSError, ValueError) as error:
@@ -132,7 +193,11 @@ def handoff(
         typer.Option("--apply", help="Archived draft to apply or recover, relative to --root."),
     ] = None,
     actor: Annotated[
-        str | None, typer.Option("--confirmed-by", help="Researcher authorizing application.")
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher authorizing application. Defaults to ${ACTOR_VARIABLE}.",
+        ),
     ] = None,
     confirm: Annotated[
         bool, typer.Option("--confirm", help="Confirm application of this draft.")
@@ -147,8 +212,10 @@ def handoff(
         raise typer.BadParameter("--apply and --input are mutually exclusive")
     if apply_path is None and (confirm or actor is not None):
         raise typer.BadParameter("--confirm/--confirmed-by require --apply")
-    if apply_path is not None and actor is None:
-        raise typer.BadParameter("--apply requires --confirmed-by")
+    if apply_path is not None:
+        actor = confirmer(actor)
+        if actor is None:
+            raise typer.BadParameter(f"--apply requires --confirmed-by or {ACTOR_VARIABLE}")
     try:
         path = (
             draft_handoff(root, project, input_path)

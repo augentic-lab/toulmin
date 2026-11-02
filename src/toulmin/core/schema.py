@@ -21,6 +21,13 @@ FIELDS = {
         set(),
     ),
 }
+# Enumerations are shared with draft skeletons so the two cannot drift apart.
+CLAIM_TYPES = ("problem", "magnitude", "mechanism", "novelty", "assumption", "deployability")
+IMPORTANCE = ("core", "secondary")
+DIRECTIONS = ("supports", "refutes")
+EVIDENCE_KINDS = ("measurement", "literature", "derivation", "experiment", "computation")
+GRADES = ("verified", "model-asserted", "intuition")
+SEVERITIES = ("fatal", "major", "minor")
 SECTIONS = {
     ObjectKind.CLAIM: ("Statement",),
     ObjectKind.EVIDENCE: ("Material",),
@@ -140,19 +147,17 @@ def validate(doc: Document) -> None:
     if kind in {ObjectKind.EVIDENCE, ObjectKind.OBJECTION, ObjectKind.SPEC}:
         reference(doc, h["target"], "target", ObjectKind.CLAIM)
     if kind == ObjectKind.CLAIM:
-        enum(
-            "type", ("problem", "magnitude", "mechanism", "novelty", "assumption", "deployability")
-        )
-        enum("importance", ("core", "secondary"))
+        enum("type", CLAIM_TYPES)
+        enum("importance", IMPORTANCE)
         strings(doc, h.get("tags", []), "tags")
         if "validation_plan" in h:
             text(doc, h["validation_plan"], "validation_plan")
         if h["status"] in {"accepted", "refuted"}:
             refs("decisions", ObjectKind.DECISION, True)
     elif kind == ObjectKind.EVIDENCE:
-        enum("direction", ("supports", "refutes"))
-        enum("kind", ("measurement", "literature", "derivation", "experiment", "computation"))
-        enum("grade", ("verified", "model-asserted", "intuition"))
+        enum("direction", DIRECTIONS)
+        enum("kind", EVIDENCE_KINDS)
+        enum("grade", GRADES)
         if not isinstance(h["provenance"], list) or not h["provenance"]:
             doc.fail("provenance", "expected nonempty list")
         for index, item in enumerate(h["provenance"]):
@@ -177,7 +182,7 @@ def validate(doc: Document) -> None:
                 text(doc, verification[field], "verification." + field)
             strings(doc, verification["artifacts"], "verification.artifacts", True)
     elif kind == ObjectKind.OBJECTION:
-        enum("severity", ("fatal", "major", "minor"))
+        enum("severity", SEVERITIES)
         if h["status"] == "accepted":
             refs("decisions", ObjectKind.DECISION, True)
     elif kind == ObjectKind.DECISION:

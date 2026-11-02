@@ -119,24 +119,27 @@ Not covered by the accepted evidence: a cross-model review (reviewer and author 
 
 ## Stage 2 follow-up: usability (U1–U3)
 
-Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance; implementation has not started. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
+Basis: PROGRESS S1 findings 1–5. Planned on 2026-11-02 after stage 2 acceptance. The researcher confirmed Q11–Q13 as recommended on 2026-11-02; U1 is complete. These tasks improve the existing four-command skeleton before stage 3. They add no automated review, model invocation or automatic ruling.
 Order: U1 → U2 → U3, one task per session. U1 removes the largest friction. U2 adds the most common next-day action. U3 is cosmetic and changes no format.
 
 ### Pending decisions
 
 | ID | Required decision | Recommendation | Impact |
 | --- | --- | --- | --- |
-| Q11 | Where does a default confirmer come from? | An optional `TOULMIN_ACTOR` environment variable used when `--confirmed-by` is omitted. `--confirm` stays mandatory. Operator identity is local, not research state, so it does not go in workbench files. | L3 only. |
-| Q12 | Where do draft skeletons go, and how are they created? | `toulmin draft <kind> <project> [--name N]` writes a commented skeleton to `projects/<p>/runs/drafts/<kind>-<UTC>[-N].md` without overwriting, and prints the root-relative path. `runs/drafts/` becomes the documented draft location, replacing ad hoc `runs/manual/`. | L3, L2 note, templates/README. |
-| Q13 | How are stored statuses, Objection Responses and Rulings changed? | `toulmin rule <project> <ID> --status S --decision D-NNN [--response FILE] [--ruling FILE] --confirmed-by A --confirm`. Every status change needs an existing active Decision reference, which the command appends to `decisions` (Run status is immutable). A Response alone (no status change) needs no Decision. Body sections other than the targeted ones, other fields and comments are preserved. | New L2 protocol (change note), L1 conditional rules reused unchanged. |
+| Q11 | Where does a default confirmer come from? | **Confirmed.** An optional `TOULMIN_ACTOR` environment variable used when `--confirmed-by` is omitted. `--confirm` stays mandatory. Operator identity is local, not research state, so it does not go in workbench files. | L3 only. |
+| Q12 | Where do draft skeletons go, and how are they created? | **Confirmed.** `toulmin draft <kind> <project> [--name N]` writes a commented skeleton to `projects/<p>/runs/drafts/<kind>-<UTC>[-N].md` without overwriting, and prints the root-relative path. `runs/drafts/` becomes the documented draft location, replacing ad hoc `runs/manual/`. | L3, L2 note, templates/README. |
+| Q13 | How are stored statuses, Objection Responses and Rulings changed? | **Confirmed.** `toulmin rule <project> <ID> --status S --decision D-NNN [--response FILE] [--ruling FILE] --confirmed-by A --confirm`. Every status change needs an existing active Decision reference, which the command appends to `decisions` (Run status is immutable). A Response alone (no status change) needs no Decision. Body sections other than the targeted ones, other fields and comments are preserved. | New L2 protocol (change note), L1 conditional rules reused unchanged. |
 | Q14 | Should `last_handoff` become a root-relative path, and should Objections allow several targets? | Neither, for now. Both are L1 format changes that require migration. U3 makes status print the resolved handoff path instead. Revisit multi-target after stage 3 shows how often reviews span several Claims. | None now. |
 
 ### U1 — Draft skeletons and simpler intake
 
-- [ ] Outputs: the Q12 `draft` command for all seven kinds; skeletons list required fields and sections with short comments and allowed enum values. `new --input` also accepts an absolute path inside the workbench root. The Q11 default confirmer is supported.
-- [ ] Behavior acceptance: a skeleton filled in without consulting formats.md passes `new` for every kind. Unfilled placeholders fail validation with a located error rather than being accepted. `draft` never overwrites and never creates a formal object.
-- [ ] Boundary acceptance: absolute paths outside the root, symlink escapes and `..` stay rejected. Without `--confirm`, intake still fails. A missing actor (no flag, no variable) fails with a clear message.
-- [ ] Run: `uv run --locked pytest -q tests/cli/test_new.py` plus new draft tests; full AGENTS.md checks.
+- [x] Outputs: the Q12 `draft` command for all seven kinds; skeletons list required fields and sections with short comments and allowed enum values. `new --input` also accepts an absolute path inside the workbench root. The Q11 default confirmer is supported.
+- [x] Behavior acceptance: a skeleton filled in without consulting formats.md passes `new` for every kind. Unfilled placeholders fail validation with a located error rather than being accepted. `draft` never overwrites and never creates a formal object.
+- [x] Boundary acceptance: absolute paths outside the root, symlink escapes and `..` stay rejected. Without `--confirm`, intake still fails. A missing actor (no flag, no variable) fails with a clear message.
+- [x] Run: `uv run --locked pytest -q tests/cli/test_new.py` plus new draft tests; full AGENTS.md checks.
+
+U1 verification: 28 draft-specific and 320 total tests and Ruff/mypy passed. An installed wheel outside the checkout ran draft → fill → `new` with an absolute `--input` and `TOULMIN_ACTOR`, then status. The skeletons were checked by automated filling, not by a human who had not read formats.md.
+Scope note: `new` still prints an absolute path; U3 unifies root-relative output. `handoff --apply` also accepts `TOULMIN_ACTOR` for consistency with Q11; `handoff --input/--apply` still require root-relative paths.
 
 ### U2 — Confirmed status and response updates
 

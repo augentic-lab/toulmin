@@ -38,8 +38,9 @@ Models are invoked manually. Decisions belong to the researcher.
 
 ## Exit protocol
 
-1. Save raw output and drafts in runs/ and record their provenance. Unknown session IDs
-   or duration remain null; never invent values or results.
+1. Save raw output in runs/ and record its provenance; object drafts go in runs/drafts/
+   (`toulmin draft` writes a skeleton). Unknown session IDs or duration remain null;
+   never invent values or results.
 2. Draft a handoff with work done, decisions/pending decisions, open questions, next step
    and session ID. See roles/scribe.md. Do not treat writing a draft as approval.
 3. After researcher review, apply it to sessions/ and update PROJECT.md recent_decisions,

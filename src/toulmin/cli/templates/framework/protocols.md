@@ -29,6 +29,11 @@ Confirmation fields are not authentication. A model must not supply a researcher
 Initial object creation differs from changes to stored status: the skeleton has no automatic ruling and never adopts model suggestions automatically.
 When manually changing an existing status or project stage, the researcher creates a Decision and links the changed objects/PROJECT.recent_decisions.
 
+Draft skeletons (U1): `toulmin draft <kind> <project>` writes a commented skeleton to `runs/drafts/<kind>-<UTC>[-name].md`, never overwriting and never creating a formal object.
+Skeleton values that need human input contain `<fill: ...>`. Intake rejects any draft whose header values or body still contain that marker, reporting the field, so an unedited skeleton cannot become an object.
+A default confirmer may come from the operator's `TOULMIN_ACTOR` environment variable when `--confirmed-by` is omitted; it is local operator configuration, not workbench state. `--confirm` remains mandatory.
+This L2 change adds a draft location and an intake precondition only; object fields and the v1 format are unchanged.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

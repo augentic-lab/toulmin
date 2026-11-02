@@ -337,6 +337,7 @@ The adapter layer wraps the headless modes of the three CLIs behind a uniform in
 **Orchestrator commands (first version)**
 
 - `toulmin init`: create the research repository layout and the shared instruction files
+- `toulmin draft <type> <project>`: write a fillable draft skeleton under the project's `runs/drafts/`
 - `toulmin new <type> <project>`: create an object file with the next ID and a filled-in header
 - `toulmin status <project>`: show the stage, open objections, claim statuses and next step
 - `toulmin handoff <project>`: archive a draft; `--apply <draft>` updates sessions and non-ruling PROJECT fields only after researcher confirmation

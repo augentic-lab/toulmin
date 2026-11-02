@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-02 — U1: draft skeletons and simpler intake
+
+- Status: **Verified: U1 complete.** U2–U3 have not started.
+- User authorization: Q11–Q13 confirmed as recommended; implement U1.
+- L1: `core/skeletons.py` holds pure skeleton text for all seven kinds and `unfilled()` placeholder detection. Its enum values come from new shared constants in `core/schema.py`, so skeletons cannot drift from validation. `Repository.relative()` accepts absolute paths that lie lexically inside the root; all existing path checks still apply afterwards.
+- L2: `protocols/drafting.py` writes `runs/drafts/<kind>-<UTC>[-name][-N].md` through an exclusive hard link, never overwriting and never leaving partial files. Intake now rejects `<fill: ...>` placeholders with a located field and accepts absolute `--input` inside the root. Change notes are in docs/protocols.md (plus its packaged copy) and the framework CHANGELOG template.
+- L3: the `draft` command prints a root-relative path and a follow-up `new` hint on stderr. `--confirmed-by` on `new` and on `handoff --apply` falls back to `TOULMIN_ACTOR`; `--confirm` is still mandatory.
+- Compatibility: v1 object fields and formats are unchanged; no migration is needed. Previously valid drafts are still accepted unless they literally contain `<fill:`. Changed packaged templates (AGENTS, framework protocols/CHANGELOG) make `init --project` on older workbenches report conflicts and preserve those files (existing behavior).
+- **Verified**: `tests/cli/test_draft.py` **28 passed**: every kind rejected while unfilled and accepted once filled; located body placeholders; no-overwrite naming; bad names/actors and symlinked drafts directories write nothing; the default actor and its override; absolute input; status ignores drafts; handoff applies with the default actor. Full suite **320 passed**; Ruff lint/format and mypy (22 source files) passed.
+- **Verified**: a wheel installed into a fresh venv outside the checkout ran init → draft → hand fill → `new` with an absolute path and `TOULMIN_ACTOR` → status (valid).
+- Not verified: whether a human can fill every skeleton without reading formats.md. The tests fill the skeletons programmatically.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: U2 `rule` command for confirmed status/Response/Ruling updates (Q13).
+
 ## 2026-11-02 — Stage 2 acceptance and U1–U3 usability plan
 
 - Status: **Verified**: the researcher explicitly accepted roadmap stage 2. The usability follow-up U1–U3 is planned in TODO.md; implementation has not started.

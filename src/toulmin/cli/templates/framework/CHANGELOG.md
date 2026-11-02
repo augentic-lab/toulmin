@@ -12,3 +12,5 @@
   cause reviewers to load handoffs or discussion history.
 - 2026-11-02 (L2 note): stage acceptance is a researcher ruling on recorded trial evidence,
   not necessarily a human two-day trial. No object format or command behavior changed.
+- U1 (L2 note): `toulmin draft` writes skeletons to runs/drafts/; intake rejects unfilled
+  `<fill: ...>` placeholders; `TOULMIN_ACTOR` may supply the default confirmer. v1 unchanged.

@@ -7,6 +7,7 @@ from toulmin.core.documents import STATUSES, Document
 from toulmin.core.identifiers import SCHEMA_VERSION, ObjectKind
 from toulmin.core.repository import Repository
 from toulmin.core.schema import text, validate
+from toulmin.core.skeletons import unfilled
 
 
 def create_object(
@@ -14,12 +15,15 @@ def create_object(
 ) -> Path:
     repository = Repository(root)
     repository.project(project)
-    draft = repository.read(input_path)
+    draft = repository.read(repository.relative(input_path))
     if not confirmed:
         draft.fail(
             "confirmed_by", "explicit researcher confirmation required; draft kept unchanged"
         )
     text(draft, actor, "confirmed_by.actor")
+    placeholder = unfilled(draft)
+    if placeholder:
+        draft.fail(placeholder, "unfilled <fill: ...> placeholder; edit the draft first")
     for field in ("id", "created", "confirmed_by"):
         if field in draft.header:
             draft.fail(field, "assigned at intake; supply a draft rather than an existing object")

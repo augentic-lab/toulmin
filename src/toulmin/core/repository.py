@@ -48,6 +48,19 @@ class Repository:
             raise FormatError(f"{result}: path: expected existing directory")
         return result
 
+    def relative(self, value: str) -> str:
+        """Turn an absolute path lexically inside the root into a root-relative one.
+
+        Relative values pass through unchanged; path() still applies every check.
+        """
+        candidate = PurePosixPath(value)
+        if not candidate.is_absolute():
+            return value
+        root = PurePosixPath(self.root.as_posix())
+        if ".." in candidate.parts or not candidate.is_relative_to(root) or candidate == root:
+            raise FormatError(f"{value}: path: absolute path outside the workbench root")
+        return candidate.relative_to(root).as_posix()
+
     def project(self, name: str) -> Path:
         validate_project_name(name)
         path = self.path(f"projects/{name}", "directory")

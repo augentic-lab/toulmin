@@ -23,7 +23,21 @@ Ordinary write failures roll back additions from that invocation; after a forced
 
 ## Create a confirmed object
 
-First save a Markdown draft under the project's runs directory, for example `projects/tail-latency/runs/manual/claim.md`:
+Generate a draft skeleton, fill every `<fill: ...>` value, then confirm intake:
+
+```sh
+uv run --locked toulmin draft claim tail-latency --root /path/to/research
+# prints e.g. projects/tail-latency/runs/drafts/claim-20261102T140000Z.md
+export TOULMIN_ACTOR="Researcher"   # optional default for --confirmed-by
+uv run --locked toulmin new claim tail-latency --root /path/to/research \
+  --input projects/tail-latency/runs/drafts/claim-20261102T140000Z.md --confirm
+```
+
+The skeleton lists required fields with their allowed values, so formats.md is only needed for details.
+Intake rejects any value or body section that still contains `<fill: ...>`. `--input` may also be an absolute path inside the workbench.
+`--confirm` is always required; `--confirmed-by` overrides `TOULMIN_ACTOR`, and one of them must be present.
+
+A hand-written draft works as well, for example `projects/tail-latency/runs/drafts/claim.md`:
 
 ```markdown
 ---
@@ -37,7 +51,7 @@ Queueing delay is the main source of tail latency in the target trace. (Example:
 
 ```sh
 uv run --locked toulmin new claim tail-latency --root /path/to/research \
-  --input projects/tail-latency/runs/manual/claim.md \
+  --input projects/tail-latency/runs/drafts/claim.md \
   --confirmed-by "Researcher" --confirm
 ```
 
