@@ -257,3 +257,11 @@ Open follow-up: the Codex output followed the operator's global `~/.codex/AGENTS
 - [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance.
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
+
+## UI0 — Python/Textual TUI proposal
+
+- [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.
+- [ ] Researcher reviews Q25–Q29 in the proposal before implementation.
+- [ ] Implement UI1–UI5 only after approval; C4/C5 remain pending, not superseded by this planning task.
+
+UI0 is documentation only. Python/TUI is the agreed direction; detailed scope and contracts are still proposed.

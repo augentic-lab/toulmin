@@ -193,6 +193,8 @@ export UV_PYTHON_INSTALL_DIR="$PWD/.tools/python"
 
 ## Project documentation
 
+- [Python/Textual TUI proposal](docs/tui-design.md): proposed workflow, architecture and implementation plan; not implemented.
+
 - [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 

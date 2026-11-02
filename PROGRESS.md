@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI0: Python/Textual TUI design proposal
+
+- Status: **Verified**: design document written and checked; implementation has not started.
+- User authorization: prepare a design for the agreed Python TUI direction, without direct implementation.
+- Output: docs/tui-design.md covers startup, a three-pane pixel-style workspace, exploration, brief proposals, key claims, independent review, resolution, handoff, architecture, persistence/recovery, workbench upgrades and UI1–UI5 acceptance criteria.
+- Proposed decisions Q25–Q29 remain pending: expanded exploration scope, brief-centered interaction, file-reconstructed conversations, explicit proposal application and implementation priority relative to C4/C5.
+- Existing research object formats, executable code, dependencies and templates are unchanged. No real model was invoked.
+- Validation: inspected existing adapter/protocol boundaries and official Textual documentation; checked document links, fences, English text and git diff whitespace. Code tests were not rerun for this documentation-only task.
+- Session ID: unavailable in the current environment.
+- Blockers: none for the design deliverable; implementation awaits review of the proposed scope/contracts.
+- Next step: researcher reviews Q25–Q29, then UI1 can begin if approved. No automatic push.
+
 ## 2026-11-02 — C3 live smoke runs (approved) and Codex isolation follow-up
 
 - Status: **Verified: both adapters work against the real tools; C3 acceptance ticked. Paused here at the researcher's request.**
