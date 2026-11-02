@@ -292,6 +292,7 @@ UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. UI2 imp
 
 - [x] Write [the v2 workflow proposal](docs/tui-workflow-design.md): product goals, explicit actions/readiness, a complete small-case walkthrough, triage versus ruling, manual validation, stage/handoff boundaries, adaptive layout, implementation gaps and measurable acceptance.
 - [ ] Researcher review of Q30 (activity-oriented guidance) and Q31 (bounded validation/evidence and G1/G2 ruling scope).
-- [ ] UI-R2: low-fidelity task walkthrough at wide/medium sizes and a compact task case, before visual-theme selection or application changes.
+- [x] UI-R2: standalone low-fidelity terminal walkthrough and actual SVG renders at 120×36/80×24 plus a 60×20 task case; see prototypes/README.md. Uses memory-only sample data; production TUI unchanged.
+- [ ] Researcher tries UI-R2 and assesses next-action clarity, pending versus resolved state and simulated return; confirm Q30/Q31 production scope after feedback.
 
 The CLI smoke trial proved plumbing only. The researcher explicitly needs a visible research process and discoverable actions; replacing that experience with natural-language-only interaction is not the product direction.

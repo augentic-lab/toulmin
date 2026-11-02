@@ -1,6 +1,6 @@
 # Toulmin TUI v2: a guided research workbench
 
-Status: **proposed for researcher review**, 2026-11-02. Design only; no application changes.
+Status: **proposed for researcher review**, 2026-11-02. The researcher authorized trying UI-R2; a [standalone memory-only prototype](../prototypes/README.md) now demonstrates this interaction. Production behavior and Q30/Q31 scope remain pending feedback.
 Task: UI-R1. This proposal revises the interaction model of [the original TUI design](tui-design.md).
 The approved principles, file formats and confirmation boundaries remain authoritative.
 The user's clarified requirement is guidance: see the research process, know what is possible,

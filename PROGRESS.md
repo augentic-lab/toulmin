@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-02 — UI-R2: runnable guided-workflow wireframe
+
+- Authorization: researcher said to try the proposed direction. Implemented an isolated low-fidelity prototype, not production UI2–UI5 or the proposed Q31 write paths. Q30/Q31 production acceptance remains pending researcher feedback.
+- Deliverable: prototypes/guided_workbench.py, launch/route/limitations in prototypes/README.md, a screenshot exporter and nine actual Textual SVG renders under docs/prototypes/guided-workbench/. Uses the existing optional tui extra, with no dependency changes or edits under src/.
+- Experience: sample creation, visible next action, editable brief, statement and review input preview, untriaged suggestion versus recorded issue, editable test plan, readiness explanation, handoff next-step editing and a simulated return. Navigation preserves working edits; changed saved briefs mark earlier review inputs stale; a saved plan leaves the issue open and no evidence is fabricated. Header was reduced after actual compact-screen inspection.
+- Limits: all values, review outputs, IDs and handoffs live in memory. No model/network/project writes. Preview Reopen is an in-process illustration, not persistence verification; Ctrl+Q discards the demo. Actual chat, experiment/result intake, rulings, stage writes and model-job behavior are not implemented in this wireframe. This is a workflow review artifact, not the final visual theme or research software acceptance.
+- Verified: locked offline sync succeeded; full regression passed **570 tests in 143.87 s**. After the final navigation/label adjustment the eight prototype tests passed again. They cover keyboard/clickable action geometry at 120x36, 80x24 and 60x20, retained edits/context focus, pending intake, stale inputs, early handoff routing, sample reset and no working-directory writes.
+- Verified: Ruff lint/format passed; strict mypy passed for src/toulmin and prototypes (43 files); CLI help passed. Actual wide/compact renders inspected, nine exported SVGs parsed, documentation links/fences and diff whitespace checked. PTY launch/Ctrl+Q exited 0, restored terminal attributes/alternate screen and reaped the process. Test/export/renderer commands were bounded by timeouts and all returned; no background task was left running by this session.
+- No human usability/CJK-IME acceptance claimed. Session ID unavailable. Blockers: none. Next: researcher tries the small walkthrough and identifies unclear actions before visual styling or production integration. No push.
+
 ## 2026-11-02 — UI-R1: guided research workbench redesign
 
 - User direction: retain a TUI to externalize the research process and available actions; prioritize purpose, actual user experience, flow and guidance before visual style. This supersedes the proposed AI-terminal replacement trial as the product direction. No application code changed.
