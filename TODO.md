@@ -258,7 +258,8 @@ C4 verification: `tests/cli/test_synthesis.py` (29 tests, fake executables only)
 - incomplete synthesis flagged; six refused syntheses and five refused crossval rounds that start and write nothing;
 - failed and mixed sources; crossval with identical prompts, then synthesis; synthesis skipped with fewer than two answers; the cap including the synthesis;
 - the group and point block contracts.
-No live model was run for C4.
+Live smoke (approved 2026-11-02, 1 session): `synthesize sqpoll-cost R-002 R-004` on the scratch workbench produced R-005 (Claude, 45.6 s). The group block parsed: 5 groups (4 agreements, 1 singleton) covering all 11 items. The rotation reason is recorded, intake refused the synthesis output, and a dry run shows the next rotation is codex.
+Finding for C5 and the template: the definition of disagreement (opposite conclusions, or severity more than one level apart) left two real divergences inside agreement groups: which baseline C-003 must beat, and which Claim the missing kill criterion should cover. The synthesizer surfaced both in prose under Disagreements and in the group notes. Decide after more rounds whether to add a group kind or field for partial divergence.
 Design notes:
 - Rotation reads the local model name from the latest `*-synthesis-<model>` archive, because a Run's `model` field holds the tool's model ID.
 - Crossval answers use a new `crossval` role (operation `answer`) with a point block. The question must be a file directly in the project's `runs/drafts/`.

@@ -35,6 +35,23 @@
 - Blockers: none for the design deliverable; implementation awaits review of the proposed scope/contracts.
 - Next step: researcher reviews Q25–Q29, then UI1 can begin if approved. No automatic push.
 
+## 2026-11-02 — C4 live synthesis smoke run (approved)
+
+- Status: **Verified: the real synthesizer follows the group format and the rotation works.**
+- User authorization: "同意，先跑 C4 真实综合冒烟测试" (agreed; run the C4 live synthesis smoke test first). One session was used.
+- Setup: the scratch workbench (copy of R1/S2) was refreshed with the C4 role templates and framework documents. Synthesis over R-002 (Claude review, 7 drafts) and R-004 (isolated Codex review, 4 drafts).
+- **Verified** results:
+  - R-005 completed: Claude, 45.6 s, session ID recorded. The rotation reason "first synthesis in this project; first of [claude, codex]" is in the Summary.
+  - `input_files` = synthesizer manifest + exactly the two outputs.
+  - The block parsed: 5 groups (0 disagreement, 4 agreement, 1 singleton) covering all 11 items.
+  - intake on the synthesis output was refused with a pointer to the original Runs, and status stayed valid.
+  - A dry run shows the next rotation: "previous synthesis R-005 used claude; next of [claude, codex]" → codex.
+- Finding: no group was classed as a disagreement, but the synthesizer described two substantive divergences under its Disagreements heading and in notes: C-003's baseline (syscall submission vs interrupt/hybrid poll) and the kill criterion's target (C-002 vs C-003). The strict definition of disagreement hides partial divergence in the machine-readable block. The template is unchanged for now; to be revisited with C5 data.
+- Observation: the synthesizer was the same model as one source review (rotation starts at the first model). Rotation spreads this over rounds, as Q23 intends.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: C5 (calibration report, then a stage 3 trial needing about 15 sessions over three rounds; the plan will be shown for approval first), then UI2–UI5.
+
 ## 2026-11-02 — C4: synthesizer and crossval
 
 - Status: **Verified with fake CLIs.** No live model was run for C4.
