@@ -248,6 +248,73 @@ def intake_drafts(
         typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
 
 
+@app.command("review")
+def review_project(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    personas: Annotated[
+        str | None,
+        typer.Option("--personas", help="Comma list of critique roles; default from models.toml."),
+    ] = None,
+    models: Annotated[
+        str | None,
+        typer.Option("--models", help="Comma list of [models] names; default from models.toml."),
+    ] = None,
+    claims: Annotated[
+        list[str] | None,
+        typer.Option("--claim", help="Review only these Claims; may be repeated."),
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show the planned sessions; run nothing.")
+    ] = False,
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Confirm starting the sessions (uses quota).")
+    ] = False,
+) -> None:
+    """Run read-only reviews for every persona x model pair and record each as a Run."""
+    from toulmin.adapters.review import run_round
+
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    actor = confirmer(actor)
+    if actor is None and not dry_run:
+        raise typer.BadParameter(
+            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
+        )
+
+    def split(value: str | None) -> list[str] | None:
+        return (
+            None if value is None else [item.strip() for item in value.split(",") if item.strip()]
+        )
+
+    try:
+        failed = run_round(
+            root,
+            project,
+            split(personas),
+            split(models),
+            claims,
+            actor or "",
+            dry_run=dry_run,
+            confirmed=confirm,
+            echo=typer.echo,
+        )
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    if failed:
+        raise typer.Exit(1)
+
+
 @app.command("rule")
 def rule_object(
     project: Annotated[str, typer.Argument(help="Project name.")],

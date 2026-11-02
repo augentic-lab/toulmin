@@ -1,0 +1,23 @@
+# Model configuration for `toulmin review` (read-only, headless reviews).
+# Model names are plain strings passed to the tool; an empty model uses the tool's own
+# default, and the Run then records that the model was not reported. Check each tool's
+# current flags before changing extra_args. CLI options override [review] defaults.
+
+[review]
+max_runs = 8            # most sessions one `toulmin review` may start (quota guard)
+parallel = 2            # sessions running at the same time
+timeout_seconds = 900   # a session still running after this is killed and recorded as failed
+personas = ["reviewer-skeptic", "reviewer-industry", "reviewer-theorist", "reviewer-why-not-x"]
+models = ["claude", "codex"]
+
+[models.claude]
+adapter = "claude-code"  # claude -p, JSON output, no tools, safe mode
+model = ""               # e.g. a model name accepted by `claude --model`
+# command = "claude"
+# extra_args = []
+
+[models.codex]
+adapter = "codex"        # codex exec, read-only sandbox, ephemeral
+model = ""               # e.g. a model name accepted by `codex exec --model`
+# command = "codex"
+# extra_args = []

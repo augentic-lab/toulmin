@@ -134,6 +134,10 @@ A pattern may narrow an allowlisted wildcard while keeping its suffix (for examp
 Roles without a header (for example the scribe) have no manifest and are not independent sessions.
 Compatibility: additive. Object formats are unchanged; no migration.
 
+Automated review archives (C3): `toulmin review` writes `runs/<UTC>-review-<persona>-<model>/` with `prompt.md` (the exact prompt, every input file inlined between `<<<FILE path>>>` and `<<<END FILE path>>>` markers), `output.md` (the raw final answer, when there is one) and, for a failed session, `tool.log` (exit status, stderr and stdout, truncated).
+Its Run is an ordinary v1 Run: source `{kind: human, actor}` (the operator who started the round), `model` as configured or as reported by the tool (otherwise `<adapter> default (not reported)`), `role` = persona, `input_files` from the manifest, `session_id` as reported or null, `duration_seconds` measured. A failed Run states the reason under `## Failure`.
+`tools/models.toml` (workbench configuration, not research state) holds `[review]` max_runs, parallel, timeout_seconds and default personas/models, and `[models.<name>]` adapter (`claude-code` or `codex`), model, optional command and extra_args. Model names are plain strings.
+
 ## Errors and compatibility
 
 Syntax/field errors must include the file path and field name, with a line number when available. Never skip corrupt files and then declare the entire project valid.

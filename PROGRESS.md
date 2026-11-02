@@ -1,5 +1,29 @@
 # Toulmin development progress
 
+## 2026-11-02 — C3: adapters and `toulmin review`
+
+- Status: **Verified with fake CLIs; live smoke runs pending researcher approval.** The C3 acceptance box stays open until one supervised live run per adapter.
+- User authorization: implement C3 (Q19–Q24 confirmed). No real model was invoked in this session.
+- Flags re-checked from `--help` only:
+  - Claude Code 2.1.316: `-p --output-format json --tools "" --safe-mode --no-session-persistence --model`.
+  - Codex CLI is now **0.166.0** (the plan cited 0.165.0): `exec --sandbox read-only --ephemeral --skip-git-repo-check -C --json -o --model`, prompt on stdin via `-`.
+- L2: new `protocols/review.py` (invokes no model):
+  - `plan_review` validates personas (critique roles only), model names, duplicates, the run cap and unused archive names, and builds one self-contained prompt per persona with the manifest files inlined.
+  - `archive_review` writes `prompt.md`/`output.md`/`tool.log`, notes whether a valid draft block exists, and publishes a completed or failed Run under the creation lock.
+- L3: new `adapters/`:
+  - `base` provides the Session interface and a process runner. It runs each session in its own process group, kills the group on timeout, and registers sessions so an interrupt stops them all.
+  - `claude_code` (JSON result, session_id, reported model) and `codex` (last message file, `thread.started` ID) are the two adapters.
+  - `config` reads `tools/models.toml` with tomllib.
+  - `review` orchestrates a round: plan → preflight executables → dry run or `--confirm` → parallel sessions → archive sequentially. It exits 1 if any session failed.
+- Templates: `tools/models.toml` (both adapters, four personas × two models = cap 8, parallel 2, 900 s timeout, empty model = tool default). Workbench AGENTS mentions `toulmin review`.
+- Docs: formats.md and protocols.md (with packaged copies), framework CHANGELOG, README.
+- Known boundary: Codex's read-only sandbox does not block reads, so its isolation relies on the inlined prompt, the instruction and the empty working directory. Global user instruction files of either tool (e.g. `~/.codex/AGENTS.md`) may still load unless extra_args exclude them (**Inferred from tool help**; to confirm in the live smoke run).
+- **Verified**: `tests/cli/test_review.py` **23 passed** with fake executables on PATH, including timeout killing a child process and every refusal starting no session and writing nothing. Full suite **477 passed**; Ruff lint/format and mypy (34 source files) passed; `toulmin --help` lists review.
+- **Verified**: an installed wheel outside the checkout, with fake `claude` (success) and `codex` (exit 2), recorded one completed and one failed Run with the expected archive files. status stayed valid.
+- Session ID: unavailable in the current environment.
+- Blockers: the live smoke runs need explicit researcher approval because they use subscription quota.
+- Next step: with approval, run one supervised `toulmin review --personas reviewer-skeptic --models claude` and one with `codex` on a scratch workbench, record the results, then tick C3 acceptance. Otherwise continue with C4.
+
 ## 2026-11-02 — C2: reviewer personas and role manifests
 
 - Status: **Verified: C2 complete.** Researcher acceptance of stage 3 is pending until C5.

@@ -73,6 +73,20 @@ uv run --locked toulmin draft run tail-latency --root /path/to/research --role r
 `inputs` prints the brief, current Claims (superseded ones are left out) and the role contracts; `--claim C-002` (repeatable) selects Claims.
 `draft run --role` writes the same list into the Run draft, so `input_files` is not retyped. Manifests cannot name sessions, handoffs, Runs, Decisions, Objections or other projects.
 
+## Run automated reviews
+
+`tools/models.toml` names the models (`[models.<name>]` with adapter `claude-code` or `codex`), the default personas and models, the run cap, parallelism and timeout.
+
+```sh
+uv run --locked toulmin review tail-latency --root /path/to/research --dry-run
+uv run --locked toulmin review tail-latency --root /path/to/research \
+  --personas reviewer-skeptic,reviewer-theorist --models claude,codex --confirm
+```
+
+Each persona × model pair runs once in a fresh, tool-free (Claude Code) or read-only sandboxed (Codex) session, from an empty temporary directory, with the persona's manifest files inlined in the prompt.
+Every session becomes a Run with `prompt.md`, `output.md` and, on failure, `tool.log`; failures and timeouts are recorded as failed Runs and make the command exit 1. Reviews use subscription quota: the plan is printed first and `max_runs` caps one round.
+review never writes Objections; take drafts in with `toulmin intake`.
+
 ## Take in review drafts
 
 A reviewer following `roles/reviewer.md` ends its output with a fenced `yaml` list of drafts (label, target, severity, content, grounds, uncertainty).

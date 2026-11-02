@@ -26,3 +26,6 @@
 - C2 (L1/L2, additive): role files for independent sessions carry an input manifest;
   `toulmin inputs` and `draft run --role` compute input_files. Adds four reviewer personas
   and the synthesizer contract. Object formats unchanged; no migration.
+- C3 (L2/L3): `toulmin review` runs read-only headless reviews (Claude Code, Codex) per
+  persona x model, archives prompt/output/log and records completed or failed Runs.
+  Configuration in tools/models.toml. Object formats unchanged; no migration.

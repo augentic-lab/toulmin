@@ -2,7 +2,8 @@
 
 This repository is the researcher's file-based project state. Read framework/principles.md,
 framework/formats.md and framework/protocols.md when the task needs their details.
-Models are invoked manually. Decisions belong to the researcher.
+Models are invoked manually, or headlessly by `toulmin review` for read-only reviews
+(tools/models.toml). Decisions belong to the researcher.
 
 ## Entry protocol
 
