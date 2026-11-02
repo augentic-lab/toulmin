@@ -100,7 +100,7 @@ def sections(document: Document) -> dict[str, str]:
     return result
 
 
-def _headings(lines: list[str]) -> list[tuple[int, str]]:
+def headings(lines: list[str]) -> list[tuple[int, str]]:
     """Level-two headings outside fenced code, as (line index, name)."""
     found: list[tuple[int, str]] = []
     fence = ""
@@ -129,12 +129,12 @@ def put_section(body: str, name: str, content: str) -> str:
     An empty section is filled; a nonempty one keeps its text and gains the new content
     after a blank line; a missing section is appended at the end. Other bytes are kept.
     """
-    if not content.strip() or _headings(content.splitlines(keepends=True)):
+    if not content.strip() or headings(content.splitlines(keepends=True)):
         raise ValueError(f"{name}: expected nonempty content without level-two headings")
     addition = content.strip("\n") + "\n"
     lines = body.splitlines(keepends=True)
-    headings = _headings(lines)
-    positions = [index for index, heading in headings if heading == name]
+    found = headings(lines)
+    positions = [index for index, heading in found if heading == name]
     if len(positions) > 1:
         raise ValueError(f"{name}: duplicate section")
     if not positions:
@@ -142,7 +142,7 @@ def put_section(body: str, name: str, content: str) -> str:
         separator = "\n" if prefix.strip() and not prefix.endswith("\n\n") else ""
         return f"{prefix}{separator}## {name}\n{addition}"
     start = positions[0] + 1
-    later = [index for index, _ in headings if index > positions[0]]
+    later = [index for index, _ in found if index > positions[0]]
     end = later[0] if later else len(lines)
     existing = "".join(lines[start:end])
     kept = existing.rstrip()

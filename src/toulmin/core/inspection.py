@@ -2,12 +2,14 @@
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from toulmin.core.documents import DIRECTORIES, Document
 from toulmin.core.handoffs import validate_applied
 from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
 from toulmin.core.project import validate_project
 from toulmin.core.repository import Repository
+from toulmin.core.review import INTAKE_FILE, parse_review, validate_intake
 from toulmin.core.schema import validate
 
 
@@ -18,6 +20,8 @@ class ProjectSnapshot:
     errors: tuple[str, ...]
     # Explicit [[...]] references in brief.md that resolved, as (line, reference).
     brief_references: tuple[tuple[int, str], ...] = ()
+    # Review drafts not yet given an intake outcome, as (Run ID, labels).
+    pending_drafts: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 def _brief_errors(
@@ -132,6 +136,16 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
     except (OSError, ValueError) as error:
         errors.append(str(error))
     errors.extend(_supersession_errors(objects, project))
+    waiting: list[tuple[str, tuple[str, ...]]] = []
+    try:
+        folder = repository.path(f"projects/{project}/runs", "directory")
+        for record in sorted(folder.glob(f"*/{INTAKE_FILE}")):
+            try:
+                waiting.extend(_intake(repository, record, objects))
+            except (OSError, ValueError) as error:
+                errors.append(str(error))
+    except (OSError, ValueError) as error:
+        errors.append(str(error))
     lock = repository.root / "projects" / project / ".toulmin-new.lock"
     if lock.exists() or lock.is_symlink():
         errors.append(
@@ -140,7 +154,38 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
     pending = repository.root / "projects" / project / ".handoff-pending"
     if pending.exists() or pending.is_symlink():
         errors.append(f"{pending}: handoff: interrupted application requires explicit recovery")
-    return ProjectSnapshot(charter, tuple(objects), tuple(sorted(set(errors))), tuple(references))
+    return ProjectSnapshot(
+        charter, tuple(objects), tuple(sorted(set(errors))), tuple(references), tuple(waiting)
+    )
+
+
+def _intake(
+    repository: Repository, path: Path, objects: list[Document]
+) -> list[tuple[str, tuple[str, ...]]]:
+    """Validate one intake record against its Run, raw output and Objections."""
+    relative = path.relative_to(repository.root).as_posix()
+    record = repository.read(relative)
+    outcomes = validate_intake(record)
+    directory = relative.rsplit("/", 1)[0]
+    run = next((doc for doc in objects if str(doc.object_id) == record.header["run"]), None)
+    if run is None or run.object_id.kind != ObjectKind.RUN or run.header["output"] != directory:
+        record.fail("run", f"expected the Run whose output is {directory}")
+    output = record.header["output"]
+    if output.rsplit("/", 1)[0] != directory:
+        record.fail("output", "raw output must be in the same archive directory")
+    raw = repository.path(output, "file")
+    labels = [draft.label for draft in parse_review(raw.read_text("utf-8"), str(raw))]
+    known = {str(doc.object_id): doc for doc in objects}
+    for label, entry in outcomes.items():
+        if label not in labels:
+            record.fail("outcomes", f"{label}: no such draft in {output}")
+        if "object" in entry:
+            objection = known.get(entry["object"])
+            source = objection.header["source"] if objection else {}
+            if source.get("ref") != record.header["run"] or source.get("path") != output:
+                record.fail("outcomes", f"{label}: {entry['object']} does not cite this output")
+    waiting = tuple(label for label in labels if label not in outcomes)
+    return [(record.header["run"], waiting)] if waiting else []
 
 
 def _supersession_errors(objects: list[Document], project: str) -> list[str]:

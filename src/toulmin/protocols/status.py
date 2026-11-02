@@ -28,6 +28,15 @@ class OpenObjection:
 
 
 @dataclass(frozen=True)
+class SettledObjection:
+    object_id: ObjectId
+    status: str
+    target: str
+    decisions: tuple[str, ...]
+    summary: str = ""
+
+
+@dataclass(frozen=True)
 class SupersededClaim:
     object_id: ObjectId
     chain: tuple[ObjectId, ...]  # from this Claim to its current successor
@@ -45,6 +54,7 @@ class StatusReport:
     errors: tuple[str, ...]
     last_handoff: str | None = None
     superseded: tuple[SupersededClaim, ...] = ()
+    settled_objections: tuple[SettledObjection, ...] = ()
 
 
 SUMMARY_LENGTH = 100
@@ -132,6 +142,19 @@ def project_status(root: Path, project: str) -> StatusReport:
             )
     if complete:
         notices.extend(_revision_notices(snapshot, project))
+        for run, labels in snapshot.pending_drafts:
+            notices.append(f"{run}: review drafts pending intake: {', '.join(labels)}")
+    settled = tuple(
+        SettledObjection(
+            doc.object_id,
+            doc.header["status"],
+            doc.header["target"],
+            tuple(doc.header.get("decisions", [])),
+            summary(doc, "Content"),
+        )
+        for doc in sorted(snapshot.objects, key=lambda doc: str(doc.object_id))
+        if doc.object_id.kind == ObjectKind.OBJECTION and doc.header["status"] != "open"
+    )
     priority = {"fatal": 0, "major": 1, "minor": 2}
     open_objections = tuple(
         OpenObjection(
@@ -159,6 +182,7 @@ def project_status(root: Path, project: str) -> StatusReport:
             else None
         ),
         tuple(superseded),
+        settled,
     )
 
 

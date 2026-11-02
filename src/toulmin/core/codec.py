@@ -6,6 +6,59 @@ from typing import Any
 from toulmin.core.documents import Document, FormatError, validate_values
 
 
+def load_restricted(
+    text: str, location: str, first_line: int, label: str = "header"
+) -> tuple[Any, dict[str, int]]:
+    """Load YAML limited to plain data: no tags, anchors, aliases, directives or merges.
+
+    `first_line` is the file line of the text's first line, so errors stay locatable.
+    Returns the value and a map from field path to file line.
+    """
+    # Lazy imports keep the pure data/protocol modules importable without a parser.
+    from ruamel.yaml import YAML
+    from ruamel.yaml.error import YAMLError
+    from ruamel.yaml.nodes import MappingNode, SequenceNode
+    from ruamel.yaml.tokens import AliasToken, AnchorToken, DirectiveToken, TagToken
+
+    yaml = YAML(typ="safe", pure=True)
+    lines: dict[str, int] = {}
+
+    # Header paths are bare field names; other blocks prefix theirs, e.g. drafts[0].
+    named = "" if label == "header" else label
+
+    def inspect(node: Any, field: str = "") -> None:
+        lines[field or "header"] = node.start_mark.line + first_line
+        if isinstance(node, MappingNode):
+            for key, value in node.value:
+                path = f"{field}.{key.value}" if field else str(key.value)
+                if key.value == "<<":
+                    raise FormatError(
+                        f"{location}:{key.start_mark.line + first_line}: {named}{path}: "
+                        "merge keys forbidden"
+                    )
+                inspect(value, path)
+        elif isinstance(node, SequenceNode):
+            for index, value in enumerate(node.value):
+                inspect(value, f"{field}[{index}]")
+
+    try:
+        for token in yaml.scan(text):
+            if isinstance(token, (AliasToken, AnchorToken, DirectiveToken, TagToken)):
+                raise FormatError(
+                    f"{location}:{token.start_mark.line + first_line}: {label}: "
+                    "tags, anchors, aliases and directives forbidden"
+                )
+        node = yaml.compose(text)
+        if node is not None:
+            inspect(node)
+        value = yaml.load(text)
+    except (YAMLError, RecursionError) as error:
+        mark = getattr(error, "problem_mark", None)
+        line = mark.line + first_line if mark else first_line
+        raise FormatError(f"{location}:{line}: {label}: {error}") from error
+    return value, lines
+
+
 def decode(data: bytes, location: str = "<memory>") -> Document:
     try:
         text = data.decode("utf-8")
@@ -16,46 +69,9 @@ def decode(data: bytes, location: str = "<memory>") -> Document:
     header, separator, body = text[4:].partition("\n---\n")
     if not separator:
         raise FormatError(f"{location}:1: front_matter: missing closing ---")
-    # Lazy imports keep the pure data/protocol modules importable without a parser.
-    from ruamel.yaml import YAML
-    from ruamel.yaml.error import YAMLError
-    from ruamel.yaml.nodes import MappingNode, SequenceNode
-    from ruamel.yaml.tokens import AliasToken, AnchorToken, DirectiveToken, TagToken
-
-    yaml = YAML(typ="safe", pure=True)
-    lines: dict[str, int] = {}
-
-    def inspect(node: Any, field: str = "header") -> None:
-        lines[field] = node.start_mark.line + 2
-        if isinstance(node, MappingNode):
-            for key, value in node.value:
-                path = str(key.value) if field == "header" else f"{field}.{key.value}"
-                if key.value == "<<":
-                    raise FormatError(
-                        f"{location}:{key.start_mark.line + 2}: {path}: merge keys forbidden"
-                    )
-                inspect(value, path)
-        elif isinstance(node, SequenceNode):
-            for index, value in enumerate(node.value):
-                inspect(value, f"{field}[{index}]")
-
-    try:
-        for token in yaml.scan(header):
-            if isinstance(token, (AliasToken, AnchorToken, DirectiveToken, TagToken)):
-                raise FormatError(
-                    f"{location}:{token.start_mark.line + 2}: header: "
-                    "tags, anchors, aliases and directives forbidden"
-                )
-        node = yaml.compose(header)
-        if not isinstance(node, MappingNode):
-            raise FormatError(f"{location}:2: header: expected mapping")
-        inspect(node)
-        metadata = yaml.load(header)
-    except (YAMLError, RecursionError) as error:
-        mark = getattr(error, "problem_mark", None)
-        line = mark.line + 2 if mark else 2
-        raise FormatError(f"{location}:{line}: header: {error}") from error
-
+    metadata, lines = load_restricted(header, location, 2)
+    if not isinstance(metadata, dict):
+        raise FormatError(f"{location}:2: header: expected mapping")
     document = Document(metadata, body, location, lines, header.count("\n") + 4)
     validate_values(document)
     return document

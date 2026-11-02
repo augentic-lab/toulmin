@@ -20,3 +20,6 @@
   object timestamps use whole seconds. Older files stay valid; no migration.
 - R1 (L1, additive within v1): Claim status `superseded` with `superseded_by`; rule sets it
   and the other status-required links. Older builds reject the new status; no migration.
+- C1 (L1/L2, additive within v1): reviews end with a fenced yaml draft block; `toulmin intake`
+  takes chosen drafts in as Objections and appends outcomes to intake.md beside the raw
+  output. Object fields unchanged; no migration.

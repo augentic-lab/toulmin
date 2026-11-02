@@ -61,6 +61,21 @@ For model output, archive the raw response and record a Run first, then trace it
 Local file paths are relative to the workbench root; cross-project object references use project/ID.
 An existing `.toulmin-new.lock` causes failure and is preserved. Confirm no writing session is active and inspect remaining files before recovery; the tool never removes another session's lock automatically.
 
+## Take in review drafts
+
+A reviewer following `roles/reviewer.md` ends its output with a fenced `yaml` list of drafts (label, target, severity, content, grounds, uncertainty).
+After archiving the output and recording its Run, choose drafts by label:
+
+```sh
+uv run --locked toulmin intake tail-latency \
+  projects/tail-latency/runs/20261102T142016Z-review/output.md --root /path/to/research \
+  --take draft-1,draft-3:minor --reject "draft-2=duplicates draft-1" --partly draft-4=O-007 --confirm
+```
+
+Each taken draft becomes an open Objection citing the Run and output; `LABEL:SEVERITY` overrides the severity and records the draft as partly taken.
+`--partly` links an Objection you wrote by hand from that draft. Rejections need a reason. Outcomes go to `intake.md` beside the output and are never changed; replays report `already-...`.
+Unlisted drafts stay pending, and status names them once the archive has an intake record. Nothing is written if any choice is invalid.
+
 ## Record a ruling
 
 After writing a Decision whose `related` list names the object, record the researcher's choice:
@@ -93,7 +108,7 @@ uv run --locked toulmin status tail-latency --root /path/to/research
 uv run --locked toulmin status tail-latency --root /path/to/research --verbose
 ```
 
-`--verbose` (`-v`) also prints the first paragraph (shortened to 100 characters) of each Claim statement and open Objection, and the root-relative path of the last applied handoff.
+`--verbose` (`-v`) also prints the first paragraph (shortened to 100 characters) of each Claim statement and open Objection, the root-relative path of the last applied handoff, and settled Objections with the Decisions that ruled them.
 
 Shows the stored stage, next step, Claim statuses, counts of valid verified supporting evidence, and open objections ordered fatal/major/minor.
 Open-objection presence and eligibility for supported are reported separately; a minor objection can coexist with eligibility.

@@ -1,5 +1,31 @@
 # Toulmin development progress
 
+## 2026-11-02 — C1: structured review intake
+
+- Status: **Verified: C1 complete.** Researcher acceptance of stage 3 is pending until C5.
+- User authorization: Q19–Q24 confirmed as recommended; implement C1.
+- L1 (additive within v1):
+  - New `core/review.py` parses the last top-level fenced `yaml`/`yml` block of a raw review into drafts. It validates labels, one Claim target, severity, nonempty text, unknown fields and level-two headings, and reports errors with file and line.
+  - The same module validates `intake.md` records: Run, output, append-only outcomes taken/partly/rejected, with an object or a reason.
+  - `codec.load_restricted` was factored out of `decode` so draft blocks use the header YAML subset; error paths name the block (`drafts[0].<<`).
+  - `documents.headings` is now public.
+- L2:
+  - New `protocols/review_intake.py` validates every choice before writing. Under the creation lock it creates open Objections (source = Run + output) and appends each outcome atomically.
+  - A replay reports `already-<outcome>`, refuses to change an outcome, and reuses an Objection created before an interrupted record write.
+  - `publish_locked` was factored out of `create_object`.
+  - status validates intake records against their Run, raw output, labels and Objection sources. It reports drafts still pending once a record exists, and returns settled Objections with their Decisions (S2 finding 2).
+- L3: `toulmin intake <project> <output> --take LABEL[:SEVERITY] --reject LABEL=REASON --partly LABEL=O-NNN --confirm`. `status -v` gains a `Settled objections:` list.
+- Scope: AGENTS.md now reflects Q19 (headless read-only review/crossval/synthesis only; no automatic rulings, model writes, MCP or reference managers). TODO marks Q19–Q24 confirmed.
+- Docs: formats.md and protocols.md (with packaged copies), reviewer role template (the required final yaml block), framework CHANGELOG and README.
+- **Verified**: `tests/cli/test_intake.py` **33 passed**. Full suite **414 passed**; Ruff lint/format and mypy (25 source files) passed; `toulmin --help` lists intake.
+- **Verified**: an installed wheel outside the checkout initialized a workbench containing the new templates (packaged formats.md identical to docs). It ran claim → Run → intake → status (pending notice) → replay plus reject (notice cleared).
+- **Verified** trial: the S1 (8 drafts) and S2 (6 drafts) raw outputs, converted mechanically to the Q21 block, were taken in with one command each (7+1 rejected, 5+1 rejected). The S2 copy's status also reported missing D-001/D-002, because the copied end-state Claims cite Decisions that were not copied; that is a fixture artifact, not an intake fault.
+- Finding: S1 draft-3 targets two Claims, but Q21 allows one target, so the conversion kept C-001. This is the first data point for Q14 (multi-target Objections).
+- Known boundary: raw outputs without an intake record raise no pending notice, since older reviews may hold unrelated yaml blocks.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: C2 (reviewer personas and role manifests) in its own session.
+
 ## 2026-11-02 — Stage 2 closing retrospective and stage 3 plan
 
 - Status: **plan written; stage 3 not started.** It awaits decisions Q19–Q24.

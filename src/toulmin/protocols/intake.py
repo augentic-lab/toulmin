@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from toulmin.core.documents import STATUSES, Document
 from toulmin.core.identifiers import SCHEMA_VERSION, ObjectKind
@@ -40,18 +41,31 @@ def create_object(
             "status",
             "new only creates initial states; changes require a researcher Decision",
         )
-    now = utc_text(datetime.now(UTC))
     with repository.creation_lock(project):
-        object_id = repository.next_id(project, kind)
         header = dict(draft.header)
-        header.update(
-            schema_version=SCHEMA_VERSION,
-            id=str(object_id),
-            status=status,
-            created=now,
-            confirmed_by={"actor": actor, "at": now},
-        )
-        header = in_order(header, object_order(kind))
-        document = Document(header, draft.body, draft.location, draft.lines, draft.body_line)
-        validate(document)
-        return repository.publish(project, document)
+        header["status"] = status
+        return publish_locked(repository, project, kind, header, draft, actor)
+
+
+def publish_locked(
+    repository: Repository,
+    project: str,
+    kind: ObjectKind,
+    header: dict[str, Any],
+    source: Document,
+    actor: str,
+) -> Path:
+    """Assign ID, time and confirmation, then publish. The caller holds the creation lock."""
+    now = utc_text(datetime.now(UTC))
+    object_id = repository.next_id(project, kind)
+    header = dict(header)
+    header.update(
+        schema_version=SCHEMA_VERSION,
+        id=str(object_id),
+        created=now,
+        confirmed_by={"actor": actor, "at": now},
+    )
+    header = in_order(header, object_order(kind))
+    document = Document(header, source.body, source.location, source.lines, source.body_line)
+    validate(document)
+    return repository.publish(project, document)

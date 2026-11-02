@@ -48,6 +48,11 @@ Nothing is retargeted: open Objections stay open until ruled (usually accepted, 
 status lists revision chains under `Superseded:`, leaves superseded Claims out of condition checks, and adds notices for every dependent Objection, Evidence, Spec, adopted Exploration and brief reference. Cycles and foreign successors are data errors.
 rule also sets other status-required links with a Decision: `--superseded-by` (Claim or Decision), `--adopted-as` (Exploration) and `--evidence` (Spec, appended). It never replaces or removes an existing link.
 
+Review intake (C1): `toulmin intake <project> <raw-output> --take LABEL[:SEVERITY] --reject LABEL=REASON --partly LABEL=O-NNN --confirm` applies the researcher's choices for drafts in one archived review (formats.md, review draft blocks).
+Nothing is taken by default; unlisted drafts stay pending and status reports them once an intake record exists. The raw output must belong to exactly one archived Run. Every choice is validated (labels, targets, severities, reasons, partly sources, confirmation) before any write.
+Under the project creation lock, each taken draft becomes an open Objection and its outcome is appended to intake.md atomically. A replay reports `already-<outcome>` for recorded labels, never changes an outcome, and reuses an Objection created from the same draft before an interruption instead of creating another.
+The intake does not rule on anything: Objection status, Claim status and gates still change only through rule with a Decision. This L2 change adds a write path for confirmed drafts; object fields and v1 are unchanged.
+
 ## Claim conditions and stored status
 
 - has_open_objection: at least one open Objection targets the Claim.

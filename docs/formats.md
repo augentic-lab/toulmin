@@ -114,6 +114,17 @@ After both public files are complete, atomically rename the journal to retire it
 POSIX flock coordinates handoff writers using a lock file in the system temporary directory. Process death releases the lock automatically; retain the file to avoid inode races.
 POSIX file/directory synchronization is a local implementation requirement of L1 file storage. Models and protocols depend on no specific CLI.
 
+## Review draft blocks and intake records (C1)
+
+A reviewer's raw output stays opaque prose except for its last top-level fenced code block whose info string is `yaml` or `yml`. That block holds a nonempty list of draft mappings parsed with the same restricted YAML subset as headers:
+`label` (ASCII letters, digits, `_` or `-`, unique in the block), `target` (one Claim reference), `severity` (fatal/major/minor), `content` and `grounds` (nonempty strings), and optional `uncertainty`. Unknown fields, level-two Markdown headings in the text, and an unparseable block are errors with file and line.
+Output without such a block is still archived as a Run; its drafts are taken in by hand with draft/new as before.
+
+`intake.md` beside the raw output records the researcher's choices. It is not an eighth object type. Header: `schema_version: 1`, `run` (the local Run whose output is this archive directory), `output` (root-relative raw output path in the same directory) and `outcomes`, a list of
+`{label, outcome, by, at}` plus `object` or `reason`: `taken` and `partly` require `object` (an Objection whose source cites this Run and output); `rejected` requires `reason` and forbids `object`. Labels appear at most once and must exist in the raw output. Entries are appended, never changed or removed.
+An Objection taken in from a draft has source `{kind: run, ref, path}`, the draft's target and severity (a researcher override is recorded as `partly`), status open, and the body `## Content` (content, then `Grounds:` and `Uncertainty:` paragraphs), empty `## Response` and `## Ruling`.
+Compatibility: additive within v1. Object fields are unchanged; older builds ignore intake.md. No migration.
+
 ## Errors and compatibility
 
 Syntax/field errors must include the file path and field name, with a line number when available. Never skip corrupt files and then declare the entire project valid.

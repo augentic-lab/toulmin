@@ -12,6 +12,7 @@ from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.intake import create_object
+from toulmin.protocols.review_intake import intake_review
 from toulmin.protocols.ruling import apply_ruling
 from toulmin.protocols.status import project_status
 
@@ -134,6 +135,82 @@ def new_object(
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(display(path, root))
+
+
+@app.command("intake")
+def intake_drafts(
+    project: Annotated[str, typer.Argument(help="Project name.")],
+    output: Annotated[
+        str, typer.Argument(help="Archived raw review output containing a draft block.")
+    ],
+    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    take: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--take", help="LABEL or LABEL:SEVERITY to take in; comma lists and repeats allowed."
+        ),
+    ] = None,
+    reject: Annotated[
+        list[str] | None, typer.Option("--reject", help="LABEL=REASON; may be repeated.")
+    ] = None,
+    partly: Annotated[
+        list[str] | None,
+        typer.Option("--partly", help="LABEL=O-NNN for an Objection written by hand."),
+    ] = None,
+    actor: Annotated[
+        str | None,
+        typer.Option(
+            "--confirmed-by",
+            help=f"Researcher choosing these outcomes. Defaults to ${ACTOR_VARIABLE}.",
+        ),
+    ] = None,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Explicitly confirm these outcomes.")
+    ] = False,
+) -> None:
+    """Take chosen review drafts in as Objections and record every outcome."""
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
+    actor = confirmer(actor)
+    if actor is None:
+        raise typer.BadParameter(
+            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
+        )
+    chosen: dict[str, str | None] = {}
+    for item in ",".join(take or []).split(","):
+        if item.strip():
+            label, _, severity = item.strip().partition(":")
+            chosen[label] = severity or None
+
+    def pairs(values: list[str] | None, hint: str) -> dict[str, str]:
+        result: dict[str, str] = {}
+        for value in values or []:
+            label, separator, rest = value.partition("=")
+            if not separator or not label.strip() or not rest.strip():
+                raise typer.BadParameter("expected LABEL=VALUE", param_hint=hint)
+            result[label.strip()] = rest.strip()
+        return result
+
+    try:
+        result = intake_review(
+            root,
+            project,
+            output,
+            actor,
+            confirm,
+            chosen,
+            pairs(reject, "--reject"),
+            pairs(partly, "--partly"),
+        )
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(display(result.record, root))
+    for line in result.lines:
+        target = f" as {line.object_id}" if line.object_id else ""
+        typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
 
 
 @app.command("rule")
@@ -298,6 +375,13 @@ def show_status(
         typer.echo(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
         if verbose and objection.summary:
             typer.echo(f"      {objection.summary}")
+    if verbose:
+        typer.echo("Settled objections:" + ("" if report.settled_objections else " none"))
+    for settled in report.settled_objections if verbose else ():
+        by = f" | by {', '.join(settled.decisions)}" if settled.decisions else ""
+        typer.echo(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
+        if settled.summary:
+            typer.echo(f"      {settled.summary}")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

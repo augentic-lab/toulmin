@@ -201,29 +201,32 @@ Implementation choices within Q15–Q18: links also require a Decision; a supers
 D1 verification: all 20 tracked Markdown documents are in English, 16 local links resolve, and the three published contract copies match. All 292 tests, Ruff lint/format checks and mypy passed. Built wheel/sdist, checked all 25 template assets, and verified generated English documentation plus the README example and all four commands from an installed wheel outside the checkout.
 Delivery: the user explicitly requested a commit and push to the existing origin/main branch; verify the remote commit after pushing.
 
-# Stage 3: critique — plan (pending decisions)
+# Stage 3: critique — plan
 
-Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02; nothing implemented.
+Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02. The researcher confirmed Q19–Q24 as recommended on 2026-11-02; C1 is complete.
 Stage done criterion (design §12): one brief goes through three rounds of multi-model review, and every Objection has a complete, traceable status (Run → raw output → draft label → Objection → ruling/Decision).
 Environment fact, verified 2026-11-02: Claude Code 2.1.316 (`claude -p`) and Codex CLI 0.165.0 (`codex exec`, `--sandbox read-only`, `--ephemeral`, `-o`) are installed. Gemini CLI is not installed. Exact flags are re-checked in C3, and no model was invoked for this plan.
 
-## Pending decisions
+## Decisions
 
 | ID | Required decision | Recommendation | Impact |
 | --- | --- | --- | --- |
-| Q19 | Lift the development AGENTS.md scope ban on automated review and cross-model orchestration for stage 3? | Yes, for headless read-only review/crossval/synthesis only. Still forbid automatic rulings, gate changes, object writes by models, MCP and reference-manager integration. | AGENTS.md, design boundary. |
-| Q20 | Which model tools count as "multi-model"? | Build Claude Code and Codex adapters now; add Gemini when it is installed. Stage 3 counts at least two vendors plus distinct reviewer personas as multi-model, and the stage record notes that Gemini is absent. | Done criterion, adapters. |
-| Q21 | Machine-readable review output? | The reviewer contract requires prose plus one final fenced `yaml` block listing drafts (`label`, `target`, `severity`, `content`, `grounds`, `uncertainty`). It is parsed with the same safe YAML subset. Unparseable output still archives the Run and falls back to manual intake. | Role templates, L1 parser. |
-| Q22 | Where do intake outcomes and calibration live? | Not in a second store. Intake appends an outcome record (`taken as O-NNN` / `rejected: reason` / `partly`) to an `intake.md` beside each Run's raw output. A `calibration` report derives adoption rates by model and role from Runs, intake records and Objections; `global/calibration/` holds only regenerable reports. This resolves design §13's ruling-format question. | L1 format addition, report command. |
-| Q23 | How does the synthesizer rotate? | Deterministically: the next available model after the one that synthesized the project's previous round (read from Run `role: synthesizer`). The researcher can override with `--model`. Synthesis output groups agreements, disagreements (listed first) and singletons, citing draft labels. | Synthesizer contract, review command. |
-| Q24 | Where do adapter and model choices live? | `tools/models.toml` in the workbench, a template created by init: adapter command, default model per role and a per-round run cap. Model names are plain strings, never enums. CLI flags override it. | Templates, L3 config. |
+| Q19 | Lift the development AGENTS.md scope ban on automated review and cross-model orchestration for stage 3? | **Confirmed.** Yes, for headless read-only review/crossval/synthesis only. Still forbid automatic rulings, gate changes, object writes by models, MCP and reference-manager integration. | AGENTS.md, design boundary. |
+| Q20 | Which model tools count as "multi-model"? | **Confirmed.** Build Claude Code and Codex adapters now; add Gemini when it is installed. Stage 3 counts at least two vendors plus distinct reviewer personas as multi-model, and the stage record notes that Gemini is absent. | Done criterion, adapters. |
+| Q21 | Machine-readable review output? | **Confirmed.** The reviewer contract requires prose plus one final fenced `yaml` block listing drafts (`label`, `target`, `severity`, `content`, `grounds`, `uncertainty`). It is parsed with the same safe YAML subset. Unparseable output still archives the Run and falls back to manual intake. | Role templates, L1 parser. |
+| Q22 | Where do intake outcomes and calibration live? | **Confirmed.** Not in a second store. Intake appends an outcome record (`taken as O-NNN` / `rejected: reason` / `partly`) to an `intake.md` beside each Run's raw output. A `calibration` report derives adoption rates by model and role from Runs, intake records and Objections; `global/calibration/` holds only regenerable reports. This resolves design §13's ruling-format question. | L1 format addition, report command. |
+| Q23 | How does the synthesizer rotate? | **Confirmed.** Deterministically: the next available model after the one that synthesized the project's previous round (read from Run `role: synthesizer`). The researcher can override with `--model`. Synthesis output groups agreements, disagreements (listed first) and singletons, citing draft labels. | Synthesizer contract, review command. |
+| Q24 | Where do adapter and model choices live? | **Confirmed.** `tools/models.toml` in the workbench, a template created by init: adapter command, default model per role and a per-round run cap. Model names are plain strings, never enums. CLI flags override it. | Templates, L3 config. |
 
-## Tasks (after confirmation; one per session, in order)
+## Tasks (one per session, in order)
 
 ### C1 — Structured review intake (no models)
 
-- [ ] L1: parse the Q21 draft block from an archived raw output, with located errors. L2/L3: `toulmin intake <project> <run-output> --take draft-1,draft-3 [--reject draft-2=reason] --confirm` creates the chosen Objections (source = Run + path, target and severity from the draft, Content from content/grounds/uncertainty) and appends outcomes to `intake.md`. Unlisted drafts remain pending.
-- [ ] Acceptance: S1/S2 raw outputs, rewritten in the Q21 format, are taken in with one command. Rejections are recorded with reasons. Replaying is idempotent per label. A wrong target or severity creates nothing. `status -v` lists settled Objections with their Decisions (S2 finding 2).
+- [x] L1: parse the Q21 draft block from an archived raw output, with located errors. L2/L3: `toulmin intake <project> <run-output> --take draft-1,draft-3 [--reject draft-2=reason] --confirm` creates the chosen Objections (source = Run + path, target and severity from the draft, Content from content/grounds/uncertainty) and appends outcomes to `intake.md`. Unlisted drafts remain pending.
+- [x] Acceptance: S1/S2 raw outputs, rewritten in the Q21 format, are taken in with one command. Rejections are recorded with reasons. Replaying is idempotent per label. A wrong target or severity creates nothing. `status -v` lists settled Objections with their Decisions (S2 finding 2).
+
+C1 verification: `tests/cli/test_intake.py` (33 tests) covers parsing errors with locations, take/override/reject/partly, idempotent replay, outcome-change refusal, recovery after an interrupted record write, no writes on invalid requests, Run ownership, corrupt intake records and verbose settled Objections. Trial: the S1 (8 drafts) and S2 (6 drafts) raw outputs, converted to the Q21 block, were taken in with one command each (7 taken + 1 rejected; 5 taken + 1 rejected). S1 draft-3 names two Claims; Q21 allows one target, so the conversion kept C-001. This is the first Q14 (multi-target) data point.
+Boundary: a raw output with no intake record yet produces no pending notice, because older reviews may contain unrelated yaml blocks; the notice starts once the researcher records the first outcome. Changing roles/reviewer.md makes `init --project` report a conflict on workbenches created earlier.
 
 ### C2 — Reviewer personas and role manifests (no models)
 
