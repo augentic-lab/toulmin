@@ -1,6 +1,6 @@
-"""Disposable UI-R2 walkthrough: in-memory sample data, no model or project writes."""
+"""Disposable UI-R3 inquiry walkthrough: in-memory sample data, no model or project writes."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from textual import events, on
 from textual.app import App, ComposeResult
@@ -9,18 +9,69 @@ from textual.widgets import Button, Footer, Label, Select, Static, TextArea
 
 VIEWS = ("Overview", "Explore", "Review", "Resolve", "Validate")
 INITIAL_BRIEF = (
-    "Question: Would caching repeated reads reduce p95 query latency?\n\n"
-    "Compare cache on/off under the same read workload.\n"
-    "Unknown: workload size, hit rate, warm-up and prior work."
+    "Observation: some repeated queries are slow (reported, not verified).\n\n"
+    "Possible explanation: repeated computation. Alternatives: I/O or locks.\n"
+    "Question: where is the time actually spent? No caching benefit is established."
 )
 STATEMENT = "Caching repeated reads reduces p95 latency under equal load."
 ISSUE = "Cache warm-up and hit rate are unspecified."
-PLAN = (
-    "Baseline: cache disabled, same query trace and concurrency.\n"
-    "Procedure: warm the cache, record hit rate, repeat both runs.\n"
-    "Measure: p95 latency and variability.\n"
-    "Refute if: the improvement disappears under equal conditions."
+
+
+HYPOTHESES = (
+    "H1: repeated computation dominates; inspect CPU stacks.\n"
+    "H2: I/O waits dominate; inspect wait-time attribution.\n"
+    "H3: lock contention dominates; inspect blocked stacks.\n"
+    "These are competing explanations, not established Claims."
 )
+CHECKS = {
+    "data": (
+        "Inspect existing data",
+        "Existing traces may distinguish CPU work from waiting.",
+        "Inspect a representative slow-query trace.\n"
+        "Compare CPU stacks, I/O waits and lock waits.\n"
+        "Change direction if repeated computation is not prominent.",
+    ),
+    "papers": (
+        "Read related work",
+        "A known baseline may already address repeated queries.",
+        "Find the closest approach to repeated-query reuse.\n"
+        "Check its workload assumptions and baseline in the original source.\n"
+        "Change direction if our claimed difference is already covered.",
+    ),
+    "experiment": (
+        "Plan a small test",
+        "A controlled comparison can separate hypotheses.",
+        "Hold workload and concurrency fixed; measure CPU and wait time.\n"
+        "Repeat the comparison and inspect variability.\n"
+        "Change direction if the proposed effect disappears under controls.",
+    ),
+}
+MATERIALS = {
+    "data": (
+        "Sample A: repeated-computation stacks are prominent; I/O and lock waits are rare.\n"
+        "Limit: one short trace. This does not prove caching would help.",
+        "Sample B: I/O waits are prominent; repeated-computation stacks are rare.\n"
+        "Limit: one short trace. Consider I/O before a computation cache.",
+        "Sample C: mixed stacks with too few samples for attribution.\n"
+        "Limit: current data cannot distinguish the explanations.",
+    ),
+    "papers": (
+        "Fictional note A: an earlier approach reuses repeated computation.\n"
+        "Check its assumptions before choosing a baseline. This is not a real citation.",
+        "Fictional note B: the closest approach addresses I/O waits, not computation.\n"
+        "Its relevance depends on our workload. This is not a real citation.",
+        "Fictional note C: the source is unavailable; only a summary exists.\n"
+        "Do not infer novelty from an unchecked summary. This is not a real citation.",
+    ),
+    "experiment": (
+        "Sample A: repeated CPU work decreases under the control; latency is still noisy.\n"
+        "Repeat the test before attributing a latency improvement.",
+        "Sample B: removing repeated work leaves latency unchanged; I/O waits dominate.\n"
+        "The original explanation may not account for the slowdown.",
+        "Sample C: workload and concurrency differed between runs.\n"
+        "This comparison cannot support a causal interpretation.",
+    ),
+}
 
 
 @dataclass
@@ -32,10 +83,63 @@ class Sample:
     review_brief: str = ""
     issue: bool = False
     plan: str = ""
-    working_plan: str = PLAN
+    working_plan: str = ""
     next_step: str = ""
     handoff: bool = False
     resume_view: str = "Explore"
+    hypotheses: str = ""
+    working_hypotheses: str = HYPOTHESES
+    feedback: str = ""
+    working_feedback: str = ""
+    choice: str = ""
+    material_index: int = 0
+    material_loaded: bool = False
+    material_plan: str = ""
+    interpretation: str = ""
+    interpretation_source: str = ""
+    interpretation_plan: str = ""
+    reasoning: str = ""
+    working_reasoning: str = ""
+    history: list[str] = field(default_factory=list)
+
+    @property
+    def material(self) -> str:
+        return MATERIALS[self.choice][self.material_index] if self.choice else ""
+
+    @property
+    def current_interpretation(self) -> str:
+        if (
+            self.material_plan == self.plan == self.interpretation_plan
+            and self.interpretation_source == self.material
+        ):
+            return self.interpretation
+        return ""
+
+    @property
+    def interpretation_label(self) -> str:
+        return {
+            "lead": "Promising lead; needs testing",
+            "redirect": "Reconsider the explanation",
+            "uncertain": "Insufficient material",
+        }.get(self.current_interpretation, "Needs your judgment")
+
+    @property
+    def uncertainty(self) -> str:
+        if self.current_interpretation == "lead":
+            return "Does this lead survive a representative, controlled comparison?"
+        if self.current_interpretation == "redirect":
+            return "Which alternative better explains the observed slowdown?"
+        if self.current_interpretation == "uncertain":
+            return "What additional material would distinguish the explanations?"
+        return "Repeated computation, I/O or locks: where is time actually spent?"
+
+    @property
+    def why(self) -> str:
+        if self.current_interpretation:
+            return "Your rationale: " + self.reasoning
+        if self.choice:
+            return CHECKS[self.choice][1]
+        return "A cache is premature until the cause of the slowdown is better understood."
 
     @property
     def reviewed(self) -> bool:
@@ -49,15 +153,23 @@ class Sample:
     def recommendation(self) -> tuple[str, str]:
         if self.handoff:
             return self.next_step, self.resume_view
-        if self.issue:
-            if self.plan:
-                return "Run the experiment outside Toulmin; then record results.", "Validate"
-            return "Define warm-up and hit rate before collecting evidence.", "Validate"
-        if self.reviewed:
+        if self.reviewed and not self.issue:
             return "Decide whether the reviewer suggestion needs tracking.", "Resolve"
-        if self.brief:
-            return "Choose a statement and prepare an exploratory review.", "Review"
-        return "Define the comparison and save a short brief.", "Explore"
+        if self.current_interpretation == "lead":
+            return "Design a controlled follow-up; a promising lead is not a conclusion.", "Actions"
+        if self.current_interpretation == "redirect":
+            return "Revisit the competing explanations before pursuing caching.", "Hypotheses"
+        if self.current_interpretation == "uncertain":
+            return "Choose a better source or a more discriminating check.", "Actions"
+        if self.material_loaded and self.material_plan == self.plan:
+            return "Inspect the material and record your interpretation.", "Material"
+        if self.choice and self.plan:
+            return "Carry out the check; preview sample material in this demo.", "Material"
+        if self.choice:
+            return "Specify the smallest check and what would change your mind.", "Validate"
+        if self.hypotheses:
+            return "Choose an inexpensive check to distinguish the explanations.", "Actions"
+        return "Separate the reported observation from possible explanations.", "Explore"
 
 
 class GuidedWorkbench(App[None]):
@@ -147,6 +259,19 @@ class GuidedWorkbench(App[None]):
         if self.query("#rail"):
             self.layout_controls()
 
+    @property
+    def work_view(self) -> str:
+        return {
+            "Reopen": "Overview",
+            "Readiness": "Overview",
+            "Handoff": "Overview",
+            "Hypotheses": "Explore",
+            "Feedback": "Explore",
+            "Actions": "Explore",
+            "Material": "Validate",
+            "Interpret": "Validate",
+        }.get(self.view, self.view)
+
     def layout_controls(self) -> None:
         working = self.sample.created and self.view not in {"Home", "Setup"}
         self.query_one("#rail").display = working and not self.has_class("compact")
@@ -161,9 +286,7 @@ class GuidedWorkbench(App[None]):
             else "Resolve"
         )
         for name in VIEWS:
-            self.query_one(f"#nav-{name.lower()}").set_class(
-                ("Overview" if self.view == "Reopen" else self.view) == name, "current"
-            )
+            self.query_one(f"#nav-{name.lower()}").set_class(self.work_view == name, "current")
 
     def retain_edit(self) -> None:
         editors = self.query("#editor")
@@ -174,6 +297,12 @@ class GuidedWorkbench(App[None]):
             self.sample.working_brief = value
         elif self.view == "Validate":
             self.sample.working_plan = value
+        elif self.view == "Hypotheses":
+            self.sample.working_hypotheses = value
+        elif self.view == "Feedback":
+            self.sample.working_feedback = value
+        elif self.view == "Interpret":
+            self.sample.working_reasoning = value
         elif self.view == "Handoff":
             self.sample.next_step = value
 
@@ -189,14 +318,14 @@ class GuidedWorkbench(App[None]):
                 None,
                 [("create", "Restart Sample" if s.created else "New Sample Project")]
                 + ([("open", "Open Sample")] if s.created else []),
-                "SAMPLE CASE\n\nWould caching repeated reads lower p95 latency?\n\n"
+                "SAMPLE CASE\n\nWhy are some repeated queries slow?\n\n"
                 "No models, project files or experimental results are used.",
             )
         if self.view == "Setup":
             return (
                 "Start with a question",
-                "PROJECT\ncache-study\n\nGOAL\nCompare query latency with and without caching.\n\n"
-                "MOTIVATION\nRepeated reads may be expensive.\n\n"
+                "PROJECT\ncache-study\n\nGOAL\nUnderstand the cause of slow repeated queries.\n\n"
+                "MOTIVATION\nRepeated computation is only one possible explanation.\n\n"
                 "These setup values are prefilled for this walkthrough.",
                 None,
                 [("initialize", "Create Sample"), ("home", "Back")],
@@ -207,31 +336,97 @@ class GuidedWorkbench(App[None]):
             title = "Welcome back: your next step is ready" if s.handoff else "What to work on next"
             return (
                 title,
-                f"NEXT STEP\n{next_step}\n\n"
+                f"KEY UNKNOWN\n{s.uncertainty}\n\n"
+                f"NEXT STEP\n{next_step}\nWHY\n{s.why}\n\n"
                 f"NEEDS ATTENTION\n{self.attention()}\n\n"
                 "RESEARCH MAP\nExplore > Critique > Brief final > Build > Accept > Done\n\n"
                 "You are in Explore. A scoped review does not advance the stage.",
                 None,
-                [("resume", "Resume Task"), ("readiness", "Stage Readiness")],
+                [
+                    ("resume", "Resume Task"),
+                    ("choose-action", "Other Actions"),
+                    ("readiness", "Readiness"),
+                ],
                 "LATEST OUTPUTS\n\n"
                 f"Brief: {'saved in demo' if s.brief else 'draft'}\n"
                 f"Review: {'sample output' if s.reviewed else 'not started'}\n"
                 f"Issue: {'open' if s.issue else 'not recorded'}\n"
                 f"Plan: {'saved in demo' if s.plan else 'not saved'}\n"
+                f"Material: {'fixture only' if s.material_loaded else 'none'}\n"
+                f"Interpretation: {s.interpretation_label}\n"
                 "Verified evidence: none\n\nNo gate decision has been made.",
             )
         if self.view == "Explore":
             return (
-                "Define the comparison",
-                "What would make the cache-on/off comparison fair?\n\n"
-                "SAMPLE ASSISTANT\nUse the same workload and concurrency. Specify warm-up, "
-                "hit rate and a result that would refute the idea.\n\n"
-                "Edit the working brief below. Navigation retains edits in this demo.",
+                "What was observed, and what is only an explanation?",
+                "REPORTED OBSERVATION: some repeated queries are slow.\n"
+                "A computation cache is one possible approach, not the starting conclusion.\n\n"
+                + ("BRIEF SAVED IN DEMO. Keep exploring or choose a check.\n\n" if s.brief else "")
+                + "Edit the observation, assumptions and open questions. Saving stays here.",
                 s.working_brief,
-                [("save-brief", "Save Brief"), ("go-review", "Prepare Review")],
-                "SAVED BRIEF\n\n"
-                + (s.brief or "No brief published yet.")
-                + "\n\nSaving publishes the edited brief; it does not establish the claim.",
+                [
+                    ("save-brief", "Save Brief"),
+                    ("hypotheses", "Compare Ideas"),
+                    ("choose-action", "Other Actions"),
+                ],
+                "CURRENT BASIS\nReported observation only; no real measurements.\n\n"
+                "AI HELP\nCompare Ideas shows a fixed sample suggestion. You can edit it or "
+                "record a correction.\n\n"
+                + ("YOUR FEEDBACK\n" + s.feedback if s.feedback else "No feedback recorded yet."),
+            )
+        if self.view == "Hypotheses":
+            return (
+                "Compare explanations before choosing a solution",
+                "SAMPLE AI SUGGESTION / not generated from your edits\n"
+                "Inspect the alternatives below. Remove unsuitable ones or add your own.\n"
+                + (
+                    "Your correction is retained in Context; revise the draft accordingly.\n"
+                    if s.feedback
+                    else ""
+                )
+                + "Save records your working hypotheses, not formal Claims or evidence.",
+                s.working_hypotheses,
+                [
+                    ("save-hypotheses", "Save Ideas"),
+                    ("feedback", "Give Feedback"),
+                    ("choose-action", "Choose Check"),
+                ],
+                "CONTEXT FOR DISCUSSION\n"
+                + (s.brief or s.working_brief)
+                + "\n\nYOUR FEEDBACK\n"
+                + (s.feedback or "None yet.")
+                + "\n\nNo model is called; edits and corrections are yours.",
+            )
+        if self.view == "Feedback":
+            return (
+                "Correct the interpretation or add a constraint",
+                "For example: this workload is disk-bound, or a new experiment is too costly.\n"
+                "The demo retains your exact words beside the hypotheses. No AI revision is "
+                "invented; edit the proposal yourself after recording the feedback.",
+                s.working_feedback,
+                [("save-feedback", "Record Feedback"), ("hypotheses", "Back to Ideas")],
+                "FEEDBACK EFFECT\nChanges discussion context only.\n"
+                "It does not change a Claim, evidence grade or research stage.",
+            )
+        if self.view == "Actions":
+            return (
+                "Choose how to reduce the uncertainty",
+                s.uncertainty + "\n\n"
+                "INSPECT DATA: use existing traces before collecting more.\n\n"
+                "READ PAPERS: check what is known and identify a meaningful baseline.\n\n"
+                "SMALL TEST: hold conditions fixed and distinguish explanations.\n\n"
+                "Review remains available in the navigation, but is not required. "
+                "Selecting a new check starts a new draft; earlier notes remain in Context.",
+                None,
+                [
+                    ("check-data", "Inspect Data"),
+                    ("check-papers", "Read Papers"),
+                    ("check-experiment", "Small Test"),
+                ],
+                "YOUR CHOICE\nPlans need no Claim or reviewer first.\n\n"
+                + s.why
+                + "\n\nRECENT NOTES\n"
+                + ("\n\n".join(s.history[-3:]) or "None yet."),
             )
         if self.view == "Review":
             if not s.brief:
@@ -310,25 +505,82 @@ class GuidedWorkbench(App[None]):
                 + "\nVerified evidence: none\nDecision: none\n\nAll IDs here are sample labels.",
             )
         if self.view == "Validate":
-            if not s.issue:
+            if not s.choice:
                 return (
-                    "Choose a question to validate",
-                    "This walkthrough plans a test for O-001.",
+                    "Choose a small check, even before review",
+                    "Start from data, related work or a small experiment. "
+                    "No Objection is required.",
                     None,
-                    [("resolve", "Inspect Review")],
-                    "No experiment has run.",
+                    [("choose-action", "Choose Check"), ("explore", "Back to Explore")],
+                    "VALIDATION IS EARLY WORK\n"
+                    "A check can change which question is worth pursuing.",
                 )
             return (
-                "Make the uncertainty testable",
-                "Define the conditions that would change your mind.\n"
-                + ("PLAN SAVED IN DEMO. Next: run it outside Toulmin.\n" if s.plan else "")
-                + "Saving this plan leaves O-001 open; it creates no evidence.",
+                CHECKS[s.choice][0],
+                "Define the source, comparison and result that would change your direction.\n"
+                + (
+                    "PLAN SAVED IN DEMO. Use Sample Material to illustrate the next step.\n"
+                    if s.plan
+                    else ""
+                )
+                + "A saved plan establishes no result. Any recorded issue stays open.",
                 s.working_plan,
-                [("save-plan", "Save Test Plan"), ("resolve", "Back to Issue")],
-                "TARGET\n\nC-001: "
-                + STATEMENT
-                + "\n\nO-001: warm-up and hit rate\n\nPlan != result != verified evidence"
-                "\n\nResult recording and stage rulings are outside this wireframe.",
+                (
+                    [
+                        ("material", "Sample Material"),
+                        ("save-plan", "Save Plan"),
+                        ("choose-action", "Other Check"),
+                    ]
+                    if s.plan
+                    else [("save-plan", "Save Plan"), ("choose-action", "Other Check")]
+                ),
+                "WHY THIS CHECK\n"
+                + CHECKS[s.choice][1]
+                + "\n\nTARGET UNKNOWN\n"
+                + s.uncertainty
+                + "\n\nNo experiment runs here. Sample materials are fictional, not evidence.",
+            )
+        if self.view == "Material":
+            if not s.plan:
+                return (
+                    "A check needs a plan",
+                    "Choose or save the check before viewing fixtures.",
+                    None,
+                    [("validate", "Plan Check")],
+                    "No material has been evaluated.",
+                )
+            return (
+                "Inspect the material before drawing a conclusion",
+                "FICTIONAL MATERIAL / not a measurement or verified source\n\n"
+                + s.material
+                + "\n\nTry another fixture to explore a different outcome. "
+                "Interpretation is your choice; the fixture never updates it automatically.",
+                None,
+                [
+                    ("interpret", "Interpret"),
+                    ("cycle-material", "Other Fixture"),
+                    ("validate", "Back to Plan"),
+                ],
+                "APPROVED SAMPLE PLAN\n" + s.plan + "\n\n"
+                "CURRENT INTERPRETATION\n"
+                + s.interpretation_label
+                + "\n\nVerified evidence: none\nStage: Explore",
+            )
+        if self.view == "Interpret":
+            return (
+                "What does this material justify doing next?",
+                "Write your reason and remaining uncertainty, then choose.\n"
+                "A promising lead needs another check; changing direction is a valid outcome.\n"
+                "Insufficient material is not a failure. No formal research status changes.",
+                s.working_reasoning,
+                [
+                    ("judge-lead", "Test This Lead"),
+                    ("judge-redirect", "Change Direction"),
+                    ("judge-uncertain", "Need More Data"),
+                ],
+                "MATERIAL UNDER REVIEW\n"
+                + s.material
+                + "\n\nRecord a researcher's interpretation, not an AI verdict.",
             )
         if self.view == "Readiness":
             return (
@@ -346,9 +598,16 @@ class GuidedWorkbench(App[None]):
             return (
                 "Leave a useful next step",
                 "REVIEW BEFORE SAVING\n" + self.attention() + "\n\n"
-                "Edit the next action below. Save + Preview Reopen demonstrates the next "
+                "Include why this action matters and what result would change direction. "
+                "Save + Preview Reopen demonstrates the next "
                 "session in memory; it does not write a real handoff.",
-                s.next_step or s.recommendation[0],
+                s.next_step
+                or (
+                    s.recommendation[0]
+                    + "\nWhy: "
+                    + s.why
+                    + "\nChange direction if: not yet specified in this handoff."
+                ),
                 [("save-handoff", "Save + Preview Reopen"), ("overview", "Keep Working")],
                 "SESSION BOUNDARY\n\nUnresolved issues stay open.\n"
                 "No stage changes.\nNo Git commit."
@@ -366,11 +625,18 @@ class GuidedWorkbench(App[None]):
             )
         if s.reviewed:
             return "1 review suggestion needs your decision; no Objection recorded."
-        return "Magnitude and novelty are unknown. Nothing has been verified."
+        return (
+            "Your interpretation: " + s.interpretation_label + ". "
+            if s.current_interpretation
+            else "The cause is not established. "
+        ) + "Magnitude and novelty remain unknown; verified evidence: none."
 
     async def show(self, view: str) -> None:
         self.retain_edit()
         self.view = view
+        if view == "Material" and self.sample.plan:
+            self.sample.material_loaded = True
+            self.sample.material_plan = self.sample.plan
         self.context_open = False
         self.remove_class("context-open")
         title, body, editor, actions, context = self.page()
@@ -390,14 +656,14 @@ class GuidedWorkbench(App[None]):
         self.query_one("#context-text", Static).update(context)
         self.query_one("#status", Static).update("DEMO: memory only / no models  |  Stage: Explore")
         self.layout_controls()
-        if view in VIEWS:
-            self.query_one("#selector", Select).value = view
+        if self.work_view in VIEWS:
+            self.query_one("#selector", Select).value = self.work_view
         content.scroll_home(animate=False)
         self.query_one(f"#{actions[0][0]}", Button).focus()
 
     @on(Select.Changed, "#selector")
     async def select_view(self, event: Select.Changed) -> None:
-        if isinstance(event.value, str) and event.value != self.view and self.sample.created:
+        if isinstance(event.value, str) and event.value != self.work_view and self.sample.created:
             await self.show(event.value)
 
     @on(Button.Pressed)
@@ -419,6 +685,11 @@ class GuidedWorkbench(App[None]):
             "validate": "Validate",
             "readiness": "Readiness",
             "end-session": "Handoff",
+            "hypotheses": "Hypotheses",
+            "feedback": "Feedback",
+            "choose-action": "Actions",
+            "material": "Material",
+            "interpret": "Interpret",
         }
         if key in targets:
             if key == "create":
@@ -429,9 +700,42 @@ class GuidedWorkbench(App[None]):
         elif key == "initialize":
             s.created = True
             await self.show("Overview")
+        elif key.startswith("check-"):
+            self.retain_edit()
+            if s.choice:
+                s.history.append("Earlier " + CHECKS[s.choice][0] + ": " + s.working_plan)
+            s.choice = key[6:]
+            s.working_plan = CHECKS[s.choice][2]
+            s.plan = ""
+            s.material_loaded = False
+            s.material_plan = ""
+            s.interpretation_source = ""
+            s.material_index = 0
+            s.handoff = False
+            s.next_step = ""
+            await self.show("Validate")
+        elif key == "cycle-material":
+            s.material_index = (s.material_index + 1) % len(MATERIALS[s.choice])
+            s.handoff = False
+            await self.show("Material")
+        elif key.startswith("judge-"):
+            self.retain_edit()
+            if not s.working_reasoning.strip():
+                self.notify("Record your reason before choosing a direction.", severity="warning")
+                return
+            s.interpretation = key[6:]
+            s.interpretation_source = s.material
+            s.interpretation_plan = s.plan
+            s.reasoning = s.working_reasoning.strip()
+            s.history.append(
+                s.material + "\nYour choice: " + s.interpretation + "\nReason: " + s.reasoning
+            )
+            s.handoff = False
+            s.next_step = ""
+            await self.show("Overview")
         elif key == "resume":
             await self.show(s.recommendation[1])
-        elif key in {"save-brief", "save-plan", "save-handoff"}:
+        elif key in {"save-brief", "save-plan", "save-handoff", "save-hypotheses", "save-feedback"}:
             self.retain_edit()
             value = self.query_one("#editor", TextArea).text.strip()
             if not value:
@@ -439,10 +743,16 @@ class GuidedWorkbench(App[None]):
                 return
             if key == "save-brief":
                 s.brief = value
-                await self.show("Review")
+                await self.show("Explore")
             elif key == "save-plan":
                 s.plan = value
                 await self.show("Validate")
+            elif key == "save-hypotheses":
+                s.hypotheses = value
+                await self.show("Hypotheses")
+            elif key == "save-feedback":
+                s.feedback = value
+                await self.show("Hypotheses")
             else:
                 s.next_step = value
                 s.resume_view = s.recommendation[1]

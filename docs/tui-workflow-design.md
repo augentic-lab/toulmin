@@ -1,6 +1,6 @@
 # Toulmin TUI v2: a guided research workbench
 
-Status: **proposed for researcher review**, 2026-11-02. The researcher authorized trying UI-R2; a [standalone memory-only prototype](../prototypes/README.md) now demonstrates this interaction. Production behavior and Q30/Q31 scope remain pending feedback.
+Status: **proposed for researcher review**, 2026-11-02. The researcher authorized UI-R2 and its UI-R3 uncertainty-driven refinement; a [standalone memory-only prototype](../prototypes/README.md) now demonstrates this interaction. Production behavior and Q30/Q31 scope remain pending feedback.
 Task: UI-R1. This proposal revises the interaction model of [the original TUI design](tui-design.md).
 The approved principles, file formats and confirmation boundaries remain authoritative.
 The user's clarified requirement is guidance: see the research process, know what is possible,
@@ -373,3 +373,31 @@ number of passing unit tests for a user's ability to understand and steer the re
 
 Visual theme selection follows the low-fidelity walkthrough. This proposal does not approve a
 new theme, execute research, or authorize real-model quota use for its eventual usability trial.
+
+## 12. UI-R3 refinement: uncertainty drives the next action
+
+2026-11-03: the researcher approved trying a more research-centered prototype. This refines the
+UI-R2 walkthrough; it does not approve production write paths or claim completed research.
+
+Overview now asks what is observed, what remains unknown, what material exists and which check
+could reduce that uncertainty. Saving a brief does not automatically recommend reviewing it.
+Exploration separates reported observations from competing hypotheses. AI suggestions are
+editable proposals; the researcher can correct their context or choose an alternative action.
+
+Validation is available before Claims and reviews. Its entry offers existing-data inspection,
+related-work checking and a small controlled experiment, each with a stated reason and editable
+plan. Inspecting material is separate from interpreting it. The researcher records a reason
+and chooses to test a lead, redirect the question or seek more information. None of those
+planning choices is evidence verification or a formal Claim/stage ruling.
+
+The standalone prototype uses fictional materials to exercise all three outcomes and retains
+corrections verbatim without pretending an actual model has understood or regenerated them.
+Its suggestions are fixed for the sample question, not a general scientific prioritization
+algorithm. A production assistant may help compare uncertainties and costs; the researcher
+selects the task. Record the reason and the observation that would change direction in handoff.
+
+Acceptance of this prototype requires showing that early validation is reachable without
+creating a Claim/Objection, feedback remains visible, saving a brief leaves exploration open,
+material does not automatically determine the conclusion, and changed source material or plans
+do not inherit an interpretation made against earlier inputs. Researcher feedback is still
+needed on whether this supports thinking rather than becoming another form-filling sequence.

@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-03 — UI-R3: uncertainty-driven inquiry prototype
+
+- Authorization: researcher approved trying the proposed scientific-workflow adjustments. This iteration remains a standalone, memory-only prototype; production src/, schemas, adapters and Q30/Q31 production scope are unchanged.
+- Changed Overview to show the key unknown, proposed action and reason. Saving a brief stays in Explore. Compare Ideas distinguishes a reported observation from competing explanations; users can edit hypotheses and retain verbatim corrections/context without pretending a fixed sample AI answer was regenerated.
+- Added early checks for existing data, related work and a small experiment, available before any Claim, review or Objection. Each has an editable plan and three fictional materials. Users explicitly choose a promising lead, a change of direction or insufficient material with a nonempty reason. No material auto-selects a judgment, becomes verified evidence or advances research stage.
+- Preserved optional review/intake path, draft retention, source history and simulated handoff/resumption. Changed material or plans cannot inherit an active interpretation from different inputs. New checks/judgments clear an obsolete saved next step. Compact selectors identify the parent activity of subviews.
+- Deliverables: revised prototype/renderer/README, fifteen actual SVG renders, a v2-design refinement and UI-R3 TODO criteria. The user should assess whether the uncertainty/action framing supports thinking rather than adding form filling.
+- Verification: a user-authorized GPT-6.1 Sol/high development agent updated the prototype tests; root implemented and reviewed changes and ran integration checks. Focused final run reported **19 passed in 75.30 s**, covering early checks, feedback, all three outcomes, a deliberately contrary judgment on favorable material, blank reasons, stale inputs/next steps, keyboard/mouse geometry at 120x36/80x24/60x20, optional review and no working-directory writes.
+- Root verification: locked offline sync, Ruff lint/format, strict mypy (43 files), CLI help, actual rendered pages, fifteen parsed SVGs and documentation links/fences/diff checks passed. PTY startup/Ctrl+Q exited 0 with terminal attributes and alternate screen restored; process reaped. Full regression reported **581 passed in 190.33 s**; final display-wording adjustments were checked by Ruff/mypy and regenerated renders. All bounded test, export, conversion and terminal sessions completed; no background task remains from this turn.
+- Limits: all AI-style suggestions, traces, paper notes, results, IDs and judgments are simulated. Real model collaboration, source verification, experiment execution, formal evidence/rulings and disk persistence are not tested. Researcher usability acceptance remains pending; development checks are not independent research acceptance.
+- Session ID unavailable. Blockers: none for prototype delivery. Next: researcher tries the divergent-material path and evaluates guidance and feedback, before production integration or visual styling. No push.
+
 ## 2026-11-02 — UI-R2: runnable guided-workflow wireframe
 
 - Authorization: researcher said to try the proposed direction. Implemented an isolated low-fidelity prototype, not production UI2–UI5 or the proposed Q31 write paths. Q30/Q31 production acceptance remains pending researcher feedback.

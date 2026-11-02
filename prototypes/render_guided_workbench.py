@@ -5,7 +5,7 @@ import asyncio
 from pathlib import Path
 
 from guided_workbench import GuidedWorkbench
-from textual.widgets import Button
+from textual.widgets import Button, TextArea
 
 
 def capture(app: GuidedWorkbench, size: tuple[int, int], output: Path, name: str) -> None:
@@ -29,14 +29,42 @@ async def render(output: Path) -> None:
                 ("create", "setup"),
                 ("initialize", "overview"),
                 ("resume", "explore"),
-                ("save-brief", "statements"),
+                ("save-brief", "brief-saved"),
+                ("hypotheses", "hypotheses"),
+                ("feedback", "feedback"),
+                ("save-feedback", "feedback-recorded"),
+                ("save-hypotheses", "ideas-saved"),
+                ("choose-action", "actions"),
+                ("check-data", "validate"),
+                ("save-plan", "plan-saved"),
+                ("material", "material-a"),
+                ("cycle-material", "material"),
+                ("interpret", "interpret"),
+                ("judge-redirect", "decision"),
+                ("end-session", "handoff"),
+                ("save-handoff", "resume"),
+            ):
+                if key == "save-feedback":
+                    app.query_one("#editor", TextArea).load_text(
+                        "The workload may be disk-bound. Check the existing trace first."
+                    )
+                elif key == "judge-redirect":
+                    app.query_one("#editor", TextArea).load_text(
+                        "I/O waits dominate this fixture. "
+                        "Inspect that path before pursuing caching. "
+                        "One short trace is not conclusive."
+                    )
+                app.query_one(f"#{key}", Button).focus()
+                await pilot.press("enter")
+                await pilot.pause()
+                capture(app, size, output, name)
+            # The optional review path remains reachable, without becoming the default.
+            await app.show("Review")
+            await pilot.pause()
+            for key, name in (
                 ("statement", "review-plan"),
                 ("run-review", "triage"),
                 ("record", "issue"),
-                ("validate", "validate"),
-                ("save-plan", "plan-saved"),
-                ("end-session", "handoff"),
-                ("save-handoff", "resume"),
             ):
                 app.query_one(f"#{key}", Button).focus()
                 await pilot.press("enter")

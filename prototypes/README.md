@@ -1,7 +1,7 @@
-# Guided workbench wireframe (UI-R2)
+# Research inquiry walkthrough (UI-R3)
 
-This standalone terminal prototype lets you try the proposed research guidance before approving
-production changes or a visual theme. It uses the existing optional Textual dependency.
+This standalone terminal prototype lets you try research guidance before production integration
+or visual-theme selection. It uses the existing optional Textual dependency.
 
 From the repository root:
 
@@ -9,70 +9,96 @@ From the repository root:
 uv run --locked --extra tui python prototypes/guided_workbench.py
 ```
 
-The fixed case asks whether caching repeated reads lowers p95 latency. All answers, object IDs,
-review results and handoffs are simulated in memory. There are no model calls, research files,
-network requests or real experiments. Ctrl+Q exits and discards the simulation. This is separate
-from `toulmin tui`, whose current functionality is unchanged.
+The case starts with a reported observation: some repeated queries are slow. A computation cache
+is only one possible direction. Everything is simulated in memory: no model calls, network,
+real citations, file import, experimental results or research-project writes. Ctrl+Q discards the
+demo. `toulmin tui` remains the unchanged production entry point; this prototype is separate.
 
-Try navigating before reading the route below. At each point ask:
+## What changed from UI-R2
 
-- Can I tell what matters now and what the main button will do?
-- Can I see what is saved, unconfirmed or still unresolved?
-- Can I go back or stop without losing my place?
+- Overview names the key unknown, the next action and its reason. Saving a brief stays in Explore;
+  it no longer moves directly into review.
+- Compare Ideas offers explicitly fixed AI-style suggestions: computation, I/O and lock waits.
+  Edit/remove/add hypotheses, or Give Feedback. Your exact correction appears in Context. The
+  demo does not pretend to regenerate an AI answer from arbitrary feedback.
+- Other Actions offers Inspect Data, Read Papers and Small Test before any Claim/reviewer exists.
+  Each starts an editable plan. A plan remains a plan, not evidence.
+- Sample Material offers three fictional outcomes for each check. Interpret requires your own
+  reason and choice: Test This Lead, Change Direction or Need More Data. The next action follows
+  that choice, not an automatic interpretation of the fixture. No choice upgrades evidence,
+  changes research stage or closes an issue.
+- Handoff includes why the next action matters and a prompt to state what would change direction.
+  Previous interpretations retain their source material and reason in Recent Notes on Other Actions.
+  Changed plans/material do not inherit a current interpretation from a different source.
 
-## A short route
+## A five-minute trial
 
-1. New Sample Project -> Create Sample -> Resume Task.
-2. Edit the brief, then Save Brief -> Save Statement. The sample statement is fixed; it is not
-   extracted from your edits by a model.
-3. Inspect the review inputs and exclusions, then Start Sample Review.
-4. Leave the suggestion pending and resume it, or Record Issue -> Plan a Test.
-5. Edit and save the plan. The issue stays open and there is still no evidence.
-6. End Session -> edit the next action -> Save + Preview Reopen. Inspect Overview and Resume Task.
+Try the controls before reading this route; the point is to find your way without commands.
 
-`Save + Preview Reopen` is an in-memory demonstration of the next-session screen, not a durable
-restart test. Home -> Open Sample also revisits the current sample. Restart Sample clears it.
-You can open Stage Readiness: missing magnitude/novelty keep the gate unmet, while ordinary
-exploration/review remains available. Editing the saved brief after review shows stale inputs.
+1. New Sample Project -> Create Sample -> Resume Task. Edit the observation and assumptions in
+   the brief; Save Brief. Notice that this leaves you in Explore.
+2. Compare Ideas -> Give Feedback. For example: "The workload may be disk-bound; inspect existing
+   traces before a new experiment." Record Feedback, inspect Context (F2 on narrow terminals),
+   and edit/save the hypotheses. The correction is retained; no model responds automatically.
+3. Choose Check -> Inspect Data. Edit the plan, including what would make you change direction,
+   then Save Plan -> Sample Material. No Claim or review is needed first.
+4. Other Fixture changes the example: A has prominent repeated computation, B prominent I/O waits,
+   C insufficient samples. All are fictional. Select Interpret, enter a reason, and choose the
+   direction you judge appropriate. Even choosing Test This Lead does not establish a conclusion.
+5. Inspect Overview's changed unknown/action/reason. Try an alternative check, or End Session ->
+   edit the next step/reason/change condition -> Save + Preview Reopen -> Resume Task.
 
-Tab/Shift+Tab moves focus, Enter activates a button, and Escape returns to Overview. In a text
-editor Enter inserts a newline. F2 switches context at narrow widths, retaining editor content
-and focus. Mouse buttons work too. At 60 columns, use the view selector instead of the rail;
-scroll or Tab to reach fields below explanatory text.
+`Save + Preview Reopen` illustrates resumption in this process, not durable disk recovery.
+Home -> Open Sample revisits the sample; Restart Sample clears it. Plans and interpretations
+can be revisited. Untriaged suggestions and recorded issues remain distinct in the optional
+Review/Resolve path; a saved brief and explicit sample statement are required only for review.
+The sample Claim is fixed, not extracted from your edits by a model. Formal G1 remains unmet.
 
-## What this prototype does not test
+Tab/Shift+Tab moves focus; Enter activates buttons and inserts newlines in editors. Escape opens
+Overview, F2 toggles Context at narrow widths without losing draft text/focus, Ctrl+Q exits.
+At 60 columns the selector replaces the rail; scroll/Tab reaches text below explanations.
 
-Real conversations, asynchronous model jobs/cancellation, file persistence, evidence intake,
-issue ruling and stage writes are not implemented here. Selecting personas/models, editing the
-sample statement, dismissing a suggestion with reasons and real project import are also outside
-this small walkthrough. The demo only records an issue or leaves it pending. Production Q30/Q31
-scope and human usability acceptance remain separate decisions. Do not use this for research data.
+## Feedback we need
+
+Can you identify the largest unknown and why the proposed check matters? Can you choose another
+route without being pushed toward a cache or toward AI review? Is it clear where you correct
+AI suggestions and where you make a research judgment? Does the return screen preserve the
+reason for the next step, not just its name?
+
+## Limits
+
+This wireframe does not validate actual model collaboration, durable persistence, source checking,
+real evidence intake, experiments, issue rulings, stage writes or job cancellation. All fixture
+results stay labeled fictional; even the paper notes are invented examples, not references.
+The three outcome labels record planning judgments in memory, not formal Decision objects.
+Q30/Q31 production scope and researcher usability acceptance remain separate from this prototype.
 
 ## Actual terminal renders
 
-These SVGs are exports from the runnable Textual prototype, not image-generated mockups.
-The grayscale presentation is deliberately low fidelity; it is not the final pixel theme.
-The SVG viewer may substitute a different font from your terminal.
+These SVGs come from Textual, not image generation. The neutral theme is not final styling.
+An SVG viewer may substitute a font different from your terminal.
 
 | Moment | Render |
 | --- | --- |
 | Home | [120 columns](../docs/prototypes/guided-workbench/home-120.svg) |
-| Orientation / next action | [120 columns](../docs/prototypes/guided-workbench/overview-120.svg) |
-| Brief editing | [120 columns](../docs/prototypes/guided-workbench/explore-120.svg) |
-| Review input plan | [120 columns](../docs/prototypes/guided-workbench/review-plan-120.svg) |
-| Suggestion before intake | [120 columns](../docs/prototypes/guided-workbench/triage-120.svg) |
-| Recorded issue / response options | [120 columns](../docs/prototypes/guided-workbench/issue-120.svg) |
-| Test plan | [80 columns](../docs/prototypes/guided-workbench/validate-80.svg) / [60 columns](../docs/prototypes/guided-workbench/validate-60.svg) |
+| Unknown, next action and reason | [120 columns](../docs/prototypes/guided-workbench/overview-120.svg) |
+| Observation versus explanation | [120 columns](../docs/prototypes/guided-workbench/explore-120.svg) |
+| Competing hypotheses | [120 columns](../docs/prototypes/guided-workbench/hypotheses-120.svg) |
+| User feedback retained | [120 columns](../docs/prototypes/guided-workbench/feedback-recorded-120.svg) |
+| Three kinds of check | [120 columns](../docs/prototypes/guided-workbench/actions-120.svg) |
+| Early validation plan | [80 columns](../docs/prototypes/guided-workbench/validate-80.svg) / [60 columns](../docs/prototypes/guided-workbench/validate-60.svg) |
+| Fictional material, no automatic judgment | [120 columns](../docs/prototypes/guided-workbench/material-120.svg) |
+| Researcher interpretation | [120 columns](../docs/prototypes/guided-workbench/interpret-120.svg) |
+| Changed direction and reason | [120 columns](../docs/prototypes/guided-workbench/decision-120.svg) |
 | Simulated return | [120 columns](../docs/prototypes/guided-workbench/resume-120.svg) |
+| Optional review plan / triage / issue | [Plan](../docs/prototypes/guided-workbench/review-plan-120.svg), [suggestion](../docs/prototypes/guided-workbench/triage-120.svg), [issue](../docs/prototypes/guided-workbench/issue-120.svg) |
 
-![An issue and the next available action](../docs/prototypes/guided-workbench/issue-120.svg)
-
-Regenerate screenshots (the output directory is explicit; no research files are written):
+Regenerate the renders:
 
 ```sh
 uv run --locked --extra tui python prototypes/render_guided_workbench.py /tmp/toulmin-wireframes
 ```
 
-The automated interaction tests check the path at 120x36, 80x24 and 60x20, action hit geometry,
-pending/recorded distinction, unsaved edits, context focus, stale review input, early handoff,
-restart and unchanged working directory. They do not prove the design is clear to a researcher.
+Automated checks cover navigation and action geometry at 120x36, 80x24 and 60x20, early checks,
+feedback, explicit reasoning, interpretation freshness, optional review and no project writes.
+These checks cannot establish researcher usability or real model output quality.

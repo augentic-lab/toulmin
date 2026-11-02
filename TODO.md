@@ -296,3 +296,9 @@ UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. UI2 imp
 - [ ] Researcher tries UI-R2 and assesses next-action clarity, pending versus resolved state and simulated return; confirm Q30/Q31 production scope after feedback.
 
 The CLI smoke trial proved plumbing only. The researcher explicitly needs a visible research process and discoverable actions; replacing that experience with natural-language-only interaction is not the product direction.
+
+### UI-R3 — Uncertainty-driven prototype iteration
+
+- [x] Update the standalone prototype: observation versus hypotheses, editable AI-style suggestions and feedback, early data/literature/experiment checks, explicit interpretation with reasons, and next actions driven by the researcher's choice.
+- [x] Verify divergent/insufficient fixtures, no automatic research rulings, source/plan freshness, accessible controls at three terminal sizes, and preserve optional review.
+- [ ] Researcher tries the revised flow; actual model collaboration and production integration remain outside this prototype.
