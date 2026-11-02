@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-02 — Stage 2 closing retrospective and stage 3 plan
+
+- Status: **plan written; stage 3 not started.** It awaits decisions Q19–Q24.
+- User authorization: hold the retrospective and plan stage 3.
+- Outputs: a closing retrospective in docs/manual-acceptance.md; TODO.md "Stage 3: critique — plan" with the done criterion, decisions Q19–Q24 and tasks C1–C5.
+- Key retrospective points: reviews were most valuable on definitions and measurement validity; transcribing review drafts into Objections is the main remaining burden (hence C1 first); cross-vendor independence and quota cost are untested; template churn will need an upgrade path once a durable workbench exists.
+- **Verified** environment facts: Claude Code 2.1.316 and Codex CLI 0.165.0 are installed, and Gemini CLI is not. Their `--help` output listed the headless/read-only flags named in the plan. No model was invoked.
+- Checks: documentation only; code tests were not run because no code changed. The diff contains TODO.md, PROGRESS.md and docs/manual-acceptance.md.
+- Session ID: unavailable in the current environment.
+- Blockers: Q19 (the AGENTS.md scope ban on automation) must be lifted before C3.
+- Next step: the researcher confirms Q19–Q24, then C1 in its own session.
+
 ## 2026-11-02 — R1: Claim revision by supersession
 
 - Status: **Verified: R1 complete.**

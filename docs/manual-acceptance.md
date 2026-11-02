@@ -49,4 +49,14 @@ Save actual records in a dated runs subdirectory of the research workbench. Reco
 - Lost in handoff: nothing that blocked recovery. The resume session could not tell whether D-001 resolved O-001/O-002, because their statuses stayed open. U2 addresses this.
 - Not covered: cross-model review, a human's real next-day memory loss, and genuine researcher confirmations.
 
+## Closing retrospective: stage 2 and follow-ups (2026-11-02)
+
+Evidence: trials S1 (before) and S2 (after U1–U3), and R1 replayed on S2. All were agent-run with one model.
+
+- Objections that changed direction: in both trials the reviewer's most useful objections concerned definitions and measurement validity (an undefined p99 share; conflated submission/completion axes). Both led to Decisions before any experiment. Prior-work objections (S2 O-003) were valuable but rested on unverified, model-asserted citations, which supports stage 4's novelty checker.
+- Steps that were too burdensome: drafts (fixed by U1), rulings (U2), unreadable headers and paths (U3) and Claim rewording (R1). Still burdensome: transcribing review drafts into Objection drafts by hand (8 → 4 and 6 → 4 per round). Run `input_files` are retyped although the role fixes them. Two commands are needed per object.
+- Lost in handoff: nothing that blocked recovery after U2. Remaining gaps: status hides settled Objections, and resume sessions scan noisy `runs/` listings.
+- Process: every packaged-template change makes `init --project` conflict on older workbenches (D1, U1–U3, R1). This is acceptable while workbenches are scratch, but the first durable workbench will need a template-upgrade path.
+- Not yet tested: independence across model vendors, quota cost per review round, and a human researcher's own use.
+
 Completing four commands and automated tests does not advance the research PROJECT.stage. Software stage acceptance is always an explicit researcher ruling.

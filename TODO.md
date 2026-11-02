@@ -200,3 +200,49 @@ Implementation choices within Q15–Q18: links also require a Decision; a supers
 
 D1 verification: all 20 tracked Markdown documents are in English, 16 local links resolve, and the three published contract copies match. All 292 tests, Ruff lint/format checks and mypy passed. Built wheel/sdist, checked all 25 template assets, and verified generated English documentation plus the README example and all four commands from an installed wheel outside the checkout.
 Delivery: the user explicitly requested a commit and push to the existing origin/main branch; verify the remote commit after pushing.
+
+# Stage 3: critique — plan (pending decisions)
+
+Basis: design.md §6, §9, §10 and §12 (stage 3: reviewer roles, `review` and `crossval`, synthesizer, objection intake). Retrospective: docs/manual-acceptance.md "Closing retrospective". Planned on 2026-11-02; nothing implemented.
+Stage done criterion (design §12): one brief goes through three rounds of multi-model review, and every Objection has a complete, traceable status (Run → raw output → draft label → Objection → ruling/Decision).
+Environment fact, verified 2026-11-02: Claude Code 2.1.316 (`claude -p`) and Codex CLI 0.165.0 (`codex exec`, `--sandbox read-only`, `--ephemeral`, `-o`) are installed. Gemini CLI is not installed. Exact flags are re-checked in C3, and no model was invoked for this plan.
+
+## Pending decisions
+
+| ID | Required decision | Recommendation | Impact |
+| --- | --- | --- | --- |
+| Q19 | Lift the development AGENTS.md scope ban on automated review and cross-model orchestration for stage 3? | Yes, for headless read-only review/crossval/synthesis only. Still forbid automatic rulings, gate changes, object writes by models, MCP and reference-manager integration. | AGENTS.md, design boundary. |
+| Q20 | Which model tools count as "multi-model"? | Build Claude Code and Codex adapters now; add Gemini when it is installed. Stage 3 counts at least two vendors plus distinct reviewer personas as multi-model, and the stage record notes that Gemini is absent. | Done criterion, adapters. |
+| Q21 | Machine-readable review output? | The reviewer contract requires prose plus one final fenced `yaml` block listing drafts (`label`, `target`, `severity`, `content`, `grounds`, `uncertainty`). It is parsed with the same safe YAML subset. Unparseable output still archives the Run and falls back to manual intake. | Role templates, L1 parser. |
+| Q22 | Where do intake outcomes and calibration live? | Not in a second store. Intake appends an outcome record (`taken as O-NNN` / `rejected: reason` / `partly`) to an `intake.md` beside each Run's raw output. A `calibration` report derives adoption rates by model and role from Runs, intake records and Objections; `global/calibration/` holds only regenerable reports. This resolves design §13's ruling-format question. | L1 format addition, report command. |
+| Q23 | How does the synthesizer rotate? | Deterministically: the next available model after the one that synthesized the project's previous round (read from Run `role: synthesizer`). The researcher can override with `--model`. Synthesis output groups agreements, disagreements (listed first) and singletons, citing draft labels. | Synthesizer contract, review command. |
+| Q24 | Where do adapter and model choices live? | `tools/models.toml` in the workbench, a template created by init: adapter command, default model per role and a per-round run cap. Model names are plain strings, never enums. CLI flags override it. | Templates, L3 config. |
+
+## Tasks (after confirmation; one per session, in order)
+
+### C1 — Structured review intake (no models)
+
+- [ ] L1: parse the Q21 draft block from an archived raw output, with located errors. L2/L3: `toulmin intake <project> <run-output> --take draft-1,draft-3 [--reject draft-2=reason] --confirm` creates the chosen Objections (source = Run + path, target and severity from the draft, Content from content/grounds/uncertainty) and appends outcomes to `intake.md`. Unlisted drafts remain pending.
+- [ ] Acceptance: S1/S2 raw outputs, rewritten in the Q21 format, are taken in with one command. Rejections are recorded with reasons. Replaying is idempotent per label. A wrong target or severity creates nothing. `status -v` lists settled Objections with their Decisions (S2 finding 2).
+
+### C2 — Reviewer personas and role manifests (no models)
+
+- [ ] Templates: `roles/reviewer-skeptic.md`, `reviewer-industry.md`, `reviewer-theorist.md` and `reviewer-why-not-x.md` (design §6), plus `synthesizer.md`, each with the Q21 output block. Each role gets a machine-readable input manifest (which project files it receives), so Run `input_files` is computed, not retyped.
+- [ ] Acceptance: the manifest resolves to the exact files for a project; reviewers never receive sessions, handoffs or other runs; the template contract tests pass.
+
+### C3 — Adapters and `toulmin review`
+
+- [ ] `src/toulmin/adapters/` (L3): Claude Code (`claude -p`, read-only tools, JSON output) and Codex (`codex exec --sandbox read-only --ephemeral -o`), behind one small interface (run(prompt, files, model) → raw text, session ID, duration, exit status). `toulmin review <project> --personas … --models …` runs every persona × model pair in fresh, mutually invisible sessions, archives each raw output under `runs/<UTC>-review-<persona>-<model>/` and records each Run (completed/failed) automatically. It never writes Objections.
+- [ ] Acceptance: tests use fake CLIs on PATH and never call real tools. Failures, timeouts and empty output become failed Runs. Inputs come from the manifest. The run cap is enforced. One supervised live smoke run per adapter needs explicit researcher approval because it uses quota.
+
+### C4 — Synthesizer and `crossval`
+
+- [ ] `toulmin synthesize <project> <run>…` runs the Q23-rotated synthesizer over the given Run outputs and archives agreements, disagreements and singletons with draft labels. `toulmin crossval <project> <question-file>` sends one question to each model independently, then synthesizes.
+- [ ] Acceptance: the synthesizer sees only the listed outputs; rotation is deterministic and recorded; synthesis never creates Objections; intake from a synthesis still points to the original Run and draft label.
+
+### C5 — Calibration report and stage trial
+
+- [ ] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report.
+- [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance.
+
+Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
