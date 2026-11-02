@@ -1,5 +1,32 @@
 # Toulmin development progress
 
+## 2026-11-02 — S1: agent-run workflow trial
+
+- Status: **Verified**: an agent-run, same-day simulation of the stage-2 workflow completed end to end, and a fresh session recovered the project from files alone. This is a simulation, not the next-day human trial in docs/manual-acceptance.md.
+- User authorization: the user asked the agent to run one usage trial and report the experience, then to record it here.
+- Researcher statement (2026-11-02): no human trial is needed; the researcher considers this simulation accurate enough. **Pending**: whether this formally accepts roadmap stage 2 and replaces the manual-acceptance criterion in TODO.md T5 and docs/design.md §12. TODO checkboxes stay unchanged until that is confirmed.
+- Setup: a scratch workbench outside this repository, with project `compaction-tail`. The idea was whether RocksDB compaction stalls dominate p99 write latency on NVMe. The agent wrote the idea and acted as the researcher; all confirmations were simulated. The reviewer and the resume session were fresh-context subagents of the same model (claude-opus-5-5), so the review was not cross-model. The scratch location is not durable.
+- Session ID: unavailable in the current environment.
+
+### Actual run
+
+- **Verified**: `init` (0.17 s) → three Claims (C-001..C-003) via `new claim` → independent reviewer subagent, given only AGENTS.md, roles/reviewer.md, the brief and the three Claims, returned eight draft objections → raw output archived and Run R-001 recorded → four Objections taken in (O-001 fatal, O-002/O-003 major, O-004 minor) → `status` → Decision D-001 → `handoff --input` → draft reviewed → `--apply` → replay was idempotent → workbench Git commit. Every command exited as expected; stored statuses and stage stayed unchanged.
+- **Verified**: error probes (an invalid enum, missing `--confirm`, a missing body section) reported `file:line: field`. An absolute `--input` path was rejected.
+- **Verified**: a fresh session that read only the files named by the entry protocol correctly answered the goal, the open fatal/major objections, the next step and the raw-review location. It read about 10 files (roughly 2,500 words). Its answers matched `status`.
+
+### Findings (inputs for the next usability task; no code changed)
+
+1. Creating objects is the main friction: 9 objects took 9 hand-written YAML drafts (114 lines) and 9 long commands. Field names have to be learned from formats.md, absolute `--input` paths are rejected, and drafts accumulate unexplained in `runs/manual/`.
+2. No command records an Objection Response/Ruling or a status change with a Decision reference. After D-001, O-001/O-002 stayed `open`, and the resume session could not tell whether they were resolved.
+3. Generated headers are hard to read: keys are sorted alphabetically, long strings fold at 80 columns, and timestamps carry microseconds. `last_handoff` is a bare 90-character filename without `sessions/`. Run `output` names a directory rather than a file. `new` prints absolute paths while `handoff` prints root-relative ones.
+4. `status` lists IDs without statements. A stale brief section raises no hint (consistent with Q2).
+5. Objections have a single target; one review draft that attacked two Claims had to be split or noted in prose.
+6. Positive: the review produced research value (a genuinely fatal undefined-metric objection). handoff safety was invisible in normal use, and AGENTS.md context overhead was not a problem in practice.
+
+- Checks: no code or tests changed, so the software checks were not rerun. The diff was inspected and contains only this file.
+- Blockers: none.
+- Next step: confirm the stage-2 acceptance question above, then plan a usability task from findings 1–3 before stage 3.
+
 ## 2026-11-01 — D1: English documentation
 
 - Status: **Verified**: all maintained documentation is in English; documentation, package and existing software checks passed.
