@@ -35,6 +35,20 @@
 - Blockers: none for the design deliverable; implementation awaits review of the proposed scope/contracts.
 - Next step: researcher reviews Q25–Q29, then UI1 can begin if approved. No automatic push.
 
+## 2026-11-02 — C3 follow-up: Codex isolation verified
+
+- Status: **Verified: Codex reviews run without the operator's global instructions.**
+- User authorization: "先验证codex隔离吧" (verify Codex isolation first), then "已登录，开始跑吧" (logged in, start the run). One Codex session was used.
+- Setup:
+  - The researcher logged in once with `CODEX_HOME=~/.codex-toulmin`. That home holds only credentials, with no AGENTS.md, config, hooks, memories or skills (**Verified** by listing it).
+  - The scratch workbench's models.toml set `env = { CODEX_HOME = "~/.codex-toulmin" }`, `model = "gpt-6.1-sol"` and `-c model_reasoning_effort="xhigh"`, matching R-003's model and effort taken from `~/.codex/config.toml`.
+- **Verified** result: R-004 completed in 122.9 s with model `gpt-6.1-sol` recorded, a session ID and 4 drafts, using the same 7 inputs as R-003. R-003 had opened with "**Verified by inspection of the supplied text:**" and three bullets. R-004 opens with plain prose, has no Verified/Inferred/Guess labels, and is about the same length (825 vs 806 words).
+- Limits: one session each, so draft counts (4 vs 5) say nothing about quality. The env change and the prompt line were tested together.
+- Observation for later: both live reviewers noted that the brief still cites superseded C-001, which their manifest correctly left out; status already flags stale brief references.
+- Session ID: unavailable in the current environment.
+- Blockers: none.
+- Next step: C4 (synthesizer and crossval) in its own session. For real workbenches, uncomment `env` and set explicit models in tools/models.toml.
+
 ## 2026-11-02 — C3 live smoke runs (approved) and Codex isolation follow-up
 
 - Status: **Verified: both adapters work against the real tools; C3 acceptance ticked. Paused here at the researcher's request.**
