@@ -1,3 +1,54 @@
+# Native CLI split trial (UI-R4)
+
+This standalone prototype keeps a research board on the left and an interactive CLI on the
+right. It does not change `toulmin tui`, existing projects, or production Discussion sessions.
+Requires Linux/Unix, tmux, the optional `tui` dependencies, and at least 100 columns × 24 rows.
+
+From the repository root:
+
+```sh
+# No model calls: simulated assistant for trying the interaction first.
+uv run --locked --extra tui python prototypes/native_split.py
+
+# Real native CLI, using your installed CLI configuration and authentication.
+uv run --locked --extra tui python prototypes/native_split.py --agent codex
+uv run --locked --extra tui python prototypes/native_split.py --agent claude
+```
+
+The launcher creates a new temporary workspace, starts a private tmux server with no user tmux
+configuration, and focuses the agent pane. It does not submit an initial model prompt. For a real
+CLI, enter: `Read context.md, discuss the question, and write a draft to draft.md when asked.`
+Use the native CLI's own commands, permission prompts and tools normally. This prototype does
+not enforce the production Discussion sandbox or archive complete model sessions as Runs.
+It inherits native CLI configuration, permissions and any configured integrations.
+
+## A two-minute trial
+
+1. In the default simulated agent, enter `/help`, then `/context` and `/draft`.
+2. Press **Ctrl+b**, release, then **o** to switch panes; **Ctrl+b**, then **z** to zoom/unzoom.
+   Mouse clicks can also select panes. Native CLI shortcuts belong to the focused agent pane.
+3. The board refreshes every two seconds; **r** refreshes immediately. Press **a**, inspect the
+   draft and explicitly choose **Confirm**. Only then is `accepted-brief.md` created. Escape
+   cancels. A changed draft must be reviewed again; an accepted file is never overwritten.
+4. Press **q in the board** to close both panes. Detaching the tmux client also ends this trial;
+   it does not leave a background agent for later reattachment. Trial files remain on disk,
+   and the launcher prints their path. No unrelated tmux server is stopped.
+
+`--question "Your research question"` changes the initial context. `--workspace /new/path` picks
+an explicit **new** directory; existing directories are refused. The workspace contains
+`context.md`, the agent's optional `draft.md`, an explicitly accepted `accepted-brief.md`, and
+`native-exit.json` after a normal agent exit. These are prototype files, not formal Toulmin objects.
+No terminal screen scraping is treated as a model transcript or research provenance. Native
+sessions, hooks and permissions remain managed by the selected CLI; model-spawned detached
+services are outside this prototype's lifecycle guarantees.
+
+Acceptance is still pending: does this restore comfortable agent interaction while keeping the
+research direction visible? Does switching to review/accept a draft feel natural? Automatic
+context synchronization, production Run ingestion, native-session recovery and independent
+review integration are deliberately not implemented in this trial.
+
+---
+
 # Research inquiry walkthrough (UI-R3)
 
 This standalone terminal prototype lets you try research guidance before production integration

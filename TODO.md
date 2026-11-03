@@ -304,3 +304,8 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 - [x] Update the standalone prototype: observation versus hypotheses, editable AI-style suggestions and feedback, early data/literature/experiment checks, explicit interpretation with reasons, and next actions driven by the researcher's choice.
 - [x] Verify divergent/insufficient fixtures, no automatic research rulings, source/plan freshness, accessible controls at three terminal sizes, and preserve optional review.
 - [ ] Researcher usability acceptance of the revised flow. Feedback on 2026-11-03: still unclear and may be less useful than direct agent conversation. UI-R2/UI-R3 are not accepted production designs; revisit the original interactive-workbench purpose before further implementation. Actual model collaboration and production integration remain untested.
+
+### UI-R4 — Native CLI split trial
+
+- [x] Build a standalone private-tmux launcher and compact research board beside a native Codex/Claude CLI, with a no-model demo, visible context, draft refresh and explicit create-only acceptance. Do not modify production Discussion or existing projects.
+- [ ] Researcher trial: confirm native commands, pane focus/zoom and returning a draft feel more usable than the existing chat box. Production context synchronization, full Run provenance and permission/lifecycle integration remain undecided.
