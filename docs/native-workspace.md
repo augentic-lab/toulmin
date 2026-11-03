@@ -82,10 +82,16 @@ or resumed by this entry point; current project artifacts and the last handoff a
 
 The launcher uses bubblewrap to make direct workbench paths read-only while allowing writes
 inside this session's `research/`. It preserves networking and ordinary native cache access,
-hides its private tmux socket, and uses a PID namespace to stop local descendants on exit.
+hides its private tmux socket, creates a private `/dev`/devpts for native command PTYs,
+and uses a PID namespace to stop local descendants on exit.
 Codex runs with `--no-daemon` so its execution stays in this process tree; remote/shared app
 server routing is not enabled. If bubblewrap cannot start, the launcher refuses to run rather
 than falling back to unprotected execution.
+
+If an older native session reports `Failed to create unified exec process: Permission denied`
+before even running `pwd` or `cat`, close that native split and start a new one after updating
+Toulmin. Existing namespaces are not changed in place. This PTY startup failure does not mean
+the researcher needs to change `context.md` permissions.
 
 This is path protection, not a comprehensive sandbox against a hostile native agent: existing
 hardlink aliases outside the workbench and other same-user host-service sockets remain outside

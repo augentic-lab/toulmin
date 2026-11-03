@@ -63,6 +63,10 @@ def protected_command(root: Path, workspace: Path, socket: Path, command: list[s
         "--bind",
         "/",
         "/",
+        # Native command runners allocate additional PTYs. Host devpts cannot be
+        # reopened from this user namespace, even when inherited TTY fds work.
+        "--dev",
+        "/dev",
         "--proc",
         "/proc",
         "--ro-bind",

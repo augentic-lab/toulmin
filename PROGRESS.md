@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-03 — UI-N1 fix: native command PTY permission failure
+
+- Researcher reported context.md Permission denied and identified Codex. Read-only inspection of the active Toulmin pane found the actual failure: `Failed to create unified exec process: Permission denied (os error 13)` before pwd/rg/cat ran. The context was researcher-owned mode0600 with traversable owned parent directories; no user session input, project files or permission bits were changed.
+- Root and a user-authorized GPT-6.1 Sol/high diagnostic agent independently reproduced the missing boundary: direct context reads and inherited TTY descriptors work, but opening /dev/ptmx inside the exact outer user namespace fails with errno13. The old fake-CLI tests checked inherited isatty only, missing new PTY allocation by real native command runners.
+- Added bubblewrap `--dev /dev` so the native namespace gets its own devpts. A real nested PTY child now reads the mode0600 context successfully. Regression extends runtime coverage to PTY allocation plus child execution/read; existing actual tmux/bubblewrap cases still verify EROFS for formal writes, hidden private control socket, normal scratch/cache/network access, Run archival, leases and descendant cleanup.
+- Focused runtime validation: **11 passed in 3.10 s**. Locked offline sync, Ruff lint/format (117 files), strict mypy (46 files) and CLI help passed. Final full regression: **818 passed in 345.02 s**, exit 0. No model quota was used; independent real-Codex sandbox probing hit a separate socket-metadata prerequisite and is not claimed as end-to-end provider validation. The actual syscall failure and before/after repair were executed, not inferred from file mode alone.
+- No schema, dependency or existing-record migration; current native mounts remain unchanged. User must exit the old native split and start a new one to load the fixed wrapper. Documentation and TODO record this recovery step; real-provider retry remains pending researcher acceptance.
+- Session ID unavailable. All bounded diagnostic/test commands completed; their temporary processes were reaped. The researcher's original native session was inspected read-only and remains untouched. Blockers: none for implementation. Next: researcher retries native Codex and confirms command execution. Commit UI-N1 fix; no push.
+
 ## 2026-11-03 — UI-N1: native discussion on real projects
 
 - Authorization: researcher confirmed that UI-R4 made discussion smoother, then approved connecting the project-context → native discussion → archived draft → confirmed Brief loop. Implemented F4 Native CLI in the existing TUI and `toulmin native PROJECT --root ROOT --agent codex|claude`; Claims/review scope is unchanged.

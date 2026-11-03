@@ -138,6 +138,46 @@ def test_actual_native_worker_protects_project_and_archives_draft(
             native.tmux(socket, "kill-server", check=False)
 
 
+@real_runtime
+def test_protected_native_process_can_allocate_command_pty(native_project, tmp_path):
+    root = native_project
+    view = begin_native(root, "queues", "codex", "Researcher")
+    socket_directory = tmp_path / "control"
+    socket_directory.mkdir()
+    # Inherited isatty() alone does not exercise Codex's unified command runner.
+    # Its first PTY allocation used to fail with EACCES before any file was read.
+    code = """
+import os, subprocess, sys
+master, slave = os.openpty()
+try:
+    command = (
+        "from pathlib import Path; "
+        "assert Path('context.md').read_text().startswith('# Native research session'); "
+        "print('CONTEXT-READ-OK', flush=True)"
+    )
+    child = subprocess.Popen(
+        [sys.executable, '-c', command],
+        stdin=slave, stdout=slave, stderr=slave,
+    )
+    assert child.wait(timeout=5) == 0
+    assert b'CONTEXT-READ-OK' in os.read(master, 4096)
+finally:
+    os.close(master)
+    os.close(slave)
+print('NESTED-PTY-OK')
+"""
+    result = subprocess.run(
+        native.protected_command(
+            root, view.workspace, socket_directory / "socket", [sys.executable, "-c", code]
+        ),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "NESTED-PTY-OK"
+
+
 def process_identity(pid):
     try:
         fields = Path(f"/proc/{pid}/stat").read_text().split()

@@ -315,3 +315,8 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 - [x] Researcher accepted the smoother UI-R4 interaction and authorized connecting the Brief round trip to real projects on 2026-11-03.
 - [x] Freeze real project context, launch a protected native CLI beside the project board, archive its returned draft and Run, and require explicit conflict-checked Brief application. Provide F4/CLI entry, saved-session inspection and explicit interrupted-session recovery; verify temporary-project data integrity, runtime lifecycle and main-TUI refresh.
 - [ ] Researcher accepts the real-project discussion → draft → exit → archive → confirmed Brief workflow. Full native conversation capture and provider-session adoption remain separate work.
+
+### UI-N1 fix — Native command PTY permissions
+
+- [x] Reproduce the reported Codex unified-exec EACCES before command startup; give the outer user namespace its own `/dev`/devpts and verify a newly allocated command PTY can read the mode-0600 context. Preserve formal-path read-only protection, hidden control sockets and process cleanup.
+- [ ] Researcher retries a newly launched native Codex session; an already running split keeps its old mount namespace.
