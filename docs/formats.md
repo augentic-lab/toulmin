@@ -232,3 +232,29 @@ The exact prompt names the current writable workspace and existing earlier works
 paths; naming a path does not freeze its contents. Citation statements remain model-reported.
 Older requests without these optional files load unchanged; no schema migration is needed.
 The existing frozen input snapshots and hashes still refer to supplied context only.
+
+### Native exploration continuation addition
+
+New persistent exploration requests add optional `continuation_sha256` to `task.md` and
+a version-1 `continuation.md` record with exactly these fields: `configuration` (opaque
+SHA256 fingerprint), `mode` (`fresh`/`resume`), `reason`, `anchor` (workspace request ID),
+nullable `previous` (most recent earlier exploration request ID), and nullable `session_id`
+(the native ID requested for resume). The body is empty. The marker requires the exact
+manifest bytes; missing/changed manifests fail validation instead of becoming stateless
+requests. Unmarked manifests are rejected. Existing requests without either file/field
+remain valid and cause a fresh file-based start on their next exploration request.
+
+Reasons are `first-turn`, `explicit-fresh`, `legacy-session`, `configuration-changed`,
+`previous-failed`, `previous-no-session`, `previous-recovered` and `resume`. References
+must match the ordered prior exploration and its successful outcome. A resume inherits
+that request's anchor; a fresh request anchors itself. The actual returned native ID is
+stored in the existing outcome/Run field. The continuation record is also copied into
+the normal Run archive and listed in Run inputs. No seven-object schema changes or
+migration scripts are required; this is an additive auxiliary format change.
+Older TUI releases reject the new request marker as an unknown field; upgrade the reader
+before opening native-continuation requests. Existing records are not rewritten on open.
+
+Resumed requests reuse `anchor/research/` as their writable workspace. Exact prompts,
+tool traces, host-written final-message files, outcomes and Runs stay in each individual
+request/archive. The provider's native session cache is auxiliary runtime state outside
+the workbench, not a replacement for these portable files.

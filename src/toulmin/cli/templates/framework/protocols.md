@@ -207,3 +207,29 @@ composition over supplied context; independent review retains its original restr
 manifest. Search/downloads neither automatically create Evidence nor validate source claims.
 This corrects the earlier reuse of independent-review restrictions for open exploration;
 it leaves formal confirmation, cancellation, timeout and no-automatic-retry rules intact.
+
+### UI2 native exploration continuation
+
+The researcher approved persistent native exploration sessions on 2026-11-03, superseding
+Q27's stateless-only choice because file-replayed final answers omit intermediate tool
+context. Before invocation, the protocol freezes whether to start fresh or resume, the
+reason, predecessor, configuration fingerprint, workspace anchor and requested native ID.
+A hash in the request binds this continuation record to the exact supplied prompt.
+
+Only the latest successful, unrecovered exploration with compatible configuration and
+a reported session ID can be resumed. Brief authoring between exploration turns does not
+replace the native session. A resumed prompt contains current authoritative project files,
+explicit current proposal state and intervening turns; it does not replay already inherited
+dialogue. An applied/dismissed proposal cannot remain implicitly active in inherited context.
+The 100,000-character cap applies to the actual supplied request, including resumed requests.
+
+Configuration changes, legacy/no-ID history, prior failed/cancelled/recovered turns and
+explicit F3 Rebuild select a fresh file-based start. Missing native storage at invocation
+time produces a failed Run; there is no automatic second invocation. The next explicit Send
+may rebuild. Fresh starts and separate Brief authoring retain full-history size limits;
+the application does not silently summarize or drop messages. Opening still invokes no model.
+
+Exploration keeps a stable writable research workspace while each turn retains its own
+archive. Providers may persist native histories in their local cache. Independent review
+and Brief authoring remain fresh ephemeral operations with their existing tool restrictions.
+Formal confirmation, gate ownership, process leases and cancellation rules are unchanged.

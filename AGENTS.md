@@ -10,6 +10,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-03: After rejecting the UI-R2/UI-R3 fixed activity prototypes, the researcher approved a conversation-first workbench. Implement UI2 and the confirmed Brief proposal subset of UI3 as one usable slice; Q30–Q31's broader scope remains unapproved.
 2026-11-03: The researcher authorized network access, search and downloads during exploration. Exploration may use tools and write research materials in its archived workspace; formal object/Brief application remains researcher-confirmed. Independent review retains its restricted inputs.
 
+2026-11-03: The researcher approved resumable native exploration with file-based rebuilding on configuration changes or recovery failure. This supersedes Q27's stateless-only choice; independent reviews and Brief authoring remain fresh isolated operations.
+
 ## Project goals and scope
 
 - Toulmin is a project-based research workbench for a single systems researcher. Open files preserve the claim–evidence–objection network and its full provenance.

@@ -5,6 +5,9 @@ another application from recovering an invocation that is still running elsewher
 """
 
 import getpass
+import hashlib
+import json
+import os
 import shutil
 import threading
 import time
@@ -23,6 +26,7 @@ from toulmin.protocols.discussion import (
     begin_turn,
     dismiss_proposal,
     finish_turn,
+    get_continuation,
     get_turn_prompt,
     load_discussion,
     prepare_research_workspace,
@@ -63,8 +67,38 @@ class DiscussionService:
     def load(self, root: Path, project: str) -> DiscussionView:
         return load_discussion(root, project)
 
-    def context(self, root: Path, project: str) -> str:
-        return preview_context(root, project)
+    def context(
+        self, root: Path, project: str, model: str | None = None, *, fresh: bool = False
+    ) -> str:
+        config = load_config(root)
+        name = model if model is not None else next(iter(config.available), "")
+        entry = config.available.get(name)
+        if entry is None:
+            raise FormatError("Choose a configured model from tools/models.toml")
+        return preview_context(
+            root, project, configuration=self._configuration(root, entry), fresh=fresh
+        )
+
+    @staticmethod
+    def _configuration(root: Path, entry: ModelConfig) -> str:
+        # Keep native cache locations and tool settings in the identity without
+        # persisting credentials from configured environment variables in the record.
+        homes = {
+            key: os.environ.get(key, "") for key in ("HOME", "CODEX_HOME", "CLAUDE_CONFIG_DIR")
+        }
+        homes.update(dict(entry.env))
+        identity = {
+            "profile": "persistent-exploration-v1",
+            "root": str(root.absolute()),
+            "alias": entry.name,
+            "adapter": entry.adapter.name,
+            "model": entry.model,
+            "command": shutil.which(entry.command, path=dict(entry.env).get("PATH"))
+            or entry.command,
+            "extra_args": entry.extra_args,
+            "environment": homes,
+        }
+        return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
     def active(self, root: Path, project: str) -> bool:
         with self._lock:
@@ -76,7 +110,14 @@ class DiscussionService:
             return self._errors.get(self._key(root, project))
 
     def start(
-        self, root: Path, project: str, text: str, model: str, operation: str = "explore"
+        self,
+        root: Path,
+        project: str,
+        text: str,
+        model: str,
+        operation: str = "explore",
+        *,
+        fresh: bool = False,
     ) -> str:
         with self._lock:
             if self._closed:
@@ -99,7 +140,16 @@ class DiscussionService:
             lease = self._lease(root, project)
             lease.__enter__()
             try:
-                turn = begin_turn(root, project, text, model, self.actor, operation)
+                turn = begin_turn(
+                    root,
+                    project,
+                    text,
+                    model,
+                    self.actor,
+                    operation,
+                    configuration=self._configuration(root, entry),
+                    fresh=fresh,
+                )
                 prompt = get_turn_prompt(root, project, turn.id)
                 cancel = threading.Event()
                 thread = threading.Thread(
@@ -155,6 +205,7 @@ class DiscussionService:
                     if operation == "explore"
                     else None
                 )
+                continuation = get_continuation(root, project, request)
                 outcome = entry.adapter.run(
                     Session(
                         prompt,
@@ -165,6 +216,9 @@ class DiscussionService:
                         entry.env,
                         cancel,
                         workspace=workspace,
+                        persistent=continuation is not None,
+                        resume_id=continuation.resume_id if continuation else None,
+                        archive_directory=continuation.archive_directory if continuation else None,
                     )
                 )
             except Exception as error:

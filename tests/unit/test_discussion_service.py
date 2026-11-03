@@ -8,7 +8,7 @@ import pytest
 
 from toulmin.application.discussion import DiscussionService
 from toulmin.core.codec import decode
-from toulmin.protocols.discussion import begin_turn
+from toulmin.protocols.discussion import begin_turn, get_continuation
 
 
 @pytest.fixture
@@ -16,18 +16,35 @@ def discussion_bench(workbench, tmp_path):
     program = tmp_path / "fake-model"
     log = tmp_path / "prompts"
     log.mkdir()
+    calls = tmp_path / "invocations"
+    calls.mkdir()
+    native = tmp_path / "native-sessions"
+    native.mkdir()
     program.write_text(
         f"#!{sys.executable}\n"
         "import json, os, pathlib, sys, time, uuid\n"
         "prompt = sys.stdin.read()\n"
+        f"native = pathlib.Path({str(native)!r})\n"
+        "resume = sys.argv[sys.argv.index('--resume')+1] if '--resume' in sys.argv else None\n"
+        "session = resume or str(uuid.uuid4())\n"
+        "state = native / session\n"
+        f"(pathlib.Path({str(calls)!r}) / uuid.uuid4().hex).write_text(json.dumps("
+        "{'args':sys.argv,'session':session,'cwd':str(pathlib.Path.cwd()),'prompt':prompt}))\n"
+        "if resume and (not state.exists() or os.environ.get('FAKE_RESUME_FAIL')):\n"
+        "    print('session unavailable', file=sys.stderr)\n"
+        "    sys.exit(3)\n"
+        "remembered = state.exists()\n"
+        "state.write_text('private tool observation retained by native session')\n"
         "if pathlib.Path.cwd().name == 'research':\n"
         "    pathlib.Path('paper.txt').write_text('Fake downloaded source; unverified.')\n"
         f"pathlib.Path({str(log)!r}, uuid.uuid4().hex).write_text(prompt)\n"
         "if os.environ.get('FAKE_WAIT') == 'yes':\n"
         "    print('partial diagnostics', flush=True)\n"
         "    time.sleep(10)\n"
-        "print(json.dumps({'result': 'The queue depth is still unknown.', "
-        "'session_id': 'fake-session', 'modelUsage': {'fake-model': {}}}))\n"
+        "answer = 'The queue depth is still unknown.'\n"
+        "if remembered: answer += ' Native tool observation remembered.'\n"
+        "print(json.dumps({'result': answer, 'session_id': session, "
+        "'modelUsage': {'fake-model': {}}}))\n"
     )
     program.chmod(0o755)
     (workbench / "tools/models.toml").write_text(
@@ -68,12 +85,16 @@ def test_two_turns_reopen_and_formal_state_unchanged(discussion_bench):
         assert len(turns) == 2 and all(turn.status == "completed" for turn in turns)
         assert len(list(log.iterdir())) == 2
         second = max(log.iterdir(), key=lambda p: p.stat().st_mtime_ns).read_text()
-        assert "First observation" in second
-        assert "The queue depth is still unknown." in second
+        assert "First observation" not in second
+        assert "The queue depth is still unknown." not in second
         assert "Compare this with batching" in second
+        assert turns[0].session_id == turns[1].session_id
+        assert turns[1].session_mode == "resume"
+        assert "Native tool observation remembered" in turns[1].text
         for turn in turns:
             request = root / "projects/demo/runs/conversations/main" / turn.id
-            assert (request / "research/paper.txt").read_text().startswith("Fake downloaded")
+            continuation = get_continuation(root, "demo", turn.id)
+            assert (continuation.workspace / "paper.txt").read_text().startswith("Fake downloaded")
             assert (request / "tool-events.jsonl").is_file()
             assert (request / "tool-stderr.log").is_file()
         assert turns[0].id in second
@@ -90,6 +111,10 @@ def test_two_turns_reopen_and_formal_state_unchanged(discussion_bench):
         assert reopened.load(root, "demo").turns == turns
         assert snapshot(root) == saved
         assert len(list(log.iterdir())) == 2
+        reopened.start(root, "demo", "Continue after restarting the application", "fake")
+        wait_done(reopened, root)
+        latest = reopened.load(root, "demo").turns[-1]
+        assert latest.session_mode == "resume" and latest.session_id == turns[-1].session_id
     finally:
         reopened.close()
 
@@ -171,5 +196,71 @@ def test_brief_generation_keeps_tool_free_profile(discussion_bench):
         assert not (request / "research").exists()
         assert service.load(root, "demo").proposal is not None
         assert "do not" in (request / "prompt.md").read_text().lower()
+    finally:
+        service.close()
+
+
+def test_resume_failure_is_not_retried_and_next_send_rebuilds(discussion_bench, monkeypatch):
+    root, log = discussion_bench
+    service = DiscussionService()
+    try:
+        service.start(root, "demo", "Original idea retained in files", "fake")
+        wait_done(service, root)
+        monkeypatch.setenv("FAKE_RESUME_FAIL", "yes")
+        service.start(root, "demo", "Try to continue", "fake")
+        wait_done(service, root)
+        turns = service.load(root, "demo").turns
+        assert turns[-1].status == "failed"
+        assert turns[-1].session_mode == "resume"
+        assert len(list((log.parent / "invocations").iterdir())) == 2
+        monkeypatch.delenv("FAKE_RESUME_FAIL")
+        service.start(root, "demo", "Explicit retry after unavailable session", "fake")
+        wait_done(service, root)
+        last = service.load(root, "demo").turns[-1]
+        assert last.status == "completed" and last.session_mode == "fresh"
+        assert last.session_id != turns[0].session_id
+        assert last.session_reason == "previous-failed"
+        prompt = (
+            get_continuation(root, "demo", last.id).archive_directory / "prompt.md"
+        ).read_text()
+        assert "Original idea retained in files" in prompt
+        assert "Try to continue" in prompt
+    finally:
+        service.close()
+
+
+def test_explicit_rebuild_and_model_configuration_changes(discussion_bench):
+    root, _ = discussion_bench
+    service = DiscussionService()
+    try:
+        for text, fresh in (("First question", False), ("Reconsider from files", True)):
+            service.start(root, "demo", text, "fake", fresh=fresh)
+            wait_done(service, root)
+        first, second = service.load(root, "demo").turns
+        assert second.session_reason == "explicit-fresh"
+        assert first.session_id != second.session_id
+        config = root / "tools/models.toml"
+        config.write_text(config.read_text() + 'model="different-model"\n')
+        service.start(root, "demo", "Use the changed model configuration", "fake")
+        wait_done(service, root)
+        last = service.load(root, "demo").turns[-1]
+        assert last.session_mode == "fresh" and last.session_reason == "configuration-changed"
+        assert last.session_id != second.session_id
+    finally:
+        service.close()
+
+
+def test_configuration_fingerprint_does_not_archive_environment_secrets(discussion_bench):
+    root, _ = discussion_bench
+    config = root / "tools/models.toml"
+    secret = "a-disposable-test-secret"
+    config.write_text(config.read_text() + f'env = {{ TEST_SECRET = "{secret}" }}\n')
+    service = DiscussionService()
+    try:
+        request = service.start(root, "demo", "Use configured environment", "fake")
+        wait_done(service, root)
+        folder = get_continuation(root, "demo", request).archive_directory
+        assert secret not in (folder / "continuation.md").read_text()
+        assert secret not in (folder / "prompt.md").read_text()
     finally:
         service.close()

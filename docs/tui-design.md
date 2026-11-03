@@ -87,7 +87,7 @@ Proposed interaction:
 
 Manual editor changes auto-save to a working draft, with `Saving`, `Saved` or `Save Failed` feedback. Publishing the draft to brief.md requires `Save Brief`. This separates recoverable typing from a report approved for review. Closing and reopening restores the working draft; no hidden database is required.
 
-For the first release, use file-backed conversation reconstruction rather than relying on vendor session resume. Each turn gets selected context and a new invocation. Long histories require an explicit selection or a reviewable summary with links to the retained original turns; never silently discard history. Changing models starts the next turn with the same visible context selection.
+The original Q27 choice used file-backed conversation reconstruction. On 2026-11-03 the researcher approved native session continuation for exploration, with file-based rebuilding; see [the current workbench guide](discussion-workbench.md#native-continuation-and-recovery). Each turn gets selected context and a new invocation. Long histories require an explicit selection or a reviewable summary with links to the retained original turns; never silently discard history. Changing models starts the next turn with the same visible context selection.
 
 The exploration model has no filesystem write tools. The application validates and writes proposals after the researcher's action. Model names and tool session IDs are provenance strings, never core control branches.
 

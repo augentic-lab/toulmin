@@ -1,4 +1,4 @@
-"""Codex CLI: `codex exec` in a read-only sandbox, ephemeral, from an empty directory.
+"""Codex CLI: isolated ephemeral tasks or persistent sandboxed exploration.
 
 The final message is taken from --output-last-message; the JSONL event stream (--json)
 supplies the thread ID. The read-only sandbox blocks writes, not reads, so isolation
@@ -18,6 +18,7 @@ from toulmin.adapters.base import (
     diagnostics,
     failure_of,
     in_empty_directory,
+    persistence_failure,
     run_process,
 )
 from toulmin.protocols.review import ReviewOutcome
@@ -66,13 +67,11 @@ class Codex:
     def arguments(self, session: Session, directory: Path) -> list[str]:
         self._validate_extra_args(session)
         sandbox = "read-only" if session.workspace is None else "workspace-write"
-        arguments = [session.command, "exec", "--sandbox", sandbox, "--ephemeral"]
+        arguments = [session.command, "exec", "--sandbox", sandbox]
+        if not session.persistent:
+            arguments += ["--ephemeral"]
         arguments += ["--skip-git-repo-check", "--color", "never", "--json"]
-        message = (
-            directory / LAST_MESSAGE
-            if session.workspace is None
-            else directory.parent / LAST_MESSAGE
-        )
+        message = self._message_path(session, directory)
         arguments += ["-C", str(directory), "-o", str(message)]
         if session.model:
             arguments += ["--model", session.model]
@@ -81,6 +80,7 @@ class Codex:
             # instructions from the operator/research workbench configuration.
             arguments += ["--ignore-user-config", "--ignore-rules"]
             for setting in (
+                'sandbox_mode="workspace-write"',
                 'approval_policy="never"',
                 'web_search="live"',
                 "sandbox_workspace_write.network_access=true",
@@ -98,7 +98,15 @@ class Codex:
             if session.workspace is None
             or argument not in ("--ignore-user-config", "--ignore-rules")
         ]
-        return arguments + extras + ["-"]
+        # --sandbox, -C and --color belong to exec, not its resume subcommand.
+        # Keep all policy flags before resume so they apply on every invocation.
+        continuation = [] if session.resume_id is None else ["resume", session.resume_id]
+        return arguments + extras + continuation + ["-"]
+
+    def _message_path(self, session: Session, directory: Path) -> Path:
+        if session.workspace is None:
+            return directory / LAST_MESSAGE
+        return (session.archive_directory or directory.parent) / LAST_MESSAGE
 
     def _validate_extra_args(self, session: Session) -> None:
         controlled = {
@@ -107,6 +115,8 @@ class Codex:
             "--approve-for-me",
             "--full-auto",
             "--dangerously-bypass-approvals-and-sandbox",
+            "--yolo",
+            "--not-so-yolo",
             "--dangerously-bypass-hook-trust",
             "--cd",
             "-C",
@@ -123,6 +133,9 @@ class Codex:
             "--enable",
             "--disable",
             "--search",
+            "--ephemeral",
+            "--last",
+            "--all",
         }
         safe_settings = {
             "model_reasoning_effort",
@@ -133,6 +146,8 @@ class Codex:
         extras = iter(session.extra_args)
         for argument in extras:
             option = argument.split("=", 1)[0]
+            if argument in ("resume", "fork", "review", "--"):
+                raise ValueError(f"extra_args cannot override controlled Codex option {argument}")
             if option in controlled or any(
                 argument.startswith(short) and argument != short
                 for short in ("-s", "-C", "-o", "-p", "-a")
@@ -150,6 +165,9 @@ class Codex:
 
     def run(self, session: Session) -> ReviewOutcome:
         def call(directory: Path) -> tuple[Finished, str]:
+            message = self._message_path(session, directory)
+            if message.exists() or message.is_symlink():
+                raise FileExistsError(f"refusing to overwrite native final message: {message}")
             finished = run_process(
                 self.arguments(session, directory),
                 session.prompt,
@@ -157,11 +175,6 @@ class Codex:
                 directory,
                 session.env,
                 session.cancel,
-            )
-            message = (
-                directory / LAST_MESSAGE
-                if session.workspace is None
-                else directory.parent / LAST_MESSAGE
             )
             text = (
                 message.read_bytes().decode("utf-8", errors="replace") if message.is_file() else ""
@@ -186,6 +199,7 @@ class Codex:
                 thread = event.get("thread_id")
                 session_id = thread if isinstance(thread, str) and thread else None
         model = session.model or f"{self.name} default (not reported)"
+        failure = failure or persistence_failure(session, session_id)
         return ReviewOutcome(
             text=text,
             model=model,

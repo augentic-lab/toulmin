@@ -2,8 +2,8 @@
 
 --tools "" removes every tool, so the session can read nothing beyond the inlined
 prompt. --safe-mode skips CLAUDE.md files, skills, plugins, hooks and MCP servers while
-keeping normal authentication. --no-session-persistence keeps the session fresh and
-out of the operator's resume list; the reported session ID is still recorded.
+keeping normal authentication. Only persistent exploration saves native sessions;
+independent tasks stay fresh and out of the operator's resume list.
 """
 
 import json
@@ -17,6 +17,7 @@ from toulmin.adapters.base import (
     diagnostics,
     failure_of,
     in_empty_directory,
+    persistence_failure,
     run_process,
 )
 from toulmin.protocols.review import ReviewOutcome
@@ -70,7 +71,11 @@ class ClaudeCode:
                 "--mcp-config",
                 '{"mcpServers":{}}',
             ]
-        arguments += ["--safe-mode", "--no-session-persistence"]
+        arguments += ["--safe-mode"]
+        if not session.persistent:
+            arguments += ["--no-session-persistence"]
+        if session.resume_id is not None:
+            arguments += ["--resume", session.resume_id]
         if session.model:
             arguments += ["--model", session.model]
         return arguments + list(session.extra_args)
@@ -99,6 +104,11 @@ class ClaudeCode:
             "--plugin-dir",
             "--plugin-url",
             "--no-session-persistence",
+            "--session-id",
+            "--fork-session",
+            "--from-pr",
+            "--teleport",
+            "--cloud",
             "--resume",
             "-r",
             "--continue",
@@ -109,7 +119,9 @@ class ClaudeCode:
             "--append-system-prompt",
         }
         for argument in session.extra_args:
-            if argument.split("=", 1)[0] in controlled:
+            if argument.split("=", 1)[0] in controlled or any(
+                argument.startswith(short) and argument != short for short in ("-r", "-c", "-w")
+            ):
                 raise ValueError(f"extra_args cannot override controlled Claude option {argument}")
 
     def run(self, session: Session) -> ReviewOutcome:
@@ -167,10 +179,12 @@ class ClaudeCode:
         elif failure is None:
             failure = "unreadable JSON output: expected a JSON object"
         model = session.model or reported or f"{self.name} default (not reported)"
+        native_id = session_id if isinstance(session_id, str) else None
+        failure = failure or persistence_failure(session, native_id)
         return ReviewOutcome(
             text=text,
             model=model,
-            session_id=session_id if isinstance(session_id, str) else None,
+            session_id=native_id,
             duration_seconds=finished.duration_seconds,
             failure=failure,
             log="" if failure is None else diagnostics(finished),

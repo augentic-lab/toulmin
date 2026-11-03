@@ -43,6 +43,23 @@ class Turn:
     failure: str | None
     run: str | None
     archive: str
+    session_mode: str | None = None
+    session_reason: str | None = None
+    session_id: str | None = None
+
+
+@dataclass(frozen=True)
+class Continuation:
+    """An archived native-session decision; reading it never creates a workspace."""
+
+    mode: str
+    reason: str
+    resume_id: str | None
+    workspace: Path
+    archive_directory: Path
+    configuration: str
+    anchor: str
+    previous: str | None
 
 
 @dataclass(frozen=True)
@@ -72,9 +89,11 @@ def _request(repository: Repository, project: str, request_id: str) -> str:
     return relative
 
 
-def _record(repository: Repository, relative: str, fields: set[str]) -> Document:
+def _record(
+    repository: Repository, relative: str, fields: set[str], optional: set[str] | None = None
+) -> Document:
     document = repository.read(relative)
-    mapping(document, document.header, "", fields | {"schema_version"})
+    mapping(document, document.header, "", fields | {"schema_version"}, optional)
     if type(document.header["schema_version"]) is not int or document.header["schema_version"] != 1:
         document.fail("schema_version", "expected integer version 1")
     return document
@@ -153,12 +172,24 @@ def _task(repository: Repository, project: str, request_id: str) -> Document:
             "context_sha256",
             "user_sha256",
         },
+        {"continuation_sha256"},
     )
     h = doc.header
     if h["id"] != request_id:
         doc.fail("id", "request ID differs from directory")
     if h["operation"] not in ("explore", "brief"):
         doc.fail("operation", "expected explore or brief")
+    manifest = repository.path(relative + "/continuation.md")
+    if "continuation_sha256" in h:
+        value = h["continuation_sha256"]
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+            doc.fail("continuation_sha256", "expected lowercase SHA256 digest")
+        if not manifest.is_file():
+            doc.fail("continuation_sha256", "required native continuation manifest is missing")
+        if digest(manifest.read_bytes()) != value:
+            doc.fail("continuation_sha256", "frozen continuation manifest hash mismatch")
+    elif manifest.exists():
+        doc.fail("continuation_sha256", "unexpected continuation manifest on a legacy task")
     if h["status"] not in ("running", "completed", "failed"):
         doc.fail("status", "expected running, completed or failed")
     for key in ("model", "actor", "archive"):
@@ -241,6 +272,139 @@ def _outcome_bytes(document: Document) -> bytes:
     return encode(Document(document.header | {"text": document.body}, ""))
 
 
+def _configuration(value: str | None) -> None:
+    if value is not None and (
+        not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+    ):
+        raise FormatError("discussion.configuration: expected opaque lowercase SHA256 fingerprint")
+
+
+def _continuation_record(repository: Repository, relative: str) -> Document | None:
+    if not repository.path(relative + "/continuation.md").exists():
+        return None
+    doc = _record(
+        repository,
+        relative + "/continuation.md",
+        {"configuration", "mode", "reason", "anchor", "previous", "session_id"},
+    )
+    h = doc.header
+    _configuration(h["configuration"])
+    if h["configuration"] is None:
+        doc.fail("configuration", "a native session requires a configuration fingerprint")
+    for key in ("anchor", "previous"):
+        value = h[key]
+        if (key == "anchor" or value is not None) and (
+            not isinstance(value, str) or not REQUEST_ID.fullmatch(value)
+        ):
+            doc.fail(key, "expected request ID")
+    if h["mode"] not in ("fresh", "resume"):
+        doc.fail("mode", "expected fresh or resume")
+    if h["reason"] not in (
+        "first-turn",
+        "explicit-fresh",
+        "legacy-session",
+        "configuration-changed",
+        "previous-failed",
+        "previous-no-session",
+        "previous-recovered",
+        "resume",
+    ):
+        doc.fail("reason", "unknown continuation reason")
+    if h["session_id"] is not None:
+        validate_text(doc, h["session_id"], "session_id")
+    if doc.body.strip():
+        doc.fail("body", "continuation metadata cannot have a body")
+    return doc
+
+
+def _selection(
+    repository: Repository,
+    project: str,
+    previous: str | None,
+    configuration: str,
+    fresh: bool,
+) -> tuple[str, str, str | None, str | None]:
+    """Return mode, reason, requested session and inherited workspace anchor."""
+    if fresh:
+        return "fresh", "explicit-fresh", None, None
+    if previous is None:
+        return "fresh", "first-turn", None, None
+    task = _task(repository, project, previous)
+    relative = _request(repository, project, previous)
+    if repository.path(relative + "/recovery.md").exists():
+        return "fresh", "previous-recovered", None, None
+    if task.header["status"] != "completed":
+        return "fresh", "previous-failed", None, None
+    prior = _continuation_record(repository, relative)
+    if prior is None:
+        return "fresh", "legacy-session", None, None
+    if prior.header["configuration"] != configuration:
+        return "fresh", "configuration-changed", None, None
+    outcome = _outcome(repository, relative)
+    if outcome is None or outcome.header["failure"] is not None:
+        return "fresh", "previous-failed", None, None
+    if outcome.header["session_id"] is None:
+        return "fresh", "previous-no-session", None, None
+    return "resume", "resume", outcome.header["session_id"], prior.header["anchor"]
+
+
+def _continuation(
+    repository: Repository,
+    project: str,
+    request_id: str,
+    task: Document,
+    *,
+    previous: str | None = None,
+    previous_known: bool = False,
+) -> Continuation | None:
+    relative = _request(repository, project, request_id)
+    doc = _continuation_record(repository, relative)
+    if doc is None:
+        return None
+    if task.header["operation"] != "explore":
+        doc.fail("operation", "only exploration can continue native sessions")
+    h = doc.header
+    if not previous_known:
+        base = repository.path(_base(project), "directory")
+        for path in sorted(base.iterdir()):
+            if path.name >= request_id or path.name.startswith(".new-"):
+                continue
+            prior = _task(repository, project, path.name)
+            if prior.header["operation"] == "explore":
+                previous = path.name
+    if h["previous"] != previous:
+        doc.fail("previous", "expected most recent earlier exploration request")
+    mode, reason, session_id, anchor = _selection(
+        repository, project, previous, h["configuration"], h["reason"] == "explicit-fresh"
+    )
+    if (h["mode"], h["reason"], h["session_id"], h["anchor"]) != (
+        mode,
+        reason,
+        session_id,
+        anchor or request_id,
+    ):
+        doc.fail("mode", "continuation differs from its referenced exploration and outcome")
+    return Continuation(
+        mode,
+        reason,
+        session_id,
+        repository.path(_request(repository, project, h["anchor"]) + "/research"),
+        repository.path(relative, "directory"),
+        h["configuration"],
+        h["anchor"],
+        previous,
+    )
+
+
+def get_continuation(root: Path, project: str, request_id: str) -> Continuation | None:
+    """Read validated native-session metadata, or None for legacy/stateless requests."""
+    repository = Repository(root)
+    repository.project(project)
+    _request(repository, project, request_id)
+    _load(repository, project)
+    return _continuation(repository, project, request_id, _task(repository, project, request_id))
+
+
 def _application(repository: Repository, relative: str, proposal: Document) -> Document | None:
     path = relative + "/application.md"
     if not repository.path(path).exists():
@@ -318,6 +482,7 @@ def _load(repository: Repository, project: str) -> DiscussionView:
         raise FormatError(f"{base}: discussion: expected directory")
     turns: list[Turn] = []
     proposals: list[Proposal] = []
+    previous = None
     for path in sorted(base.iterdir()):
         # Only unpublished staging directories are ignored after process death.
         if (
@@ -329,6 +494,11 @@ def _load(repository: Repository, project: str) -> DiscussionView:
             continue
         relative = _request(repository, project, path.name)
         task = _task(repository, project, path.name)
+        continuation = _continuation(
+            repository, project, path.name, task, previous=previous, previous_known=True
+        )
+        if task.header["operation"] == "explore":
+            previous = path.name
         outcome = _outcome(repository, relative)
         if task.header["status"] != "running" and outcome is None:
             task.fail("status", "terminal task is missing its outcome")
@@ -347,6 +517,9 @@ def _load(repository: Repository, project: str) -> DiscussionView:
                 outcome.header["failure"] if outcome else None,
                 task.header["run"],
                 task.header["archive"],
+                continuation.mode if continuation else None,
+                continuation.reason if continuation else None,
+                outcome.header["session_id"] if outcome else None,
             )
         )
         proposal = _proposal(repository, relative)
@@ -367,7 +540,12 @@ def load_discussion(root: Path, project: str) -> DiscussionView:
 
 
 def _context(
-    repository: Repository, project: str, view: DiscussionView
+    repository: Repository,
+    project: str,
+    view: DiscussionView,
+    *,
+    previous: str | None = None,
+    resume_id: str | None = None,
 ) -> tuple[str, list[tuple[str, bytes]]]:
     sources = ["AGENTS.md", f"projects/{project}/PROJECT.md", f"projects/{project}/brief.md"]
     frozen = [(source, repository.path(source, "file").read_bytes()) for source in sources]
@@ -390,8 +568,20 @@ def _context(
         except UnicodeDecodeError as error:
             raise FormatError(f"{source}: encoding: expected UTF-8") from error
         parts += [f"<<<FILE {source}>>>", value, f"<<<END FILE {source}>>>", ""]
+    if previous is not None:
+        prior_task = _task(repository, project, previous)
+        parts += [
+            "<<<NATIVE CONTINUATION>>>",
+            f"Continue the native session requested as {resume_id}.",
+            f"Previous exploration archive: {prior_task.header['archive']}",
+            "The authoritative files above replace any inherited versions. Only turns since "
+            "the previous exploration follow; earlier conversation is inherited by the session.",
+            "<<<END NATIVE CONTINUATION>>>",
+            "",
+        ]
     parts.append("<<<CONVERSATION>>>")
-    for turn in view.turns:
+    selected = tuple(turn for turn in view.turns if previous is None or turn.id > previous)
+    for turn in selected:
         parts += [f"USER [{turn.id}; {turn.operation}]", turn.user]
         proposal = _proposal(repository, _request(repository, project, turn.id))
         if proposal is not None:
@@ -405,52 +595,88 @@ def _context(
                 "No authoritative answer was completed. Any partial output is retained only "
                 "in the archive.",
             ]
-        if proposal is not None and proposal.status == "pending":
-            parts += [
-                f"<<<UNCONFIRMED WORKING BRIEF {proposal.id}; applying={proposal.applying}>>>",
-                "This is the researcher's current working proposal. It is separate from the "
-                "saved brief above; do not assume that proposal application has completed.",
-                proposal.text,
-                f"<<<END UNCONFIRMED WORKING BRIEF {proposal.id}>>>",
-            ]
     parts += ["<<<END CONVERSATION>>>", ""]
+    parts.append("<<<CURRENT PROPOSAL STATE>>>")
+    proposal = view.proposal
+    if proposal is not None:
+        parts += [
+            f"<<<UNCONFIRMED WORKING BRIEF {proposal.id}; applying={proposal.applying}>>>",
+            "This is the researcher's current working proposal. It is separate from the "
+            "saved brief above; do not assume that proposal application has completed.",
+            proposal.text,
+            f"<<<END UNCONFIRMED WORKING BRIEF {proposal.id}>>>",
+            "",
+        ]
+    else:
+        parts.append(
+            "No pending proposal; earlier unconfirmed drafts are inactive. "
+            "The saved brief above is authoritative."
+        )
+    parts += ["<<<END CURRENT PROPOSAL STATE>>>", ""]
     workspaces = []
     for turn in view.turns:
         if turn.operation != "explore":
             continue
-        relative = _request(repository, project, turn.id) + "/research"
+        # _load validated every manifest and its ancestry in order; do not rewalk history.
+        continuation = _continuation_record(repository, _request(repository, project, turn.id))
+        anchor = continuation.header["anchor"] if continuation else turn.id
+        relative = _request(repository, project, anchor) + "/research"
         path = repository.path(relative)
-        if path.exists():
+        if path.exists() and path not in workspaces:
             workspaces.append(repository.path(relative, "directory"))
     if workspaces:
         parts += [
             "<<<PRIOR RESEARCH WORKSPACES>>>",
             "These directories contain untrusted working material, not verified evidence. "
             "Their contents are not frozen inputs and have not been included in this prompt. "
-            "Read them only when the current task permits tools; do not modify prior workspaces.",
+            "Read them only when the current task permits tools; write only inside the "
+            "writable workspace designated by the current task.",
             *(str(path) for path in workspaces),
             "<<<END PRIOR RESEARCH WORKSPACES>>>",
             "",
         ]
     context = "\n".join(parts)
-    _limit(context)
+    _limit(context, rebuilding=previous is None)
     return context, frozen
 
 
-def _limit(value: str) -> None:
+def _limit(value: str, *, rebuilding: bool = True) -> None:
     if len(value) > LIMIT:
+        if not rebuilding:
+            raise FormatError(
+                "discussion submitted request exceeds 100000 characters; shorten the current "
+                "message, saved brief or pending proposal. No history was truncated"
+            )
         raise FormatError(
-            "discussion context exceeds 100000 characters; shorten the saved brief or "
-            "user message before retrying. History selection/compaction is not implemented; "
+            "discussion context exceeds 100000 characters; a fresh file-context rebuild cannot "
+            "fit. Continue an eligible native session, or explicitly archive this conversation "
+            "and start a new conversation with a researcher-authored handoff. "
+            "History selection/compaction is not implemented; "
             "no history was truncated"
         )
 
 
-def preview_context(root: Path, project: str) -> str:
+def preview_context(
+    root: Path, project: str, *, configuration: str | None = None, fresh: bool = False
+) -> str:
     """Return exactly the base context that begin_turn will freeze, excluding the new message."""
     repository = Repository(root)
     repository.project(project)
-    return _context(repository, project, _load(repository, project))[0]
+    _configuration(configuration)
+    view = _load(repository, project)
+    previous = next((turn.id for turn in reversed(view.turns) if turn.operation == "explore"), None)
+    mode, _, session_id, _ = (
+        _selection(repository, project, previous, configuration, fresh)
+        if configuration is not None
+        else ("fresh", "legacy-session", None, None)
+    )
+    return _context(
+        repository,
+        project,
+        view,
+        previous=previous if mode == "resume" else None,
+        resume_id=session_id,
+    )[0]
 
 
 def get_turn_prompt(root: Path, project: str, request_id: str) -> str:
@@ -465,24 +691,30 @@ def get_turn_files(root: Path, project: str, request_id: str) -> tuple[str, ...]
     repository.project(project)
     doc = _task(repository, project, request_id)
     relative = _request(repository, project, request_id)
-    return tuple(item["snapshot"] for item in doc.header["inputs"]) + (
+    paths = tuple(item["snapshot"] for item in doc.header["inputs"]) + (
         f"{relative}/context.md",
         f"{relative}/user.md",
         f"{relative}/prompt.md",
     )
+    if _continuation(repository, project, request_id, doc) is not None:
+        paths += (f"{relative}/continuation.md",)
+    return paths
 
 
 def _research_workspace(repository: Repository, project: str, request_id: str) -> str:
     task = _task(repository, project, request_id)
     if task.header["operation"] != "explore":
         task.fail("operation", "research workspace requires an explore request")
-    return _request(repository, project, request_id) + "/research"
+    continuation = _continuation(repository, project, request_id, task)
+    anchor = continuation.anchor if continuation else request_id
+    return _request(repository, project, anchor) + "/research"
 
 
 def get_research_workspace(root: Path, project: str, request_id: str) -> Path:
     """Read an existing exploration workspace path without creating or inspecting its files."""
     repository = Repository(root)
     repository.project(project)
+    _load(repository, project)
     return repository.path(_research_workspace(repository, project, request_id), "directory")
 
 
@@ -491,11 +723,20 @@ def prepare_research_workspace(root: Path, project: str, request_id: str) -> Pat
     repository = Repository(root)
     directory = repository.project(project)
     with handoff_mutex(directory):
+        _load(repository, project)
         return _mkdir(repository, _research_workspace(repository, project, request_id))
 
 
 def begin_turn(
-    root: Path, project: str, user: str, model: str, actor: str, operation: str = "explore"
+    root: Path,
+    project: str,
+    user: str,
+    model: str,
+    actor: str,
+    operation: str = "explore",
+    *,
+    configuration: str | None = None,
+    fresh: bool = False,
 ) -> Turn:
     """Freeze the submitted message and complete prompt before a caller starts its model."""
     repository = Repository(root)
@@ -507,6 +748,7 @@ def begin_turn(
             doc.fail(key, "expected LF line endings")
     if operation not in {"explore", "brief"}:
         raise FormatError("discussion.operation: expected explore or brief")
+    _configuration(configuration)
     with handoff_mutex(directory):
         view = _load(repository, project)
         if any(turn.status == "running" for turn in view.turns):
@@ -519,12 +761,27 @@ def begin_turn(
                 "discussion: apply or dismiss the pending brief proposal before starting "
                 "another turn"
             )
-        context, frozen = _context(repository, project, view)
+        previous = next(
+            (turn.id for turn in reversed(view.turns) if turn.operation == "explore"), None
+        )
+        native = configuration is not None and operation == "explore"
+        mode, reason, session_id, anchor = (
+            _selection(repository, project, previous, configuration, fresh)
+            if native and configuration is not None
+            else ("fresh", "legacy-session", None, None)
+        )
+        context, frozen = _context(
+            repository,
+            project,
+            view,
+            previous=previous if mode == "resume" else None,
+            resume_id=session_id,
+        )
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         order = int(datetime.now(UTC).timestamp() * 1_000_000)
         request_id = f"{stamp}-{order:016x}{uuid4().hex[:16]}"
         relative = f"{_base(project)}/{request_id}"
-        research_workspace = repository.path(relative + "/research")
+        research_workspace = repository.path(f"{_base(project)}/{anchor or request_id}/research")
         instruction = (
             "Produce only a complete replacement Markdown brief based on the "
             "conversation and saved brief. This is an unconfirmed proposal; retain "
@@ -543,7 +800,7 @@ def begin_turn(
             "failures and uncertainties honestly.\n"
         )
         prompt = context + f"\n<<<CURRENT USER>>>\n{user}\n<<<END CURRENT USER>>>\n" + instruction
-        _limit(prompt)
+        _limit(prompt, rebuilding=mode != "resume")
         base = _mkdir(repository, _base(project))
         staging = f"{_base(project)}/.new-{request_id}"
         repository.path(staging).mkdir()
@@ -561,6 +818,22 @@ def begin_turn(
             for name, value in (("user.md", user), ("context.md", context), ("prompt.md", prompt)):
                 _ensure(repository, f"{staging}/{name}", value.encode())
             _ensure(repository, f"{staging}/before.md", frozen[2][1])
+            continuation = (
+                Document(
+                    {
+                        "schema_version": 1,
+                        "configuration": configuration,
+                        "mode": mode,
+                        "reason": reason,
+                        "anchor": anchor or request_id,
+                        "previous": previous,
+                        "session_id": session_id,
+                    },
+                    "",
+                )
+                if native
+                else None
+            )
             task = Document(
                 {
                     "schema_version": 1,
@@ -579,7 +852,15 @@ def begin_turn(
                 },
                 "",
             )
+            if continuation is not None:
+                task.header["continuation_sha256"] = digest(encode(continuation))
             _write(repository, f"{staging}/task.md", task)
+            if continuation is not None:
+                _write(
+                    repository,
+                    f"{staging}/continuation.md",
+                    continuation,
+                )
             os.rename(repository.path(staging), repository.path(relative))
             sync_directory(base)
         finally:
@@ -591,6 +872,7 @@ def begin_turn(
 def _finish(repository: Repository, project: str, request_id: str, outcome: ReviewOutcome) -> Turn:
     relative = _request(repository, project, request_id)
     task = _task(repository, project, request_id)
+    _load(repository, project)
     if task.header["status"] != "running":
         return next(turn for turn in _load(repository, project).turns if turn.id == request_id)
     saved = _outcome(repository, relative)
@@ -624,7 +906,10 @@ def _finish(repository: Repository, project: str, request_id: str, outcome: Revi
         _ensure(repository, relative + "/outcome.md", _outcome_bytes(saved))
     archive = task.header["archive"]
     _mkdir(repository, archive)
-    for name in ("prompt.md", "task.md"):
+    names = ["prompt.md", "task.md"]
+    if repository.path(relative + "/continuation.md").exists():
+        names.append("continuation.md")
+    for name in names:
         _ensure(
             repository,
             f"{archive}/{name}",
@@ -649,6 +934,17 @@ def _finish(repository: Repository, project: str, request_id: str, outcome: Revi
                 f"Request: {relative}/task.md. Exact prompt: {archive}/prompt.md. "
                 "Inputs are frozen snapshots; this output makes no formal research ruling.\n"
             )
+            continuation = _continuation(repository, project, request_id, task)
+            if continuation is not None:
+                body += (
+                    f"\nNative session: {continuation.mode} ({continuation.reason}). "
+                    f"Manifest: {archive}/continuation.md. "
+                    f"Requested session: {continuation.resume_id or 'none'}. "
+                    f"Reported session: {saved.header['session_id'] or 'none'}.\n"
+                )
+                if continuation.previous is not None:
+                    prior = _task(repository, project, continuation.previous)
+                    body += f"Previous exploration archive: {prior.header['archive']}.\n"
             if status == "failed":
                 body += f"\n## Failure\n{saved.header['failure']}\n"
             header: dict[str, Any] = {

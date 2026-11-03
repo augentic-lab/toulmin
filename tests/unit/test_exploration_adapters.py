@@ -88,6 +88,7 @@ def test_exploration_downloads_and_tool_trace_survive(tmp_path, fake, adapter):
     args = record["args"]
     assert not any("dangerously" in arg for arg in args)
     if isinstance(adapter, ClaudeCode):
+        assert "--no-session-persistence" in args
         assert args[args.index("--tools") + 1] == "Bash,WebSearch,WebFetch"
         assert args[args.index("--output-format") + 1] == "stream-json"
         assert "--safe-mode" in args and "--restricted" in args
@@ -102,6 +103,7 @@ def test_exploration_downloads_and_tool_trace_survive(tmp_path, fake, adapter):
         assert not sandbox["filesystem"]["disabled"]
         assert sandbox["excludedCommands"] == []
     else:
+        assert "--ephemeral" in args
         assert args[args.index("--sandbox") + 1] == "workspace-write"
         assert 'web_search="live"' in args
         assert "sandbox_workspace_write.network_access=true" in args
@@ -184,6 +186,10 @@ def test_cancelled_exploration_keeps_partial_trace_and_download(tmp_path, fake, 
         ("--profile", "other"),
         ("--enable", "hooks"),
         ("-o/other",),
+        ("--ephemeral",),
+        ("--last",),
+        ("--yolo",),
+        ("resume",),
     ],
 )
 def test_codex_rejects_profile_overrides_before_launch(tmp_path, fake, extra):
@@ -203,6 +209,9 @@ def test_codex_rejects_profile_overrides_before_launch(tmp_path, fake, extra):
         ("--permission-mode=bypassPermissions",),
         ("--allowedTools", "Edit"),
         ("--mcp-config", "other.json"),
+        ("--fork-session",),
+        ("--session-id", "other"),
+        ("-rother",),
     ],
 )
 def test_claude_rejects_profile_overrides_before_launch(tmp_path, fake, extra):

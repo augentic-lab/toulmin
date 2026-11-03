@@ -10,13 +10,14 @@ from textual.widgets import Button, Select, Static, TextArea
 
 from toulmin.application.discussion import DiscussionService
 from toulmin.application.workspace import WorkspaceService
-from toulmin.protocols.discussion import begin_turn, finish_turn
+from toulmin.protocols.discussion import begin_turn, finish_turn, preview_context
 from toulmin.protocols.review import ReviewOutcome
 from toulmin.tui.app import (
     ApplyBrief,
     ContextPreview,
     DocumentView,
     HomeScreen,
+    SessionControls,
     ToulminApp,
     WorkspaceScreen,
 )
@@ -31,13 +32,20 @@ class ControlledDiscussion(DiscussionService):
         self.request = None
         self.running = False
         self.closed = False
+        self.fresh_calls = []
+        self.context_calls = []
 
     def models(self, root):
         return ("test-model",)
 
-    def start(self, root, project, text, model, operation="explore"):
+    def context(self, root, project, model=None, *, fresh=False):
+        self.context_calls.append((model, fresh))
+        return preview_context(root, project)
+
+    def start(self, root, project, text, model, operation="explore", *, fresh=False):
         turn = begin_turn(root, project, text, model, self.actor, operation)
         self.calls.append((project, text, operation))
+        self.fresh_calls.append(fresh)
         self.request = (root, project, turn.id)
         self.running = True
         return turn.id
@@ -435,5 +443,140 @@ def test_shutdown_timer_does_not_refresh_dismantling_workspace(tmp_path, monkeyp
         async with app.run_test() as pilot:
             await pilot.pause()
         app.poll_discussion()  # Already-queued work is harmless after screens are gone.
+
+    asyncio.run(asyncio.wait_for(scenario(), timeout=15))
+
+
+def test_idle_poll_does_not_reload_archives_but_completion_and_errors_do(tmp_path, monkeypatch):
+    async def scenario():
+        root, discussion = prepare(tmp_path)
+        app = ToulminApp(root=root, project="demo", discussion=discussion)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            screen = app.screen
+            original_load = discussion.load
+            reads = []
+            problem = {"message": None}
+
+            def load(root, project):
+                reads.append((root, project))
+                return original_load(root, project)
+
+            monkeypatch.setattr(discussion, "load", load)
+            monkeypatch.setattr(discussion, "error", lambda *_: problem["message"])
+            for _ in range(3):
+                app.poll_discussion()
+            assert reads == []
+            screen.query_one("#composer", TextArea).load_text("Run one request")
+            screen.action_send()
+            assert screen._active
+            reads.clear()
+            discussion.finish("The completed answer is visible")
+            app.poll_discussion()
+            assert len(reads) == 1
+            assert not screen._active
+            assert (
+                "The completed answer is visible"
+                in screen.query_one("#transcript", DocumentView)._markdown
+            )
+            app.poll_discussion()
+            assert len(reads) == 1
+            problem["message"] = "Archiving failed; Recover is required."
+            app.poll_discussion()
+            assert len(reads) == 2
+            assert screen.query_one("#recover-discussion", Button).display
+            assert screen.query_one("#send-message", Button).disabled
+            app.poll_discussion()
+            assert len(reads) == 2
+            problem["message"] = "A different finalization error"
+            app.poll_discussion()
+            assert len(reads) == 3
+
+    asyncio.run(asyncio.wait_for(scenario(), timeout=15))
+
+
+def test_session_rebuild_is_explicit_pending_and_only_consumed_by_send(tmp_path):
+    async def scenario():
+        root, discussion = prepare(tmp_path)
+        app = ToulminApp(root=root, project="demo", discussion=discussion)
+        async with app.run_test(size=(60, 20)) as pilot:
+            await pilot.pause()
+            screen = app.screen
+            await pilot.press("f3")
+            assert isinstance(app.screen, SessionControls)
+            for name in ("#session-rebuild", "#session-continue", "#session-close"):
+                control = app.screen.query_one(name, Button)
+                assert control.region.height > 0
+                assert control.region.bottom <= 20
+                assert control.region.right <= 60
+            assert discussion.calls == []
+            assert await pilot.click("#session-rebuild")
+            assert screen.fresh_session
+            assert "rebuild" in str(screen.query_one("#discussion-status", Static).render())
+            await pilot.click("#show-context")
+            assert isinstance(app.screen, ContextPreview)
+            assert discussion.context_calls[-1] == ("test-model", True)
+            await pilot.press("escape")
+            screen.action_back()
+            await pilot.pause()
+            app.switch_screen(WorkspaceScreen(app.service.open_project(root, "demo")))
+            await pilot.pause()
+            screen = app.screen
+            assert screen.fresh_session
+            screen.propose_brief()
+            assert discussion.fresh_calls == [False]
+            assert screen.fresh_session
+            discussion.finish("# Brief\n\nPending proposal.\n")
+            screen.refresh_discussion()
+            screen.query_one("#composer", TextArea).load_text("Rebuild this conversation")
+            screen.action_send()
+            assert discussion.fresh_calls == [False, True]
+            assert not screen.fresh_session
+            discussion.finish("Rebuilt response")
+            await pilot.press("f3")
+            await pilot.click("#session-rebuild")
+            await pilot.press("f3")
+            await pilot.click("#session-continue")
+            assert not screen.fresh_session
+            assert len(discussion.calls) == 2
+
+    asyncio.run(asyncio.wait_for(scenario(), timeout=25))
+
+
+def test_session_metadata_is_visible_in_transcript_and_details(tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    async def scenario():
+        root, discussion = prepare(tmp_path)
+        discussion.start(root, "demo", "Continue our research", "test-model")
+        discussion.finish("An archived answer")
+        load = discussion.load
+        session_id = "native-session-1234567890"
+
+        def load_with_session(root, project):
+            view = load(root, project)
+            turn = replace(
+                view.turns[0],
+                session_mode="resume",
+                session_reason="resume",
+                session_id=session_id,
+            )
+            return replace(view, turns=(turn,))
+
+        monkeypatch.setattr(discussion, "load", load_with_session)
+        app = ToulminApp(root=root, project="demo", discussion=discussion)
+        async with app.run_test(size=(60, 20)) as pilot:
+            await pilot.pause()
+            screen = app.screen
+            transcript = screen.query_one("#transcript", DocumentView)._markdown
+            assert "Session: resume" in transcript
+            assert session_id[:12] in transcript
+            await pilot.press("f3")
+            summary = str(app.screen.query_one("#session-summary", Static).render())
+            assert "Mode: resume" in summary
+            assert "Reason: resume" in summary
+            assert session_id in summary
+            await pilot.press("escape")
+            assert len(discussion.calls) == 1
 
     asyncio.run(asyncio.wait_for(scenario(), timeout=15))

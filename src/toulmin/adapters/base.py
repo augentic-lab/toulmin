@@ -1,6 +1,7 @@
 """The adapter interface and a process runner with a hard timeout."""
 
 import os
+import re
 import signal
 import subprocess
 import tempfile
@@ -31,6 +32,38 @@ class Session:
     env: tuple[tuple[str, str], ...] = ()  # added to the inherited environment
     cancel: threading.Event | None = None
     workspace: Path | None = None  # explicit exploration scratch directory; None isolates reviews
+    resume_id: str | None = None
+    persistent: bool = False
+    archive_directory: Path | None = None  # this invocation's logs, outside a shared workspace
+
+    def __post_init__(self) -> None:
+        if self.persistent and (self.workspace is None or self.archive_directory is None):
+            raise ValueError("persistent exploration requires a workspace and archive_directory")
+        if self.resume_id is not None:
+            if not self.persistent:
+                raise ValueError("resume_id requires persistent exploration")
+            if not valid_session_id(self.resume_id):
+                raise ValueError("resume_id must be a safe native session identifier")
+        if self.workspace is not None and self.archive_directory is not None:
+            if self.archive_directory.resolve().is_relative_to(self.workspace.resolve()):
+                raise ValueError("archive_directory must be outside the model-writable workspace")
+
+
+def valid_session_id(value: str) -> bool:
+    """Accept opaque CLI identifiers, excluding flags, paths and picker expressions."""
+    return re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", value) is not None
+
+
+def persistence_failure(session: Session, session_id: str | None) -> str | None:
+    if not session.persistent or session_id is None:
+        return None
+    if not valid_session_id(session_id):
+        return "native session identifier invalid; continuity was not established"
+    if session.resume_id is not None and session.resume_id != session_id:
+        return (
+            "native resume returned a different session identifier; continuity was not established"
+        )
+    return None
 
 
 class Adapter(Protocol):
@@ -160,10 +193,10 @@ def in_empty_directory[T](action: Callable[[Path], T]) -> T:
 def archive_tool_trace(session: Session, finished: Finished) -> None:
     """Keep complete tool events outside the model's writable scratch directory.
 
-    The caller supplies one validated, unused workspace per invocation. Unlike the
-    bounded diagnostic tail, these files preserve successful and failed tool use.
+    A persistent workspace can span invocations; its caller supplies a distinct
+    archive_directory each time. These files preserve successful and failed tool use.
     """
     if session.workspace is not None:
-        parent = session.workspace.parent
+        parent = session.archive_directory or session.workspace.parent
         write_atomic(parent / "tool-events.jsonl", finished.stdout.encode("utf-8"))
         write_atomic(parent / "tool-stderr.log", finished.stderr.encode("utf-8"))

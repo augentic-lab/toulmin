@@ -29,6 +29,7 @@ from textual.widgets import (
 
 from toulmin.application.discussion import DiscussionService
 from toulmin.application.workspace import ProjectView, WorkspaceService
+from toulmin.protocols.discussion import Turn
 
 STEPS = ("Setup", "Explore", "Brief", "Key Claims", "Review", "Resolve", "Handoff")
 VIEW_LABELS = {"Setup": "Project", "Explore": "Discussion", "Key Claims": "Claims"}
@@ -463,10 +464,11 @@ class ContextPreview(ModalScreen[None]):
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="dialog"):
-            yield Label("SAVED CONTEXT FOR THE NEXT MESSAGE", classes="dialog-title")
+            yield Label("CONTEXT FOR THE NEXT SEND", classes="dialog-title")
             yield Static(
-                "This full saved context is supplied with your submitted message. "
-                "No conversation is silently truncated. The exact request is archived on Send.",
+                "These saved inputs accompany your new message on the next Send. "
+                "A resumed session retains earlier inputs; a rebuild supplies the full context. "
+                "Your current composer is appended on Send. The exact request is archived.",
                 markup=False,
             )
             with VerticalScroll():
@@ -474,6 +476,59 @@ class ContextPreview(ModalScreen[None]):
             yield Button("Close", id="close-context")
 
     @on(Button.Pressed, "#close-context")
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+
+class SessionControls(ModalScreen[bool | None]):
+    BINDINGS = [Binding("escape", "close", "Close")]
+
+    def __init__(self, model: str, latest: Turn | None, fresh: bool) -> None:
+        super().__init__()
+        self.model = model
+        self.latest = latest
+        self.fresh = fresh
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="dialog", id="session-dialog"):
+            yield Label("EXPLORATION SESSION", classes="dialog-title")
+            with VerticalScroll(id="session-details"):
+                latest = self.latest
+                next_send = "rebuild from files" if self.fresh else "continue when available"
+                details = (
+                    f"Selected model: {self.model}\n"
+                    f"Next Send: {next_send}"
+                    "\nPreference lasts only in this running app.\n\n"
+                )
+                if latest is None:
+                    details += "No exploration request yet."
+                else:
+                    details += (
+                        f"Latest request model: {latest.model}\n"
+                        f"Mode: {latest.session_mode or 'legacy / full file context'}\n"
+                        f"Reason: {latest.session_reason or 'not recorded'}\n"
+                        f"Native session ID: {latest.session_id or 'none reported'}\n"
+                    )
+                details += (
+                    "\nIf native session storage is missing or repeatedly fails, choose Rebuild. "
+                    "This uses the archived conversation. No model runs until Send. "
+                    "Brief proposals always use a separate fresh session."
+                )
+                yield Static(safe_text(details), markup=False, id="session-summary")
+            with Vertical(id="session-actions"):
+                yield Button("Rebuild on next Send", id="session-rebuild", compact=True)
+                yield Button("Continue session", id="session-continue", compact=True)
+                yield Button("Close", id="session-close", compact=True)
+
+    @on(Button.Pressed, "#session-rebuild")
+    def rebuild(self) -> None:
+        self.dismiss(True)
+
+    @on(Button.Pressed, "#session-continue")
+    def continue_session(self) -> None:
+        self.dismiss(False)
+
+    @on(Button.Pressed, "#session-close")
     def action_close(self) -> None:
         self.dismiss(None)
 
@@ -511,6 +566,7 @@ class ApplyBrief(ModalScreen[bool]):
 class WorkspaceScreen(ShellScreen):
     BINDINGS = [
         Binding("f2", "inspector", "Inspector"),
+        Binding("f3", "session", "Session", priority=True),
         Binding("ctrl+enter", "send", "Send", priority=True),
         Binding("escape", "back", "Home"),
     ]
@@ -532,7 +588,9 @@ class WorkspaceScreen(ShellScreen):
         self._load_error = ""
         self._read_failed = False
         self._service_error = False
+        self._observed_service_error: str | None = None
         self._model_error = ""
+        self._latest_exploration: Turn | None = None
 
     def compose(self) -> ComposeResult:
         yield self.brand(self.view.project)
@@ -768,9 +826,13 @@ class WorkspaceScreen(ShellScreen):
         self._load_error = ""
         self._read_failed = False
         self._service_error = bool(error)
+        self._observed_service_error = error
         self._active = active
         self._interrupted = (
             any(turn.status == "running" for turn in discussion.turns) and not active
+        )
+        self._latest_exploration = next(
+            (turn for turn in reversed(discussion.turns) if turn.operation == "explore"), None
         )
         signature = repr((discussion, active))
         if signature != self._discussion_signature:
@@ -785,6 +847,14 @@ class WorkspaceScreen(ShellScreen):
                 parts.append(
                     f"### You · {safe_text(turn.operation)}\n\n{safe_text(turn.user)}\n\n"
                     f"### {safe_text(turn.model)} · {safe_text(label)}\n\n"
+                    + (
+                        f"Session: {safe_text(turn.session_mode)} · "
+                        f"{safe_text(turn.session_reason or 'reason unavailable')}"
+                        + (f" · ID {safe_text(turn.session_id[:12])}" if turn.session_id else "")
+                        + "\n\n"
+                        if turn.session_mode
+                        else ""
+                    )
                     + (
                         safe_text(turn.text)
                         or (
@@ -860,7 +930,11 @@ class WorkspaceScreen(ShellScreen):
                 "Running · waiting for the final response · Stop cancels and archives this attempt."
             )
         else:
-            status = self._model_error or "Ready · Send allows web research · Propose Brief drafts."
+            status = self._model_error or (
+                "Next Send: rebuild from files · F3 Session"
+                if self.fresh_session
+                else "Ready · continue session when available · F3 Session"
+            )
         self.query_one("#discussion-status", Static).update(status)
         pending = self._proposal_id is not None and self._proposal_status == "pending"
         self.query_one("#proposal-editor", TextArea).read_only = (
@@ -885,6 +959,31 @@ class WorkspaceScreen(ShellScreen):
     def action_send(self) -> None:
         self.start_turn("explore")
 
+    @property
+    def fresh_session(self) -> bool:
+        return (self.view.root, self.view.project) in controller(self).fresh_sessions
+
+    def action_session(self) -> None:
+        model = self.query_one("#discussion-model", Select).value
+
+        def choose(fresh: bool | None) -> None:
+            if fresh is not None:
+                key = (self.view.root, self.view.project)
+                if fresh:
+                    controller(self).fresh_sessions.add(key)
+                else:
+                    controller(self).fresh_sessions.discard(key)
+                self.update_controls()
+
+        self.app.push_screen(
+            SessionControls(
+                model if isinstance(model, str) else "none selected",
+                self._latest_exploration,
+                self.fresh_session,
+            ),
+            choose,
+        )
+
     @on(Button.Pressed, "#propose-brief")
     def propose_brief(self) -> None:
         self.start_turn("brief")
@@ -907,11 +1006,18 @@ class WorkspaceScreen(ShellScreen):
             return
         try:
             controller(self).discussion.start(
-                self.view.root, self.view.project, text, model, operation=operation
+                self.view.root,
+                self.view.project,
+                text,
+                model,
+                operation=operation,
+                fresh=self.fresh_session if operation == "explore" else False,
             )
         except (OSError, ValueError, RuntimeError) as exc:
             self.notify(safe_text(str(exc)), severity="error", timeout=10)
             return
+        if operation == "explore":
+            controller(self).fresh_sessions.discard((self.view.root, self.view.project))
         editor.load_text("")
         self.choose_step("Explore")
         self.refresh_discussion()
@@ -935,8 +1041,14 @@ class WorkspaceScreen(ShellScreen):
 
     @on(Button.Pressed, "#show-context")
     def show_context(self) -> None:
+        model = self.query_one("#discussion-model", Select).value
         try:
-            context = controller(self).discussion.context(self.view.root, self.view.project)
+            context = controller(self).discussion.context(
+                self.view.root,
+                self.view.project,
+                model if isinstance(model, str) else None,
+                fresh=self.fresh_session,
+            )
         except (OSError, ValueError, RuntimeError) as exc:
             self.notify(safe_text(str(exc)), severity="error")
             return
@@ -1125,6 +1237,7 @@ class HelpScreen(ModalScreen[None]):
                     "Enter in editors  Insert a newline\n"
                     "Ctrl+Enter        Send a discussion message\n"
                     "F2                Toggle brief / proposal inspector\n"
+                    "F3                Exploration session / rebuild next Send\n"
                     "Escape            Close a dialog / go back\n"
                     "Ctrl+Q            Review quit options\n\n"
                     "Below 120 columns the inspector is toggled.\n"
@@ -1166,6 +1279,7 @@ class ToulminApp(App[None]):
         self.service = service or WorkspaceService()
         self.discussion = discussion or DiscussionService()
         self.composers: dict[tuple[Path, str], str] = {}
+        self.fresh_sessions: set[tuple[Path, str]] = set()
         self.ascii_borders = environ.get("TOULMIN_ASCII", "").lower() in {"1", "true", "yes"}
 
     def on_mount(self) -> None:
@@ -1182,7 +1296,16 @@ class ToulminApp(App[None]):
         # Jobs belong to the service; only the current workspace needs repainting.
         screen = self.screen
         if isinstance(screen, WorkspaceScreen) and screen.is_mounted:
-            screen.refresh_discussion()
+            try:
+                active = self.discussion.active(screen.view.root, screen.view.project)
+                error = self.discussion.error(screen.view.root, screen.view.project)
+            except (OSError, ValueError, RuntimeError):
+                screen.refresh_discussion()
+                return
+            # Read archives while running and once on completion/error changes.
+            # Idle external edits are loaded when reopening the project.
+            if active or screen._active or error != screen._observed_service_error:
+                screen.refresh_discussion()
 
     def on_unmount(self) -> None:
         self.discussion.close()

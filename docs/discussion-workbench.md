@@ -13,12 +13,16 @@ support that conversation; they do not impose a sequence of forms or mandatory C
    already be installed and authenticated. Exploration uses its own tool-enabled sandbox
    profile; independent reviews retain their restricted profile. Opening calls no model.
 3. Type in the composer and select **Send**. Enter inserts newlines. Each explicit Send
-   starts one fresh invocation with the saved context and your message. Exploration can
+   starts a CLI invocation that resumes the latest compatible native exploration session,
+   or creates one from saved files when continuation is unavailable. Exploration can
    search the web, read sources and download materials into its research workspace. The UI remains
    available while waiting for the final answer. **Stop** cancels that project's job.
 4. Use **Context** to inspect the saved inputs for the next message; the current composer
    and operation instruction are appended on Send. Every submitted exact prompt is archived.
-   Model switching carries the same file-backed conversation, without vendor session resume.
+   F3 shows the selected model and native session details. **Rebuild on next Send** starts
+   a new session from files; **Continue session** clears that pending choice. This choice
+   survives navigation within the app, not process exit. Model/configuration changes also
+   rebuild from files. Opening the dialog invokes no model.
 5. When useful, select **Propose Brief**. This is another model invocation that produces
    a full replacement draft. The inspector has **Saved**, **Proposed** and **Changes**.
    Edit the proposal and confirm **Apply to Brief**, or **Dismiss** it. Working edits
@@ -38,10 +42,13 @@ between discussion and inspector on narrower terminals. All labels are English.
 ## Boundaries of this slice
 
 - One conversation per project, one active invocation per project, one pending Brief
-  proposal. The full conversation is used until the 100,000-character request limit;
-  no history is silently dropped. Context selection/summarization is not implemented.
+  proposal. Each submitted request has a 100,000-character limit. Continuation sends current
+  authoritative files/proposal state and intervening turns, inheriting earlier dialogue and
+  tool interactions through the native session. Total archived history may exceed the request
+  limit. Fresh rebuilding and Brief authoring still use full dialogue and can reach the cap;
+  context selection/summarization is not implemented. Native model context limits still apply.
 - Inputs are the workbench instructions, PROJECT, saved Brief, optional last handoff and
-  complete submitted conversation, plus any pending edited Brief labelled unconfirmed.
+  submitted conversation (or its continuation delta), plus current authoritative proposal state.
   Exploration may additionally search/read/download using enabled tools. Prior research
   workspace paths are included so downloaded files can be revisited. Arbitrary attachment
   selection is not implemented. Failed partial output stays visible in archives and is excluded from
@@ -78,14 +85,15 @@ Do not treat the earlier fixed-output prototypes as product acceptance.
 ## Exploration research materials (UI2 follow-up)
 
 The researcher authorized search, network access and downloads on 2026-11-03. Each
-exploration request has a `research/` directory inside its archived conversation request.
+new exploration session has a `research/` directory inside its first archived request.
+Resumed turns reuse that workspace; each turn keeps separate prompts, outcomes and logs.
 Downloads stay there after completion, cancellation or failure. Later exploration turns
 receive prior workspace locations and may read their materials as needed. Merely having
 a downloaded file does not make it verified Evidence or a formal research object.
 
 The prompt asks the model to cite source URLs, access dates, what it actually read
 (abstract/full text/excerpt) and failed accesses. These are model-reported statements,
-not a verified bibliography. Tool event output and stderr are archived beside `research/`
+not a verified bibliography. Tool event output and stderr are archived inside each individual request directory
 as `tool-events.jsonl` and `tool-stderr.log`; availability depends on what the CLI emits.
 Automatic citation extraction and a structured source browser remain future work.
 
@@ -104,3 +112,35 @@ administrator-managed executable path). On openEuler, install missing dependenci
 See [Claude sandboxing](https://code.claude.com/docs/en/sandboxing).
 The Codex profile uses its native workspace-write sandbox, live search and network setting;
 see [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-reference).
+
+## Native continuation and recovery
+
+Exploration uses the CLI's persistent session store in addition to Toulmin's open files.
+The researcher approved this correction after observing that starting fresh each turn
+loses intermediate tool context. Each request records its mode, reason, predecessor,
+workspace anchor, requested session ID and an opaque configuration fingerprint. The
+Run/outcome records the returned ID. The fingerprint covers configured model, adapter,
+executable, options and relevant environment/cache locations without persisting raw
+environment values in the continuation record.
+
+The first turn or explicit rebuild supplies full file context. A compatible next turn
+resumes the preceding successful exploration's session, including after TUI restart.
+Brief authoring does not replace it; intervening messages and current proposal state
+are supplied on the next exploration turn. Saved files and proposal state explicitly
+supersede inherited versions, including an applied or dismissed draft.
+
+A changed configuration, legacy request without native metadata, failed/cancelled/recovered
+turn or missing reported ID causes the next explicit Send to start fresh from files. If
+the native session is unavailable, that invocation is archived as failed; no automatic
+second call occurs. Send again or choose F3 Rebuild. Corrupt/missing continuation metadata
+produces an error instead of silently sending a partial-context prompt to a new session.
+
+Native histories remain in the CLI's local cache. Moving the workbench or deleting that
+cache can require rebuilding. Toulmin's files remain the portable record; replaying final
+messages cannot reproduce all native working state. Tool traces and research materials
+are retained for inspection. Workspace contents are mutable working material, not immutable
+source snapshots. Independent review and Brief authoring never resume exploration sessions.
+
+Idle projects are not watched for external file changes; reopen the project to reload
+edits made outside Toulmin. Automated tests use fake CLIs; real-model continuity and
+long-session research usability still require a user trial.

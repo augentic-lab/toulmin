@@ -123,6 +123,10 @@ ModalScreen { align: center middle; background: #060d14 75%; }
 #quit-actions { height: auto; }
 #quit-actions Button { width: 100%; }
 HelpScreen .small-dialog { height: 85%; }
+#session-dialog { height: 90%; }
+#session-details { height: 1fr; }
+#session-actions { height: 3; }
+#session-actions Button { width: 100%; height: 1; min-height: 1; border: none; padding: 0 1; }
 .ascii #home-card, .ascii .pane, .ascii #navigation,
 .ascii #project-list-pane, .ascii #project-preview-pane {
     border: ascii #395364;
