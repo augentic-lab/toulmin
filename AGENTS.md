@@ -8,6 +8,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-02: The researcher approved TUI decisions Q25–Q29. Implement UI1–UI5 next, one task per session; C4/C5 remain pending. Development may be delegated to GPT-6.1 Sol with high reasoning, with root-agent integration and verification.
 2026-11-02: The researcher then asked for C4 (synthesize, crossval) ahead of UI2; it is implemented. UI2–UI5 and C5 remain.
 2026-11-03: After rejecting the UI-R2/UI-R3 fixed activity prototypes, the researcher approved a conversation-first workbench. Implement UI2 and the confirmed Brief proposal subset of UI3 as one usable slice; Q30–Q31's broader scope remains unapproved.
+2026-11-03: The researcher authorized network access, search and downloads during exploration. Exploration may use tools and write research materials in its archived workspace; formal object/Brief application remains researcher-confirmed. Independent review retains its restricted inputs.
 
 ## Project goals and scope
 

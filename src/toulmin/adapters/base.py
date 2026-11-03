@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from toulmin.core.atomic import write_atomic
 from toulmin.protocols.review import ReviewOutcome
 
 LOG_LIMIT = 20_000
@@ -29,6 +30,7 @@ class Session:
     extra_args: tuple[str, ...] = ()
     env: tuple[tuple[str, str], ...] = ()  # added to the inherited environment
     cancel: threading.Event | None = None
+    workspace: Path | None = None  # explicit exploration scratch directory; None isolates reviews
 
 
 class Adapter(Protocol):
@@ -153,3 +155,15 @@ def in_empty_directory[T](action: Callable[[Path], T]) -> T:
     """Run in a fresh empty directory, so no project instruction file is discovered."""
     with tempfile.TemporaryDirectory(prefix="toulmin-session-") as directory:
         return action(Path(directory))
+
+
+def archive_tool_trace(session: Session, finished: Finished) -> None:
+    """Keep complete tool events outside the model's writable scratch directory.
+
+    The caller supplies one validated, unused workspace per invocation. Unlike the
+    bounded diagnostic tail, these files preserve successful and failed tool use.
+    """
+    if session.workspace is not None:
+        parent = session.workspace.parent
+        write_atomic(parent / "tool-events.jsonl", finished.stdout.encode("utf-8"))
+        write_atomic(parent / "tool-stderr.log", finished.stderr.encode("utf-8"))

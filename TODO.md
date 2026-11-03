@@ -284,6 +284,7 @@ UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. On 2026
 
 - [x] UI1: shell, create/open, recoverable setup, responsive navigation and theme. Automated creation/import/reopen, recovery and keyboard tests cover 120×36, 80×24 and 60×20; actual PTY launch/quit restores terminal settings. Researcher usability acceptance remains in UI5.
 - [x] UI2: durable discussion and cancellable model jobs. Submitted turns reconstruct model-independent context, archive exact prompts/outputs and Runs, survive reopening without retries, and support scoped cancellation and explicit recovery. Fake-CLI and headless checks verify behavior; researcher usability acceptance remains in UI5.
+- [x] UI2 research tools follow-up: allow exploration search/network/downloads in retained per-request workspaces; preserve tool traces and prior-material access; keep Brief/review tool restrictions and formal-write confirmation. Verify separate adapter profiles, cancellation/material retention, old-record compatibility and fake-CLI integration. Live research usability remains a researcher trial.
 - [ ] UI3: brief proposals and confirmed key Claims. The Brief subset is implemented: editable working drafts, Saved/Proposed/Changes, explicit apply/dismiss, external-edit refusal and interrupted application recovery. Claim extraction/confirmation remains pending.
 - [ ] UI4: snapshot-based reviews and resolution.
 - [ ] UI5: handoff, upgrades and researcher trial.

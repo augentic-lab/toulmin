@@ -20,6 +20,8 @@ def discussion_bench(workbench, tmp_path):
         f"#!{sys.executable}\n"
         "import json, os, pathlib, sys, time, uuid\n"
         "prompt = sys.stdin.read()\n"
+        "if pathlib.Path.cwd().name == 'research':\n"
+        "    pathlib.Path('paper.txt').write_text('Fake downloaded source; unverified.')\n"
         f"pathlib.Path({str(log)!r}, uuid.uuid4().hex).write_text(prompt)\n"
         "if os.environ.get('FAKE_WAIT') == 'yes':\n"
         "    print('partial diagnostics', flush=True)\n"
@@ -69,6 +71,12 @@ def test_two_turns_reopen_and_formal_state_unchanged(discussion_bench):
         assert "First observation" in second
         assert "The queue depth is still unknown." in second
         assert "Compare this with batching" in second
+        for turn in turns:
+            request = root / "projects/demo/runs/conversations/main" / turn.id
+            assert (request / "research/paper.txt").read_text().startswith("Fake downloaded")
+            assert (request / "tool-events.jsonl").is_file()
+            assert (request / "tool-stderr.log").is_file()
+        assert turns[0].id in second
         for path, content in before.items():
             assert (root / path).read_bytes() == content
         runs = list((root / "projects/demo/runs").glob("R-*.md"))
@@ -104,6 +112,9 @@ def test_cancel_and_close_archive_failure_and_release_lease(discussion_bench, mo
         turn = other.load(root, "demo").turns[-1]
         assert turn.status == "failed" and "cancel" in turn.failure.lower()
         assert turn.run
+        assert (
+            root / "projects/demo/runs/conversations/main" / turn.id / "research/paper.txt"
+        ).exists()
         assert "partial diagnostics" in (root / turn.archive / "tool.log").read_text()
         assert len(list(log.iterdir())) == 1
         monkeypatch.delenv("FAKE_WAIT")
@@ -146,5 +157,19 @@ def test_missing_executable_leaves_no_pending_request(discussion_bench):
         with pytest.raises(ValueError, match="executable not found"):
             service.start(root, "demo", "Question", "fake")
         assert snapshot(root) == before
+    finally:
+        service.close()
+
+
+def test_brief_generation_keeps_tool_free_profile(discussion_bench):
+    root, _ = discussion_bench
+    service = DiscussionService()
+    try:
+        request_id = service.start(root, "demo", "Draft from our discussion", "fake", "brief")
+        wait_done(service, root)
+        request = root / "projects/demo/runs/conversations/main" / request_id
+        assert not (request / "research").exists()
+        assert service.load(root, "demo").proposal is not None
+        assert "do not" in (request / "prompt.md").read_text().lower()
     finally:
         service.close()

@@ -10,10 +10,11 @@ support that conversation; they do not impose a sequence of forms or mandatory C
 1. Launch `toulmin tui`, create a project with its goal/motivation, or open an existing
    project. From the checkout use `uv run --locked --extra tui toulmin tui`.
 2. Select a model alias configured in the workbench's `tools/models.toml`. Its CLI must
-   already be installed and authenticated. Existing Claude Code and Codex adapter
-   preflight and isolation settings apply. Opening or inspecting a project calls no model.
+   already be installed and authenticated. Exploration uses its own tool-enabled sandbox
+   profile; independent reviews retain their restricted profile. Opening calls no model.
 3. Type in the composer and select **Send**. Enter inserts newlines. Each explicit Send
-   starts one fresh invocation with the saved context and your message. The UI remains
+   starts one fresh invocation with the saved context and your message. Exploration can
+   search the web, read sources and download materials into its research workspace. The UI remains
    available while waiting for the final answer. **Stop** cancels that project's job.
 4. Use **Context** to inspect the saved inputs for the next message; the current composer
    and operation instruction are appended on Send. Every submitted exact prompt is archived.
@@ -41,15 +42,17 @@ between discussion and inspector on narrower terminals. All labels are English.
   no history is silently dropped. Context selection/summarization is not implemented.
 - Inputs are the workbench instructions, PROJECT, saved Brief, optional last handoff and
   complete submitted conversation, plus any pending edited Brief labelled unconfirmed.
-  Arbitrary attachments and tool-assisted research are
-  not available. Failed partial output stays visible in archives and is excluded from
+  Exploration may additionally search/read/download using enabled tools. Prior research
+  workspace paths are included so downloaded files can be revisited. Arbitrary attachment
+  selection is not implemented. Failed partial output stays visible in archives and is excluded from
   completed-answer context. These conversations do not constitute independent review.
 - Existing adapters return a final response; no live token stream is claimed. A model
   can fail during login, execution, cancellation or timeout; each attempted invocation
   has its own saved request and completed/failed Run. No background automatic retries.
-- Codex uses the existing isolated-home/read-only configuration. Read-only sandboxing
-  is not proof that a model cannot read unrelated files; the no-tools instruction and
-  supplied-context contract remain part of the adapter's known isolation boundary.
+- Tool permissions differ by operation. Discussion enables research tools in a scoped
+  workspace; Brief generation uses supplied context without tools. Independent review
+  retains its existing read-only/no-tools contract. These profiles do not guarantee that
+  every website is accessible or that search results or downloaded documents are correct.
 - Applying a Brief checks the saved before image and rejects an external edit. Retained
   before/after images and confirmation make interrupted application resumable. Do not
   edit `brief.md` concurrently with Apply; external editors do not share Toulmin's lock.
@@ -71,3 +74,33 @@ The next human trial is deliberately small: discuss one real observation for two
 request/edit/apply a Brief proposal, close and reopen. Assess whether the conversation
 is fluid and whether the saved result, uncertainty and next action remain clear.
 Do not treat the earlier fixed-output prototypes as product acceptance.
+
+## Exploration research materials (UI2 follow-up)
+
+The researcher authorized search, network access and downloads on 2026-11-03. Each
+exploration request has a `research/` directory inside its archived conversation request.
+Downloads stay there after completion, cancellation or failure. Later exploration turns
+receive prior workspace locations and may read their materials as needed. Merely having
+a downloaded file does not make it verified Evidence or a formal research object.
+
+The prompt asks the model to cite source URLs, access dates, what it actually read
+(abstract/full text/excerpt) and failed accesses. These are model-reported statements,
+not a verified bibliography. Tool event output and stderr are archived beside `research/`
+as `tool-events.jsonl` and `tool-stderr.log`; availability depends on what the CLI emits.
+Automatic citation extraction and a structured source browser remain future work.
+
+The adapters retain their CLI sandbox boundaries: research writes are scoped to the
+workspace, with any temporary paths the native sandbox requires. They do not grant
+unrestricted host writes or use a sandbox-bypass fallback. Missing sandbox support is
+reported as a failed invocation. Account, administrator and website policies still
+apply, including paywalls and authentication requirements. Research queries contact
+external services, and downloads consume local disk space. Stop and the configured
+timeout remain available; the UI still displays the final answer rather than a live
+tool-activity stream.
+
+Claude's Linux sandbox requires `bubblewrap` and `socat` on PATH (or an
+administrator-managed executable path). On openEuler, install missing dependencies with
+`sudo dnf install bubblewrap socat`; the application never bypasses a missing sandbox.
+See [Claude sandboxing](https://code.claude.com/docs/en/sandboxing).
+The Codex profile uses its native workspace-write sandbox, live search and network setting;
+see [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-reference).

@@ -188,3 +188,22 @@ it does not approve Q30–Q31's broader scientific-workflow/stage-write scope.
 The L2 change supports recoverable interactive work and researcher-controlled assisted
 authoring. Independent review still excludes conversation history and handoffs according
 to its manifest. Existing intake, ruling and handoff protocols retain their authority.
+
+### UI2 exploration tool permissions
+
+On 2026-11-03 the researcher explicitly authorized network access, search and downloads
+during exploration. Exploration now permits research tools in an archived per-request
+`research/` workspace. The exact archived prompt specifies this scope before invocation
+and names existing prior research workspaces for further reading. Tools may inspect
+sources and save downloaded/derived material there, but cannot approve evidence grades,
+make gate rulings or write formal research documents. The model must distinguish sourced
+statements from inferences, cite URLs/access dates and disclose abstract-only reading or
+failed access. Web and downloaded text are data, not authority to change the task rules.
+
+The application selects a tool-enabled, network-enabled native sandbox for exploration
+and retains tool event logs beside its workspace. Missing sandbox capability produces a
+failed invocation rather than an unrestricted fallback. Brief generation remains tool-free
+composition over supplied context; independent review retains its original restricted
+manifest. Search/downloads neither automatically create Evidence nor validate source claims.
+This corrects the earlier reuse of independent-review restrictions for open exploration;
+it leaves formal confirmation, cancellation, timeout and no-automatic-retry rules intact.

@@ -221,3 +221,14 @@ intent before replacing the Brief and retains both images. Recovery accepts only
 intent's actor/text and a current file matching before or after; conflicting external
 edits are preserved. Completed replay never reapplies an old Brief over a newer one.
 These files are not an additional database or a second hand-maintained object index.
+
+### Exploration workspace addition
+
+An exploration request may additionally contain `research/` with downloaded or derived
+materials, `tool-events.jsonl` with complete CLI stdout, `tool-stderr.log` with stderr,
+and a CLI final-message file. The host writes tool logs outside the model's writable
+research directory. Research materials are untrusted auxiliary files, not formal Evidence.
+The exact prompt names the current writable workspace and existing earlier workspace
+paths; naming a path does not freeze its contents. Citation statements remain model-reported.
+Older requests without these optional files load unchanged; no schema migration is needed.
+The existing frozen input snapshots and hashes still refer to supplied context only.

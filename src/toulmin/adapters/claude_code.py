@@ -1,4 +1,4 @@
-"""Claude Code: `claude -p` with JSON output and no tools.
+"""Claude Code: isolated review or sandboxed exploration in an explicit workspace.
 
 --tools "" removes every tool, so the session can read nothing beyond the inlined
 prompt. --safe-mode skips CLAUDE.md files, skills, plugins, hooks and MCP servers while
@@ -13,6 +13,7 @@ from pathlib import Path
 from toulmin.adapters.base import (
     Finished,
     Session,
+    archive_tool_trace,
     diagnostics,
     failure_of,
     in_empty_directory,
@@ -34,11 +35,82 @@ class ClaudeCode:
         return None  # --safe-mode already skips CLAUDE.md files and other customizations
 
     def arguments(self, session: Session) -> list[str]:
-        arguments = [session.command, "-p", "--output-format", "json", "--tools", ""]
+        self._validate_extra_args(session)
+        arguments = [session.command, "-p", "--output-format"]
+        if session.workspace is None:
+            arguments += ["json", "--tools", ""]
+        else:
+            # Only Bash writes files, and every Bash call must stay sandboxed.
+            # WebFetch(domain:*) also pre-allows HTTP(S) shell downloads through
+            # Claude's proxy without adding a domain allowlist for exploration.
+            settings = {
+                "permissions": {"allow": ["WebSearch", "WebFetch(domain:*)"]},
+                "sandbox": {
+                    "enabled": True,
+                    "failIfUnavailable": True,
+                    "autoAllowBashIfSandboxed": True,
+                    "allowUnsandboxedCommands": False,
+                    "excludedCommands": [],
+                    "filesystem": {"disabled": False},
+                },
+            }
+            arguments += [
+                "stream-json",
+                "--verbose",
+                "--tools",
+                "Bash,WebSearch,WebFetch",
+                "--restricted",
+                "--permission-mode",
+                "dontAsk",
+                "--permission-prompts",
+                "none",
+                "--settings",
+                json.dumps(settings),
+                "--strict-mcp-config",
+                "--mcp-config",
+                '{"mcpServers":{}}',
+            ]
         arguments += ["--safe-mode", "--no-session-persistence"]
         if session.model:
             arguments += ["--model", session.model]
         return arguments + list(session.extra_args)
+
+    def _validate_extra_args(self, session: Session) -> None:
+        controlled = {
+            "-p",
+            "--print",
+            "--output-format",
+            "--tools",
+            "--allowedTools",
+            "--allowed-tools",
+            "--disallowedTools",
+            "--disallowed-tools",
+            "--safe-mode",
+            "--restricted",
+            "--settings",
+            "--setting-sources",
+            "--permission-mode",
+            "--permission-prompts",
+            "--add-dir",
+            "--dangerously-skip-permissions",
+            "--allow-dangerously-skip-permissions",
+            "--mcp-config",
+            "--strict-mcp-config",
+            "--plugin-dir",
+            "--plugin-url",
+            "--no-session-persistence",
+            "--resume",
+            "-r",
+            "--continue",
+            "-c",
+            "--worktree",
+            "-w",
+            "--system-prompt",
+            "--append-system-prompt",
+        }
+        for argument in session.extra_args:
+            if argument.split("=", 1)[0] in controlled:
+                raise ValueError(f"extra_args cannot override controlled Claude option {argument}")
 
     def run(self, session: Session) -> ReviewOutcome:
         def call(directory: Path) -> Finished:
@@ -51,7 +123,10 @@ class ClaudeCode:
                 session.cancel,
             )
 
-        finished = in_empty_directory(call)
+        finished = (
+            in_empty_directory(call) if session.workspace is None else call(session.workspace)
+        )
+        archive_tool_trace(session, finished)
         return self.interpret(session, finished)
 
     def interpret(self, session: Session, finished: Finished) -> ReviewOutcome:
@@ -59,7 +134,21 @@ class ClaudeCode:
         text, session_id, reported = "", None, None
         if finished.stdout:
             try:
-                result = json.loads(finished.stdout)
+                if session.workspace is None:
+                    result = json.loads(finished.stdout)
+                else:
+                    # Native exploration emits JSONL; also accept a single result
+                    # object from compatible wrappers and older CLI versions.
+                    events = [json.loads(line) for line in finished.stdout.splitlines() if line]
+                    results = [
+                        event
+                        for event in events
+                        if isinstance(event, dict)
+                        and (event.get("type") == "result" or "result" in event)
+                    ]
+                    if not results:
+                        raise ValueError("expected a final result event")
+                    result = results[-1]
                 if not isinstance(result, dict):
                     raise ValueError("expected a JSON object")
                 text = result.get("result") or ""

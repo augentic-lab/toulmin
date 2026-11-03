@@ -25,6 +25,7 @@ from toulmin.protocols.discussion import (
     finish_turn,
     get_turn_prompt,
     load_discussion,
+    prepare_research_workspace,
     preview_context,
     recover_turn,
     save_proposal_draft,
@@ -110,6 +111,7 @@ class DiscussionService:
                         prompt,
                         entry,
                         config.timeout_seconds,
+                        operation,
                         cancel,
                         lease,
                     ),
@@ -132,6 +134,7 @@ class DiscussionService:
         prompt: str,
         entry: ModelConfig,
         timeout: float,
+        operation: str,
         cancel: threading.Event,
         lease: AbstractContextManager[None],
     ) -> None:
@@ -147,6 +150,11 @@ class DiscussionService:
                     raise FormatError(problem)
                 if cancel.is_set():
                     raise FormatError("cancelled before the model started")
+                workspace = (
+                    prepare_research_workspace(root, project, request)
+                    if operation == "explore"
+                    else None
+                )
                 outcome = entry.adapter.run(
                     Session(
                         prompt,
@@ -156,6 +164,7 @@ class DiscussionService:
                         entry.extra_args,
                         entry.env,
                         cancel,
+                        workspace=workspace,
                     )
                 )
             except Exception as error:

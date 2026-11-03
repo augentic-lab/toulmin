@@ -14,6 +14,7 @@ from pathlib import Path
 from toulmin.adapters.base import (
     Finished,
     Session,
+    archive_tool_trace,
     diagnostics,
     failure_of,
     in_empty_directory,
@@ -63,12 +64,89 @@ class Codex:
         return None
 
     def arguments(self, session: Session, directory: Path) -> list[str]:
-        arguments = [session.command, "exec", "--sandbox", "read-only", "--ephemeral"]
+        self._validate_extra_args(session)
+        sandbox = "read-only" if session.workspace is None else "workspace-write"
+        arguments = [session.command, "exec", "--sandbox", sandbox, "--ephemeral"]
         arguments += ["--skip-git-repo-check", "--color", "never", "--json"]
-        arguments += ["-C", str(directory), "-o", str(directory / LAST_MESSAGE)]
+        message = (
+            directory / LAST_MESSAGE
+            if session.workspace is None
+            else directory.parent / LAST_MESSAGE
+        )
+        arguments += ["-C", str(directory), "-o", str(message)]
         if session.model:
             arguments += ["--model", session.model]
-        return arguments + list(session.extra_args) + ["-"]
+        if session.workspace is not None:
+            # Do not inherit extra writable roots, hooks or ancestor project
+            # instructions from the operator/research workbench configuration.
+            arguments += ["--ignore-user-config", "--ignore-rules"]
+            for setting in (
+                'approval_policy="never"',
+                'web_search="live"',
+                "sandbox_workspace_write.network_access=true",
+                "sandbox_workspace_write.writable_roots=[]",
+                "sandbox_workspace_write.exclude_slash_tmp=true",
+                "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+                "project_doc_max_bytes=0",
+                "project_root_markers=[]",
+                "features.hooks=false",
+            ):
+                arguments += ["-c", setting]
+        extras = [
+            argument
+            for argument in session.extra_args
+            if session.workspace is None
+            or argument not in ("--ignore-user-config", "--ignore-rules")
+        ]
+        return arguments + extras + ["-"]
+
+    def _validate_extra_args(self, session: Session) -> None:
+        controlled = {
+            "--sandbox",
+            "-s",
+            "--approve-for-me",
+            "--full-auto",
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--dangerously-bypass-hook-trust",
+            "--cd",
+            "-C",
+            "--add-dir",
+            "--worktree",
+            "--profile",
+            "-p",
+            "--output-last-message",
+            "-o",
+            "--output-schema",
+            "--json",
+            "--ask-for-approval",
+            "-a",
+            "--enable",
+            "--disable",
+            "--search",
+        }
+        safe_settings = {
+            "model_reasoning_effort",
+            "model_reasoning_summary",
+            "model_verbosity",
+            "service_tier",
+        }
+        extras = iter(session.extra_args)
+        for argument in extras:
+            option = argument.split("=", 1)[0]
+            if option in controlled or any(
+                argument.startswith(short) and argument != short
+                for short in ("-s", "-C", "-o", "-p", "-a")
+            ):
+                raise ValueError(f"extra_args cannot override controlled Codex option {argument}")
+            if option == "--config" or argument.startswith("-c"):
+                if argument in ("-c", "--config"):
+                    value = next(extras, "")
+                else:
+                    value = (
+                        argument.removeprefix("--config=") if option == "--config" else argument[2:]
+                    )
+                if value.split("=", 1)[0].strip() not in safe_settings:
+                    raise ValueError(f"extra_args cannot override controlled Codex config {value}")
 
     def run(self, session: Session) -> ReviewOutcome:
         def call(directory: Path) -> tuple[Finished, str]:
@@ -80,13 +158,20 @@ class Codex:
                 session.env,
                 session.cancel,
             )
-            message = directory / LAST_MESSAGE
+            message = (
+                directory / LAST_MESSAGE
+                if session.workspace is None
+                else directory.parent / LAST_MESSAGE
+            )
             text = (
                 message.read_bytes().decode("utf-8", errors="replace") if message.is_file() else ""
             )
             return finished, text
 
-        finished, text = in_empty_directory(call)
+        finished, text = (
+            in_empty_directory(call) if session.workspace is None else call(session.workspace)
+        )
+        archive_tool_trace(session, finished)
         return self.interpret(session, finished, text)
 
     def interpret(self, session: Session, finished: Finished, text: str) -> ReviewOutcome:

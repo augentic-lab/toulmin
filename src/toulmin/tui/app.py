@@ -860,7 +860,7 @@ class WorkspaceScreen(ShellScreen):
                 "Running · waiting for the final response · Stop cancels and archives this attempt."
             )
         else:
-            status = self._model_error or "Ready · only Send / Propose Brief starts a model call."
+            status = self._model_error or "Ready · Send allows web research · Propose Brief drafts."
         self.query_one("#discussion-status", Static).update(status)
         pending = self._proposal_id is not None and self._proposal_status == "pending"
         self.query_one("#proposal-editor", TextArea).read_only = (
