@@ -131,3 +131,39 @@ HelpScreen .small-dialog { height: 85%; }
 .ascii Button:focus {
     border: ascii #72e1df;
 }
+
+/* Conversation stays primary; compact mode retains every model action. */
+.workspace-screen > #brand { height: 1; padding: 0 1; }
+.workspace-screen #workspace-status { padding: 0 1; }
+.workspace-screen .panel-title { height: 1; }
+.workspace-screen #navigation { width: 23; }
+#research-scroll { height: 1fr; }
+#research-state { margin: 0 1; }
+.workspace-screen #step-list { height: 7; }
+#transcript { margin: 0 1; }
+#discussion-status { height: 1; padding: 0 1; color: #a2b1b8; }
+#composer { height: 5; min-height: 3; margin: 0 1; }
+#discussion-controls { height: 3; padding: 0 1; }
+#discussion-controls Button { min-width: 6; width: auto; margin-left: 1; }
+#discussion-model { width: 1fr; min-width: 10; }
+#brief-tab { height: 3; }
+#proposal-editor { min-height: 8; height: 1fr; }
+#proposal-state { height: auto; margin: 0 1; }
+#brief-changes { margin: 0 1; }
+#proposal-actions { height: 3; }
+#proposal-actions Button { min-width: 8; width: 1fr; }
+.compact #composer { height: 3; margin: 0; }
+.compact #discussion-controls { height: 2; layout: grid; grid-size: 4 2; grid-columns: 1fr 1fr 1fr 1fr; grid-rows: 1 1; padding: 0; }
+.compact #discussion-model { column-span: 2; width: 100%; height: 1; }
+.compact #discussion-controls Button { margin: 0; width: 100%; height: 1; min-height: 1; border: none; padding: 0 1; }
+.compact #discussion-status { height: 1; }
+.compact #workspace-toolbar { height: 1; padding: 0; }
+.compact #workspace-toolbar Button, .compact #workspace-toolbar Select { height: 1; border: none; }
+.compact #workspace-home { width: 7; margin: 0; }
+.compact #toggle-inspector { width: 14; margin: 0; }
+.compact #resize-notice { display: none; }
+.compact #brief-tab { height: 1; }
+.compact #proposal-actions { height: 1; }
+.compact #proposal-actions Button { height: 1; min-height: 1; border: none; padding: 0 1; }
+.compact #proposal-editor { min-height: 5; height: 1fr; border: none; }
+.medium #navigation { display: none; }

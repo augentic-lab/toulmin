@@ -7,6 +7,7 @@ out of the operator's resume list; the reported session ID is still recorded.
 """
 
 import json
+import threading
 from pathlib import Path
 
 from toulmin.adapters.base import (
@@ -24,7 +25,12 @@ class ClaudeCode:
     name = "claude-code"
     default_command = "claude"
 
-    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+    def preflight(
+        self,
+        command: str,
+        env: tuple[tuple[str, str], ...],
+        cancel: threading.Event | None = None,
+    ) -> str | None:
         return None  # --safe-mode already skips CLAUDE.md files and other customizations
 
     def arguments(self, session: Session) -> list[str]:
@@ -42,6 +48,7 @@ class ClaudeCode:
                 session.timeout_seconds,
                 directory,
                 session.env,
+                session.cancel,
             )
 
         finished = in_empty_directory(call)
@@ -50,7 +57,7 @@ class ClaudeCode:
     def interpret(self, session: Session, finished: Finished) -> ReviewOutcome:
         failure = failure_of(finished, session.timeout_seconds)
         text, session_id, reported = "", None, None
-        if failure is None:
+        if finished.stdout:
             try:
                 result = json.loads(finished.stdout)
                 if not isinstance(result, dict):
@@ -59,13 +66,17 @@ class ClaudeCode:
                 session_id = result.get("session_id") or None
                 usage = result.get("modelUsage")
                 reported = next(iter(usage), None) if isinstance(usage, dict) else None
-                if result.get("is_error"):
+                if result.get("is_error") and failure is None:
                     failure = f"the tool reported an error: {str(text)[:300]}"
                 if not isinstance(text, str):
                     raise ValueError("result: expected a string")
             except ValueError as error:
-                failure = f"unreadable JSON output: {error}"
-                text = ""
+                failure = failure or f"unreadable JSON output: {error}"
+                # A cancelled CLI may leave incomplete JSON. Retain these exact bytes
+                # as incomplete output rather than dropping them into a truncated log.
+                text = finished.stdout
+        elif failure is None:
+            failure = "unreadable JSON output: expected a JSON object"
         model = session.model or reported or f"{self.name} default (not reported)"
         return ReviewOutcome(
             text=text,

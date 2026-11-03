@@ -2,7 +2,7 @@
 
 A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
-Stage 2 is accepted; structured review, reviewer personas and model adapters (C1–C3) are implemented. The approved next priority is the Python/Textual terminal workspace (UI1–UI5), with C4/C5 still pending.
+Stage 2 is accepted. Structured review, reviewer personas, model adapters, synthesis and cross-validation (C1–C4) are implemented. The Python/Textual workspace now supports durable discussion and confirmed Brief proposals; TUI review/handoff integration and C5 remain pending.
 
 ## Terminal workspace
 
@@ -17,7 +17,11 @@ uv run --locked --extra tui toulmin tui --root /path/to/research --project tail-
 
 After activating the environment, `toulmin tui` works directly. Keep `--extra tui` on subsequent uv commands that synchronize the environment; a base-only sync may remove the optional interface.
 
-UI1 provides New Project/Open Project, a typed goal and typed or imported motivation, read-only project inspection, navigation and a responsive retro terminal layout. Later workflow views are explicitly marked as not implemented. Model conversation, report proposals, review execution and handoff within the TUI arrive in UI2–UI5; existing CLI commands remain available. Set `TOULMIN_ASCII=1` for ASCII borders/branding if your terminal font lacks box-drawing glyphs. The interface uses no animations. Opening a project never rewrites its templates. Interrupted project setup can be resumed explicitly.
+Create or open a project, choose a configured model, and use **Send** to discuss your question. The conversation is the main workspace; the saved research state stays on the left and the Brief is on the right (F2 toggles it in smaller terminals). **Context** shows the saved inputs for the next message. **Propose Brief** makes a separate model call; edit its result, inspect **Changes**, then explicitly **Apply to Brief** or **Dismiss**. A pending proposal does not prevent further discussion. No Claim or stage change is required to chat.
+
+Model tools must be installed and authenticated; configure aliases, model IDs and commands in the research workbench's `tools/models.toml`. Opening a project consumes no model quota. Send/Propose Brief each start one fresh session with saved context; Stop cancels only that project's request. Replies appear when the model finishes, without simulated streaming. Submitted turns, outputs and Runs survive reopening. Incomplete requests require explicit Recover and are never automatically retried.
+
+Read the [discussion workbench guide](docs/discussion-workbench.md) for context, recovery and limitations. Review, Claim intake, rulings and handoff still use the existing CLI commands; their TUI views explain availability. Set `TOULMIN_ASCII=1` for ASCII borders if needed. Opening a project never rewrites templates; interrupted setup can be resumed explicitly.
 
 All interface labels are English. Keyboard navigation is available; F2 toggles the inspector and Ctrl+Q starts the exit flow. Terminal/IME and long-session usability still require researcher trial; headless tests do not establish those experiences.
 

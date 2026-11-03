@@ -1,8 +1,9 @@
-"""Keyboard-first project shell. Deferred research actions are explicitly unavailable."""
+"""Conversation-led workbench with file-backed research state and explicit application."""
 
 from __future__ import annotations
 
 import re
+from difflib import unified_diff
 from hashlib import sha256
 from os import environ
 from pathlib import Path
@@ -26,9 +27,11 @@ from textual.widgets import (
     TextArea,
 )
 
+from toulmin.application.discussion import DiscussionService
 from toulmin.application.workspace import ProjectView, WorkspaceService
 
 STEPS = ("Setup", "Explore", "Brief", "Key Claims", "Review", "Resolve", "Handoff")
+VIEW_LABELS = {"Setup": "Project", "Explore": "Discussion", "Key Claims": "Claims"}
 _TERMINAL_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))")
 
 
@@ -84,8 +87,7 @@ class HomeScreen(ShellScreen):
                 )
                 yield Button("New Project", id="new-project", variant="primary")
                 yield Button("Open Project", id="open-project")
-                yield Static("Project setup & inspection", classes="muted")
-                yield Static("Discussion and research actions are coming later.", classes="muted")
+                yield Static("Explore together. Save changes when you are ready.", classes="muted")
         yield Static(str(controller(self).root), id="home-root", markup=False)
         yield Footer()
 
@@ -452,14 +454,85 @@ def project_summary(view: ProjectView) -> str:
     )
 
 
+class ContextPreview(ModalScreen[None]):
+    BINDINGS = [Binding("escape", "close", "Close")]
+
+    def __init__(self, context: str) -> None:
+        super().__init__()
+        self.context = context
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="dialog"):
+            yield Label("SAVED CONTEXT FOR THE NEXT MESSAGE", classes="dialog-title")
+            yield Static(
+                "This full saved context is supplied with your submitted message. "
+                "No conversation is silently truncated. The exact request is archived on Send.",
+                markup=False,
+            )
+            with VerticalScroll():
+                yield Static(safe_text(self.context), markup=False, id="context-content")
+            yield Button("Close", id="close-context")
+
+    @on(Button.Pressed, "#close-context")
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+
+class ApplyBrief(ModalScreen[bool]):
+    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    def __init__(self, actor: str) -> None:
+        super().__init__()
+        self.actor = actor
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="dialog small-dialog"):
+            yield Label("APPLY TO BRIEF?", classes="dialog-title")
+            yield Static(
+                f"Researcher: {safe_text(self.actor)}\n\n"
+                "Replace the saved brief with your edited proposal. "
+                "The previous version and your confirmation are archived. "
+                "An external edit will prevent replacement. Research stage stays unchanged.",
+                markup=False,
+            )
+            with Horizontal(classes="actions"):
+                yield Button("Cancel", id="cancel-apply", variant="primary")
+                yield Button("Apply to Brief", id="confirm-apply")
+
+    @on(Button.Pressed, "#cancel-apply")
+    def action_cancel(self) -> None:
+        self.dismiss(False)
+
+    @on(Button.Pressed, "#confirm-apply")
+    def confirm(self) -> None:
+        self.dismiss(True)
+
+
 class WorkspaceScreen(ShellScreen):
-    BINDINGS = [Binding("f2", "inspector", "Inspector"), Binding("escape", "back", "Home")]
+    BINDINGS = [
+        Binding("f2", "inspector", "Inspector"),
+        Binding("ctrl+enter", "send", "Send", priority=True),
+        Binding("escape", "back", "Home"),
+    ]
 
     def __init__(self, view: ProjectView) -> None:
-        super().__init__()
+        super().__init__(classes="workspace-screen")
         self.view = view
         self.step = "Setup" if view.setup_pending else "Explore"
         self.inspector_requested: bool | None = None
+        self._discussion_signature = ""
+        self._proposal_id: str | None = None
+        self._proposal_before = ""
+        self._proposal_status = ""
+        self._proposal_applying = False
+        self._proposal_loading = False
+        self._draft_dirty = False
+        self._active = False
+        self._interrupted = False
+        self._load_error = ""
+        self._read_failed = False
+        self._service_error = False
+        self._model_error = ""
 
     def compose(self) -> ComposeResult:
         yield self.brand(self.view.project)
@@ -467,48 +540,86 @@ class WorkspaceScreen(ShellScreen):
         with Horizontal(id="workspace-toolbar"):
             yield Button("Home", id="workspace-home", compact=True)
             yield Select(
-                [(name, name) for name in STEPS],
+                [(VIEW_LABELS.get(name, name), name) for name in STEPS],
                 value=self.step,
                 allow_blank=False,
                 id="step-select",
                 compact=True,
             )
             yield Button("F2 Inspector", id="toggle-inspector", compact=True)
-        yield Static(
-            "COMPACT VIEW · Use the step selector; F2 switches the inspector.", id="resize-notice"
-        )
+        yield Static("F2 switches brief / discussion · Views are optional", id="resize-notice")
         with Horizontal(id="workspace-body"):
             with Vertical(id="navigation"):
-                yield Label("STEPS", classes="panel-title")
-                yield ListView(*(ListItem(Label(name)) for name in STEPS), id="step-list")
-                yield Static(
-                    "Views revisit work.\nThey do not change\nresearch stages.",
-                    id="nav-note",
-                    classes="muted",
+                yield Label("RESEARCH", classes="panel-title")
+                with VerticalScroll(id="research-scroll"):
+                    yield DocumentView(id="research-state")
+                yield Label("VIEWS · OPTIONAL", classes="panel-title")
+                yield ListView(
+                    *(ListItem(Label(VIEW_LABELS.get(name, name))) for name in STEPS),
+                    id="step-list",
                 )
             with Vertical(id="main-pane", classes="pane"):
                 yield Label("", id="main-title", classes="panel-title")
                 with VerticalScroll(id="main-scroll"):
                     yield DocumentView(id="main-content")
+                    yield DocumentView(id="transcript")
                     yield Button("Resume Setup", id="resume-setup", variant="primary")
             with Vertical(id="inspector", classes="pane"):
-                yield Label("SAVED BRIEF", classes="panel-title")
+                yield Select(
+                    [(name, name) for name in ("Saved", "Proposed", "Changes")],
+                    value="Saved",
+                    allow_blank=False,
+                    id="brief-tab",
+                    compact=True,
+                )
                 with VerticalScroll(id="inspector-scroll"):
                     yield DocumentView(id="brief-content")
-                    yield Static(
-                        str(self.view.root / "projects" / self.view.project),
-                        id="project-path",
-                        markup=False,
-                        classes="muted",
-                    )
+                    yield DocumentView(id="brief-changes")
+                    yield TextArea(id="proposal-editor", tab_behavior="focus")
+                    yield Static("", id="proposal-state", markup=False, classes="muted")
+                with Horizontal(id="proposal-actions"):
+                    yield Button("Apply to Brief", id="apply-brief", compact=True)
+                    yield Button("Dismiss", id="dismiss-proposal", compact=True)
+        yield Static("", id="discussion-status", markup=False)
+        yield TextArea(
+            id="composer",
+            placeholder="Discuss the question · Enter inserts a newline",
+            tab_behavior="focus",
+        )
+        with Horizontal(id="discussion-controls"):
+            yield Select([], prompt="Configure model", id="discussion-model", compact=True)
+            yield Button("Send", id="send-message", compact=True, variant="primary")
+            yield Button("Stop", id="stop-message", compact=True)
+            yield Button("Context", id="show-context", compact=True)
+            yield Button("Propose Brief", id="propose-brief", compact=True)
+            yield Button("Recover", id="recover-discussion", compact=True)
         yield Footer()
 
     def on_mount(self) -> None:
-        self.call_after_refresh(self.load_brief)
+        self.load_brief()
+        app = controller(self)
+        self.query_one("#composer", TextArea).load_text(
+            app.composers.get((self.view.root, self.view.project), "")
+        )
+        try:
+            models = app.discussion.models(self.view.root)
+            self.query_one("#discussion-model", Select).set_options(
+                [(name, name) for name in models]
+            )
+            if models:
+                self.query_one("#discussion-model", Select).value = models[0]
+            else:
+                self._model_error = "Configure a discussion model in models.toml before sending."
+        except (OSError, ValueError, RuntimeError) as exc:
+            self._model_error = safe_text(str(exc))
         self.refresh_view()
+        self.refresh_discussion()
         self.query_one("#step-list", ListView).index = STEPS.index(self.step)
-        self.query_one("#step-list", ListView).focus()
         self.update_layout()
+        if self.view.setup_pending:
+            self.query_one("#resume-setup", Button).focus()
+        else:
+            self.query_one("#composer", TextArea).focus()
 
     def load_brief(self) -> None:
         self.query_one("#brief-content", DocumentView).show_document(
@@ -562,7 +673,17 @@ class WorkspaceScreen(ShellScreen):
         self.query_one("#workspace-status", Static).update(
             f"Research stage: {safe_text(view.stage)}  │  {state}"
         )
-        self.query_one("#main-title", Label).update(self.step.upper())
+        objections = "\n".join(f"- {safe_text(issue)}" for issue in view.open_objections)
+        self.query_one("#research-state", DocumentView).show_document(
+            f"**Stage:** {safe_text(view.stage)}\n\n"
+            f"### Goal\n{safe_text(view.goal) or 'No goal saved.'}\n\n"
+            f"### Open objections\n{objections or 'None recorded.'}\n\n"
+            "### Next step\n"
+            + (safe_text(view.next_step) or "Continue discussion; propose a brief when ready.")
+        )
+        self.query_one("#main-title", Label).update(
+            "DISCUSSION" if self.step == "Explore" else self.step.upper()
+        )
         self.query_one("#resume-setup", Button).display = (
             view.setup_pending and self.step == "Setup"
         )
@@ -571,15 +692,14 @@ class WorkspaceScreen(ShellScreen):
             diagnostic = (
                 "## Diagnostics\n\n"
                 + "\n".join(f"- {safe_text(issue)}" for issue in view.diagnostics)
-                + "\n\nAffected writes are disabled. "
-                "Existing files remain available for inspection.\n\n"
+                + "\n\nWrites are disabled. Existing files remain available for inspection.\n\n"
             )
         if self.step == "Setup":
             content = (
                 f"## Goal\n\n{safe_text(view.goal) or 'No goal saved.'}\n\n"
                 f"## Motivation\n\n{safe_text(view.motivation) or 'No motivation recorded.'}\n\n"
                 + (
-                    "Setup is incomplete. Resume uses the previously saved setup intent.\n\n"
+                    "Setup is incomplete. Resume uses the saved setup intent.\n\n"
                     if view.setup_pending
                     else "Setup values are saved.\n\n"
                 )
@@ -587,42 +707,37 @@ class WorkspaceScreen(ShellScreen):
             )
         elif self.step == "Explore":
             content = (
-                "## Start with your research question\n\n"
-                f"{safe_text(view.goal) or 'No goal saved.'}\n\n"
-                "### Discussion · coming later\n\n"
-                "Discussion is not implemented in this shell. No model has been invoked. "
-                "Your saved brief is available in Brief and the inspector.\n\n"
-                "Next: inspect your goal and motivation in Setup, then read the saved Brief."
+                ""
+                if self._discussion_signature
+                else (
+                    "Discuss the question below. **Send** starts a model call. "
+                    "**Context** shows the saved brief and conversation supplied to the model."
+                )
             )
         elif self.step == "Brief":
             content = (
-                "Read-only saved document · Editing and proposals are coming later.\n\n---\n\n"
+                "Saved document · Propose Brief creates an archived draft; "
+                "apply it explicitly in the inspector.\n\n---\n\n"
                 + (safe_text(view.brief) or "No brief saved.")
             )
         elif self.step == "Key Claims":
             content = (
                 "## Key Claims · coming later\n\n"
-                "Candidate extraction, editing and formal confirmation are not implemented here. "
-                "No Claims are created by visiting this view.\n\n"
+                "Candidate extraction and confirmation are not implemented here. "
+                "Claims are optional at this point; continue discussion whenever useful. "
                 "Existing objects remain accessible through the CLI and project files."
             )
         elif self.step == "Review":
             content = (
                 "## Independent Review · coming later\n\n"
-                "Review planning, snapshots and task cards are not implemented here.\n\n"
-                "The existing `toulmin review` CLI remains available. "
+                "Use the existing `toulmin review` CLI for independent review. "
                 "No review starts when you open this view."
             )
         elif self.step == "Resolve":
-            objections = "\n".join(f"- {safe_text(issue)}" for issue in view.open_objections)
             content = (
-                "## Open objections\n\n"
-                f"{objections or 'No open objections in validated objects.'}\n\n"
+                f"## Open objections\n\n{objections or 'None recorded.'}\n\n"
                 "## Resolve · coming later\n\n"
-                "Intake and ruling controls are not implemented here. "
-                "The existing `toulmin intake` and `toulmin rule` CLI commands "
-                "remain available.\n\n"
-                "Every disposition remains an explicit researcher choice."
+                "Use `toulmin intake` and `toulmin rule` for explicit researcher choices."
             )
         else:
             content = (
@@ -630,10 +745,317 @@ class WorkspaceScreen(ShellScreen):
                 f"{safe_text(view.last_handoff or 'No handoff recorded.')}\n\n"
                 f"## Next step\n\n{safe_text(view.next_step) or 'No next step recorded.'}\n\n"
                 "### Handoff authoring · coming later\n\n"
-                "Use the existing `toulmin handoff` CLI for a confirmed handoff. "
-                "Leaving this shell does not create a handoff or Git commit."
+                "Use `toulmin handoff` for a confirmed handoff. "
+                "Leaving does not create a handoff or Git commit."
             )
         self.query_one("#main-content", DocumentView).show_document(diagnostic + content)
+        self.query_one("#transcript").display = self.step == "Explore"
+        self.query_one("#composer").display = self.step == "Explore"
+        self.update_controls()
+
+    def refresh_discussion(self) -> None:
+        """Reload durable output without resetting either editor or scroll on each tick."""
+        app = controller(self)
+        try:
+            discussion = app.discussion.load(self.view.root, self.view.project)
+            active = app.discussion.active(self.view.root, self.view.project)
+            error = app.discussion.error(self.view.root, self.view.project)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self._load_error = safe_text(str(exc))
+            self._read_failed = True
+            self.update_controls()
+            return
+        self._load_error = ""
+        self._read_failed = False
+        self._service_error = bool(error)
+        self._active = active
+        self._interrupted = (
+            any(turn.status == "running" for turn in discussion.turns) and not active
+        )
+        signature = repr((discussion, active))
+        if signature != self._discussion_signature:
+            self._discussion_signature = signature
+            parts = []
+            for turn in discussion.turns:
+                label = (
+                    "Interrupted / resolve before sending"
+                    if (turn.status == "running" and not active)
+                    else turn.status
+                )
+                parts.append(
+                    f"### You · {safe_text(turn.operation)}\n\n{safe_text(turn.user)}\n\n"
+                    f"### {safe_text(turn.model)} · {safe_text(label)}\n\n"
+                    + (
+                        safe_text(turn.text)
+                        or (
+                            "Waiting for the final response…"
+                            if active and turn.status == "running"
+                            else "No completed response."
+                        )
+                    )
+                    + (f"\n\nFailure: {safe_text(turn.failure)}" if turn.failure else "")
+                    + (f"\n\nSaved as {safe_text(turn.run)}." if turn.run else "")
+                )
+            self.query_one("#transcript", DocumentView).show_document("\n\n---\n\n".join(parts))
+            proposal = discussion.proposal
+            if proposal is not None:
+                changed = self._proposal_id != proposal.id
+                self._proposal_id = proposal.id
+                self._proposal_before = proposal.before
+                self._proposal_status = proposal.status
+                self._proposal_applying = proposal.applying
+                if proposal.applying:
+                    self._draft_dirty = False
+                if changed or not self._draft_dirty:
+                    editor = self.query_one("#proposal-editor", TextArea)
+                    if editor.text != proposal.text:
+                        self._proposal_loading = True
+                        editor.load_text(proposal.text)
+                        self.call_after_refresh(self._finish_proposal_loading)
+                if changed:
+                    self.query_one("#brief-tab", Select).value = "Proposed"
+            else:
+                self._proposal_id = None
+                self._proposal_status = ""
+                self._proposal_applying = False
+            self.update_proposal()
+        if error:
+            self._load_error = safe_text(error)
+        self.update_controls()
+
+    def _finish_proposal_loading(self) -> None:
+        self._proposal_loading = False
+
+    def update_controls(self) -> None:
+        if not self.is_mounted:
+            return
+        blocked = bool(self.view.diagnostics or self.view.setup_pending or self._load_error)
+        model = self.query_one("#discussion-model", Select).value
+        unavailable = blocked or bool(self._model_error) or not isinstance(model, str)
+        self.query_one("#send-message", Button).disabled = (
+            unavailable or self._active or self._interrupted
+        )
+        self.query_one("#propose-brief", Button).disabled = (
+            unavailable or self._active or self._interrupted or self._proposal_status == "pending"
+        )
+        self.query_one("#stop-message", Button).disabled = not self._active
+        self.query_one("#recover-discussion", Button).display = (
+            self._interrupted or self._service_error
+        )
+        self.query_one("#recover-discussion", Button).disabled = (
+            bool(self.view.diagnostics or self.view.setup_pending)
+            or self._active
+            or self._read_failed
+        )
+        if self._load_error:
+            status = self._load_error
+        elif self.view.diagnostics or self.view.setup_pending:
+            status = "Read only · resolve diagnostics / finish Setup before sending."
+        elif self._interrupted:
+            status = (
+                "Interrupted / resolve before sending · Recover archives failure; Send retries."
+            )
+        elif self._active:
+            status = (
+                "Running · waiting for the final response · Stop cancels and archives this attempt."
+            )
+        else:
+            status = self._model_error or "Ready · only Send / Propose Brief starts a model call."
+        self.query_one("#discussion-status", Static).update(status)
+        pending = self._proposal_id is not None and self._proposal_status == "pending"
+        self.query_one("#proposal-editor", TextArea).read_only = (
+            blocked or self._active or self._proposal_applying
+        )
+        self.query_one("#apply-brief", Button).disabled = not pending or blocked or self._active
+        self.query_one("#dismiss-proposal", Button).disabled = (
+            not pending or blocked or self._active or self._proposal_applying
+        )
+
+    @on(Select.Changed, "#discussion-model")
+    def model_changed(self) -> None:
+        self.update_controls()
+
+    @on(TextArea.Changed, "#composer")
+    def composer_changed(self) -> None:
+        controller(self).composers[(self.view.root, self.view.project)] = self.query_one(
+            "#composer", TextArea
+        ).text
+
+    @on(Button.Pressed, "#send-message")
+    def action_send(self) -> None:
+        self.start_turn("explore")
+
+    @on(Button.Pressed, "#propose-brief")
+    def propose_brief(self) -> None:
+        self.start_turn("brief")
+
+    def start_turn(self, operation: str) -> None:
+        button = "#send-message" if operation == "explore" else "#propose-brief"
+        if self.query_one(button, Button).disabled:
+            return
+        editor = self.query_one("#composer", TextArea)
+        text = editor.text.strip()
+        if operation == "explore" and not text:
+            self.notify("Write a message before sending.", severity="warning")
+            return
+        if operation == "brief" and not text:
+            text = "Propose an updated brief based on the saved brief and full discussion."
+        model = self.query_one("#discussion-model", Select).value
+        if not isinstance(model, str):
+            return
+        if not self.flush_proposal():
+            return
+        try:
+            controller(self).discussion.start(
+                self.view.root, self.view.project, text, model, operation=operation
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notify(safe_text(str(exc)), severity="error", timeout=10)
+            return
+        editor.load_text("")
+        self.choose_step("Explore")
+        self.refresh_discussion()
+        self.query_one("#main-scroll", VerticalScroll).scroll_end(animate=False)
+
+    @on(Button.Pressed, "#stop-message")
+    def stop_message(self) -> None:
+        try:
+            controller(self).discussion.stop(self.view.root, self.view.project)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notify(safe_text(str(exc)), severity="error")
+        self.refresh_discussion()
+
+    @on(Button.Pressed, "#recover-discussion")
+    def recover_discussion(self) -> None:
+        try:
+            controller(self).discussion.recover(self.view.root, self.view.project)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notify(safe_text(str(exc)), severity="error")
+        self.refresh_discussion()
+
+    @on(Button.Pressed, "#show-context")
+    def show_context(self) -> None:
+        try:
+            context = controller(self).discussion.context(self.view.root, self.view.project)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notify(safe_text(str(exc)), severity="error")
+            return
+        self.app.push_screen(ContextPreview(context))
+
+    @on(Select.Changed, "#brief-tab")
+    def brief_tab_changed(self) -> None:
+        self.update_proposal()
+
+    def update_proposal(self) -> None:
+        tab = self.query_one("#brief-tab", Select).value
+        pending = self._proposal_id is not None and self._proposal_status == "pending"
+        self.query_one("#brief-content").display = tab == "Saved"
+        self.query_one("#proposal-editor").display = tab == "Proposed" and pending
+        self.query_one("#brief-changes").display = tab == "Changes"
+        editor = self.query_one("#proposal-editor", TextArea)
+        changes = (
+            "".join(
+                unified_diff(
+                    self._proposal_before.splitlines(keepends=True),
+                    editor.text.splitlines(keepends=True),
+                    fromfile="Saved brief at proposal",
+                    tofile="Edited proposal",
+                )
+            )
+            if self._proposal_id
+            else "No proposal yet. Use Propose Brief when ready."
+        )
+        self.query_one("#brief-changes", DocumentView).show_document(
+            f"```diff\n{safe_text(changes)}\n```"
+        )
+        blocked = bool(self.view.diagnostics or self.view.setup_pending or self._load_error)
+        editor.read_only = blocked or self._active or self._proposal_applying
+        self.query_one("#apply-brief", Button).disabled = not pending or blocked or self._active
+        self.query_one("#dismiss-proposal", Button).disabled = (
+            not pending or blocked or self._active or self._proposal_applying
+        )
+        self.query_one("#apply-brief", Button).label = (
+            "Resume Apply" if self._proposal_applying else "Apply to Brief"
+        )
+        if self._proposal_applying:
+            self.query_one("#proposal-state", Static).update(
+                "Application interrupted · confirmed text is preserved. "
+                "Resume Apply completes the saved change; editing and dismissal are paused."
+            )
+            return
+        self.query_one("#proposal-state", Static).update(
+            ("Saving draft…" if self._draft_dirty else "Draft saved under runs/")
+            if pending
+            else (f"Proposal {self._proposal_status}." if self._proposal_id else "No proposal yet.")
+        )
+
+    @on(TextArea.Changed, "#proposal-editor")
+    def proposal_changed(self) -> None:
+        if (
+            self._proposal_loading
+            or self._proposal_applying
+            or not self._proposal_id
+            or self._proposal_status != "pending"
+        ):
+            return
+        self._draft_dirty = True
+        self.update_proposal()
+        self.set_timer(0.4, self.flush_proposal)
+
+    def flush_proposal(self) -> bool:
+        if self._proposal_applying or not self._draft_dirty or self._proposal_id is None:
+            return True
+        try:
+            controller(self).discussion.save_draft(
+                self.view.root,
+                self.view.project,
+                self._proposal_id,
+                self.query_one("#proposal-editor", TextArea).text,
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.query_one("#proposal-state", Static).update(f"Save failed: {safe_text(str(exc))}")
+            return False
+        self._draft_dirty = False
+        self.update_proposal()
+        return True
+
+    @on(Button.Pressed, "#apply-brief")
+    def apply_brief(self) -> None:
+        if self.query_one("#apply-brief", Button).disabled or not self.flush_proposal():
+            return
+        proposal_id = self._proposal_id
+        text = self.query_one("#proposal-editor", TextArea).text
+        app = controller(self)
+
+        def confirmed(value: bool | None) -> None:
+            if not value or proposal_id is None:
+                return
+            try:
+                app.discussion.apply(self.view.root, self.view.project, proposal_id, text)
+                self.view = app.service.open_project(self.view.root, self.view.project)
+            except (OSError, ValueError, RuntimeError) as exc:
+                self.notify(safe_text(str(exc)), severity="error", timeout=10)
+                self.refresh_discussion()
+                return
+            self.load_brief()
+            self.query_one("#brief-tab", Select).value = "Saved"
+            self.refresh_view()
+            self.refresh_discussion()
+            self.notify("Brief applied; previous version and confirmation archived.")
+
+        self.app.push_screen(ApplyBrief(app.discussion.actor), confirmed)
+
+    @on(Button.Pressed, "#dismiss-proposal")
+    def dismiss_proposal(self) -> None:
+        if self._proposal_id is None or not self.flush_proposal():
+            return
+        try:
+            controller(self).discussion.dismiss(
+                self.view.root, self.view.project, self._proposal_id
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notify(safe_text(str(exc)), severity="error")
+        self.refresh_discussion()
 
     @on(Button.Pressed, "#resume-setup")
     def resume_setup(self) -> None:
@@ -642,7 +1064,7 @@ class WorkspaceScreen(ShellScreen):
         except (OSError, ValueError, RuntimeError) as exc:
             self.notify(safe_text(str(exc)), severity="error", timeout=10)
             return
-        self.query_one("#brief-content", DocumentView).show_document(safe_text(self.view.brief))
+        self.load_brief()
         self.refresh_view()
 
     @on(Button.Pressed, "#toggle-inspector")
@@ -654,7 +1076,8 @@ class WorkspaceScreen(ShellScreen):
 
     @on(Button.Pressed, "#workspace-home")
     def action_back(self) -> None:
-        self.app.switch_screen(HomeScreen())
+        if self.flush_proposal():
+            self.app.switch_screen(HomeScreen())
 
 
 class QuitScreen(ModalScreen[bool]):
@@ -668,7 +1091,8 @@ class QuitScreen(ModalScreen[bool]):
                 "Setup form values have not been saved and will be discarded."
                 if setup_open
                 else "Saved project files stay on disk. "
-                "This shell creates no handoff or Git commit."
+                "This creates no handoff or Git commit. "
+                "Active model jobs will be stopped and archived before exit."
             )
             yield Static(
                 "Handoff authoring is coming later; the CLI remains available.", classes="muted"
@@ -676,7 +1100,7 @@ class QuitScreen(ModalScreen[bool]):
             with Vertical(id="quit-actions"):
                 yield Button("Cancel", id="cancel-quit", variant="primary")
                 yield Button("Handoff · Unavailable", id="quit-handoff", disabled=True)
-                yield Button("Quit without Handoff", id="confirm-quit")
+                yield Button("Stop jobs & Quit without Handoff", id="confirm-quit")
 
     @on(Button.Pressed, "#cancel-quit")
     def action_cancel(self) -> None:
@@ -696,16 +1120,19 @@ class HelpScreen(ModalScreen[None]):
             with VerticalScroll():
                 yield Static(
                     "Tab / Shift+Tab   Move focus\n"
-                    "Arrows            Navigate project and step lists\n"
+                    "Arrows            Navigate projects and optional views\n"
                     "Enter             Activate a focused control\n"
                     "Enter in editors  Insert a newline\n"
-                    "F2                Toggle the saved brief inspector\n"
+                    "Ctrl+Enter        Send a discussion message\n"
+                    "F2                Toggle brief / proposal inspector\n"
                     "Escape            Close a dialog / go back\n"
                     "Ctrl+Q            Review quit options\n\n"
                     "Below 120 columns the inspector is toggled.\n"
-                    "Below 80 columns or 24 rows use the step selector.\n\n"
-                    "This shell creates and opens projects; discussion and research\n"
-                    "actions are not implemented yet.",
+                    "Below 80 columns or 24 rows use the view selector.\n\n"
+                    "Send / Propose Brief explicitly starts a model call.\n"
+                    "Stop cancels that project’s job and archives failure.\n"
+                    "Quit stops and archives active jobs. Applying a proposal\n"
+                    "requires confirmation. Review/handoff use the CLI.",
                     markup=False,
                 )
             yield Button("Close", id="close-help", variant="primary")
@@ -731,16 +1158,34 @@ class ToulminApp(App[None]):
         root: Path | None = None,
         project: str | None = None,
         service: WorkspaceService | None = None,
+        discussion: DiscussionService | None = None,
     ) -> None:
         super().__init__()
         self.root = root or Path.cwd()
         self.project = project
         self.service = service or WorkspaceService()
+        self.discussion = discussion or DiscussionService()
+        self.composers: dict[tuple[Path, str], str] = {}
         self.ascii_borders = environ.get("TOULMIN_ASCII", "").lower() in {"1", "true", "yes"}
 
     def on_mount(self) -> None:
         self.set_class(self.ascii_borders, "ascii")
         self.call_after_refresh(self.show_initial_screen)
+        self.set_interval(0.4, self.poll_discussion)
+
+    def poll_discussion(self) -> None:
+        # Shutdown stops the app pump before removing children; is_mounted alone
+        # can remain true while a queued timer sees a partially dismantled screen.
+        if not self.is_running or not self.screen_stack:
+            return
+        # A switched-out screen can remain mounted briefly while its children leave.
+        # Jobs belong to the service; only the current workspace needs repainting.
+        screen = self.screen
+        if isinstance(screen, WorkspaceScreen) and screen.is_mounted:
+            screen.refresh_discussion()
+
+    def on_unmount(self) -> None:
+        self.discussion.close()
 
     def show_initial_screen(self) -> None:
         if self.project is None:
@@ -759,6 +1204,10 @@ class ToulminApp(App[None]):
 
         def quit_if_confirmed(confirmed: bool | None) -> None:
             if confirmed:
+                for screen in self.screen_stack:
+                    if isinstance(screen, WorkspaceScreen) and not screen.flush_proposal():
+                        return
+                self.discussion.close()
                 self.exit()
 
         self.push_screen(QuitScreen(), quit_if_confirmed)
@@ -770,4 +1219,8 @@ class ToulminApp(App[None]):
 
 def launch(root: Path | None = None, project: str | None = None) -> None:
     """Run the optional terminal interface; the CLI imports this function lazily."""
-    ToulminApp(root=root, project=project).run()
+    app = ToulminApp(root=root, project=project)
+    try:
+        app.run()
+    finally:
+        app.discussion.close()

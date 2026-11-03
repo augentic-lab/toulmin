@@ -176,4 +176,48 @@ Goal content must fit PROJECT's existing 40-line limit. Motivation is quoted in 
 brief so imported Markdown headings cannot change its section structure; raw source is retained.
 Existing objects and workbenches require no migration. Older commands ignore the setup archive
 as raw material in a runs subdirectory. This is a UI1 storage addition; conversation and report
-proposal formats remain for subsequent UI slices.
+proposal formats are defined below.
+
+## UI2 discussion and Brief proposal archives
+
+This additive auxiliary format leaves the seven object schemas and existing projects
+unchanged. No migration is required. Opening older projects creates no records. All
+metadata documents use the restricted YAML front matter and integer `schema_version: 1`;
+unknown fields/versions are errors. Paths go through the existing repository path checks.
+
+One conversation lives at `projects/<project>/runs/conversations/main/`. Each request
+is a directory `<UTCstamp>-<32hex>` with a time-ordered unique suffix. A complete staged
+directory is published before invoking a tool. Unpublished `.new-*` preparation directories
+are not turns; opening them does not authorize cleanup or a retry.
+
+| File | Metadata / content |
+| --- | --- |
+| `task.md` | `id`, `operation` (`explore`/`brief`), configured `model` alias, requesting `actor`, `created`, direct Run `archive`, `status` (`running`/`completed`/`failed`), nullable `run`, `inputs`, `prompt_sha256`, `context_sha256`, `user_sha256` |
+| `input-N.md` | Exact input snapshots; each `inputs` entry has `source`, `snapshot`, `sha256`. Ordered sources: AGENTS, PROJECT, saved Brief, then the optional handoff named by the frozen PROJECT. |
+| `user.md`, `context.md`, `prompt.md` | Exact submitted message, base context and full request prompt; hashes checked on read. |
+| `before.md` | Exact saved Brief used for this request; identical to its Brief snapshot. |
+| `outcome.md` | `model` reported by the tool, nullable `session_id`, nullable `duration_seconds`, nullable `failure`, `log`, `text`; empty Markdown body. Escaped YAML text retains tool line endings. |
+| `proposal.md` | Brief operations only: `id`, source `run`, `status` (`pending`/`applied`/`dismissed`), `before_sha256`, nullable confirming `actor`/`at`, original `text`; empty body. |
+| `draft.md` | Optional researcher-edited proposal text; does not replace the saved Brief. |
+| `application.md` | Confirmed intent: `id`, `run`, `actor`, `at`, `before_sha256`, `after_sha256`, `status` (`applying`/`applied`); exact confirmed after text as the Markdown body. |
+| `after.md` | Retained exact confirmed after image. |
+| `recovery.md` | Explicit orphan recovery: `actor`, `at`; explanation in the body. |
+
+The normal Run uses the existing direct `runs/<UTCstamp>-discussion-<suffix>/` archive
+contract. That archive holds the initial `task.md`, exact `prompt.md`, `outcome.md`, raw
+`output.md` and `tool.log`. Run `input_files` reference the frozen snapshots plus the
+context/user/prompt, and `role` is `explorer` or `brief-author`. Formal Run status remains
+completed/failed; cancellation/interruption is failed with a Failure section. Task/model
+aliases and reported model names are provenance strings, not vendor enums.
+
+Outcome publication precedes Run creation. Finalization finds an existing Run by its
+archive before allocating an ID, so explicit recovery never duplicates the model call
+or its Run. Terminal task publication follows the Run and any proposal. A saved outcome
+can therefore be finalized after interruption without invoking a model again.
+
+Applying a proposal validates nonempty UTF-8/LF text and existing Brief reference rules,
+then compares the current Brief against the frozen before image. It records the confirmed
+intent before replacing the Brief and retains both images. Recovery accepts only that
+intent's actor/text and a current file matching before or after; conflicting external
+edits are preserved. Completed replay never reapplies an old Brief over a newer one.
+These files are not an additional database or a second hand-maintained object index.

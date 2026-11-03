@@ -8,6 +8,7 @@ directory keeps project AGENTS.md files out of discovery.
 
 import json
 import os
+import threading
 from pathlib import Path
 
 from toulmin.adapters.base import (
@@ -30,7 +31,12 @@ class Codex:
     name = "codex"
     default_command = "codex"
 
-    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+    def preflight(
+        self,
+        command: str,
+        env: tuple[tuple[str, str], ...],
+        cancel: threading.Event | None = None,
+    ) -> str | None:
         """Refuse a home with global instructions, or one that is not logged in."""
         configured = dict(env).get("CODEX_HOME") or os.environ.get("CODEX_HOME")
         home = Path(configured) if configured else Path.home() / ".codex"
@@ -47,7 +53,9 @@ class Codex:
             return f"CODEX_HOME {home} does not exist; {login}"
 
         def status(directory: Path) -> Finished:
-            return run_process([command, "login", "status"], "", LOGIN_TIMEOUT, directory, env)
+            return run_process(
+                [command, "login", "status"], "", LOGIN_TIMEOUT, directory, env, cancel
+            )
 
         finished = in_empty_directory(status)
         if finished.exit_status != 0:
@@ -70,9 +78,12 @@ class Codex:
                 session.timeout_seconds,
                 directory,
                 session.env,
+                session.cancel,
             )
             message = directory / LAST_MESSAGE
-            text = message.read_text("utf-8", errors="replace") if message.is_file() else ""
+            text = (
+                message.read_bytes().decode("utf-8", errors="replace") if message.is_file() else ""
+            )
             return finished, text
 
         finished, text = in_empty_directory(call)
@@ -91,7 +102,7 @@ class Codex:
                 session_id = thread if isinstance(thread, str) and thread else None
         model = session.model or f"{self.name} default (not reported)"
         return ReviewOutcome(
-            text="" if failure else text,
+            text=text,
             model=model,
             session_id=session_id,
             duration_seconds=finished.duration_seconds,

@@ -2,7 +2,7 @@
 
 Status: Q25–Q29 approved on 2026-11-02; UI1 is implemented. The researcher requested an interaction redesign after rejecting the visual result and clarifying the need for explicit research guidance.
 
-Read [TUI v2: guided research workbench](tui-workflow-design.md) for the current proposed interaction model (UI-R1, Q30–Q31 pending). This document retains the earlier baseline and technical contracts; the v2 proposal revises product navigation, guidance and first-release scope, not existing file/protocol authority.
+The researcher rejected UI-R2/UI-R3's fixed activity flow and approved returning to the original interactive workbench on 2026-11-03. The [discussion workbench guide](discussion-workbench.md) describes the implemented conversation-first slice. This document retains its approved technical contracts and broader UI1–UI5 plan. [TUI v2](tui-workflow-design.md) and its prototypes remain unaccepted experiments; Q30–Q31 are not production scope approvals.
 Task: UI0. Python and a terminal interface are agreed directions; the researcher approved Q25–Q29 and authorized implementation. Auxiliary file contracts are specified and validated in their implementation slices.
 Basis: [design](design.md), [formats](formats.md), [protocols](protocols.md), and the researcher's requested create → discuss → brief → claims → review → resolve workflow.
 

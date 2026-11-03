@@ -151,4 +151,40 @@ remain visible, as does incomplete setup. Navigation is independent of PROJECT.s
 
 This L2 behavior note explains the UI1 setup contract and Q25–Q29 scope approval. Existing
 confirmed object intake, rulings, handoff and review protocols remain authoritative. Model
-conversation and automatic draft saving have not been implemented by this slice.
+conversation and automatic draft saving are specified in the subsequent slice below.
+
+## UI2 conversation and confirmed Brief application
+
+The researcher approved restoring the interactive workbench as the primary interface
+on 2026-11-03. This implements Q25–Q28's exploration and Brief proposal permissions;
+it does not approve Q30–Q31's broader scientific-workflow/stage-write scope.
+
+- An explicit Send persists the message, frozen input files and exact prompt before
+  starting one fresh tool invocation. Context includes AGENTS, PROJECT, saved Brief,
+  the referenced last handoff when present, submitted conversation history, and an edited
+  pending proposal labelled as an unconfirmed working draft. Failed
+  partial answers are labelled incomplete and not reused as completed assistant answers.
+  No silent truncation: requests over 100,000 characters are refused. Context selection
+  and arbitrary file attachments are not implemented in this slice.
+- The L3 application owns jobs independently of views; model execution stays out of
+  L1/L2. Only one job per project is allowed. A process lease prevents another application
+  from recovering a live request. Stop/confirmed Quit terminate and reap the corresponding
+  subprocess group, preserving available output and recording failure. A stopped Textual
+  worker alone would not satisfy this requirement. Adapters currently return final output.
+- Opening a project only reads. An orphaned running request is shown as interrupted;
+  explicit Recover finishes already saved output or records failure, never retries a
+  model call. The researcher sends a new request to retry. No periodic quota-consuming
+  action or automatic research ruling is added.
+- Propose Brief is an explicit model operation. The raw result and its Run are archived
+  before a pending proposal appears. The researcher may continue chatting, edit the
+  working draft, compare saved/proposed text, and explicitly apply or dismiss. Resolve
+  a pending proposal before requesting another. Proposal text is not verified evidence.
+- Apply confirms the edited text and actor, checks input validity and the frozen Brief
+  hash, and preserves the before/after images plus intent. Interrupted application resumes
+  the same confirmed payload. It does not overwrite unrelated edits, update Claim statuses,
+  create formal Claims or advance PROJECT.stage. External editors must pause during Apply
+  because they do not participate in Toulmin's advisory lock.
+
+The L2 change supports recoverable interactive work and researcher-controlled assisted
+authoring. Independent review still excludes conversation history and handoffs according
+to its manifest. Existing intake, ruling and handoff protocols retain their authority.

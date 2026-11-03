@@ -27,12 +27,23 @@ class ProjectSnapshot:
 def _brief_errors(
     repository: Repository, project: str, found: list[tuple[int, str]] | None = None
 ) -> list[str]:
-    errors: list[str] = []
     path = repository.path(f"projects/{project}/brief.md", "file")
     try:
         content = path.read_bytes().decode("utf-8")
     except UnicodeDecodeError as error:
         return [f"{path}:1: encoding: expected UTF-8 ({error})"]
+    return brief_text_errors(repository, project, content, found)
+
+
+def brief_text_errors(
+    repository: Repository,
+    project: str,
+    content: str,
+    found: list[tuple[int, str]] | None = None,
+) -> list[str]:
+    """Validate proposed brief text using the same reference rules as saved briefs."""
+    errors: list[str] = []
+    path = repository.path(f"projects/{project}/brief.md")
     if "\r" in content:
         errors.append(f"{path}:1: encoding: expected LF line endings")
     fence = ""

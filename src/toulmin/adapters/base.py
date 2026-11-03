@@ -28,13 +28,19 @@ class Session:
     command: str  # executable name or path
     extra_args: tuple[str, ...] = ()
     env: tuple[tuple[str, str], ...] = ()  # added to the inherited environment
+    cancel: threading.Event | None = None
 
 
 class Adapter(Protocol):
     name: str
     default_command: str
 
-    def preflight(self, command: str, env: tuple[tuple[str, str], ...]) -> str | None:
+    def preflight(
+        self,
+        command: str,
+        env: tuple[tuple[str, str], ...],
+        cancel: threading.Event | None = None,
+    ) -> str | None:
         """Return why sessions would not be clean or could not start, without using quota."""
         ...
 
@@ -47,6 +53,7 @@ class Finished:
     stdout: str
     stderr: str
     duration_seconds: float
+    cancelled: bool = False
 
 
 def run_process(
@@ -55,9 +62,12 @@ def run_process(
     timeout: float,
     cwd: Path,
     env: tuple[tuple[str, str], ...] = (),
+    cancel: threading.Event | None = None,
 ) -> Finished:
-    """Run with the prompt on stdin in a new process group; kill the group on timeout."""
+    """Reap a fresh process group on timeout or cancellation of this invocation."""
     started = time.monotonic()
+    if cancel is not None and cancel.is_set():
+        return Finished(None, "", "", 0.0, cancelled=True)
     process = subprocess.Popen(
         arguments,
         cwd=cwd,
@@ -65,25 +75,43 @@ def run_process(
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
         start_new_session=True,
     )
     with _ACTIVE_LOCK:
         _ACTIVE.add(process.pid)
+    cancelled = False
     try:
-        stdout, stderr = process.communicate(prompt, timeout=timeout)
-        status: int | None = process.returncode
-    except subprocess.TimeoutExpired:
-        # Tool CLIs spawn helpers; kill the whole group so nothing keeps using quota.
+        pending_input: bytes | None = prompt.encode("utf-8")
+        while True:
+            cancelled = cancel is not None and cancel.is_set()
+            remaining = timeout - (time.monotonic() - started)
+            if cancelled or remaining <= 0:
+                # Helpers share the group, so stopping the parent alone is insufficient.
+                _kill(process.pid)
+                stdout, stderr = process.communicate()
+                status: int | None = None
+                break
+            try:
+                stdout, stderr = process.communicate(pending_input, timeout=min(0.1, remaining))
+                status = process.returncode
+                break
+            except subprocess.TimeoutExpired:
+                # communicate retains partial output and finishes sending stdin on retry.
+                pending_input = None
+    except BaseException:
         _kill(process.pid)
-        stdout, stderr = process.communicate()
-        status = None
+        process.communicate()
+        raise
     finally:
         with _ACTIVE_LOCK:
             _ACTIVE.discard(process.pid)
-    return Finished(status, stdout, stderr, time.monotonic() - started)
+    return Finished(
+        status,
+        stdout.decode("utf-8", errors="replace"),
+        stderr.decode("utf-8", errors="replace"),
+        time.monotonic() - started,
+        cancelled,
+    )
 
 
 def _kill(pid: int) -> None:
@@ -105,6 +133,8 @@ def stop_all() -> None:
 
 
 def failure_of(finished: Finished, timeout: float) -> str | None:
+    if finished.cancelled:
+        return "cancelled by the researcher; the process group was killed and reaped"
     if finished.exit_status is None:
         return f"timed out after {timeout:g} s; the process group was killed"
     if finished.exit_status != 0:

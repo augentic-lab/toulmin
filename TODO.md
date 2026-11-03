@@ -278,13 +278,13 @@ Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/
 - [x] Researcher approved Q25–Q29 and authorized implementation on 2026-11-02.
 - [ ] Complete UI1–UI5; C4 is implemented, C5 remains pending.
 
-UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. UI2 implementation is paused for the researcher-requested UI-R1 interaction redesign; Q30–Q31 are proposals, not approved scope changes.
+UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. On 2026-11-03 the researcher approved returning to a conversation-first workspace after rejecting the UI-R2/UI-R3 activity flow. UI2 resumes with the Brief proposal subset of UI3 as one usable slice. Q30–Q31 remain proposals, not approved scope changes.
 
 ### TUI implementation
 
 - [x] UI1: shell, create/open, recoverable setup, responsive navigation and theme. Automated creation/import/reopen, recovery and keyboard tests cover 120×36, 80×24 and 60×20; actual PTY launch/quit restores terminal settings. Researcher usability acceptance remains in UI5.
-- [ ] UI2: durable discussion and cancellable model jobs.
-- [ ] UI3: brief proposals and confirmed key Claims.
+- [x] UI2: durable discussion and cancellable model jobs. Submitted turns reconstruct model-independent context, archive exact prompts/outputs and Runs, survive reopening without retries, and support scoped cancellation and explicit recovery. Fake-CLI and headless checks verify behavior; researcher usability acceptance remains in UI5.
+- [ ] UI3: brief proposals and confirmed key Claims. The Brief subset is implemented: editable working drafts, Saved/Proposed/Changes, explicit apply/dismiss, external-edit refusal and interrupted application recovery. Claim extraction/confirmation remains pending.
 - [ ] UI4: snapshot-based reviews and resolution.
 - [ ] UI5: handoff, upgrades and researcher trial.
 

@@ -189,6 +189,7 @@ def test_navigation_inspector_and_live_resize_are_read_only(tmp_path):
             screen = app.screen
             assert isinstance(screen, WorkspaceScreen)
             assert screen.query_one("#inspector").display
+            screen.query_one("#step-list", ListView).focus()
             await pilot.press("down", "enter")
             assert screen.step == "Brief"
             assert (
@@ -206,13 +207,16 @@ def test_navigation_inspector_and_live_resize_are_read_only(tmp_path):
             await pilot.pause()
             assert screen.has_class("compact")
             assert not screen.query_one("#navigation").display
-            assert screen.query_one("#resize-notice").display
+            assert not screen.query_one("#resize-notice").display
             screen.query_one("#step-select", Select).focus()
             await pilot.press("enter", "down", "enter")
             assert screen.step == "Key Claims"
             assert screen.query_one("#main-pane").display
             assert not screen.query_one("#inspector").display
-            for step in ["Explore", "Review", "Resolve", "Handoff"]:
+            screen.choose_step("Explore")
+            assert screen.query_one("#composer", TextArea).display
+            assert not screen.query_one("#send-message", Button).disabled
+            for step in ["Review", "Resolve", "Handoff"]:
                 screen.choose_step(step)
                 assert "coming later" in screen.query_one("#main-content", DocumentView)._markdown
             await pilot.press("f1")
