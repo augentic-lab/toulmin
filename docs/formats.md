@@ -258,3 +258,29 @@ Resumed requests reuse `anchor/research/` as their writable workspace. Exact pro
 tool traces, host-written final-message files, outcomes and Runs stay in each individual
 request/archive. The provider's native session cache is auxiliary runtime state outside
 the workbench, not a replacement for these portable files.
+
+## Native interactive session records (UI-N1, auxiliary version 1)
+
+`projects/PROJECT/runs/native/SESSION_ID/` uses IDs `YYYYMMDDTHHMMSSZ-<32 lowercase hex>`.
+`session.md` freezes schema_version=1, id, agent, actor, created, status (started/closed),
+run (null/Run ID), archive, inputs (source/snapshot/sha256), and context_sha256. Inputs are
+AGENTS, PROJECT, Brief and any last handoff in `input-N.md`; `context.md` and `before.md`
+are immutable. The `research/` subdirectory contains a mutable context copy and native
+materials including optional `draft.md`; its files are not verified Evidence.
+
+Closure writes `close.md` before publishing a Run: schema_version, closed, exit_code,
+interrupted, nullable model/session_id, nullable exact UTF-8 draft plus draft_sha256, and
+nullable base64 diagnostic plus diagnostic_sha256. `frozen-draft.md` and
+`frozen-diagnostic.log` preserve output; the ordinary Run points to
+`runs/TIMESTAMP-native-UUID/` with context.md, close.md and optional draft.md and
+terminal-diagnostic.log. These files are not a complete conversation transcript.
+
+`application.md` records schema_version, id, run, actor, at, status (applying/applied),
+before_sha256, after_sha256 and exact text, with immutable `after.md`. Apply requires
+a successful closed Run, valid draft, exact preview and matching current Brief.
+Per source/draft/context limit is 1,000,000 bytes; diagnostics 8,000,000 bytes; encoded
+records 24,000,000 bytes. Nothing is silently truncated. CRLF output is archived exactly
+but cannot be applied as a Brief. Links, nonregular files and invalid UTF-8 are refused.
+
+This is additive auxiliary storage; seven-object schemas are unchanged. Existing data
+needs no migration. Older readers understand the normal Runs but not native session controls.

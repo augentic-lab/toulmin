@@ -12,6 +12,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 
 2026-11-03: The researcher approved resumable native exploration with file-based rebuilding on configuration changes or recovery failure. This supersedes Q27's stateless-only choice; independent reviews and Brief authoring remain fresh isolated operations.
 
+2026-11-03: After accepting the smoother native split interaction, the researcher authorized UI-N1: connect real project context, native discussion, archived Brief drafts and explicit application. This does not authorize Claims/review expansion or treating partial native records as complete transcripts.
+
 ## Project goals and scope
 
 - Toulmin is a project-based research workbench for a single systems researcher. Open files preserve the claim–evidence–objection network and its full provenance.

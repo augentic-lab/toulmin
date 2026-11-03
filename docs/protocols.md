@@ -233,3 +233,23 @@ Exploration keeps a stable writable research workspace while each turn retains i
 archive. Providers may persist native histories in their local cache. Independent review
 and Brief authoring remain fresh ephemeral operations with their existing tool restrictions.
 Formal confirmation, gate ownership, process leases and cancellation rules are unchanged.
+
+## Native collaborative Brief round trip (UI-N1)
+
+Reason: the researcher accepted the native split interaction and authorized real-project
+context, returned drafts and explicit Brief confirmation. L2 never starts native tools.
+It freezes AGENTS/PROJECT/Brief/last-handoff inputs; L3 starts a separate native process
+in research/, protects direct formal paths and owns process leases. Normal CLI exit
+precedes durable closure, exact output freezing and one idempotent normal Run.
+A model/provider ID not collected remains unknown, and a returned draft is not a transcript.
+
+The researcher previews the frozen draft/diff and explicitly applies only a successful
+valid proposal. Current Brief must match the frozen before image; durable application
+intent and after image allow same-actor/text recovery. No stage/object status changes
+are implicit. Failed/interrupted sessions retain partial drafts but cannot apply them.
+Recovering an orphan is explicit, verifies no worker lease is live and never retries
+a model. Saved-session inspection makes no model call. Corrupt/oversized output is
+reported, not repaired or truncated. Open workspaces/material are not immutable Evidence.
+
+This adds no independent-review privileges and makes no complete native provenance claim.
+See docs/native-workspace.md in the development repository for launcher usage and limits.

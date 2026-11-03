@@ -238,3 +238,16 @@ Synchronize them when editing contracts; tests check equality, and the installed
 
 Dependencies point downward: `cli` (L3) → `protocols` (L2) → `core` (L1); L3 may also use L1 directly.
 Core and protocols do not depend on Typer, specific model tools or networking. Research workbench templates and the software development repository are managed separately.
+
+## Native CLI with a project board
+
+Open a project in the TUI and press **F4 Native CLI**, or run:
+
+```sh
+uv run --locked --extra tui toulmin native my-topic --root /path/to/workbench --agent codex
+```
+
+Discuss in the native CLI, ask for `draft.md`, exit the CLI, then confirm **Apply to Brief**
+on the project board. Requires Linux, tmux and bubblewrap for new sessions. The returned draft
+and input snapshots are archived as a Run; the full native conversation is not captured.
+See [native workspace usage and recovery](docs/native-workspace.md).

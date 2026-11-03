@@ -53,6 +53,40 @@ def interactive_workspace(
     launch(root=root, project=project)
 
 
+@app.command("native")
+def native_workspace(
+    project: Annotated[str, typer.Argument(help="Existing research project slug.")],
+    root: Annotated[Path, typer.Option("--root", help="Workbench root.")] = Path("."),
+    agent: Annotated[str, typer.Option("--agent", help="Native CLI: codex or claude.")] = "codex",
+    session: Annotated[
+        str | None, typer.Option("--session", help="Inspect a saved native session; no model call.")
+    ] = None,
+    recover: Annotated[
+        bool,
+        typer.Option("--recover", help="Explicitly close an interrupted --session without retry."),
+    ] = False,
+    actor: Annotated[
+        str | None,
+        typer.Option("--actor", help="Researcher attribution; defaults to current user."),
+    ] = None,
+) -> None:
+    """Discuss in a native CLI beside the project board, then confirm an archived Brief."""
+    try:
+        from toulmin.application.native import launch_native
+
+        view = launch_native(root, project, agent, session=session, recover=recover, actor=actor)
+    except ModuleNotFoundError as error:
+        if error.name != "textual" and not (error.name or "").startswith("textual."):
+            raise
+        typer.echo("Install the tui extra: uv sync --locked --extra tui", err=True)
+        raise typer.Exit(1) from error
+    except (OSError, ValueError, RuntimeError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(f"Native session: {view.id} | Run: {view.run or 'not archived'}")
+    typer.echo(f"Archive: {view.archive}")
+
+
 def confirmer(value: str | None) -> str | None:
     """Explicit --confirmed-by wins; otherwise the operator's local default, if any."""
     if value is not None:

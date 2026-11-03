@@ -533,6 +533,52 @@ class SessionControls(ModalScreen[bool | None]):
         self.dismiss(None)
 
 
+class NativeChoice(ModalScreen[tuple[str, str | None, bool] | None]):
+    BINDINGS = [Binding("escape", "close", "Close")]
+
+    def __init__(self, sessions: list[tuple[str, str, bool]]) -> None:
+        super().__init__()
+        self.sessions = sessions
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="dialog"):
+            yield Label("NATIVE RESEARCH WORKSPACE", classes="dialog-title")
+            yield Static(
+                "Discuss in the native CLI; exit it to archive a draft, then confirm Apply "
+                "to Brief in the project board. Saved sessions open without a model call.",
+                markup=False,
+            )
+            with VerticalScroll():
+                yield Button("New Codex discussion", id="native-codex")
+                yield Button("New Claude discussion", id="native-claude")
+                yield Select(
+                    [(label, ident) for ident, label, _ in self.sessions],
+                    prompt="Saved native session",
+                    id="native-saved",
+                )
+                yield Static("Interrupted sessions are closed as failed on explicit recovery.")
+                yield Button(
+                    "Open / recover selected archive", id="native-open", disabled=not self.sessions
+                )
+                yield Button("Cancel", id="native-cancel")
+
+    @on(Button.Pressed)
+    def choose(self, event: Button.Pressed) -> None:
+        if event.button.id in ("native-codex", "native-claude"):
+            self.dismiss((event.button.id.removeprefix("native-"), None, False))
+        elif event.button.id == "native-open":
+            selected = self.query_one("#native-saved", Select).value
+            for ident, _, recover in self.sessions:
+                if selected == ident:
+                    self.dismiss(("codex", ident, recover))
+                    break
+        elif event.button.id == "native-cancel":
+            self.dismiss(None)
+
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+
 class ApplyBrief(ModalScreen[bool]):
     BINDINGS = [Binding("escape", "cancel", "Cancel")]
 
@@ -567,6 +613,7 @@ class WorkspaceScreen(ShellScreen):
     BINDINGS = [
         Binding("f2", "inspector", "Inspector"),
         Binding("f3", "session", "Session", priority=True),
+        Binding("f4", "native", "Native CLI", priority=True),
         Binding("ctrl+enter", "send", "Send", priority=True),
         Binding("escape", "back", "Home"),
     ]
@@ -959,6 +1006,51 @@ class WorkspaceScreen(ShellScreen):
     def action_send(self) -> None:
         self.start_turn("explore")
 
+    def action_native(self) -> None:
+        if self._active or not self.flush_proposal():
+            self.notify("Finish or stop the current Discussion job first.", severity="warning")
+            return
+        try:
+            from toulmin.protocols.native import list_native
+
+            sessions = [
+                (
+                    item.id,
+                    f"{item.id} | {item.agent} | {item.output_status}",
+                    item.status == "started",
+                )
+                for item in reversed(list_native(self.view.root, self.view.project))
+            ]
+        except (OSError, ValueError, RuntimeError) as error:
+            self.notify(safe_text(str(error)), severity="error")
+            return
+
+        def chosen(choice: tuple[str, str | None, bool] | None) -> None:
+            if choice is not None:
+                self.app.call_after_refresh(self.open_native, *choice)
+
+        self.app.push_screen(NativeChoice(sessions), chosen)
+
+    def open_native(self, agent: str, session: str | None, recover: bool) -> None:
+        try:
+            from toulmin.application.native import launch_native
+
+            with self.app.suspend():
+                launch_native(
+                    self.view.root,
+                    self.view.project,
+                    agent,
+                    session=session,
+                    recover=recover,
+                    actor=controller(self).discussion.actor,
+                )
+            self.view = controller(self).service.open_project(self.view.root, self.view.project)
+            self.load_brief()
+            self.refresh_view()
+            self.refresh_discussion()
+        except (OSError, ValueError, RuntimeError) as error:
+            self.notify(safe_text(str(error)), severity="error", timeout=10)
+
     @property
     def fresh_session(self) -> bool:
         return (self.view.root, self.view.project) in controller(self).fresh_sessions
@@ -1238,6 +1330,7 @@ class HelpScreen(ModalScreen[None]):
                     "Ctrl+Enter        Send a discussion message\n"
                     "F2                Toggle brief / proposal inspector\n"
                     "F3                Exploration session / rebuild next Send\n"
+                    "F4                Native CLI / saved native sessions\n"
                     "Escape            Close a dialog / go back\n"
                     "Ctrl+Q            Review quit options\n\n"
                     "Below 120 columns the inspector is toggled.\n"

@@ -309,3 +309,9 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 
 - [x] Build a standalone private-tmux launcher and compact research board beside a native Codex/Claude CLI, with a no-model demo, visible context, draft refresh and explicit create-only acceptance. Do not modify production Discussion or existing projects.
 - [ ] Researcher trial: confirm native commands, pane focus/zoom and returning a draft feel more usable than the existing chat box. Production context synchronization, full Run provenance and permission/lifecycle integration remain undecided.
+
+### UI-N1 — Native discussion on real projects
+
+- [x] Researcher accepted the smoother UI-R4 interaction and authorized connecting the Brief round trip to real projects on 2026-11-03.
+- [x] Freeze real project context, launch a protected native CLI beside the project board, archive its returned draft and Run, and require explicit conflict-checked Brief application. Provide F4/CLI entry, saved-session inspection and explicit interrupted-session recovery; verify temporary-project data integrity, runtime lifecycle and main-TUI refresh.
+- [ ] Researcher accepts the real-project discussion → draft → exit → archive → confirmed Brief workflow. Full native conversation capture and provider-session adoption remain separate work.

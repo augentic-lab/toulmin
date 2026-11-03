@@ -13,6 +13,9 @@ SOURCE = ROOT / "src"
 # An intentional allowlist makes adding a dependency a reviewable change.
 # This is an architecture check, not a sandbox for arbitrary hostile Python.
 DATA_MODULES = {
+    "base64",  # lossless native diagnostic archival (L2)
+    "binascii",
+    "stat",  # validate file descriptors without following model-created links
     "collections",
     "contextlib",
     "dataclasses",
