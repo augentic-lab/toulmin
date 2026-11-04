@@ -22,6 +22,7 @@ from toulmin.core.repository import Repository
 from toulmin.core.resources import validate_description
 from toulmin.core.workspace import CHARTER_FILE, Charter, validate_charter
 from toulmin.core.workspace_handoffs import DRAFT_DIR, validate_handoff_draft
+from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols.workspace_handoff import Applied, chain
 
 LINK = ("CLAUDE.md", "AGENTS.md")
@@ -30,6 +31,7 @@ JOURNAL = ".workspace-pending"
 PACKET = re.compile(r"[0-9]{8}T[0-9]{6}Z-(?P<kind>proposal|project)-[0-9a-f]{32}")
 SEAL = re.compile(rb"[0-9a-f]{64}\n")
 UNEXPECTED_LIMIT = 10
+CREATION_INCOMPLETE = "creation incomplete"
 
 
 class RootState(StrEnum):
@@ -346,6 +348,7 @@ def _children(
         errors.append(str(error))
         return ()
     staging = (journal or {}).get("staging")
+    creating = incomplete_child(repository) if journal is not None else None
     children = []
     for path in sorted(folder.iterdir()):
         relative = f"projects/{path.name}"
@@ -357,6 +360,9 @@ def _children(
             continue
         if path.is_symlink() or not path.is_dir():
             errors.append(f"{relative}: expected a project directory, not a link or file")
+            continue
+        if path.name == creating:
+            children.append(Child(path.name, None, CREATION_INCOMPLETE))
             continue
         try:
             validate_project_name(path.name)

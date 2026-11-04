@@ -12,7 +12,7 @@ from pathlib import Path
 
 from toulmin.core.repository import Repository
 from toulmin.protocols.research_workspace import _file_digest
-from toulmin.protocols.workspace_state import RootState, workspace_status
+from toulmin.protocols.workspace_state import CREATION_INCOMPLETE, RootState, workspace_status
 
 RESIDENT = ("AGENTS.md", "WORKSPACE.md")
 
@@ -80,7 +80,14 @@ def workspace_research(root: Path) -> WorkspaceState:
             remember(f"{proposal.path}/seal")
     for item in report.handoffs:
         values.extend((item.path, item.disposition))
-    children = tuple((child.name, child.stage or "invalid data") for child in report.children)
+    children = tuple(
+        (
+            child.name,
+            child.stage
+            or (CREATION_INCOMPLETE if child.error == CREATION_INCOMPLETE else "invalid data"),
+        )
+        for child in report.children
+    )
     for name, stage in children:
         values.extend(("child", name, stage))
     charter = report.charter
@@ -171,6 +178,10 @@ def render_workspace(state: WorkspaceState) -> str:
         )
         if state.pending:
             lines.append("Show pending packets or drafts for the researcher to apply or reject.")
+        lines.append(
+            "Prepare a project creation input in runs/drafts/ and run `toulmin project propose "
+            "NAME --input FILE` to propose a child project for review."
+        )
         for name, _ in state.children:
             lines.append(f"Open project {name} in its own session (not this one).")
         lines.append("Prepare a workspace handoff draft for researcher confirmation.")

@@ -3,9 +3,9 @@
 Status: contract frozen in WI1 on 2026-11-04 from the accepted WS1 state design, WS2 operation
 scheme and WS3 acceptance plan. Implemented so far: sections 2.1, 4 and 12 (init, WI2), and
 sections 5–7 with the section 10 journal for workspace changes (WI3), section 8 workspace
-handoffs (WI4), and section 11 native bindings and context scope (WI5). Child creation and
-adoption are not implemented; WI6–WI7 add them, and until a release note says a command exists,
-do not create those files by hand. WS3 acceptance cases remain NOT RUN.
+handoffs (WI4), section 11 native bindings and context scope (WI5), and section 9 child
+creation (WI6). Adoption is not implemented; WI7 adds it, and until a release note says a
+command exists, do not create those files by hand. WS3 acceptance cases remain NOT RUN.
 
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
@@ -736,9 +736,13 @@ Packet: `runs/<stamp>-project-<hex>/` with `packet.md`, `input.md`, `sources/N.E
 `targets/PROJECT.md`, `targets/brief.md` and `seal`, sealed and previewed exactly as in 7.2.
 Header: `kind: project-creation`, `scope: {kind: workspace}`, `created`, `project`, `input`,
 `supersedes`, `sources`, `pins` (full form), `relationships`, `targets` (only `path`,
-`after_sha256`, `after`; the project directory must be absent). Body: `Question`, `Scope`,
-`Files to create`, `Carried inputs`, `Unresolved assumptions`, `Not changed`. Propose refuses an
-occupied name, an invalid generated PROJECT.md (40-line limit) or a missing related project.
+`after_sha256`, `after`; the project directory must be absent). Body, generated
+deterministically: `Question` (with the motivation), `Scope` (included and excluded items
+verbatim, related projects), `Files to create` (the complete generated PROJECT.md and Brief,
+fenced as in 7.2, so packet.md alone is the review text), `Carried inputs`, `Unresolved
+assumptions`, `Open questions` and `Not changed`. Propose refuses an input whose `project` differs
+from NAME, an occupied name, an invalid generated PROJECT.md (40-line limit), a missing related
+project or an unresolved Brief marker.
 
 ````markdown
 ---
@@ -753,7 +757,7 @@ sources:
   - {path: runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md, url: null, sha256: 470842d3f25bd50a518a3e223a348fc86a0d410174075c8d419dd044fa3447ed, snapshot: sources/1.md, coverage: selected}
   - {path: sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md, url: null, sha256: a76557d6b64c31077ed050d8ea145996f2a65c9d7bb296b26864080d9ca2eb8f, snapshot: sources/2.md, coverage: full}
 pins:
-  - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
+  - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, url: null, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
 relationships: []
 targets:
   - {path: projects/scheduling/PROJECT.md, after_sha256: 91d5995efec8fec013dad123aec45ac34f45d6f8391b9366d02230ca6fac8697, after: targets/PROJECT.md}
@@ -762,25 +766,81 @@ targets:
 ## Question
 Does queue scheduling policy on one serving node explain most p99 latency under bursty arrivals?
 
+Motivation: The workspace direction prioritizes single-node tail latency.
+
 ## Scope
-Included: one request queue on one node; replay of registered traces.
-Excluded: multi-node routing; caching (open workspace idea).
+Included:
+- One request queue on one node
+- Replay of registered traces
+
+Excluded:
+- Multi-node routing
+- Caching (open workspace idea)
+
+Related projects:
+None.
 
 ## Files to create
-projects/scheduling/ with PROJECT.md and brief.md (shown in targets/), the seven empty object
-directories, runs/, sessions/ and runs/creation/ (provenance written at confirmation).
+projects/scheduling/ with the PROJECT.md and brief.md below, empty object
+directories (claims/, evidence/, objections/, decisions/, explorations/, specs/, runs/), sessions/
+and runs/creation/ (provenance written at confirmation).
+
+projects/scheduling/PROJECT.md:
+```markdown
+---
+schema_version: 1
+project: scheduling
+stage: explore
+recent_decisions: []
+next_step: "Write the first proposed Claim or refine the Brief."
+last_handoff: null
+---
+## Goal
+Determine whether the scheduling policy on a single node explains most p99 latency under bursty arrivals.
+
+## Constraints
+Single queue on one node; synthetic or recorded traces only until a measurement plan is agreed.
+```
+
+projects/scheduling/brief.md:
+```markdown
+# Research brief: scheduling
+
+Approved initial framing; hypotheses below are unproven.
+
+## Problem
+Does the queue scheduling policy on one serving node explain most p99 latency under bursts?
+
+## Why now
+
+## Magnitude
+Unknown; no measurement yet.
+
+## Closest prior work
+
+## Objections and responses
+
+## Kill criteria
+
+## Minimal validation experiment
+Replay the registered synthetic trace under FIFO and one size-aware policy.
+```
 
 ## Carried inputs
-- runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md (selected)
-- sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md (full)
-- synthetic-queue-trace revision 1 (tree-v1 8a1e969279753301…)
+- runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md (selected messages; complete capture of that selection)
+- sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md (coverage: full)
+- pinned resource synthetic-queue-trace revision 1 (tree-v1 8a1e969279753301…)
 
 ## Unresolved assumptions
-- Bursty arrivals dominate p99 (unverified).
+- Bursty arrivals dominate p99 (unverified)
+
+## Open questions
+- Which recorded trace can replace the synthetic one?
 
 ## Not changed
 No Claim, Evidence or Decision is created. WORKSPACE.md and other projects are unchanged.
-No native session is started.
+No native session is started. Approval confirms the question, scope and initial
+framing, not that any assumption holds.
 ````
 
 Generated PROJECT.md (stage explore, no decisions, no handoff):
@@ -802,15 +862,17 @@ Single queue on one node; synthetic or recorded traces only until a measurement 
 ````
 
 Preview: `project create NAME --from PACKET` without `--confirm`. Apply adds `--confirmed-by
-ACTOR --confirm`. NAME must equal the packet's `project`. Checks follow 7.4 with the target rule
+ACTOR --confirm` (optional `--approval-text`). NAME must equal the packet's `project`. Checks follow 7.4 with the target rule
 "`projects/NAME` absent". A different packet for an occupied name is refused, never replacing the
 existing project (F04). Publication builds the complete child in `projects/.creating-<hex>/`
 (hex from the packet directory): PROJECT.md and brief.md from the after images, the seven object
-directories plus `runs/` and `sessions/` with `.gitkeep` files, and `runs/creation/` containing
+directories (`runs/` among them) and `sessions/` with `.gitkeep` files, and `runs/creation/` containing
 copies of `packet.md`, `seal` and `sources/N.EXT` and the record below. It then renames the
 staging directory to `projects/NAME` in one step and publishes the workspace receipt (`results`
 list the three generated documents). WORKSPACE.md, other projects and original workspace
-records are untouched.
+records are untouched. Shared rules, templates and workspace customizations are neither
+compared nor copied. Reject: `project reject NAME --from PACKET --reason TEXT --confirmed-by
+ACTOR --confirm`, as in 7.5.
 
 `runs/creation/creation.md` (written at confirmation, so it carries the actor):
 
@@ -820,7 +882,7 @@ schema_version: 1
 kind: project-creation-record
 project: scheduling
 packet: runs/20261104T140000Z-project-c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8/packet.md
-packet_sha256: 28585035e7322243c83eed443d2f0fdcce1dff7b049eee90331af37cf3101ac3
+packet_sha256: 3329534600d6a66e41224139d1db0ce7127e6f77670b176a663ee6afdb48aa12
 confirmed_by: {actor: "Tianchi YU", at: "2026-11-04T14:10:00Z"}
 question: "Does queue scheduling policy on one serving node explain most p99 latency under bursty arrivals?"
 motivation: "The workspace direction prioritizes single-node tail latency."
@@ -832,16 +894,40 @@ sources:
   - {path: runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md, url: null, sha256: 470842d3f25bd50a518a3e223a348fc86a0d410174075c8d419dd044fa3447ed, snapshot: sources/1.md, coverage: selected}
   - {path: sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md, url: null, sha256: a76557d6b64c31077ed050d8ea145996f2a65c9d7bb296b26864080d9ca2eb8f, snapshot: sources/2.md, coverage: full}
 pins:
-  - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
+  - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, url: null, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
 relationships: []
 ---
 Creation provenance for this project. Assumptions listed above are unresolved, not findings.
 ````
 
+Receipt of the example, in the packet directory:
+
+````markdown
+---
+schema_version: 1
+kind: workspace-receipt
+record: runs/20261104T140000Z-project-c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8/packet.md
+record_sha256: 3329534600d6a66e41224139d1db0ce7127e6f77670b176a663ee6afdb48aa12
+disposition: applied
+actor: "Tianchi YU"
+at: "2026-11-04T14:10:00Z"
+approval_text: "Create scheduling as previewed."
+reason: null
+results:
+  - {path: projects/scheduling/PROJECT.md, before_sha256: null, after_sha256: 91d5995efec8fec013dad123aec45ac34f45d6f8391b9366d02230ca6fac8697}
+  - {path: projects/scheduling/brief.md, before_sha256: null, after_sha256: 044f5f9b6b858a6095a48ec0af0c07c5f1fb4ef9f494a82fe8b8e4dd443e0b31}
+  - {path: projects/scheduling/runs/creation/creation.md, before_sha256: null, after_sha256: be8fc43a4a78f7edd6b1a76ca6cbd29083f8f9cc84841c3e5d8ac492746c9703}
+---
+Confirmation receipt. It records an administrative approval, not scientific support.
+````
+
 Idempotency: replay with a receipt returns it; a child whose `creation.md` names this packet's
-seal but has no receipt is finished by recovery, never created twice. Native launch is separate:
-the result prints `aoe open NAME --root ROOT`; a requested create-and-enter runs it as a second
-step under the same authorization, and a failed launch leaves the child valid (F06).
+seal but has no receipt is finished by recovery, never created twice. The receipt is the
+journal's last target, so that state exists only while the journal does; if the journal was
+removed by hand, create refuses, names the creation record and writes nothing. Native launch is
+separate: the result prints `aoe open NAME --root ROOT` and starts nothing; a requested
+create-and-enter runs that command as a second step under the same authorization, and a failed
+launch leaves the child valid and retries only the open (F06).
 
 ## 10. Publication journal and recovery
 
@@ -867,9 +953,10 @@ after_sha256}`), and for `project-create` also `staging`. All files are written 
 Ignored by Git: `.workspace-pending/`, `.workspace-prepare-*/`, `.workspace-completed-*/` and
 `projects/.creating-*/`. Readers that list projects skip dot-prefixed names and report a
 staging directory named by the journal. For `project-create`, the staging directory may contain
-only expected files with expected bytes;
-the child is not openable as healthy while the journal exists, and status shows it as
-"creation incomplete". Recovery reuses the journal's actor, time and approval text; a different
+only expected files with expected bytes (an unfinished `.handoff-*.tmp` temporary of the writer
+is discarded); recovery writes the missing files and completes the rename. After the rename the
+child must hold exactly the expected files. The child is not openable as healthy while the
+journal exists, and status shows it as "creation incomplete". Recovery reuses the journal's actor, time and approval text; a different
 `--confirmed-by` on the rerun is reported and ignored. A target or staging file matching neither
 image is an external edit: everything is preserved, nothing is rolled back, and the error names
 the file and both images. There is no automatic abandon: the researcher restores one image by

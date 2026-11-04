@@ -98,6 +98,9 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 | workspace propose --input F | WI3: validate a change input from root runs/drafts/ and freeze one sealed review packet (diffs, sources with coverage, pins, after images) | Writes only a new runs/<stamp>-proposal-<hex>/ directory; WORKSPACE.md and resources unchanged |
 | workspace apply --draft P | WI3: preview without --confirm; with --confirm and an actor, publish the packet's after images and a receipt | Only the listed WORKSPACE.md/resource targets, via the root journal; replays return the receipt |
 | workspace reject --draft P --reason R | WI3: record a final rejection for a pending packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
+| project propose NAME --input F | WI6: validate a creation input from root runs/drafts/ and freeze one sealed packet (question, scope, generated PROJECT.md and Brief, sources with coverage, pins) | Writes only a new runs/<stamp>-project-<hex>/ directory; no project directory |
+| project create NAME --from P | WI6: preview without --confirm; with --confirm and an actor, publish the complete child and a receipt | Only the new projects/NAME (built in projects/.creating-<hex>, renamed once) and the packet's receipt.md, via the root journal; replays return the receipt; never starts a session |
+| project reject NAME --from P --reason R | WI6: record a final rejection for a pending creation packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
 | aoe open/bind/status/refresh/ack [PROJECT \| --workspace] | WI5: without PROJECT on a workspace root, the workspace scope's native session, binding and context; with PROJECT, that child (AOE3 behavior, plus the read-only WORKSPACE.md on workspace roots) | Scope's binding (`.aoe/binding.json` or `projects/NAME/.aoe/binding.json`) and context archives in that scope's runs/ only; never research objects |
 | aoe handoff [--workspace] --input F / --apply D | WI4: without PROJECT, seal a workspace handoff draft from a structured summary; apply previews without --confirm and, confirmed, records the session | Draft: one new runs/<stamp>-handoff-<hex>/ directory. Apply: one new sessions/ record and WORKSPACE.md next_step/last_handoff only, via the root journal; replays return the record |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
@@ -372,3 +375,25 @@ The AoE group implements workspace-formats.md section 11. Reasons for the L3/L2 
   are unchanged and apply to both scopes.
 - A workspace root's research AGENTS.md comes from a separate scope-aware template; the shared
   template used by legacy workbenches is unchanged, so their template checks still match.
+
+### WI6 confirmed child creation
+
+`project propose/create/reject` implement workspace-formats.md section 9 with the section 10
+journal. Reasons for the L1/L2 additions:
+- The creation packet is the complete review text: besides question and scope it embeds the
+  generated PROJECT.md and the verbatim initial Brief, so preview and confirmation cover the
+  same bytes. Included and excluded items are rendered verbatim as lists; related projects and
+  open questions have their own lines (a clarification of the WI1 example, regenerated from
+  code with all dependent digests).
+- Create checks only what the packet relies on: `projects/NAME` absent (an occupied name names
+  its creating packet and actor, and is never replaced), selected sources, pins, related
+  projects and Brief markers. Shared rules, templates and workspace customizations are neither
+  compared nor copied; unrelated edits never conflict.
+- The `project-create` journal adds `staging`. The child is written in
+  `projects/.creating-<hex>` and appears under its name in one rename; the receipt is the last
+  image. Recovery accepts only expected files at their after images (discarding the writer's
+  unfinished temporaries in staging) and keeps everything on any other content. While the
+  journal exists the child shows as "creation incomplete" and cannot be opened.
+- Creation never starts a native session; the result prints `aoe open NAME`. A launch that left
+  no matching AoE session may be retried with an explicit `open --new-session`; any matching
+  candidate still requires inspection, so a duplicate session is never created silently.

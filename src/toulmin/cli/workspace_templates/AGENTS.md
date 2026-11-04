@@ -30,7 +30,12 @@ applied handoff. Independent task sessions follow their role's input list instea
   input under runs/drafts/, run `toulmin workspace propose`, show the packet's diff and the
   exact apply/reject commands, and let the researcher decide. Never apply, reject or hand-edit
   them yourself. A registered resource is a located description, never Evidence.
-- Do not create projects or work on a project's objects here; projects have their own sessions.
+- A child project is created only from a reviewed packet: write a creation input under
+  runs/drafts/ (question, scope, unresolved assumptions and the initial Brief), run `toulmin
+  project propose NAME --input FILE`, show the packet and the exact create/reject commands, and
+  let the researcher decide. Never create project directories by hand or force a first Claim.
+- Creating a child starts no session. Opening it is a separate `toulmin aoe open NAME` step in
+  its own session; this workspace session continues. Do not work on a project's objects here.
 
 ## Research rules
 

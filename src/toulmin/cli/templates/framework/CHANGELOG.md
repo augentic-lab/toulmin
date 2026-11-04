@@ -82,3 +82,15 @@
 - New bindings on workspace roots are version 2; existing version 1 bindings are kept until an
   explicit `bind --replace` or `open --new-session`. Legacy workbenches are unchanged.
 - New workspaces get scope-aware research instructions in AGENTS.md.
+
+## WI6 — Reviewed child creation
+
+- `toulmin project propose NAME --input F` seals a creation packet (question, scope, initial
+  Brief and generated PROJECT.md, carried sources and pins). `project create NAME --from P`
+  previews it, and with `--confirmed-by ACTOR --confirm` publishes the complete child (explore
+  stage, empty collections, `runs/creation/` provenance) plus a receipt. `project reject`
+  records a final rejection.
+- No Claim or Decision is created and no native session is started; open the child with
+  `toulmin aoe open NAME`. An occupied name is refused; an interrupted create finishes when
+  rerun. `aoe open --new-session` may retry a launch that left no AoE session.
+- Additive: existing projects and workbenches are unchanged; no migration.

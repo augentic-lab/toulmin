@@ -47,7 +47,7 @@ def examples():
         "activity": one("kind: workspace-activity"),
         "input": one("kind: workspace-change-input"),
         "packet": one("kind: workspace-change\n"),
-        "receipt": one("kind: workspace-receipt", "disposition: applied"),
+        "receipt": one("kind: workspace-receipt", "disposition: applied", "proposal-a41c"),
         "charter": one('name: "Serving Research"\ncharter_revision: 1', "next_step: null\n"),
         "resource": one("---\nschema_version: 1\nresource: synthetic-queue-trace"),
     }

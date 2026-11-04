@@ -661,6 +661,15 @@ class AoEWorkspace:
                         "Existing session is live; archive it in AoE before replacement"
                     )
                 binding = None
+            if (
+                binding
+                and binding.session_id is None
+                and new_session
+                and not self._creation_candidates(client, binding)
+            ):
+                # A launch that left no matching session can be retried explicitly
+                # (F06); any candidate still requires inspection, never a duplicate.
+                binding = None
             if binding is None:
                 known = tuple(item.id for item in client.list_sessions())
                 binding = self._new_binding(
@@ -684,18 +693,16 @@ class AoEWorkspace:
                 binding = replace(binding, session_id=session.id, message="Session created")
                 self._save(binding)
             elif binding.session_id is None:
-                candidates = [
-                    item
-                    for item in client.list_sessions()
-                    if item.id not in binding.known_ids
-                    and item.path.absolute() == self.root
-                    and item.tool == binding.agent
-                    and item.title == (binding.title or f"Toulmin: {self.project}")
-                ]
+                candidates = self._creation_candidates(client, binding)
                 if len(candidates) != 1:
+                    retry = (
+                        "; if AoE shows no such session, rerun open with --new-session"
+                        if not candidates
+                        else ""
+                    )
                     raise FormatError(
                         "Creation outcome unresolved; inspect AoE and use bind --replace "
-                        "--session ID. No additional session was created"
+                        f"--session ID{retry}. No additional session was created"
                     )
                 binding = replace(
                     binding, session_id=candidates[0].id, message="Recovered creation"
@@ -709,6 +716,17 @@ class AoEWorkspace:
             binding = self._context(binding, state)
         self._dispatch(client, expected_token=binding.token)
         return self.status()
+
+    def _creation_candidates(self, client: AoEClient, binding: Binding) -> list[AoESession]:
+        """New sessions that match an unresolved creation's path, tool and title."""
+        return [
+            item
+            for item in client.list_sessions()
+            if item.id not in binding.known_ids
+            and item.path.absolute() == self.root
+            and item.tool == binding.agent
+            and item.title == (binding.title or f"Toulmin: {self.project}")
+        ]
 
     def refresh(self, *, resend: bool = False) -> WorkspaceView:
         with self._lock():

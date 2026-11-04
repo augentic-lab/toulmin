@@ -14,6 +14,7 @@ from toulmin.core.documents import DIRECTORIES, sections
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
+from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols.session import entry_files
 
 
@@ -115,6 +116,12 @@ def research_state(root: Path, project: str) -> ResearchState:
             remember(repository, f"projects/{project}/PROJECT.md")
 
         base = f"projects/{project}"
+        if incomplete_child(repository) == project:
+            # Not openable as healthy until the confirmed creation finishes (section 10).
+            errors.append(
+                f"{base}: creation incomplete; rerun `toulmin project create {project} --from "
+                "PACKET --confirm` to finish it"
+            )
         if os.path.lexists(repository.root / "WORKSPACE.md"):
             # A child of a workspace root also receives the workspace charter and its own
             # creation record (contract section 11); a legacy root keeps the AOE3 set.

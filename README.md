@@ -149,8 +149,26 @@ uv run --locked toulmin aoe handoff --workspace --root /path/to/research \
   --apply runs/<stamp>-handoff-<hex>/draft.md --confirmed-by "Your Name" --confirm
 ```
 
-Reviewed child creation and workspace native conversations are not available yet; see the
-[workspace-first contract](docs/workspace-formats.md).
+A child project is created only from a reviewed packet (contract section 9). The creation
+input under `runs/drafts/` holds the question, motivation, included and excluded scope,
+unresolved assumptions, carried sources and resource pins, and the initial Brief as its body; no
+Claim or methodology is required. Propose and preview create nothing; confirming publishes the
+whole child in one step (explore stage, empty collections, `runs/creation/` provenance) and a
+receipt in the packet directory:
+
+```sh
+uv run --locked toulmin project propose scheduling --root /path/to/research --input runs/drafts/scheduling.md
+uv run --locked toulmin project create scheduling --root /path/to/research --from runs/<stamp>-project-<hex>
+uv run --locked toulmin project create scheduling --root /path/to/research --from runs/<stamp>-project-<hex> \
+  --confirmed-by "Your Name" --confirm
+uv run --locked toulmin project reject scheduling --root /path/to/research --from runs/<stamp>-project-<hex> \
+  --reason "Not yet" --confirmed-by "Your Name" --confirm
+```
+
+Creation starts no model session and leaves the workspace conversation as it was. Open the child
+separately with `toulmin aoe open scheduling --root /path/to/research`; if that launch fails, the
+child stays valid and only the open is retried (`--new-session` when AoE shows no session).
+An occupied name is refused, never replaced; an interrupted create finishes when rerun.
 
 The legacy route still creates a template project in a non-workspace workbench:
 
@@ -373,7 +391,7 @@ environment merely because a shell hook has removed its PATH entry.
 
 - [Python/Textual TUI design](docs/tui-design.md): approved workflow, architecture and implementation plan.
 
-- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract (not implemented)](docs/workspace-formats.md).
+- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract (implemented through WI6; adoption pending)](docs/workspace-formats.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 
 Maintain documentation, templates and progress records in English. Conversation follows the user's language.

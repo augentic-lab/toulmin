@@ -16,6 +16,7 @@ from typing import Any
 
 from toulmin.core.atomic import digest, sync_directory, write_atomic
 from toulmin.core.codec import decode
+from toulmin.core.creation import STAGING
 from toulmin.core.documents import FormatError
 from toulmin.core.render import header
 from toulmin.core.repository import Repository
@@ -55,6 +56,8 @@ class Intent:
     at: str
     approval_text: str | None
     images: tuple[Image, ...]
+    # project-create only: the private directory that becomes projects/NAME in one rename.
+    staging: str | None = None
 
 
 def pending(repository: Repository) -> bool:
@@ -85,6 +88,10 @@ def prepare(repository: Repository, intent: Intent) -> None:
         ("approval_text", intent.approval_text),
         ("targets", targets),
     ]
+    if (intent.operation == "project-create") != (intent.staging is not None):
+        raise FormatError("staging: required for project-create and only for it")
+    if intent.staging is not None:
+        fields.append(("staging", intent.staging))
     with tempfile.TemporaryDirectory(prefix=PREPARE, dir=repository.root) as temporary:
         staging = Path(temporary)
         (staging / "before").mkdir()
@@ -101,13 +108,34 @@ def prepare(repository: Repository, intent: Intent) -> None:
     sync_directory(repository.root)
 
 
+def incomplete_child(repository: Repository) -> str | None:
+    """The child a pending project-create journal is publishing, if any (read-only)."""
+    if not pending(repository):
+        return None
+    try:
+        intent = read_intent(repository)
+    except (OSError, ValueError):
+        return None
+    if intent.operation != "project-create":
+        return None
+    return next(
+        (image.path.split("/")[1] for image in intent.images if image.path.startswith("projects/")),
+        None,
+    )
+
+
 def read_intent(repository: Repository) -> Intent:
     """Load and verify the journal; corrupt journals are errors, never repaired."""
     base = f"{JOURNAL}/intent.md"
     document = decode(repository.path(base, "file").read_bytes(), str(repository.root / base))
-    h = mapping(document, document.header, "", set(INTENT_FIELDS))
+    h = mapping(document, document.header, "", set(INTENT_FIELDS), {"staging"})
     if h["schema_version"] != 1 or h["operation"] not in OPERATIONS:
         document.fail("operation", "unsupported journal")
+    staging = h.get("staging")
+    if (h["operation"] == "project-create") != (staging is not None):
+        document.fail("staging", "required for project-create and only for it")
+    if staging is not None and not STAGING.fullmatch(text(document, staging, "staging")):
+        document.fail("staging", "expected projects/.creating-<hex>")
     text(document, h["record"], "record")
     text(document, h["record_sha256"], "record_sha256")
     text(document, h["actor"], "actor")
@@ -137,6 +165,7 @@ def read_intent(repository: Repository) -> Intent:
         h["at"],
         h["approval_text"],
         tuple(images),
+        staging,
     )
 
 
@@ -147,6 +176,8 @@ def finish(repository: Repository) -> Intent:
     any write, with every image kept for inspection.
     """
     intent = read_intent(repository)
+    if intent.staging is not None:
+        return _finish_creation(repository, intent)
     states = []
     for image in intent.images:
         path = repository.path(image.path)
@@ -172,6 +203,118 @@ def finish(repository: Repository) -> Intent:
         path.parent.mkdir(parents=True, exist_ok=True)
         repository.path(image.path)  # recheck links after creating parents
         write_atomic(path, image.after, replace=image.before is not None)
+    retire(repository)
+    return intent
+
+
+def _external(path: str, image: Image | None, current: bytes | None) -> FormatError:
+    expected = (
+        "no such file"
+        if image is None
+        else f"before {digest(image.before) if image.before is not None else 'absent'} or "
+        f"after {digest(image.after)}"
+    )
+    found = digest(current) if current is not None else "absent"
+    return FormatError(
+        f"{path}: changed outside this publication (expected {expected}, found {found}); "
+        "journal kept. Restore one image by hand, then rerun the same command"
+    )
+
+
+def _tree(repository: Repository, directory: str) -> dict[str, Path]:
+    """Every entry under a directory, by root-relative path; links are refused."""
+    base = repository.path(directory, "directory")
+    found: dict[str, Path] = {}
+    for path in sorted(base.rglob("*")):
+        relative = path.relative_to(repository.root).as_posix()
+        if path.is_symlink() or not (path.is_file() or path.is_dir()):
+            raise FormatError(f"{relative}: expected a regular file or directory; journal kept")
+        found[relative] = path
+    return found
+
+
+def _finish_creation(repository: Repository, intent: Intent) -> Intent:
+    """Publish a child: build it in staging, rename it into place, then the receipt.
+
+    The child appears under its name in one rename. Before any write, the staging
+    directory or the published child must hold only expected files at their after
+    images (unfinished atomic-write temporaries in staging are discarded); anything
+    else is an external edit, preserved and refused.
+    """
+    assert intent.staging is not None
+    child = [image for image in intent.images if image.path.startswith("projects/")]
+    rest = [image for image in intent.images if not image.path.startswith("projects/")]
+    final = child[0].path.split("/")[1]
+    target = f"projects/{final}"
+    if any(image.before is not None or not image.path.startswith(f"{target}/") for image in child):
+        raise FormatError(f"{JOURNAL}: project-create images must be new files in {target}")
+    exists = os.path.lexists(repository.root / target)
+    staged = os.path.lexists(repository.root / intent.staging)
+    if exists and staged:
+        raise FormatError(
+            f"{target} and {intent.staging} both exist; journal kept. Inspect both, keep the "
+            "published child, then rerun the same command"
+        )
+    directory = target if exists else intent.staging
+    expected = {
+        (image.path if exists else intent.staging + image.path.removeprefix(target)): image
+        for image in child
+    }
+    parents = {str(Path(path).parent) for path in expected} | {directory}
+    parents |= {str(parent) for path in parents for parent in Path(path).parents}
+    present: dict[str, Path] = _tree(repository, directory) if exists or staged else {}
+    discard = []
+    for relative, path in present.items():
+        if path.is_dir():
+            if relative not in parents:
+                raise FormatError(
+                    f"{relative}: unexpected directory in this publication; journal kept. "
+                    "Remove it by hand, then rerun the same command"
+                )
+            continue
+        image = expected.get(relative)
+        if image is None:
+            if not exists and path.name.startswith(".handoff-") and path.name.endswith(".tmp"):
+                discard.append(path)  # an unfinished temporary of this writer
+                continue
+            raise _external(relative, None, path.read_bytes())
+        if path.read_bytes() != image.after:
+            raise _external(relative, image, path.read_bytes())
+    if exists and set(expected) - set(present):
+        missing = sorted(set(expected) - set(present))[0]
+        raise _external(missing, expected[missing], None)
+    later = []
+    for image in rest:
+        path = repository.path(image.path)
+        current = path.read_bytes() if path.is_file() and not path.is_symlink() else None
+        if os.path.lexists(path) and current is None:
+            raise FormatError(f"{image.path}: expected a regular file; journal kept")
+        if current not in (image.before, image.after):
+            raise _external(image.path, image, current)
+        later.append((image, current == image.after))
+    if not exists:
+        for path in discard:
+            path.unlink()
+        if not staged:
+            repository.path("projects", "directory")
+            os.mkdir(repository.root / intent.staging)
+        for relative, image in expected.items():
+            if relative in present:
+                continue
+            path = repository.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            repository.path(relative)  # recheck links after creating parents
+            write_atomic(path, image.after)
+        for relative in sorted(parents, key=len, reverse=True):
+            if relative.startswith(intent.staging):
+                sync_directory(repository.root / relative)
+        os.rename(repository.root / intent.staging, repository.root / target)
+        sync_directory(repository.path("projects", "directory"))
+    for image, done in later:
+        if not done:
+            path = repository.path(image.path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            write_atomic(path, image.after, replace=image.before is not None)
     retire(repository)
     return intent
 

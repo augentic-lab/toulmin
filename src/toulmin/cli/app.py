@@ -9,6 +9,7 @@ import typer
 
 from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
+from toulmin.cli.project import app as project_app
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
@@ -18,7 +19,12 @@ from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import intake_review
 from toulmin.protocols.ruling import apply_ruling
 from toulmin.protocols.status import project_status
-from toulmin.protocols.workspace_state import RootState, project_hint, workspace_status
+from toulmin.protocols.workspace_state import (
+    CREATION_INCOMPLETE,
+    RootState,
+    project_hint,
+    workspace_status,
+)
 
 app = typer.Typer(
     help="Toulmin research workbench. Initialize, create objects and inspect project state.",
@@ -27,6 +33,7 @@ app = typer.Typer(
 )
 app.add_typer(aoe_app, name="aoe")
 app.add_typer(workspace_app, name="workspace")
+app.add_typer(project_app, name="project")
 
 ACTOR_VARIABLE = "TOULMIN_ACTOR"
 
@@ -768,7 +775,10 @@ def _workspace_status(root: Path, verbose: bool) -> None:
         )  # fmt: skip
     typer.echo("Projects:" + ("" if report.children else " none"))
     for child in report.children:
-        typer.echo(f"  {child.name} | stage={child.stage or 'unknown (invalid data)'}")
+        stage = child.stage or (
+            CREATION_INCOMPLETE if child.error == CREATION_INCOMPLETE else "unknown (invalid data)"
+        )
+        typer.echo(f"  {child.name} | stage={stage}")
     if state == RootState.WORKSPACE:
         typer.echo("Proposals:" + ("" if report.proposals else " none"))
         for proposal in report.proposals:

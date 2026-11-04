@@ -194,7 +194,11 @@ def open_workspace(
     profile: Profile = None,
     agent: Annotated[str, typer.Option("--agent", help="Native CLI: codex or claude.")] = "codex",
     new_session: Annotated[
-        bool, typer.Option("--new-session", help="Replace an archived binding with a new session.")
+        bool,
+        typer.Option(
+            "--new-session",
+            help="Replace an archived binding, or retry a launch that left no session.",
+        ),
     ] = False,
     attach: Annotated[
         bool,

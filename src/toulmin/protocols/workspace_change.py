@@ -29,6 +29,7 @@ from toulmin.core.proposals import (
     Packet,
     PacketSource,
     Receipt,
+    SourceRef,
     Target,
     charter_after,
     check_resource_values,
@@ -135,7 +136,7 @@ def propose(
             _require_pending(repository, change.supersedes)
         if os.path.lexists(repository.root / directory):
             raise FormatError(f"{directory}: packet already exists; retry in a second")
-        sources, snapshots, lines = _sources(repository, change)
+        sources, snapshots, lines = _sources(repository, change.sources)
         pins = [_pin(repository, pin.resource, pin.revision, pin.sha256) for pin in change.pins]
         lines += [
             f"- pinned resource {pin['resource']} revision {pin['revision']} "
@@ -169,10 +170,10 @@ def packet_directory_or_none(value: str) -> str | None:
 
 
 def _sources(
-    repository: Repository, change: ChangeInput
+    repository: Repository, refs: tuple[SourceRef, ...]
 ) -> tuple[list[PacketSource], dict[str, bytes], list[str]]:
     sources, snapshots, lines = [], {}, []
-    for index, source in enumerate(change.sources, 1):
+    for index, source in enumerate(refs, 1):
         if source.url is not None:
             item = PacketSource(None, source.url, None, None, source.coverage)
             sources.append(item)
@@ -392,14 +393,53 @@ def _require_pending(repository: Repository, directory: str) -> None:
 
 
 def _receipt(repository: Repository, loaded: Loaded) -> Receipt | None:
-    relative = f"{loaded.directory}/receipt.md"
+    return receipt_for(repository, loaded.directory, loaded.seal)
+
+
+def receipt_for(repository: Repository, directory: str, seal: str) -> Receipt | None:
+    """The valid receipt of a sealed packet directory, None when absent."""
+    relative = f"{directory}/receipt.md"
     if not os.path.lexists(repository.root / relative):
         return None
     path = repository.path(relative, "file")
     receipt = validate_receipt(decode(path.read_bytes(), str(path)))
-    if receipt.record != f"{loaded.directory}/packet.md" or receipt.record_sha256 != loaded.seal:
+    if receipt.record != f"{directory}/packet.md" or receipt.record_sha256 != seal:
         raise FormatError(f"{relative}: receipt does not belong to this sealed packet")
     return receipt
+
+
+def source_problems(repository: Repository, sources: tuple[PacketSource, ...]) -> list[str]:
+    """Selected local sources that no longer match their frozen digests."""
+    problems = []
+    for source in sources:
+        if source.path is None or source.sha256 is None:
+            continue
+        path = repository.path(source.path)
+        current = digest(path.read_bytes()) if path.is_file() else None
+        if current != source.sha256:
+            problems.append(
+                f"{source.path}: selected source changed since propose (expected "
+                f"{source.sha256}, found {current or 'absent'})"
+            )
+    return problems
+
+
+def pin_problems(repository: Repository, pins: tuple[dict[str, Any], ...]) -> list[str]:
+    """Pinned resources whose description or material no longer matches (F13)."""
+    problems = []
+    for pin in pins:
+        try:
+            data, _ = _description(repository, pin["resource"])
+            if digest(data) != pin["description_sha256"]:
+                raise FormatError(
+                    f"{resource_path(pin['resource'])}: description revised since pinned "
+                    f"(revision {pin['revision']} pinned)"
+                )
+            if pin["path"] is not None:
+                _material(repository, pin["path"], pin["method"], pin["sha256"])
+        except (OSError, ValueError) as error:
+            problems.append(f"broken pin {pin['resource']} revision {pin['revision']}: {error}")
+    return problems
 
 
 def check(root: Path, loaded: Loaded) -> list[str]:
@@ -418,28 +458,8 @@ def check(root: Path, loaded: Loaded) -> list[str]:
                 f"{target.path}: changed since propose (expected {target.before_sha256}, "
                 f"found {current or 'absent'})"
             )
-    for source in loaded.packet.sources:
-        if source.path is None or source.sha256 is None:
-            continue
-        path = repository.path(source.path)
-        current = digest(path.read_bytes()) if path.is_file() else None
-        if current != source.sha256:
-            problems.append(
-                f"{source.path}: selected source changed since propose (expected "
-                f"{source.sha256}, found {current or 'absent'})"
-            )
-    for pin in loaded.packet.pins:
-        try:
-            data, _ = _description(repository, pin["resource"])
-            if digest(data) != pin["description_sha256"]:
-                raise FormatError(
-                    f"{resource_path(pin['resource'])}: description revised since pinned "
-                    f"(revision {pin['revision']} pinned)"
-                )
-            if pin["path"] is not None:
-                _material(repository, pin["path"], pin["method"], pin["sha256"])
-        except (OSError, ValueError) as error:
-            problems.append(f"broken pin {pin['resource']} revision {pin['revision']}: {error}")
+    problems += source_problems(repository, loaded.packet.sources)
+    problems += pin_problems(repository, loaded.packet.pins)
     for target in loaded.packet.targets:
         if target.path == CHARTER_FILE:
             continue
