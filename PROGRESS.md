@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-04 — WI: workspace-first development scope and task breakdown
+
+- Authorization: the researcher adopted WS3 and requested concrete development tasks/scope. Recorded WS3 adoption without changing NOT RUN outcomes; current work is planning only, not feature implementation or a live trial. Updated AGENTS/TODO accordingly.
+- Delivered English plan: `/home/tianchi/notes/toulmin/workspace-implementation-plan.md`. WI1–WI8 cover additive contracts, root-only setup/offline state, reviewed workspace/resource publication, workspace handoff, explicit native scope, confirmed child creation, legacy adoption, and integrated/user acceptance. Each task has dependencies, deliverables and executable completion criteria, with primary ownership mapped to all ten A, fourteen F and one L case.
+- Delivery boundaries: first usable checkpoint after WI5 is workspace discussion/confirmation/handoff/recovery; WI6 adds the first child and scope switching; WI7/WI8 complete legacy compatibility and evidence. These checkpoints do not remove any accepted WS3 case. Chief automation, new interfaces/sidebar, full-transcript collection and automatic research rulings remain outside scope. Existing project v1/reference/review/TUI/native compatibility remains required.
+- **Inferred from code**: the work can extend the existing Python layers and integrity/adapter primitives; there is no demonstrated need for a new stack. Existing project creation/template checks, project handoff fields and AoE bindings need explicit scope/compatibility treatment rather than a placeholder workspace project. The plan freezes exact formats before new writers and separates child publication from external launch. No duration or proven implementation outcome is asserted.
+- Validation: inspected accepted notes and current format/initialization/module structure; checked the dependency order, unique WI IDs, complete A/F/L mapping, note/source paths, encoding/fences, remaining NOT RUN labels and Git diff whitespace. The initial search included one nonexistent architecture-test path; the existing test is tests/unit/test_architecture.py. No code tests or model calls: documentation only; no runtime/templates/research records changed.
+- Session ID unavailable. Blockers: none for planning. Next: researcher reviews the bounded WI plan; WI1 is the first task after authorization to proceed. Scope/progress committed locally; full plan remains in personal notes outside Git. No push.
+
 ## 2026-11-04 — WS3: workspace-first acceptance design
 
 - Authorization: the researcher accepted WS2's operation scheme and requested item 3. Recorded WS2 approval in its external note and TODO; updated AGENTS to the current documentation-only scope. Implementation remains paused, and no acceptance trial was requested or executed.
