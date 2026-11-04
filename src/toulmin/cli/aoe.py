@@ -11,6 +11,7 @@ from typing import Annotated
 import typer
 
 from toulmin.adapters.aoe import AoEClient, AoEError
+from toulmin.adapters.provider_logs import ModelReport
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
 from toulmin.cli.settings import (
     ACTOR_HINT,
@@ -93,6 +94,14 @@ def _recovery(root: Path, project: str | None, profile: str | None) -> None:
     )
 
 
+def _model_line(model: ModelReport | None, agent: str) -> str:
+    """Which model answered, as the native CLI logged it; Toulmin never chooses one."""
+    if model is None:
+        return "Model: not yet reported (the native CLI's own configured default applies)"
+    effort = f", effort {model.effort}" if model.effort else ""
+    return f"Model: {model.model}{effort} (reported by the {agent} session log)"
+
+
 def _present(
     view: WorkspaceView,
     root: Path,
@@ -115,6 +124,7 @@ def _present(
         )
         if binding.title:
             typer.echo(f"Title: {binding.title} | binding version {binding.version}")
+        typer.echo(_model_line(view.model, binding.agent))
         if view.session is not None:
             typer.echo(
                 f"Session state: {view.session.state} | status: {view.session.status or 'unknown'}"

@@ -12,6 +12,9 @@ from toulmin.core.documents import DIRECTORIES
 def isolated_user_config(tmp_path_factory, monkeypatch):
     """Never read the researcher's real ~/.config/toulmin/config.toml in tests."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path_factory.mktemp("xdg-config")))
+    # Native CLI homes too: model reports must never read real session logs (WX3).
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path_factory.mktemp("codex-home")))
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path_factory.mktemp("claude-home")))
 
 
 @pytest.fixture

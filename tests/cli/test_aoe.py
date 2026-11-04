@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from toulmin.adapters.aoe import AoEError, AoESession
+from toulmin.adapters.provider_logs import ModelReport
 from toulmin.application.aoe import Binding, WorkspaceView
 from toulmin.cli import aoe
 from toulmin.cli.app import app
@@ -300,3 +301,15 @@ def test_invalid_agent_is_rejected_before_service_work(workbench, fake_service):
     result = invoke(workbench, "open", "demo", "--agent", "unsupported")
     assert result.exit_code == 2
     assert fake_service.calls == []
+
+
+def test_binding_shows_the_reported_model_or_the_cli_default(workbench, fake_service):
+    result = invoke(workbench, "status", "demo")
+    assert "Model: not yet reported (the native CLI's own configured default applies)" in (
+        result.output
+    )
+    fake_service.result = replace(
+        fake_service.result, model=ModelReport("gpt-6-luna", "medium", "/fixture/log.jsonl")
+    )
+    result = invoke(workbench, "status", "demo")
+    assert "Model: gpt-6-luna, effort medium (reported by the codex session log)" in result.output

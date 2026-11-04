@@ -14,6 +14,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from toulmin.adapters.aoe import AoEClient, AoEError, AoESession
+from toulmin.adapters.provider_logs import ModelReport, reported_model
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
@@ -74,6 +75,7 @@ class WorkspaceView:
     context_status: str
     diagnostics: tuple[str, ...] = ()
     context_path: Path | None = None
+    model: ModelReport | None = None  # WX3: as reported by the native session log
 
 
 DELIVERY_STATES = {"none", "prepared", "sending", "submitted", "uncertain", "acknowledged"}
@@ -620,6 +622,7 @@ class AoEWorkspace:
             except (AoEError, OSError, ValueError) as error:
                 diagnostics.append(str(error))
                 status = "session unavailable; " + status
+        native = session.agent_session_id if session else None
         return WorkspaceView(
             state,
             binding,
@@ -627,6 +630,7 @@ class AoEWorkspace:
             status,
             tuple(diagnostics),
             self.root / binding.context / "context.md" if binding.context else None,
+            reported_model(binding.agent, native or binding.provider_session_id),
         )
 
     def bind(

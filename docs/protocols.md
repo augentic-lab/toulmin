@@ -474,3 +474,16 @@ After the partial WI8 researcher trial (observation O3: per-item apply/handoff c
   await `toulmin decide` instead of listing apply/reject commands, and asks the agent to offer
   a charter proposal once discussion settles a direction, constraint or resource (O5). The L2
   workspace state card's action line names `toulmin decide`; this is presentation text only.
+
+### WX3 model visibility (L3 only)
+
+After the partial WI8 researcher trial (observation O2: how is the model chosen?), the binding
+view shows which model answered. Toulmin still chooses only the native CLI.
+- `adapters/provider_logs.py` reads the bound native conversation's own session log (Codex:
+  the latest `turn_context`; Claude: the latest non-synthetic `assistant` message) and extracts
+  only the model name and reasoning effort. It scans at most the last 16 MiB, ignores symlinks,
+  accepts provider IDs and values only in conservative patterns, and reports "not yet reported"
+  for anything missing or unrecognized.
+- `aoe status`/`open` print `Model: … (reported by the <agent> session log)` under BINDING;
+  `--json` carries the same report. It is display provenance, never a control branch, and is
+  not written to bindings, contexts or research files.

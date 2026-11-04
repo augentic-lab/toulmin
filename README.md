@@ -50,7 +50,11 @@ is not the current directory; an explicit `--root` (even `.`) is used as given. 
 actor only supplies attribution: every application still needs `--confirm`.
 
 Toulmin chooses the native CLI, not the model: the model is whatever that CLI is configured to
-use.
+use. `aoe status` and `open` show it under BINDING as the native session log reported it, e.g.
+`Model: gpt-6-luna, effort medium (reported by the codex session log)`, or `not yet reported`
+before the first turn. Only the model name and effort are read from `$CODEX_HOME/sessions/`
+or `$CLAUDE_CONFIG_DIR/projects/` (defaults `~/.codex`, `~/.claude`); change the model in the
+CLI's own configuration.
 
 ## Research sessions in AoE
 

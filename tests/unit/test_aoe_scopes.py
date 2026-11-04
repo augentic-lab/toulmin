@@ -4,6 +4,7 @@ Children here are synthetic prepared copies of the project template, not WI6 cre
 """
 
 import json
+import os
 import shutil
 from dataclasses import replace
 from pathlib import Path
@@ -420,3 +421,18 @@ def test_unbound_scope_profile_uses_the_given_default_before_environment(root, m
     assert AoEWorkspace(root, None)._client().profile == "from-env"
     monkeypatch.delenv("AGENT_OF_EMPIRES_PROFILE")
     assert AoEWorkspace(root, None)._client().profile == "main"
+
+
+def test_status_reports_the_model_from_the_native_session_log(root, fake):
+    service = AoEWorkspace(root, None, fake)
+    service.open()
+    assert service.status().model is None  # no log yet: the CLI default applies
+    native = (
+        stored(root)["provider_session_id"]
+        or fake.sessions[stored(root)["session_id"]].agent_session_id
+    )
+    log = Path(os.environ["CODEX_HOME"]) / f"sessions/2026/11/04/rollout-x-{native}.jsonl"
+    log.parent.mkdir(parents=True)
+    log.write_text(json.dumps({"type": "turn_context", "payload": {"model": "gpt-6-luna"}}) + "\n")
+    report = service.status().model
+    assert (report.model, report.effort, report.log) == ("gpt-6-luna", None, str(log))

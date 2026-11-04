@@ -112,3 +112,5 @@
   child creations and handoff drafts one at a time in the researcher's terminal, through the
   same functions as their own commands. Workspace AGENTS.md guidance points to it. No format
   change; existing commands are unchanged.
+- WX3 (L3 only): `aoe status`/`open` show the model the native session log reports (name and
+  effort only). Display provenance; nothing is written and no behavior depends on it.

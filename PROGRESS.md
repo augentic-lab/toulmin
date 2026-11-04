@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-04 — WX3: show the model the native session reports
+
+- Decision: the researcher authorized WX3 ("好的，开始实现 WX3").
+- L3 only:
+  - `adapters/provider_logs.py` finds the bound conversation's own log: Codex `$CODEX_HOME/sessions/*/*/*/rollout-*-ID.jsonl`, Claude `$CLAUDE_CONFIG_DIR/projects/*/ID.jsonl`, with `~/.codex` and `~/.claude` as defaults. It reads backwards over at most the last 16 MiB and extracts only the model and effort: from the latest Codex `turn_context`, or from the latest non-synthetic Claude `assistant` message.
+  - Provider IDs and values must match conservative patterns. Symlinked logs are ignored. Anything missing or unrecognized is "not reported".
+  - `WorkspaceView.model` carries the report. `aoe status`/`open` print `Model: NAME, effort E (reported by the AGENT session log)`, or "not yet reported (the native CLI's own configured default applies)", under BINDING; `--json` includes it.
+  - Nothing is written. The agent's state.md is unchanged, so model changes never make a context stale.
+- Tests:
+  - conftest points `CODEX_HOME`/`CLAUDE_CONFIG_DIR` at temporary directories for every test, so real session logs are never read.
+  - 12 new tests: the reader, application status and the CLI line.
+- **Verified**:
+  - Full suite 1257 passed. ruff, ruff format (163 files), mypy (74 files) and `git diff --check` are clean.
+  - The reader on copies of the WI8 logs (in a temporary home) returned gpt-6-luna/medium and claude-opus-5-5/high, matching the WI8 screens.
+  - No live AoE session was run.
+- Docs: README, docs/protocols.md WX3 section with its packaged copy, and the framework CHANGELOG.
+- Note: the session restarted while the suite ran; the recorded result was read from its output file (1257 passed, exit 0) before committing.
+- Blockers: none. Next step: WX5. Revise researcher-trial.md for `toulmin open`/`decide` and the A06 purpose; the researcher then resumes the WI8 trial.
+- Session ID: unavailable.
+
 ## 2026-11-04 — WX4: `toulmin decide`, one-pass researcher decisions
 
 - Decision: the researcher named the command and authorized WX4 ("就用 toulmin decide，开始实现 WX4").
