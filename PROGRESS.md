@@ -1,5 +1,19 @@
 # Toulmin development progress
 
+## 2026-11-04 — WX5: trial instructions v2 for the improved entry
+
+- Decision: the researcher authorized WX5 ("好的，开始 WX5"). Documentation only; no code changed.
+- Output (outside the repository):
+  - `~/notes/toulmin/wi8-2026-11-04/researcher-trial.md` v2. The v1 instructions are kept as `researcher-trial-v1.md`.
+  - A01–A10 now use `toulmin open` (init prompt, scope from the current directory, re-delivery instead of `refresh`) and `toulmin decide` (A04/A05/A08/A10), with a purpose per step.
+  - A06 is reframed as "continue from files only; daily equivalent: a new session the next day".
+  - Each step lists what to watch, including whether the agent offers proposals unprompted (O5) and the Model line.
+  - Setup keeps the trial profile in `AGENT_OF_EMPIRES_PROFILE` (so real sessions still default to main), writes the researcher's own config, and links `~/.local/bin/toulmin`.
+- Observation W7 (inferred from code, not live-verified): native context instructions name `toulmin workspace propose`/`aoe handoff` as a bare `toulmin` command, while the receipt command uses the absolute interpreter path. An agent shell without `toulmin` on PATH would fail those steps. The v2 setup adds the link as a workaround; a product fix (absolute command paths in context) is a candidate follow-up after the trial. Recorded in the WI8 ledger.
+- Checks: commands in v2 were checked against the current CLI (`open`, `open --new-session`, `decide`, `config show`, `aoe session archive TITLE`, session title `Workspace: serving` for a directory named serving). WX2/WX4 pseudo-terminal smokes cover `open`/`decide`. No live AoE session was run. Code tests were not rerun (documentation only).
+- Blockers: none. Next step: the researcher runs the v2 trial; WI8 and the WX5 trial item stay open until their ruling.
+- Session ID: unavailable.
+
 ## 2026-11-04 — WX3: show the model the native session reports
 
 - Decision: the researcher authorized WX3 ("好的，开始实现 WX3").
