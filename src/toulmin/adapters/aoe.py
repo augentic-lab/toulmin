@@ -28,6 +28,8 @@ _BLOCKED = re.compile(
     r"connecting|reconnecting|starting|press enter to|sign in|log in",
     re.IGNORECASE,
 )
+_BORDER = re.compile(r"[\s─━═╭╮╰╯│┃]*")
+_BLOCKED_REASON = "Native screen contains a busy state or confirmation/menu; resolve it in AoE"
 
 
 class AoEError(RuntimeError):
@@ -253,8 +255,8 @@ class AoEClient:
             reason = self._not_idle(first)
             if reason:
                 return False, reason
-            screen = self._run("session", "capture", session_id, "--strip-ansi")
-            reason = self._not_prompt(first.tool, screen)
+            screen = _render(self._run("session", "capture", session_id))
+            reason = self._not_prompt(first.tool, *screen)
             if reason:
                 return False, reason
             time.sleep(_QUIET_INTERVAL)
@@ -264,8 +266,8 @@ class AoEClient:
                 return False, reason
             if second.tool != first.tool:
                 return False, "AoE agent changed during readiness check"
-            repeated = self._run("session", "capture", session_id, "--strip-ansi")
-            reason = self._not_prompt(second.tool, repeated)
+            repeated = _render(self._run("session", "capture", session_id))
+            reason = self._not_prompt(second.tool, *repeated)
             if reason:
                 return False, reason
             if screen != repeated:
@@ -285,25 +287,40 @@ class AoEClient:
         return None
 
     @staticmethod
-    def _not_prompt(tool: str, screen: str) -> str | None:
+    def _not_prompt(tool: str, screen: str, typed: str | None = None) -> str | None:
+        """``typed`` is ``screen`` with dim (hint) text blanked; defaults to ``screen``."""
         # Limit heuristics to the current screen's bottom region so an old
         # permission explanation in scrollback does not always block delivery.
-        tail = "\n".join(screen.splitlines()[-18:])
+        lines = screen.splitlines()[-18:]
+        tail = "\n".join(lines)
         if not tail.strip():
             return "Native capture is empty"
-        if _BLOCKED.search(tail):
-            return "Native screen contains a busy state or confirmation/menu; resolve it in AoE"
         if re.search(r"(?im)^\s*[›❯>]\s*(?:\d+[.)]|(?:yes|no)(?:\s|$))", tail):
             return "Native screen contains a selection menu; resolve it in AoE"
         marker = r"^\s*›[^\S\n]*(.*)$" if tool == "codex" else r"^\s*[>❯][^\S\n]*(.*)$"
-        prompts = list(re.finditer(marker, tail, re.MULTILINE))
+        prompts = [i for i, line in enumerate(lines) if re.match(marker, line)]
         if not prompts:
+            if _BLOCKED.search(tail):
+                return _BLOCKED_REASON
             return "Native input prompt is not recognizable"
+        # Busy indicators sit on the line just above the input box (AoE status is the
+        # primary busy check; dialogs are menus, refused above). The agent's own reply
+        # can end with words such as "approval" or "would you like" (WI8 live trial);
+        # that must not block delivery forever, so only that one line counts.
+        index = prompts[-1]
+        above = [line for line in lines[:index] if not _BORDER.fullmatch(line)][-1:]
+        nearby = above + lines[index:]
+        if _BLOCKED.search("\n".join(nearby)):
+            return _BLOCKED_REASON
         # A quiet occupied composer remains unsafe: AoE send would append to and
         # submit the researcher's unfinished input. Only the last prompt counts;
         # earlier prompt lines can be already-submitted messages in scrollback.
-        current = prompts[-1].group(1).strip()
-        if current and not (tool == "codex" and current == "Ask Codex to do anything"):
+        typed_lines = (screen if typed is None else typed).splitlines()[-18:]
+        match = re.match(marker, typed_lines[index])
+        if match is None:  # The prompt glyph itself was dim: treat as unrecognizable.
+            return "Native input prompt is not recognizable"
+        current = match.group(1).strip()
+        if current and not _placeholder(tool, current):
             return "Native input contains text; submit or clear it in AoE before refreshing"
         return None
 
@@ -316,6 +333,52 @@ class AoEClient:
             ).returncode
         except OSError as error:
             raise AoEError(f"Cannot attach AoE session: {error}") from error
+
+
+_SGR = re.compile(r"\x1b\[([0-9;:]*)m")
+_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]")
+
+
+def _render(raw: str) -> tuple[str, str]:
+    """Visible text, and the same text with dim (faint) characters blanked.
+
+    Native CLIs draw empty-composer hints and suggested prompts in dim text; once ANSI
+    is stripped they look exactly like a researcher's unfinished input (WI8 live trial).
+    """
+    plain: list[str] = []
+    typed: list[str] = []
+    dim = False
+    position = 0
+    for match in re.finditer(f"{_SGR.pattern}|{_ESCAPE.pattern}", raw):
+        text = raw[position : match.start()]
+        plain.append(text)
+        typed.append(re.sub(r"[^\n]", " ", text) if dim else text)
+        position = match.end()
+        sgr = _SGR.fullmatch(match.group(0))
+        if sgr is None:
+            continue
+        codes = re.split("[;:]", sgr.group(1))
+        index = 0
+        while index < len(codes):
+            code = codes[index]
+            if code in ("38", "48", "58"):  # Extended colours carry their own arguments.
+                index += 2 if index + 1 < len(codes) and codes[index + 1] == "5" else 4
+            elif code in ("", "0", "22"):
+                dim = False
+            elif code == "2":
+                dim = True
+            index += 1
+    text = raw[position:]
+    plain.append(text)
+    typed.append(re.sub(r"[^\n]", " ", text) if dim else text)
+    return "".join(plain), "".join(typed)
+
+
+def _placeholder(tool: str, text: str) -> bool:
+    """Empty-composer hints; ANSI stripping makes them look like typed text (WI8 live trial)."""
+    if tool == "codex":
+        return text == "Ask Codex to do anything"
+    return re.fullmatch(r'Try "[^"\n]+"', text) is not None
 
 
 def _output_ids(output: str) -> set[str]:

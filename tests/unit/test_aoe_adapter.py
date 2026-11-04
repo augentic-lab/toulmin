@@ -303,6 +303,11 @@ def test_ready_refuses_empty_busy_permission_trust_update_or_menu(calls, screen)
         ("claude", "idle", "Claude Code\n> \n"),
         ("codex", "idle", "› Earlier submitted message\nReply\n› Ask Codex to do anything\n"),
         ("claude", "idle", "❯ Earlier submitted message\nReply\n❯ \n"),
+        (
+            "claude",
+            "waiting",
+            'Claude Code\n───\n❯ Try "fix typecheck errors"\n───\n  ? for shortcuts',
+        ),
     ],
 )
 def test_ready_requires_two_matching_quiet_captures(calls, tool, status, prompt):
@@ -335,6 +340,8 @@ def test_ready_fails_when_screen_or_status_changes(calls):
         ("claude", "> unfinished researcher draft"),
         ("codex", "› \nPrior response\n› unfinished researcher draft"),
         ("codex", "› Ask Codex to do anything else"),
+        ("claude", '❯ Try "fix typecheck errors" and then commit'),
+        ("codex", '› Try "fix typecheck errors"'),
     ],
 )
 def test_ready_refuses_occupied_native_input(calls, tool, prompt):
@@ -343,6 +350,76 @@ def test_ready_refuses_occupied_native_input(calls, tool, prompt):
     assert not ready
     assert "contains text" in reason
     assert len(calls[0]) == 2
+
+
+# Shape of the WI8 live Codex screen after a completed turn: the reply quotes
+# "approve"/"approval", which once blocked every later refresh.
+FINISHED_TURN = (
+    "• Verified: the receipt does not approve research.\n"
+    "  No research approval implied; permission settings unchanged.\n"
+    "  Conclusion: waiting for the researcher.\n"
+    "  Decision needed: How would you like to proceed?\n\n"
+    "  Worked for 18s • 17:49\n\n\n"
+    "› Ask Codex to do anything\n\n"
+    "  GPT medium · /tmp/workbench · Context 5% used\n"
+    "  ? for shortcuts\n"
+)
+
+
+def test_ready_ignores_blocking_words_in_the_agents_earlier_reply(calls):
+    value = json.dumps(row(status="waiting"))
+    calls[1].extend([value, FINISHED_TURN, value, FINISHED_TURN])
+    ready, reason = client().ready(SID)
+    assert ready, reason
+
+
+@pytest.mark.parametrize(
+    "tool,screen",
+    [
+        (
+            "codex",
+            "Reply\n\n• Working (5s • esc to interrupt)\n\n› Ask Codex to do anything\n  ? x",
+        ),
+        ("codex", "Reply\nThinking\n› \n"),
+        ("codex", "Earlier text\nWould you like to make these changes?\n› \n"),
+        ("claude", "Reply\n✻ Thinking… (esc to interrupt)\n\n────\n❯ \n────\n  ? for shortcuts"),
+    ],
+)
+def test_ready_refuses_busy_state_next_to_the_input_line(calls, tool, screen):
+    calls[1].extend([json.dumps(row(tool=tool)), screen])
+    ready, reason = client().ready(SID)
+    assert not ready
+    assert "busy state" in reason
+
+
+# Raw WI8 live Claude composer: the suggested prompt is dim, the glyph is not.
+SUGGESTED = (
+    "Reply\n\x1b[39m\u276f\u00a0\x1b[2mgo with 4, draft the proposal\x1b[0m\x1b[39m\x1b[49m\n"
+)
+
+
+def test_ready_treats_dim_composer_text_as_a_hint(calls):
+    value = json.dumps(row(tool="claude", status="waiting"))
+    calls[1].extend([value, SUGGESTED, value, SUGGESTED])
+    ready, reason = client().ready(SID)
+    assert ready, reason
+    assert all("--strip-ansi" not in args for args, _ in calls[0])
+
+
+@pytest.mark.parametrize(
+    "screen",
+    [
+        "Reply\n\x1b[39m\u276f \x1b[22mtyped by the researcher\x1b[0m\n",
+        "Reply\n\u276f \x1b[2mhint\x1b[0m typed after the hint\n",
+        "Reply\n\u276f \x1b[38;5;2mgreen typed text\x1b[0m\n",
+        "Reply\n\u276f \x1b[38;2;2;2;2mrgb typed text\x1b[0m\n",
+    ],
+)
+def test_ready_refuses_visible_composer_text_in_raw_capture(calls, screen):
+    calls[1].extend([json.dumps(row(tool="claude")), screen])
+    ready, reason = client().ready(SID)
+    assert not ready
+    assert "contains text" in reason
 
 
 def test_ready_handles_unavailable_capture_conservatively(calls):
