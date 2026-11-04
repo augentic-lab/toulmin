@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-04 — AOE1: research workspace integration proposal
+
+- Scope: analyze the researcher's proposed Toulmin/AoE/Chief split; no integration implementation or task delegation was requested. Detailed analysis is in the researcher's external notes at `/home/tianchi/notes/toulmin/aoe-integration.md`, following the standing notes-location rule. Repository records remain in English.
+- **Verified**: inspected Toulmin at `df85aac`, Chief at `c25a6fe`, and installed `/home/tianchi/.local/bin/aoe` version `1.21.0` through source/documentation reads and CLI help. AoE supports native sessions, grouping and lifecycle operations; Chief has bounded task contracts, Thinking sessions, worktree execution and delivery checks. Arbitrary research sidebar integration was not verified.
+- **Inferred from code**: recommend AoE as the primary interaction entry, Toulmin as research state/protocol owner, and Chief as bounded execution owner. A resident research conversation should not automatically become a supervised Chief task. Recommend pausing additional standalone TUI/native-runtime expansion while retaining existing functionality and records; this direction is proposed, not yet approved.
+- Preserve visible research guidance through a file-derived state card and explicit actions, with a persistent AoE view evaluated if the card is insufficient. A plain native session does not automatically supply the requested research dashboard. Ordinary AoE sessions also do not inherit UI-N1's filesystem protection or full research provenance; these require explicit acceptance checks.
+- Proposed sequence: A, manually validate one bound research session and confirmed handoff; B, manually validate Spec → Chief task → archived Run/Evidence draft; C, automate the proven steps through thin L3 adapters. Spec prose needs reviewed contract mapping. A valid negative experiment can complete the Chief task without supporting the Claim. Results must survive worktree cleanup, and imports must not automatically set evidence grades or research rulings.
+- Verification: checked local source references, note/document formatting and scoped diffs. No code tests were run because only planning/progress documents changed; no end-to-end integration or independent acceptance is claimed. No AoE/Chief state, research objects, provider configuration or runtime code was changed; no model calls or worker messages were sent.
+- Session ID unavailable. Blockers: none for analysis. Next: researcher reviews the proposed direction, then a temporary-project manual trial of the AoE research entry and recovery. AOE1 documentation only is committed locally; no push.
+
 ## 2026-11-03 — UI-N1 fix: native command PTY permission failure
 
 - Researcher reported context.md Permission denied and identified Codex. Read-only inspection of the active Toulmin pane found the actual failure: `Failed to create unified exec process: Permission denied (os error 13)` before pwd/rg/cat ran. The context was researcher-owned mode0600 with traversable owned parent directories; no user session input, project files or permission bits were changed.

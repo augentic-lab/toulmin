@@ -316,6 +316,16 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 - [x] Freeze real project context, launch a protected native CLI beside the project board, archive its returned draft and Run, and require explicit conflict-checked Brief application. Provide F4/CLI entry, saved-session inspection and explicit interrupted-session recovery; verify temporary-project data integrity, runtime lifecycle and main-TUI refresh.
 - [ ] Researcher accepts the real-project discussion → draft → exit → archive → confirmed Brief workflow. Full native conversation capture and provider-session adoption remain separate work.
 
+### AOE1 — AoE research workspace integration proposal
+
+- [x] Inspect the current Toulmin, AoE-Chief and installed AoE interfaces; document responsibilities, interaction gaps, confirmation/provenance boundaries and staged acceptance in `/home/tianchi/notes/toulmin/aoe-integration.md` (external personal notes).
+- [ ] Researcher approves or revises the proposed direction: AoE owns the primary interaction surface, Toulmin owns research state, Chief owns bounded execution; pause further standalone TUI/native-runtime expansion while retaining compatibility.
+- [ ] A: manually trial one temporary research project in an ordinary AoE session. Preserve native interaction, show accurate confirmed/draft/next-action state, explicitly confirm writes and handoff, and recover in a fresh session without promoting unconfirmed output. Researcher assesses whether progress remains visible enough.
+- [ ] B: manually trace a small approved Spec through a Chief contract and archived result to an Evidence draft. Preserve code/raw-data/verification provenance, negative results and retries; retain human research rulings and copy required artifacts before worktree cleanup.
+- [ ] C: only after the manual trials, implement thin L3 binding/export/import adapters with idempotency, stale-input and interrupted-operation checks. Evaluate a persistent AoE research view if the state card is insufficient; its extension interface remains unverified.
+
+AOE1 is a proposal, not authorization to dispatch tasks, change Chief/AoE, retire existing UI features or mark prior manual acceptance complete. Its new command names are illustrative and are not implemented.
+
 ### UI-N1 fix — Native command PTY permissions
 
 - [x] Reproduce the reported Codex unified-exec EACCES before command startup; give the outer user namespace its own `/dev`/devpts and verify a newly allocated command PTY can read the mode-0600 context. Preserve formal-path read-only protection, hidden control sockets and process cleanup.
