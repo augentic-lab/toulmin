@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-04 — WX1: entry and review ergonomics design after a partial WI8 researcher trial
+
+- Trigger: the researcher ran part of the WI8 trial (not all of A01–A10) and raised four observations: too many setup commands (wants configuration and a heuristic start command), how the model is chosen, per-item `workspace apply --confirm`/handoff commands feel clumsy, and why A06 is needed; earlier, whether the agent must be told to save into WORKSPACE.md. The researcher agreed to record them and review a documentation-only design before any implementation ("可以").
+- Output: `~/notes/toulmin/workspace-entry-review-design.md` (outside the repository) with E1 user config/root discovery/`toulmin open`, E2 model line from provider logs, E3 one interactive `toulmin review` (per-item apply/reject/skip, stale-handoff regeneration, template guidance), E4 keep A06 with a stated purpose; tasks WX2–WX5 and five decisions. The WI8 ledger records the observations.
+- Facts checked (inferred from code unless noted): `--root` defaults to `.` without discovery; profile/actor fall back to binding/environment variables, no config file exists; AoE `session show` has no model field while provider logs record it (verified on WI8 logs); a change proposal and a workspace handoff draft both pin the whole WORKSPACE.md digest, so applying one makes the other stale; handoff drafts record their summary path and digest.
+- Checks: documentation-only; no code changed, so tests were not rerun. Diff inspected.
+- Decisions pending: the five WX1 decisions. WI8 stays open; WX2–WX5 are not authorized.
+- Blockers: none. Next step: researcher reviews the WX1 design.
+- Session ID: unavailable.
+
 ## 2026-11-04 — WI8 follow-up: researcher decisions W1/W3
 
 - Decision: the researcher accepted both recommendations ("好的，我同意你的建议"). W1: keep the AOE3 rule (a provider identity reported after the first turn resets the binding and sends one new context). W3: give replacement sessions a unique numbered title.
