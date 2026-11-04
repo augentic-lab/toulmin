@@ -65,3 +65,11 @@
   shared/resources/ descriptions plus a receipt. `workspace reject` records a final rejection.
 - Interrupted applies leave `.workspace-pending/`; rerunning the same apply finishes it.
 - Additive: project object v1 and existing workbenches are unchanged; no migration.
+
+## WI4 — Workspace handoffs
+
+- `toulmin aoe handoff --workspace --input SUMMARY` seals a handoff draft; `--apply DRAFT
+  --confirmed-by ACTOR --confirm` records `sessions/<stamp>-<digest>.md` and changes only
+  WORKSPACE.md `next_step` and `last_handoff`. Without `--confirm` it previews.
+- Status shows pending, stale and incomplete handoff drafts and reports orphan session records.
+- `aoe handoff PROJECT` is unchanged. Additive: no migration.

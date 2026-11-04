@@ -758,10 +758,13 @@ def _workspace_status(root: Path, verbose: bool) -> None:
             if heading in sections:
                 typer.echo(f"{heading}: " + " ".join(sections[heading].split()))
         typer.echo(f"Recorded next step: {charter.next_step or 'none'}")
+        latest = report.history[0] if report.history else None
         typer.echo(
             "Last handoff: "
-            + (f"sessions/{charter.last_handoff}" if charter.last_handoff else
-               "none (no applied workspace handoff)")
+            + (f"sessions/{latest.filename} (applied by {latest.record.applied_by} at "
+               f"{latest.record.applied_at})" if latest else
+               f"sessions/{charter.last_handoff} (invalid; see errors)" if charter.last_handoff
+               else "none (no applied workspace handoff)")
         )  # fmt: skip
     typer.echo("Projects:" + ("" if report.children else " none"))
     for child in report.children:
@@ -777,6 +780,12 @@ def _workspace_status(root: Path, verbose: bool) -> None:
         )
         if hidden and not verbose:
             typer.echo(f"  ({hidden} applied, rejected or superseded; --verbose lists them)")
+        shown = [h for h in report.handoffs if verbose or h.disposition != "applied"]
+        typer.echo("Handoff drafts:" + ("" if report.handoffs else " none"))
+        for item in shown:
+            typer.echo(f"  {item.path} | {item.disposition}")
+        if len(shown) < len(report.handoffs):
+            typer.echo(f"  ({len(report.handoffs) - len(shown)} applied; --verbose lists them)")
         typer.echo("Resources:" + ("" if report.resources else " none"))
         for resource in report.resources:
             typer.echo(

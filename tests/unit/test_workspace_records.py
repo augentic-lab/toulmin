@@ -125,3 +125,33 @@ def test_tree_digest_refuses_links(tmp_path):
     os.symlink("a.txt", tmp_path / "data/link")
     with pytest.raises(ValueError, match="only regular files"):
         tree_v1(tmp_path / "data")
+
+
+def test_continuity_patch_touches_two_lines_and_refuses_multiline_values():
+    from toulmin.core.workspace_handoffs import continuity_after
+
+    before = render_initial("Lab").replace(b'name: "Lab"', b"name: 'Lab'")
+    after = continuity_after(before, "Next: plan.", "20261104T113500Z-" + "ab" * 32 + ".md")
+    changed = [
+        line
+        for old, line in zip(before.split(b"\n"), after.split(b"\n"), strict=True)
+        if old != line
+    ]
+    assert [line.split(b":")[0] for line in changed] == [b"next_step", b"last_handoff"]
+    assert b"name: 'Lab'" in after and b'next_step: "Next: plan."' in after
+    folded = before.replace(b"next_step: null", b"next_step: >-\n  folded")
+    with pytest.raises(FormatError, match="multi-line value"):
+        continuity_after(folded, "N.", "20261104T113500Z-" + "ab" * 32 + ".md")
+
+
+def test_handoff_input_refuses_generated_sections_and_other_kinds():
+    from toulmin.core.workspace_handoffs import validate_handoff_input
+
+    body = "## Done\nx\n\n## Confirmed changes\nx\n\n## Pending ideas\nx\n\n## Open questions\nx\n"
+    good = "---\nschema_version: 1\nkind: workspace-handoff-input\n---\n" + body
+    assert validate_handoff_input(decode(good.encode())).next_step is None
+    with pytest.raises(FormatError, match="generated; use metadata next_step"):
+        validate_handoff_input(decode((good + "\n## Next step\nx\n").encode()))
+    packet = good.replace("workspace-handoff-input", "workspace-change")
+    with pytest.raises(FormatError, match="review packet"):
+        validate_handoff_input(decode(packet.encode()))

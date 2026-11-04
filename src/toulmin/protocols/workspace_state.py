@@ -21,6 +21,8 @@ from toulmin.core.proposals import validate_receipt
 from toulmin.core.repository import Repository
 from toulmin.core.resources import validate_description
 from toulmin.core.workspace import CHARTER_FILE, Charter, validate_charter
+from toulmin.core.workspace_handoffs import DRAFT_DIR, validate_handoff_draft
+from toulmin.protocols.workspace_handoff import Applied, chain
 
 LINK = ("CLAUDE.md", "AGENTS.md")
 INIT_REMNANT = ".toulmin-init-"
@@ -71,6 +73,12 @@ class Resource:
 
 
 @dataclass(frozen=True)
+class HandoffDraftState:
+    path: str
+    disposition: str  # pending, applied, stale, incomplete, invalid
+
+
+@dataclass(frozen=True)
 class WorkspaceReport:
     root: RootReport
     charter: Charter | None
@@ -79,6 +87,8 @@ class WorkspaceReport:
     resources: tuple[Resource, ...]
     notices: tuple[str, ...]
     errors: tuple[str, ...]
+    history: tuple[Applied, ...] = ()  # applied workspace handoffs, newest first
+    handoffs: tuple[HandoffDraftState, ...] = ()
 
 
 def _absolute(root: Path) -> Path:
@@ -185,12 +195,25 @@ def workspace_status(root: Path, setup: Mapping[str, bytes]) -> WorkspaceReport:
     children = _children(repository, journal, notices, errors)
     proposals: tuple[Proposal, ...] = ()
     resources: tuple[Resource, ...] = ()
+    history: tuple[Applied, ...] = ()
+    handoffs: tuple[HandoffDraftState, ...] = ()
     if report.state == RootState.WORKSPACE:
         proposals = _proposals(repository, journal, errors)
         resources = _resources(repository, journal is not None, notices, errors)
+        if charter is not None:
+            history = _history(repository, journal, errors)
+            handoffs = _handoff_drafts(repository, journal, history, errors)
         _misplaced(repository, errors)
     return WorkspaceReport(
-        report, charter, children, proposals, resources, tuple(notices), tuple(errors)
+        report,
+        charter,
+        children,
+        proposals,
+        resources,
+        tuple(notices),
+        tuple(errors),
+        history,
+        handoffs,
     )
 
 
@@ -209,12 +232,87 @@ def _charter(repository: Repository, errors: list[str]) -> Charter | None:
             repository.path(charter.receipt, "file")
         except (OSError, ValueError) as error:
             errors.append(f"{path}: charter_receipt: {error}")
-    if charter.last_handoff is not None:
-        try:
-            repository.path(f"sessions/{charter.last_handoff}", "file")
-        except (OSError, ValueError) as error:
-            errors.append(f"{path}: last_handoff: {error}")
     return charter
+
+
+def _journal_targets(repository: Repository) -> set[str]:
+    try:
+        header = decode(repository.path(f"{JOURNAL}/intent.md", "file").read_bytes()).header
+    except (OSError, ValueError):
+        return set()
+    targets = header.get("targets")
+    if not isinstance(targets, list):
+        return set()
+    return {
+        item["path"]
+        for item in targets
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
+
+
+def _history(
+    repository: Repository, journal: dict[str, str] | None, errors: list[str]
+) -> tuple[Applied, ...]:
+    """Validate the applied chain; a session record outside it is an orphan (section 8)."""
+    try:
+        history = tuple(chain(repository.root))
+    except (OSError, ValueError) as error:
+        errors.append(f"{CHARTER_FILE}: last_handoff: {error}")
+        return ()
+    linked = {f"sessions/{applied.filename}" for applied in history}
+    if journal is not None:
+        linked |= _journal_targets(repository)
+    folder = repository.root / "sessions"
+    if folder.is_dir() and not folder.is_symlink():
+        for path in sorted(folder.iterdir()):
+            relative = f"sessions/{path.name}"
+            if path.name == ".gitkeep" or relative in linked:
+                continue
+            errors.append(
+                f"{relative}: orphan session record (not linked from {CHARTER_FILE} and no "
+                "journal); preserved, never treated as the latest handoff"
+            )
+    return history
+
+
+def _handoff_drafts(
+    repository: Repository,
+    journal: dict[str, str] | None,
+    history: tuple[Applied, ...],
+    errors: list[str],
+) -> tuple[HandoffDraftState, ...]:
+    folder = repository.root / "runs"
+    if not folder.is_dir() or folder.is_symlink():
+        return ()
+    applied = {item.record.source_sha256 for item in history}
+    current = digest(repository.path(CHARTER_FILE, "file").read_bytes())
+    pending_record = (journal or {}).get("record")
+    result = []
+    for path in sorted(folder.iterdir()):
+        relative = f"runs/{path.name}"
+        if not DRAFT_DIR.fullmatch(relative) or not path.is_dir() or path.is_symlink():
+            continue
+        record = f"{relative}/draft.md"
+        try:
+            content = repository.path(record, "file").read_bytes()
+            sealed = repository.path(f"{relative}/seal", "file").read_bytes()
+            if not SEAL.fullmatch(sealed) or sealed.decode().strip() != digest(content):
+                raise ValueError("seal does not match draft.md (changed after preview)")
+            draft = validate_handoff_draft(decode(content, record))
+        except (OSError, ValueError) as error:
+            errors.append(f"{relative}: invalid handoff draft: {error}")
+            result.append(HandoffDraftState(record, "invalid"))
+            continue
+        if record == pending_record:
+            disposition = "incomplete"
+        elif digest(content) in applied:
+            disposition = "applied"
+        elif draft.base_workspace_sha256 != current:
+            disposition = "stale"
+        else:
+            disposition = "pending"
+        result.append(HandoffDraftState(record, disposition))
+    return tuple(result)
 
 
 def _journal(repository: Repository, errors: list[str]) -> dict[str, str] | None:

@@ -2,10 +2,10 @@
 
 Status: contract frozen in WI1 on 2026-11-04 from the accepted WS1 state design, WS2 operation
 scheme and WS3 acceptance plan. Implemented so far: sections 2.1, 4 and 12 (init, WI2), and
-sections 5–7 with the section 10 journal for workspace changes (WI3). Workspace handoffs, child
-creation, bindings and adoption are not implemented; WI4–WI7 add them in order, and until a
-release note says a command exists, do not create those files by hand. WS3 acceptance cases
-remain NOT RUN.
+sections 5–7 with the section 10 journal for workspace changes (WI3), and section 8 workspace
+handoffs (WI4). Child creation, bindings and adoption are not implemented; WI5–WI7 add them in
+order, and until a release note says a command exists, do not create those files by hand. WS3
+acceptance cases remain NOT RUN.
 
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
@@ -162,7 +162,7 @@ name: "Serving Research"
 charter_revision: 1
 charter_receipt: runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/receipt.md
 next_step: "Propose the scheduling child: question, single-queue scope and initial Brief."
-last_handoff: 20261104T113500Z-e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584.md
+last_handoff: 20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md
 ---
 ## Direction
 Understand how request scheduling policy affects tail latency on a single serving node.
@@ -559,12 +559,16 @@ this session). Body sections `Done`, `Confirmed changes`, `Pending ideas`, `Open
 required and nonempty ("None." is allowed); `Next step` is forbidden. A research proposal, a
 change input or a project summary given here is refused with the expected kind named (F02).
 Without `next_step`, the current WORKSPACE value is inherited; if that is null, input is refused.
+The input may live anywhere in the root except `projects/` (a child's summary belongs to that
+child). Every `confirmed_changes` entry must already be an applied receipt when drafting; the
+draft copies the list, and nothing infers it from the session.
 
 ````markdown
 ---
 schema_version: 1
 kind: workspace-handoff-input
 session_id: null
+confirmed_changes: [runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/receipt.md]
 next_step: "Propose the scheduling child: question, single-queue scope and initial Brief."
 ---
 ## Done
@@ -592,7 +596,7 @@ schema_version: 1
 kind: workspace-handoff
 scope: {kind: workspace}
 created: "2026-11-04T11:30:00.412Z"
-input: {path: runs/drafts/workspace-handoff.md, sha256: ef86101f8794e9f97f4b238c0f751fd6ebf9ebd86e3a74ca990b4ad61c7dd786}
+input: {path: runs/drafts/workspace-handoff.md, sha256: a102941573fdd0e4e027c59605636c46a4ae6c0f3e246649818c94456e5d119e}
 session_id: null
 base_workspace_sha256: e2921083e133609ce433901d0224e4d67d57fad657f5f1417bbeb5b039440d2a
 confirmed_changes: [runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/receipt.md]
@@ -619,7 +623,10 @@ kind; returns the record if `WORKSPACE.last_handoff` or its `previous_handoff` c
 names this draft digest; resumes a journal for it; then requires `base_workspace_sha256` to
 match the current file and every `confirmed_changes` receipt to be valid and applied. It
 publishes `sessions/<UTC>-<full draft sha256>.md` exclusively, then patches only `next_step`
-and `last_handoff`. The record keeps every draft field and the body and adds `source_draft`,
+and `last_handoff` (journal operation `workspace-handoff`; the session record is the first
+image, WORKSPACE.md the second). Each of those two header lines is replaced in place; every
+other WORKSPACE.md byte, including hand-chosen quoting, is kept, and a multi-line value is
+refused rather than rewritten. The record keeps every draft field and the body and adds `source_draft`,
 `source_sha256`, `applied_by`, `applied_at`, `workspace_sha256` (WORKSPACE.md after this
 application) and `previous_handoff`:
 
@@ -629,16 +636,16 @@ schema_version: 1
 kind: workspace-handoff
 scope: {kind: workspace}
 created: "2026-11-04T11:30:00.412Z"
-input: {path: runs/drafts/workspace-handoff.md, sha256: ef86101f8794e9f97f4b238c0f751fd6ebf9ebd86e3a74ca990b4ad61c7dd786}
+input: {path: runs/drafts/workspace-handoff.md, sha256: a102941573fdd0e4e027c59605636c46a4ae6c0f3e246649818c94456e5d119e}
 session_id: null
 base_workspace_sha256: e2921083e133609ce433901d0224e4d67d57fad657f5f1417bbeb5b039440d2a
 confirmed_changes: [runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/receipt.md]
 next_step: "Propose the scheduling child: question, single-queue scope and initial Brief."
 source_draft: runs/20261104T113000Z-handoff-5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b/draft.md
-source_sha256: e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584
+source_sha256: 4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7
 applied_by: "Tianchi YU"
 applied_at: "2026-11-04T11:35:00.108Z"
-workspace_sha256: 35d49825b6c722d158a52df64586f2e9c5828c9a4ddca9d82e3ea43cf7179bc4
+workspace_sha256: 642454e4434ce7e160749bad5815575a9e6e75f2acb8deb4144d340892793674
 previous_handoff: null
 ---
 ## Done
@@ -698,7 +705,7 @@ constraints: "Single queue on one node; synthetic or recorded traces only until 
 next_step: "Write the first proposed Claim or refine the Brief."
 sources:
   - {path: runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md, coverage: selected}
-  - {path: sessions/20261104T113500Z-e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584.md, coverage: full}
+  - {path: sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md, coverage: full}
 pins:
   - {resource: synthetic-queue-trace, revision: 1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
 relationships: []
@@ -740,11 +747,11 @@ kind: project-creation
 scope: {kind: workspace}
 created: "2026-11-04T14:00:00Z"
 project: scheduling
-input: {path: runs/drafts/project-scheduling.md, sha256: f2085f55cf335e111a7065b28b0b602440e9e9c233cba68defec86c27575a430, snapshot: input.md}
+input: {path: runs/drafts/project-scheduling.md, sha256: 4f2b02d439814a715f3a312bfd8209650e024c2196367061a8df10f1b6232f6b, snapshot: input.md}
 supersedes: null
 sources:
   - {path: runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md, url: null, sha256: 470842d3f25bd50a518a3e223a348fc86a0d410174075c8d419dd044fa3447ed, snapshot: sources/1.md, coverage: selected}
-  - {path: sessions/20261104T113500Z-e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584.md, url: null, sha256: d6c1c673cf3d79625b681a7e8d549bd152fc1fed679afd10b27d13da5af94422, snapshot: sources/2.md, coverage: full}
+  - {path: sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md, url: null, sha256: a76557d6b64c31077ed050d8ea145996f2a65c9d7bb296b26864080d9ca2eb8f, snapshot: sources/2.md, coverage: full}
 pins:
   - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
 relationships: []
@@ -765,7 +772,7 @@ directories, runs/, sessions/ and runs/creation/ (provenance written at confirma
 
 ## Carried inputs
 - runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md (selected)
-- sessions/20261104T113500Z-e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584.md (full)
+- sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md (full)
 - synthetic-queue-trace revision 1 (tree-v1 8a1e969279753301…)
 
 ## Unresolved assumptions
@@ -813,7 +820,7 @@ schema_version: 1
 kind: project-creation-record
 project: scheduling
 packet: runs/20261104T140000Z-project-c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8/packet.md
-packet_sha256: bd91c7ebfcc06a6367195db4cf910190e116a8588ebb2edacf79e7ddff28f156
+packet_sha256: 28585035e7322243c83eed443d2f0fdcce1dff7b049eee90331af37cf3101ac3
 confirmed_by: {actor: "Tianchi YU", at: "2026-11-04T14:10:00Z"}
 question: "Does queue scheduling policy on one serving node explain most p99 latency under bursty arrivals?"
 motivation: "The workspace direction prioritizes single-node tail latency."
@@ -823,7 +830,7 @@ assumptions: ["Bursty arrivals dominate p99 (unverified)"]
 open_questions: ["Which recorded trace can replace the synthetic one?"]
 sources:
   - {path: runs/20261104T093000Z-activity-6b1f0c2e9a4d4e7f8c3b2a1d0e9f8a7b/activity.md, url: null, sha256: 470842d3f25bd50a518a3e223a348fc86a0d410174075c8d419dd044fa3447ed, snapshot: sources/1.md, coverage: selected}
-  - {path: sessions/20261104T113500Z-e20af3052161408966e4e0a6be2eb445b6dc2f98a3315ad1bb4a852df0d99584.md, url: null, sha256: d6c1c673cf3d79625b681a7e8d549bd152fc1fed679afd10b27d13da5af94422, snapshot: sources/2.md, coverage: full}
+  - {path: sessions/20261104T113500Z-4ad94d2dbd7d10c5e246c74b4e23237e018c4004ae797ca0c714add7dc4d1ca7.md, url: null, sha256: a76557d6b64c31077ed050d8ea145996f2a65c9d7bb296b26864080d9ca2eb8f, snapshot: sources/2.md, coverage: full}
 pins:
   - {resource: synthetic-queue-trace, revision: 1, description_sha256: 0f3a9c8324cc380693fabbca95b48f2cda80f913fd1cbd46143cac509e3175d2, path: shared/data/synthetic-queue-trace, method: tree-v1, sha256: 8a1e96927975330167f8c5bdd4c4fa142ed55b3f0f69249c143908b299fd7336}
 relationships: []

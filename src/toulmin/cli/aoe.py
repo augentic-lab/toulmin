@@ -13,6 +13,7 @@ import typer
 from toulmin.adapters.aoe import AoEClient, AoEError
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView
 from toulmin.core.identifiers import validate_project_name
+from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.research_workspace import render_state
 
@@ -269,8 +270,14 @@ def acknowledge_context(
 
 @app.command("handoff")
 def workspace_handoff(
-    project: Project,
+    project: Annotated[
+        str | None,
+        typer.Argument(help="Project name; omit (or pass --workspace) for the workspace."),
+    ] = None,
     root: Root = Path("."),
+    workspace: Annotated[
+        bool, typer.Option("--workspace", help="Select the workspace scope explicitly.")
+    ] = False,
     input_path: Annotated[
         str | None,
         typer.Option(
@@ -292,14 +299,19 @@ def workspace_handoff(
     ] = False,
 ) -> None:
     """Draft or explicitly apply a handoff; window exit never confirms or closes a session."""
-    try:
-        validate_project_name(project)
-    except ValueError as error:
-        raise typer.BadParameter(str(error), param_hint="project") from error
+    if project is not None and workspace:
+        raise typer.BadParameter("give PROJECT or --workspace, not both", param_hint="project")
     if apply_path is not None and input_path is not None:
         raise typer.BadParameter("--apply and --input are mutually exclusive")
     if apply_path is None and (confirm or actor is not None):
         raise typer.BadParameter("--confirm/--confirmed-by require --apply")
+    if project is None:
+        _workspace_handoff(root, input_path, apply_path, actor, confirm)
+        return
+    try:
+        validate_project_name(project)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="project") from error
     if apply_path is not None:
         actor = actor if actor is not None else os.environ.get("TOULMIN_ACTOR") or None
         if actor is None:
@@ -314,3 +326,76 @@ def workspace_handoff(
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(path.relative_to(root.absolute()).as_posix())
+
+
+def _workspace_handoff(
+    root: Path, input_path: str | None, apply_path: str | None, actor: str | None, confirm: bool
+) -> None:
+    """Workspace scope: a sealed draft, a preview, or a confirmed session record."""
+    if input_path is None and apply_path is None:
+        raise typer.BadParameter("the workspace handoff needs --input SUMMARY or --apply DRAFT")
+    if apply_path is not None and actor is not None and not confirm:
+        typer.echo(
+            "Error: not applied; confirmation missing. Review the preview, then rerun with "
+            "--confirm.",
+            err=True,
+        )
+        raise typer.Exit(1)
+    if confirm:
+        actor = actor if actor is not None else os.environ.get("TOULMIN_ACTOR") or None
+        if actor is None:
+            raise typer.BadParameter("--confirm requires --confirmed-by or TOULMIN_ACTOR")
+    root_text = str(root.absolute())
+    try:
+        if input_path is not None:
+            outcome = workspace_handoffs.draft(root, input_path)
+        else:
+            assert apply_path is not None
+            outcome = workspace_handoffs.apply(root, apply_path, actor, confirmed=confirm)
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(f"Root: {root_text}")
+    typer.echo("Scope: Workspace")
+    loaded = outcome.loaded
+    if outcome.status in {"applied", "recovered", "replayed"}:
+        typer.echo(f"Draft: {loaded.path}")
+        typer.echo(f"Record: {outcome.record}")
+        if outcome.status == "replayed":
+            typer.echo("Already applied; nothing written.")
+        if outcome.status == "recovered":
+            typer.echo("Interrupted application finished from the journal.")
+        for note in outcome.problems:
+            typer.echo(f"Note: {note}")
+        typer.echo(f"Recorded next step: {loaded.draft.next_step}")
+        typer.echo("Changed: WORKSPACE.md next_step and last_handoff only")
+        return
+    if outcome.status == "incomplete":
+        typer.echo("State: publication incomplete")
+    typer.echo(f"Draft: {loaded.path}")
+    typer.echo(f"Seal: {loaded.seal[:16]}")
+    typer.echo(f"Base WORKSPACE.md: {loaded.draft.base_workspace_sha256[:16]}")
+    changes = ", ".join(loaded.draft.confirmed_changes) or "none cited"
+    typer.echo(f"Confirmed changes: {changes}")
+    typer.echo(f"Next step: {loaded.draft.next_step}")
+    typer.echo("")
+    typer.echo(loaded.body.rstrip("\n"))
+    typer.echo("")
+    for problem in outcome.problems:
+        typer.echo(f"Refused now: {problem}")
+    typer.echo(
+        "Confirming records this summary only: no direction, resource or project changes, "
+        "and pending ideas stay pending."
+    )
+    typer.echo(
+        "Apply: "
+        + " ".join(
+            shlex.quote(word)
+            for word in (
+                "toulmin", "aoe", "handoff", "--workspace", "--root", root_text,
+                "--apply", loaded.path, "--confirmed-by", "ACTOR", "--confirm",
+            )
+        )
+    )  # fmt: skip
+    if outcome.status != "drafted":
+        typer.echo("Preview only; nothing written.")

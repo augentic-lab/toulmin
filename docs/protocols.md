@@ -98,6 +98,7 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 | workspace propose --input F | WI3: validate a change input from root runs/drafts/ and freeze one sealed review packet (diffs, sources with coverage, pins, after images) | Writes only a new runs/<stamp>-proposal-<hex>/ directory; WORKSPACE.md and resources unchanged |
 | workspace apply --draft P | WI3: preview without --confirm; with --confirm and an actor, publish the packet's after images and a receipt | Only the listed WORKSPACE.md/resource targets, via the root journal; replays return the receipt |
 | workspace reject --draft P --reason R | WI3: record a final rejection for a pending packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
+| aoe handoff [--workspace] --input F / --apply D | WI4: without PROJECT, seal a workspace handoff draft from a structured summary; apply previews without --confirm and, confirmed, records the session | Draft: one new runs/<stamp>-handoff-<hex>/ directory. Apply: one new sessions/ record and WORKSPACE.md next_step/last_handoff only, via the root journal; replays return the record |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
 
 init preflights every planned target before writing. Existing files must match their templates; otherwise report a conflict and write none of the planned files.
@@ -334,3 +335,21 @@ journal for one operation, `workspace-change`. Reasons for the L2 additions:
   or description that differs from its receipted after image. Material digests are checked by
   propose, apply and pins, not by status. The charter after image is rendered from the
   canonical field order rather than round-tripped, so untouched nulls stay `null`.
+
+### WI4 workspace handoffs
+
+`aoe handoff` without PROJECT (or with `--workspace`) implements workspace-formats.md section 8;
+with PROJECT it is the unchanged project handoff. Reasons for the L2 additions:
+- Drafting validates the summary (four required sections, no generated `Next step`, the
+  expected kind named for change inputs, packets, project summaries and drafts), requires each
+  cited `confirmed_changes` receipt to be applied, inherits or requires `next_step`, and
+  publishes one sealed draft under the root lock. It needs no AoE client or model.
+- Apply follows the contract order: another record's journal refuses; this draft's journal
+  recovers forward with the first confirmation's actor and time; a draft already in the
+  WORKSPACE `last_handoff`/`previous_handoff` chain returns its record; otherwise the base
+  charter digest and cited receipts must still match. The charter patch replaces only the two
+  continuity lines, so other fields, sections and quoting stay byte-identical.
+- Entry planning reads only the applied chain (`latest_handoff`). Status shows each draft as
+  pending, stale (base changed), applied, incomplete or invalid, lists only non-applied ones by
+  default, and reports a session record outside the chain without a journal as an orphan error,
+  preserved and never used as the latest handoff.

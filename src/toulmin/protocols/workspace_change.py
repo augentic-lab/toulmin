@@ -157,7 +157,7 @@ def propose(
         )
         files = {"packet.md": packet, "input.md": data, **snapshots}
         files.update({target.after: after for target, _, after in targets})
-        _publish_packet(repository, directory, files, digest(packet))
+        publish_sealed(repository, directory, files, digest(packet))
     return Outcome("proposed", load(repository.root, directory))
 
 
@@ -311,12 +311,17 @@ def _targets(
     ]
 
 
-def _publish_packet(
-    repository: Repository, directory: str, files: dict[str, bytes], seal: str
+def publish_sealed(
+    repository: Repository,
+    directory: str,
+    files: dict[str, bytes],
+    seal: str,
+    prefix: str = ".proposal-prepare-",
 ) -> None:
+    """Publish a complete write-once archive by renaming a staging directory in runs/."""
     runs = repository.path("runs")
     runs.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".proposal-prepare-", dir=runs) as temporary:
+    with tempfile.TemporaryDirectory(prefix=prefix, dir=runs) as temporary:
         staging = Path(temporary)
         for name, data in files.items():
             (staging / name).parent.mkdir(parents=True, exist_ok=True)
@@ -324,7 +329,7 @@ def _publish_packet(
         write_atomic(staging / "seal", (seal + "\n").encode())
         sync_directory(staging)
         if os.path.lexists(repository.root / directory):
-            raise FormatError(f"{directory}: packet already exists")
+            raise FormatError(f"{directory}: already exists")
         os.rename(staging, repository.root / directory)
     sync_directory(runs)
 
@@ -574,3 +579,16 @@ def reject(root: Path, value: str, reason: str, actor: str, now: datetime | None
         write_atomic(repository.path(f"{loaded.directory}/receipt.md"), data)
         sync_directory(repository.path(loaded.directory))
     return Outcome("rejected", loaded, _receipt(repository, loaded))
+
+
+def applied_receipt(root: Path, value: str) -> Receipt:
+    """An applied, valid receipt of a sealed workspace change packet, or a FormatError."""
+    if not value.endswith("/receipt.md"):
+        raise FormatError(f"{value}: expected a packet receipt path")
+    repository = Repository(root)
+    loaded = load(repository.root, value.removesuffix("/receipt.md"))
+    receipt = _receipt(repository, loaded)
+    if receipt is None or receipt.disposition != "applied":
+        state = "absent" if receipt is None else receipt.disposition
+        raise FormatError(f"{value}: expected an applied receipt; found {state}")
+    return receipt

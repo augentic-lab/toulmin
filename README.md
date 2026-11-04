@@ -123,7 +123,17 @@ uv run --locked toulmin workspace reject --root /path/to/research --draft runs/<
 
 Propose and preview write nothing outside the packet; apply publishes exactly the reviewed diff
 and a receipt. A registered resource is a located, versioned description, never Evidence.
-Reviewed child creation, workspace conversations and handoffs are not available yet; see the
+A workspace session ends with a handoff drafted from a structured summary (contract
+section 8). Confirming it records the session in `sessions/` and updates only the recorded next
+step; it approves no direction, resource or project:
+
+```sh
+uv run --locked toulmin aoe handoff --workspace --root /path/to/research --input runs/drafts/handoff.md
+uv run --locked toulmin aoe handoff --workspace --root /path/to/research \
+  --apply runs/<stamp>-handoff-<hex>/draft.md --confirmed-by "Your Name" --confirm
+```
+
+Reviewed child creation and workspace native conversations are not available yet; see the
 [workspace-first contract](docs/workspace-formats.md).
 
 The legacy route still creates a template project in a non-workspace workbench:
