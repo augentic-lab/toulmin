@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-04 — WS2: workspace operations design
+
+- Authorization: the researcher accepted WS1's state/file division and requested item 2, operation design. Recorded WS1 acceptance in its external note and TODO, then updated AGENTS to the current documentation-only scope. Implementation remains paused; WS3 acceptance planning has not started.
+- Delivered English draft: `/home/tianchi/notes/toulmin/workspace-operations-design.md`. It proposes workspace-only init; missing PROJECT selecting workspace in the AoE group with an optional explicit --workspace marker; root/scope-tagged context and outputs; reviewed charter/resource and child-creation packets; separate project publication/native launch; and scope-specific handoff. Proposed command examples are prominently marked unimplemented.
+- Compatibility/recovery: preserve existing project commands, records and bindings; retain an explicit legacy init --project route; add previewed workspace adoption with a reviewed plan digest rather than silently changing existing roots. Preserve custom instructions/configuration, flag conflicting paths/guidance, and refuse stale or duplicate publication. User-authorized create-and-enter may run both steps, but failed native launch must not undo or duplicate a confirmed child. Existing native permissions and partial-transcript limits remain explicit.
+- **Verified by source inspection**: current CLI still requires project arguments; AoE creates native sessions at the workbench root; bind only prepares context. The TUI project-creation service exists but is not the proposed reviewed workspace-to-child operation. Current common-template validation motivates separating fresh workspace initialization from child publication; no implementation was changed.
+- Validation: inspected WS1 and current init/AoE/application contracts; checked note links/source paths, UTF-8/LF, Markdown fences, scope/implementation labels and diff whitespace. Reviewed examples for confirmation and scope consistency, including plan-digest binding for adoption. No code tests, model calls, AoE operations or real research writes: this is documentation-only. No new operation or migration is claimed to work.
+- Session ID unavailable. Blockers: none. Next: researcher reviews WS2, then WS3 defines the end-to-end usability walkthrough. Local commit records scope/progress; full design notes remain under ~/notes/toulmin, outside Git. No push.
+
 ## 2026-11-04 — WS1: workspace state and file ownership design
 
 - Authorization: the researcher approved the workspace-first direction, then requested only item 1 of the design sequence. No implementation, new CLI behavior, migration or live research mutations were requested. Recorded this scope in AGENTS/TODO; prior AOE3 implementation and acceptance history remain intact.
