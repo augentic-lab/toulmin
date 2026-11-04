@@ -1,5 +1,27 @@
 # Toulmin development progress
 
+## 2026-11-04 — WX4: `toulmin decide`, one-pass researcher decisions
+
+- Decision: the researcher named the command and authorized WX4 ("就用 toulmin decide，开始实现 WX4").
+- L3:
+  - `cli/decide.py`. The inventory lists pending workspace change packets, pending child creation packets, pending workspace handoff drafts, then unapplied project handoff drafts with a current base PROJECT.md. Stale drafts are counted, not offered.
+  - Each item shows its existing preview without the copy-paste command lines and is decided alone: `[a]pply / [r]eject / [s]kip / [q]uit`. The default is skip, handoffs have no reject, and refused packets offer no apply. Decisions call the same protocol functions as the individual commands, with the resolved actor and `approval_text: "toulmin decide: a"`.
+  - A workspace handoff made stale by a change applied in the same run is redrafted from its unchanged summary, with a note naming uncited receipts. Drafts after an applied handoff are skipped as superseded.
+  - Failures are reported and the item stays pending. Without a terminal, decide only lists.
+  - The preview renderers gained `commands=False`. The workspace handoff preview and result were extracted for reuse. `toulmin open` now counts the same inventory and points to decide.
+- Guidance: the workspace AGENTS.md template and native context text say pending items await `toulmin decide`, and ask the agent to offer a charter proposal once discussion settles a direction, constraint or resource (O5). released.json gained the new template digest (13 AGENTS.md digests).
+- L2 (presentation text only): the workspace state card's pending-action line names `toulmin decide`. Reason: the old line told the agent to show apply/reject commands; no logic or format changed.
+- Docs: README, docs/protocols.md WX4 section with its packaged copy, and the framework CHANGELOG.
+- **Verified**:
+  - 10 new decide tests: list-only without a terminal, actor required, apply/reject/regenerate in one pass, skip/quit, refused packet, superseded handoff, changed summary not regenerated, project handoffs incl. superseded and stale, failure continues. 1 open test updated.
+  - Full suite 1245 passed. ruff, ruff format (161 files), mypy (73 files) and `git diff --check` clean.
+  - Pseudo-terminal smoke of the installed CLI with a configured actor: piped input lists only; answering `a` applied the packet and the receipt recorded the actor and approval text; a rerun found nothing pending.
+  - No live AoE session was run.
+- Found: an order-dependent test assumption. Same-second drafts sort by their random suffix, so the test was made order-independent; the product order is path order.
+- Known limit: a regenerated handoff keeps the summary's wording and next step, which may predate the decisions just made; decide prints which applied receipts it does not cite.
+- Blockers: none. Next step: researcher authorizes WX3 (model line) or goes straight to WX5 (revised trial on the new version).
+- Session ID: unavailable.
+
 ## 2026-11-04 — WX2: user preferences, root discovery and `toulmin open`
 
 - Decision: the researcher accepted all five WX1 recommendations ("按你的建议，五个决定都同意，开始实现 WX2"): config keys as designed, a [y/N] init prompt, per-item review, stale-handoff regeneration in review, and the order WX2 → WX4 → WX3 → WX5.

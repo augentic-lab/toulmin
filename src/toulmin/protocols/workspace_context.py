@@ -177,7 +177,9 @@ def render_workspace(state: WorkspaceState) -> str:
             )
         )
         if state.pending:
-            lines.append("Show pending packets or drafts for the researcher to apply or reject.")
+            lines.append(
+                "Show pending packets or drafts; the researcher decides them with `toulmin decide`."
+            )
         lines.append(
             "Prepare a project creation input in runs/drafts/ and run `toulmin project propose "
             "NAME --input FILE` to propose a child project for review."

@@ -3,12 +3,10 @@
 Temporary directories and fake AoE only; the user's real config is isolated by conftest.
 """
 
-from types import SimpleNamespace
-
 import pytest
 from typer.testing import CliRunner
 
-from toulmin.cli import aoe, entry, settings
+from toulmin.cli import aoe, decide, entry, settings
 from toulmin.cli.app import app
 from toulmin.cli.initialize import initialize, initialize_workspace
 
@@ -270,13 +268,11 @@ def test_open_uses_preferences_and_flags_win(workspace, monkeypatch, opened):
     ]  # fmt: skip
 
 
-def test_open_notes_items_awaiting_review(workspace, monkeypatch, opened):
-    pending = SimpleNamespace(disposition="pending")
-    done = SimpleNamespace(disposition="applied")
-    report = SimpleNamespace(proposals=(pending, done), handoffs=(pending,))
-    monkeypatch.setattr(entry, "workspace_status", lambda root, setup: report)
+def test_open_notes_items_awaiting_decision(workspace, monkeypatch, opened):
+    items = (decide.Item("change", "runs/a"), decide.Item("handoff", "runs/b/draft.md"))
+    monkeypatch.setattr(entry, "inventory", lambda root: decide.Inventory(items, 0))
     result = run("open", cwd=workspace, monkeypatch=monkeypatch)
-    assert "Awaiting your review: 2 item(s); `toulmin status` lists them." in result.output
+    assert "Awaiting your decision: 2 item(s); run `toulmin decide`." in result.output
 
 
 def test_open_and_config_are_registered():

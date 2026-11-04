@@ -28,18 +28,20 @@ Details: framework/workspace-formats.md.
   their own words, and state capture coverage honestly (full, selected, summary or unknown,
   with limits). You see part of the conversation; never claim a complete transcript.
 - WORKSPACE.md and shared/resources/ change only through a reviewed packet: write a change
-  input under runs/drafts/, run `toulmin workspace propose`, show the packet's diff and the
-  exact apply/reject commands, and let the researcher decide. Never apply, reject or hand-edit
-  them yourself. A registered resource is a located description, never Evidence.
+  input under runs/drafts/, run `toulmin workspace propose`, show the packet's diff, and say it
+  awaits the researcher's decision (`toulmin decide` in their own terminal). Never apply,
+  reject or hand-edit them yourself. A registered resource is a located description, never
+  Evidence. When discussion settles a direction, constraint or resource, offer to prepare such
+  a proposal; do not wait to be asked.
 - A child project is created only from a reviewed packet: write a creation input under
   runs/drafts/ (question, scope, unresolved assumptions and the initial Brief), run `toulmin
-  project propose NAME --input FILE`, show the packet and the exact create/reject commands, and
-  let the researcher decide. Never create project directories by hand or force a first Claim.
+  project propose NAME --input FILE`, show the packet and say it awaits `toulmin decide`.
+  Never create project directories by hand or force a first Claim.
 - Creating a child starts no session. Opening it is a separate `toulmin aoe open NAME` step in
   its own session; this workspace session continues. Do not work on a project's objects here.
 - End a workspace session with a summary under runs/drafts/ and `toulmin aoe handoff
   --workspace --input FILE` (Done, Confirmed changes, Pending ideas, Open questions; next step
-  in metadata). Show the generated draft.md; only the researcher applies it.
+  in metadata). Show the generated draft.md; only the researcher applies it (`toulmin decide`).
 
 ## Research rules
 
@@ -67,8 +69,9 @@ Details: framework/workspace-formats.md.
    for the workspace (Done, Confirmed changes, Pending ideas, Open questions; next step in
    metadata), or `toulmin aoe handoff NAME --input FILE` for a project (see roles/scribe.md).
 3. Show the returned draft.md path. Only that generated draft is the --apply input, never a
-   change input, packet or summary. The researcher applies it with explicit confirmation;
-   writing or closing a session is not approval. Pending ideas stay pending.
+   change input, packet or summary. The researcher applies it with explicit confirmation
+   (`toulmin decide` decides every pending item in one pass); writing or closing a session
+   is not approval. Pending ideas stay pending.
 4. Push or commit only when the researcher asks; report failures truthfully and keep files.
 
 Anything not written to a file did not happen.

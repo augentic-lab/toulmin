@@ -108,3 +108,7 @@
 - WX2 (L3 only): user preferences in `~/.config/toulmin/config.toml` (actor, AoE profile,
   agent, attach), `--root` discovery from the current directory and `toulmin open`. Nothing in
   a workbench changes; the configured actor supplies attribution only, never confirmation.
+- WX4 (L3; one L2 presentation line): `toulmin decide` decides pending workspace changes,
+  child creations and handoff drafts one at a time in the researcher's terminal, through the
+  same functions as their own commands. Workspace AGENTS.md guidance points to it. No format
+  change; existing commands are unchanged.

@@ -33,7 +33,7 @@ def _command(*words: str) -> str:
     return " ".join(shlex.quote(word) for word in words)
 
 
-def _review(outcome: CreationOutcome, root: Path) -> None:
+def _review(outcome: CreationOutcome, root: Path, *, commands: bool = True) -> None:
     """Render the frozen packet exactly as create will check it."""
     loaded = outcome.loaded
     root_text = str(root.absolute())
@@ -50,6 +50,8 @@ def _review(outcome: CreationOutcome, root: Path) -> None:
     typer.echo("")
     for problem in outcome.problems:
         typer.echo(f"Refused now: {problem}")
+    if not commands:
+        return
     typer.echo("Create: " + _command(
         "toulmin", "project", "create", name, "--root", root_text, "--from", loaded.directory,
         "--confirmed-by", "ACTOR", "--confirm",

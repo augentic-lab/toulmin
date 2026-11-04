@@ -13,6 +13,7 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.aoe import Agent, Attach, NewSession, Profile, open_scope
+from toulmin.cli.decide import inventory
 from toulmin.cli.initialize import initialize_workspace, workspace_setup
 from toulmin.cli.settings import (
     ACTOR_VARIABLE,
@@ -24,7 +25,7 @@ from toulmin.cli.settings import (
     settings,
 )
 from toulmin.core.identifiers import validate_project_name
-from toulmin.protocols.workspace_state import RootState, classify_root, workspace_status
+from toulmin.protocols.workspace_state import RootState, classify_root
 
 config_app = typer.Typer(
     help="Show CLI preferences: the user config file, environment variables and defaults.",
@@ -79,14 +80,11 @@ def _offer_init(root: Path, state: RootState, here: Path, explicit: bool) -> Non
 
 def _pending(root: Path) -> None:
     try:
-        report = workspace_status(root, workspace_setup())
+        count = len(inventory(root).items)
     except (OSError, ValueError):
         return  # aoe open reports unreadable workspace state itself; this line is a courtesy
-    count = sum(item.disposition == "pending" for item in report.proposals) + sum(
-        item.disposition == "pending" for item in report.handoffs
-    )
     if count:
-        typer.echo(f"Awaiting your review: {count} item(s); `toulmin status` lists them.\n")
+        typer.echo(f"Awaiting your decision: {count} item(s); run `toulmin decide`.\n")
 
 
 def open_research(
@@ -148,8 +146,7 @@ def open_research(
             f"{shlex.join(['toulmin', 'workspace', 'adopt', str(base)])}"
         )
         raise typer.Exit(1)
-    if state is RootState.WORKSPACE:
-        _pending(base)
+    _pending(base)
     open_scope(base, project, profile, agent, new_session=new_session, attach=attach)
 
 

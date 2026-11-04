@@ -419,7 +419,8 @@ class AoEWorkspace:
             "Show its contents and the exact returned runs/<archive>/draft.md path for "
             "researcher review. Only that generated draft is the --apply input; never "
             "suggest applying a research proposal or the source summary. Do not apply it "
-            "yourself. Closing a terminal is not confirmation.\n"
+            "yourself; the researcher decides it with `toulmin decide`. Closing a terminal is "
+            "not confirmation.\n"
         )
 
     def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:
@@ -453,16 +454,18 @@ class AoEWorkspace:
             "claim a complete transcript.\n\n"
             "Direction, constraints, focus and shared resource descriptions change only "
             "through a reviewed packet: write a change input under runs/drafts/ (section 7.1), "
-            f"run {propose}, show the packet path, diff and the exact apply/reject commands it "
-            "prints, and let the researcher confirm. Never apply or reject a packet yourself. "
-            "A registered resource is not Evidence for any Claim.\n\n"
+            f"run {propose}, show the packet path and diff, and say it awaits the researcher's "
+            "decision with `toulmin decide` in their own terminal. Never apply or reject a "
+            "packet yourself. When discussion settles a direction, constraint or resource, "
+            "offer to prepare such a proposal; do not wait to be asked. A registered resource "
+            "is not Evidence for any Claim.\n\n"
             "Only when the researcher asks to end the session, save a structured summary "
             "under runs/drafts/ (section 8: Done, Confirmed changes, Pending ideas, Open "
             f"questions; next step in metadata) and run {handoff} with --input pointing to it. "
             "Show the returned runs/<archive>/draft.md path and contents. Only that generated "
             "draft is the --apply input: never a change input, a packet or the summary. Do not "
-            "apply it yourself. Pending ideas stay pending. Closing a terminal is not "
-            "confirmation.\n"
+            "apply it yourself; the researcher decides it with `toulmin decide`. Pending ideas "
+            "stay pending. Closing a terminal is not confirmation.\n"
         )
 
     def _verify_context(self, binding: Binding) -> None:

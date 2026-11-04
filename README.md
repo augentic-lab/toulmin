@@ -14,7 +14,21 @@ workspace session, or the child project whose directory you are in (`toulmin ope
 one explicitly), and runs `toulmin aoe open` for that scope. It initializes only after an
 explicit yes in a terminal and never on an unrelated, non-empty directory. A legacy workbench
 needs a project name; it prints the `workspace adopt` preview command instead. When items await
-your review it says so; `toulmin status` lists them.
+your decision it says so.
+
+```sh
+toulmin decide        # in your own terminal, at the end of a session
+```
+
+`toulmin decide` shows every pending workspace change, child creation and handoff draft (workspace
+and project) with the same preview its own command prints, one at a time, and asks
+`[a]pply / [r]eject / [s]kip / [q]uit` (default skip; handoff drafts have no reject). Applying
+calls the same function as the item's own `--confirm` command, with your configured actor and
+`approval_text: "toulmin decide: a"`; rejecting asks for the recorded reason. A workspace
+handoff drafted before a change you just applied is stale; decide redrafts it from the same,
+unchanged summary and shows it again, noting receipts the summary does not cite. A second
+handoff after one applied in the same run is skipped as superseded. Without a terminal it only
+lists the items. The individual `apply`/`create`/`reject`/`handoff --apply` commands still work.
 
 Preferences live in `~/.config/toulmin/config.toml` (or `$XDG_CONFIG_HOME/toulmin/config.toml`),
 outside every workbench:

@@ -438,19 +438,32 @@ def _workspace_handoff(
         raise typer.Exit(1) from error
     typer.echo(f"Root: {root_text}")
     typer.echo("Scope: Workspace")
-    loaded = outcome.loaded
     if outcome.status in {"applied", "recovered", "replayed"}:
-        typer.echo(f"Draft: {loaded.path}")
-        typer.echo(f"Record: {outcome.record}")
-        if outcome.status == "replayed":
-            typer.echo("Already applied; nothing written.")
-        if outcome.status == "recovered":
-            typer.echo("Interrupted application finished from the journal.")
-        for note in outcome.problems:
-            typer.echo(f"Note: {note}")
-        typer.echo(f"Recorded next step: {loaded.draft.next_step}")
-        typer.echo("Changed: WORKSPACE.md next_step and last_handoff only")
+        handoff_result(outcome)
         return
+    handoff_preview(outcome, root)
+
+
+def handoff_result(outcome: workspace_handoffs.HandoffOutcome) -> None:
+    loaded = outcome.loaded
+    typer.echo(f"Draft: {loaded.path}")
+    typer.echo(f"Record: {outcome.record}")
+    if outcome.status == "replayed":
+        typer.echo("Already applied; nothing written.")
+    if outcome.status == "recovered":
+        typer.echo("Interrupted application finished from the journal.")
+    for note in outcome.problems:
+        typer.echo(f"Note: {note}")
+    typer.echo(f"Recorded next step: {loaded.draft.next_step}")
+    typer.echo("Changed: WORKSPACE.md next_step and last_handoff only")
+
+
+def handoff_preview(
+    outcome: workspace_handoffs.HandoffOutcome, root: Path, *, commands: bool = True
+) -> None:
+    """The sealed draft as apply will check it; ``commands`` adds the apply line."""
+    loaded = outcome.loaded
+    root_text = str(root.absolute())
     if outcome.status == "incomplete":
         typer.echo("State: publication incomplete")
     typer.echo(f"Draft: {loaded.path}")
@@ -468,6 +481,8 @@ def _workspace_handoff(
         "Confirming records this summary only: no direction, resource or project changes, "
         "and pending ideas stay pending."
     )
+    if not commands:
+        return
     typer.echo(
         "Apply: "
         + " ".join(

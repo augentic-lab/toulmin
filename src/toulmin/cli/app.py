@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.aoe import app as aoe_app
+from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
 from toulmin.cli.project import app as project_app
@@ -37,6 +38,7 @@ app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
 app.add_typer(config_app, name="config")
 app.command("open")(open_research)
+app.command("decide")(decide_command)
 
 
 @app.command("tui")

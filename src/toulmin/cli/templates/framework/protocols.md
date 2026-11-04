@@ -451,3 +451,26 @@ user preferences and a heuristic entry. No L1/L2 format or behavior changed.
   initializes only after an explicit yes in a terminal; it refuses unrelated directories and
   asks for a project name on legacy workbenches. A new session's agent is the flag, else the
   replaced binding's, else the configured one, else codex; an existing binding keeps its own.
+
+### WX4 one-pass decisions (L3, plus one L2 text line)
+
+After the partial WI8 researcher trial (observation O3: per-item apply/handoff commands),
+`toulmin decide` walks every pending item in the researcher's own terminal. No format changed.
+- Inventory, in order: pending workspace change packets, pending child creation packets,
+  pending workspace handoff drafts, then unapplied project handoff drafts whose base PROJECT.md
+  is current. Handoff drafts already stale are counted, not offered.
+- Each item shows its existing preview without the copy-paste command lines and is decided
+  alone: apply, reject (packets only, with a recorded reason), skip or quit. Applying calls the
+  same L2 function as the item's own command; packets record `approval_text: "toulmin decide:
+  a"`. There is no bulk decision. An item that fails is reported and stays pending.
+- A change packet and a workspace handoff draft both pin the whole WORKSPACE.md digest. When a
+  change applied in the same run makes a pending handoff draft stale, decide drafts it again from
+  the same summary (only if the summary's digest is unchanged) and shows the new draft, noting
+  applied receipts that the summary does not cite. After a workspace handoff is applied, further
+  workspace handoff drafts are skipped as superseded; the same holds per project.
+- Like every confirming command, decide relies on being run by the researcher. It adds no
+  enforcement and removes none; without a terminal it only lists items.
+- Agent guidance (workspace AGENTS.md template, native context text) now says pending items
+  await `toulmin decide` instead of listing apply/reject commands, and asks the agent to offer
+  a charter proposal once discussion settles a direction, constraint or resource (O5). The L2
+  workspace state card's action line names `toulmin decide`; this is presentation text only.
