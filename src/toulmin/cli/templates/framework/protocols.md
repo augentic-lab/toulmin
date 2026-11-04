@@ -417,3 +417,17 @@ journal. Reasons for the L1/L2 additions:
   legacy-classified root or an incomplete workspace, both reported with the digest to rerun.
   Project bindings (version 1) and their context archives are untouched; their contexts become
   stale because a child of a workspace root also receives WORKSPACE.md.
+
+### WI8 native trial fixes (L3 only)
+
+The live AoE trial changed no L1/L2 behavior. Recorded for the binding contract:
+- Readiness scans for busy and dialog words only around the native input line, and treats dim
+  composer text as a hint, because agent replies and Claude's suggested prompts otherwise
+  refused every later delivery.
+- AoE refuses a new session whose title and path match any existing session, archived or
+  trashed ones included. A version 2 binding therefore records a numbered title such as
+  `Workspace: NAME (2)` when the plain one is taken at the root; creation recovery matches the
+  recorded title as before. Version 1 bindings keep `Toulmin: NAME` unchanged, so a legacy
+  replacement still needs the old session renamed in AoE.
+- A provider identity that AoE reports only after the first turn still resets the binding and
+  sends one new context (researcher decision W1, 2026-11-04: keep the AOE3 rule).
