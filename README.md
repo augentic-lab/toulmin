@@ -2,6 +2,42 @@
 
 A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
+## Quick start
+
+```sh
+mkdir ~/research/serving && cd ~/research/serving
+toulmin open          # empty directory: asks "Initialize ... and open its session? [y/N]"
+```
+
+`toulmin open` finds the nearest workbench at or above the current directory. It opens the
+workspace session, or the child project whose directory you are in (`toulmin open NAME` picks
+one explicitly), and runs `toulmin aoe open` for that scope. It initializes only after an
+explicit yes in a terminal and never on an unrelated, non-empty directory. A legacy workbench
+needs a project name; it prints the `workspace adopt` preview command instead. When items await
+your review it says so; `toulmin status` lists them.
+
+Preferences live in `~/.config/toulmin/config.toml` (or `$XDG_CONFIG_HOME/toulmin/config.toml`),
+outside every workbench:
+
+```toml
+actor = "Your Name"     # default for --confirmed-by
+[aoe]
+profile = "main"        # AoE profile for new sessions
+agent = "codex"         # native CLI for new sessions: codex or claude
+attach = true           # attach after open
+```
+
+Precedence is command flag > saved binding (an existing session keeps its profile and agent) >
+environment variable (`TOULMIN_ACTOR`, `AGENT_OF_EMPIRES_PROFILE`) > config > default. An
+unknown key or invalid value stops the command; the file is never repaired. `toulmin config
+show` prints each value and its source. Every command that takes `--root` also finds the
+workbench above the current directory when `--root` is omitted, and says so on stderr when it
+is not the current directory; an explicit `--root` (even `.`) is used as given. A configured
+actor only supplies attribution: every application still needs `--confirm`.
+
+Toulmin chooses the native CLI, not the model: the model is whatever that CLI is configured to
+use.
+
 ## Research sessions in AoE
 
 Use AoE's native Codex/Claude sessions with Toulmin's file-based research state.

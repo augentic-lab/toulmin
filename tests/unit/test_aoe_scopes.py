@@ -331,7 +331,7 @@ def cli(monkeypatch, fake):
     monkeypatch.setattr(
         aoe_cli,
         "AoEWorkspace",
-        lambda root, project, client=None: AoEWorkspace(root, project, fake),
+        lambda root, project, client=None, **options: AoEWorkspace(root, project, fake),
     )
 
     def run(*args):
@@ -387,3 +387,36 @@ def test_workspace_instructions_are_scope_aware_and_legacy_template_is_unchanged
     initialize(legacy, "demo")
     shared = Path(__file__).resolve().parents[2] / "src/toulmin/cli/templates/AGENTS.md"
     assert (legacy / "AGENTS.md").read_bytes() == shared.read_bytes()
+
+
+# WX2 preferences: a new session's agent and an unbound scope's profile.
+
+
+def test_new_session_agent_prefers_flag_then_replaced_binding_then_fallback(root, fake):
+    service = AoEWorkspace(root, None, fake)
+
+    def archive():
+        old = stored(root)["session_id"]
+        fake.sessions[old] = replace(fake.sessions[old], state="archived")
+
+    service.open(fallback_agent="claude")
+    assert fake.created[-1][2] == "claude" and stored(root)["agent"] == "claude"
+    service.open("codex")  # an existing binding keeps its own agent; nothing is created
+    assert len(fake.created) == 1 and stored(root)["agent"] == "claude"
+    archive()
+    service.open(new_session=True)  # the replaced binding's agent beats the fallback
+    assert fake.created[-1][2] == "claude"
+    archive()
+    service.open("codex", new_session=True, fallback_agent="claude")  # a flag beats both
+    assert fake.created[-1][2] == "codex" and stored(root)["agent"] == "codex"
+    with pytest.raises(FormatError):
+        service.open(fallback_agent="gemini")
+
+
+def test_unbound_scope_profile_uses_the_given_default_before_environment(root, monkeypatch):
+    monkeypatch.setenv("TOULMIN_AOE_COMMAND", "true")  # resolved, never executed
+    monkeypatch.setenv("AGENT_OF_EMPIRES_PROFILE", "from-env")
+    assert AoEWorkspace(root, None, default_profile="chosen")._client().profile == "chosen"
+    assert AoEWorkspace(root, None)._client().profile == "from-env"
+    monkeypatch.delenv("AGENT_OF_EMPIRES_PROFILE")
+    assert AoEWorkspace(root, None)._client().profile == "main"

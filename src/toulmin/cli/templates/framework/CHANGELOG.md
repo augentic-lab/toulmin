@@ -105,3 +105,6 @@
   unchanged; no model or session is started. Conflicts and stale digests write nothing; an
   interrupted adoption finishes when rerun with the same digest.
 - Existing project native contexts become stale after adoption (they gain WORKSPACE.md).
+- WX2 (L3 only): user preferences in `~/.config/toulmin/config.toml` (actor, AoE profile,
+  agent, attach), `--root` discovery from the current directory and `toulmin open`. Nothing in
+  a workbench changes; the configured actor supplies attribution only, never confirmation.

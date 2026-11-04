@@ -12,6 +12,16 @@ import typer
 
 from toulmin.adapters.aoe import AoEClient, AoEError
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
+from toulmin.cli.settings import (
+    ACTOR_HINT,
+    AGENTS,
+    DEFAULT_PROFILE,
+    default_agent,
+    default_attach,
+    default_profile,
+    resolve_actor,
+    root_option,
+)
 from toulmin.core.identifiers import validate_project_name
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
@@ -27,7 +37,7 @@ Project = Annotated[
 Workspace = Annotated[
     bool, typer.Option("--workspace", help="Select the workspace scope explicitly.")
 ]
-Root = Annotated[Path, typer.Option("--root", help="Research workbench root.")]
+Root = Annotated[Path, root_option("Research workbench root.")]
 Profile = Annotated[
     str | None, typer.Option("--profile", help="AoE profile; defaults to saved binding.")
 ]
@@ -55,7 +65,10 @@ def _workspace(
     if project is not None:
         validate_project_name(project)
     client = AoEClient(profile) if profile is not None and not offline else None
-    return AoEWorkspace(root, project, client=client)
+    if client is not None or offline:
+        return AoEWorkspace(root, project, client=client)
+    # Without --profile, a saved binding's profile wins; this default serves new bindings.
+    return AoEWorkspace(root, project, client=None, default_profile=default_profile())
 
 
 def _refresh_command(root: Path, project: str | None, profile: str | None) -> str:
@@ -66,7 +79,7 @@ def _refresh_command(root: Path, project: str | None, profile: str | None) -> st
 
 
 def _recovery(root: Path, project: str | None, profile: str | None) -> None:
-    selected = profile or os.environ.get("AGENT_OF_EMPIRES_PROFILE", "main")
+    selected = profile or default_profile() or DEFAULT_PROFILE
     local = Path.home() / ".local/bin/aoe"
     command = os.environ.get("TOULMIN_AOE_COMMAND") or (
         str(local) if local.is_file() and os.access(local, os.X_OK) else "aoe"
@@ -186,37 +199,64 @@ def _execute(
         raise typer.Exit(1) from error
 
 
+Agent = Annotated[
+    str | None,
+    typer.Option(
+        "--agent",
+        help="Native CLI for a new session: codex or claude. Default: the replaced binding's, "
+        "then the config, then codex. An existing session keeps its own.",
+    ),
+]
+NewSession = Annotated[
+    bool,
+    typer.Option(
+        "--new-session", help="Replace an archived binding, or retry a launch that left no session."
+    ),
+]
+Attach = Annotated[
+    bool | None,
+    typer.Option(
+        "--attach/--no-attach",
+        help="Attach after printing state (default: the config's aoe.attach, else stay here).",
+        show_default=False,
+    ),
+]
+
+
 @app.command("open")
 def open_workspace(
     project: Project = None,
     workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
-    agent: Annotated[str, typer.Option("--agent", help="Native CLI: codex or claude.")] = "codex",
-    new_session: Annotated[
-        bool,
-        typer.Option(
-            "--new-session",
-            help="Replace an archived binding, or retry a launch that left no session.",
-        ),
-    ] = False,
-    attach: Annotated[
-        bool,
-        typer.Option(
-            "--attach", help="Attach after printing state; otherwise stay in this terminal."
-        ),
-    ] = False,
+    agent: Agent = None,
+    new_session: NewSession = False,
+    attach: Attach = None,
 ) -> None:
     """Open or recover one research session, with checked context delivery."""
     project = _select(project, workspace)
-    if agent not in {"codex", "claude"}:
+    open_scope(root, project, profile, agent, new_session=new_session, attach=attach)
+
+
+def open_scope(
+    root: Path,
+    project: str | None,
+    profile: str | None,
+    agent: str | None,
+    *,
+    new_session: bool = False,
+    attach: bool | None = None,
+) -> None:
+    """Shared by ``aoe open`` and ``toulmin open``: flags first, then preferences."""
+    if agent is not None and agent not in AGENTS:
         raise typer.BadParameter("expected codex or claude", param_hint="--agent")
+    fallback = default_agent()
     _execute(
         root,
         project,
         profile,
-        lambda service: service.open(agent, new_session=new_session),
-        attach=attach,
+        lambda service: service.open(agent, new_session=new_session, fallback_agent=fallback),
+        attach=default_attach() if attach is None else attach,
         recovery_on_error=True,
     )
 
@@ -332,7 +372,8 @@ def workspace_handoff(
         ),
     ] = None,
     actor: Annotated[
-        str | None, typer.Option("--confirmed-by", help="Researcher; defaults to $TOULMIN_ACTOR.")
+        str | None,
+        typer.Option("--confirmed-by", help="Researcher; defaults to $TOULMIN_ACTOR, then config."),
     ] = None,
     confirm: Annotated[
         bool, typer.Option("--confirm", help="Confirm this handoff application.")
@@ -353,9 +394,9 @@ def workspace_handoff(
     except ValueError as error:
         raise typer.BadParameter(str(error), param_hint="project") from error
     if apply_path is not None:
-        actor = actor if actor is not None else os.environ.get("TOULMIN_ACTOR") or None
+        actor = resolve_actor(actor)
         if actor is None:
-            raise typer.BadParameter("--apply requires --confirmed-by or TOULMIN_ACTOR")
+            raise typer.BadParameter(f"--apply requires an actor: {ACTOR_HINT}")
     try:
         path = (
             draft_handoff(root, project, input_path)
@@ -382,9 +423,9 @@ def _workspace_handoff(
         )
         raise typer.Exit(1)
     if confirm:
-        actor = actor if actor is not None else os.environ.get("TOULMIN_ACTOR") or None
+        actor = resolve_actor(actor)
         if actor is None:
-            raise typer.BadParameter("--confirm requires --confirmed-by or TOULMIN_ACTOR")
+            raise typer.BadParameter(f"--confirm requires an actor: {ACTOR_HINT}")
     root_text = str(root.absolute())
     try:
         if input_path is not None:

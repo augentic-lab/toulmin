@@ -373,8 +373,8 @@ WI5/WI6 are partial usable checkpoints, not reductions of accepted WS3 scope. Ea
 Design: `/home/tianchi/notes/toulmin/workspace-entry-review-design.md`. Observations O1–O5: setup commands, invisible model choice, per-item apply/handoff commands, purpose of A06, when the agent offers a charter proposal. Boundaries kept: researcher decides in their own terminal, no approval relayed through chat, no L1/L2 format change, existing commands unchanged.
 
 - [x] WX1 — Design draft (2026-11-04): E1 user config + root discovery + heuristic `toulmin open`; E2 model line from provider logs; E3 one `toulmin review` with stale-handoff regeneration and template guidance; E4 explain A06 instead of removing it. Documentation only.
-- [ ] WX1 researcher review of the five recorded decisions (config keys, init prompt, review granularity, handoff regeneration, task order).
-- [ ] WX2 — E1 configuration, root discovery and `toulmin open` (not authorized).
+- [x] WX1 researcher review: on 2026-11-04 the researcher accepted all five recommendations (config keys as designed, init prompt [y/N], per-item review, stale-handoff regeneration, order WX2 → WX4 → WX3 → WX5).
+- [x] WX2 — E1 configuration, root discovery and `toulmin open` (2026-11-04: `~/.config/toulmin/config.toml` with actor and `[aoe]` profile/agent/attach, precedence flag > binding > environment > config > default, `toulmin config show`, `--root` discovery on every research command, `toulmin open [NAME]` with terminal-only init prompt; automated tests with fake AoE; no live AoE session run).
 - [ ] WX3 — E2 model visibility (not authorized).
-- [ ] WX4 — E3 `toulmin review` and template guidance (not authorized).
+- [ ] WX4 — E3 unified decision command and template guidance (not authorized). `toulmin review` is already the C3 independent-review command, so the new command needs another name (proposal: `toulmin decide`).
 - [ ] WX5 — Revise researcher-trial.md and resume the WI8 researcher trial on the new version (researcher acceptance).

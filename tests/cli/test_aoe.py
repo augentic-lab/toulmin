@@ -57,8 +57,9 @@ def fake_service(workbench, monkeypatch):
         failure = None
         client = None
 
-        def __init__(self, root, project, client=None):
+        def __init__(self, root, project, client=None, *, default_profile=None):
             self.client = client
+            self.default_profile = default_profile
             self.calls.append(("init", root, project, client))
 
         def outcome(self, call):
@@ -67,8 +68,9 @@ def fake_service(workbench, monkeypatch):
                 raise self.failure
             return self.result
 
-        def open(self, agent="codex", *, new_session=False):
-            return self.outcome(("open", agent, new_session))
+        def open(self, agent=None, *, new_session=False, fallback_agent="codex"):
+            # Records the agent a new session would use (no replaced binding in the fake).
+            return self.outcome(("open", agent or fallback_agent, new_session))
 
         def bind(self, session_id=None, *, replace_existing=False):
             return self.outcome(("bind", session_id, replace_existing))

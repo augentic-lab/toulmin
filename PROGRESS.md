@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-04 — WX2: user preferences, root discovery and `toulmin open`
+
+- Decision: the researcher accepted all five WX1 recommendations ("按你的建议，五个决定都同意，开始实现 WX2"): config keys as designed, a [y/N] init prompt, per-item review, stale-handoff regeneration in review, and the order WX2 → WX4 → WX3 → WX5.
+- L3 only (no L1/L2 change):
+  - `cli/settings.py`: `$XDG_CONFIG_HOME/toulmin/config.toml` (`actor`, `[aoe] profile/agent/attach`), strict validation without repair; precedence flag > saved binding > environment > config > default; `--root` discovery callback (nearest workspace or legacy workbench above the current directory, stderr notice when it moves; explicit `--root` used as given).
+  - `cli/entry.py`: `toulmin open [NAME]` (child from `projects/NAME/`, terminal-only init prompt defaulting to no, unrelated directories refused, legacy workbenches need a project, pending-review count) delegating to the shared `aoe open` path; `toulmin config show` with value sources.
+  - `application/aoe.py`: an unbound scope takes the given default profile before `AGENT_OF_EMPIRES_PROFILE`; a new session's agent is the flag, else the replaced binding's, else the fallback. Existing bindings keep their agent.
+  - Every confirming command resolves the actor through the same function; `aoe open` gained `--attach/--no-attach`.
+- Behavior change: `toulmin status` from a project directory now finds the workbench (previously an error with a `--root` hint; an explicit `--root .` keeps the hint). The test was updated accordingly.
+- Docs: README quick start; docs/protocols.md (actor default and a WX2 section) with its packaged copy; framework CHANGELOG. The WI1 contract (workspace-formats.md) is unchanged; protocols.md records the config actor as a further fallback.
+- **Verified**: 30 new tests (config parsing/refusal, XDG handling, actor/profile/agent/attach precedence, discovery, every `open` branch with fake AoE); tests isolate `XDG_CONFIG_HOME` so the real user config is never read. Full suite 1235 passed; ruff, ruff format (159 files), mypy (72 files) and `git diff --check` clean. Smoke of the installed CLI in a scratch directory with `TOULMIN_AOE_COMMAND=/bin/false`: no terminal prints only the init command; answering n creates nothing; y initializes and hands off to `aoe open` (the fake AoE fails with the usual recovery hint); nested `status` finds the root; an unknown config key stops `config show`. No live AoE session was run.
+- Found while implementing: `toulmin review` already names the C3 independent-review command, so WX4's unified decision command needs another name (proposal: `toulmin decide`).
+- Blockers: none. Next step: researcher authorizes WX4 and chooses its command name.
+- Session ID: unavailable.
+
 ## 2026-11-04 — WX1: entry and review ergonomics design after a partial WI8 researcher trial
 
 - Trigger: the researcher ran part of the WI8 trial (not all of A01–A10) and raised four observations: too many setup commands (wants configuration and a heuristic start command), how the model is chosen, per-item `workspace apply --confirm`/handoff commands feel clumsy, and why A06 is needed; earlier, whether the agent must be told to save into WORKSPACE.md. The researcher agreed to record them and review a documentation-only design before any implementation ("可以").

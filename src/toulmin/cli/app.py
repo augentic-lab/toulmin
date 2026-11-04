@@ -1,6 +1,5 @@
 """Installed CLI entry point."""
 
-import os
 import re
 from pathlib import Path
 from typing import Annotated
@@ -8,8 +7,10 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.aoe import app as aoe_app
+from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
 from toulmin.cli.project import app as project_app
+from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
@@ -34,8 +35,8 @@ app = typer.Typer(
 app.add_typer(aoe_app, name="aoe")
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
-
-ACTOR_VARIABLE = "TOULMIN_ACTOR"
+app.add_typer(config_app, name="config")
+app.command("open")(open_research)
 
 
 @app.command("tui")
@@ -68,7 +69,7 @@ def interactive_workspace(
 @app.command("native")
 def native_workspace(
     project: Annotated[str, typer.Argument(help="Existing research project slug.")],
-    root: Annotated[Path, typer.Option("--root", help="Workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Workbench root.")] = Path("."),
     agent: Annotated[str, typer.Option("--agent", help="Native CLI: codex or claude.")] = "codex",
     session: Annotated[
         str | None, typer.Option("--session", help="Inspect a saved native session; no model call.")
@@ -101,9 +102,7 @@ def native_workspace(
 
 def confirmer(value: str | None) -> str | None:
     """Explicit --confirmed-by wins; otherwise the operator's local default, if any."""
-    if value is not None:
-        return value
-    return os.environ.get(ACTOR_VARIABLE) or None
+    return resolve_actor(value)
 
 
 def display(path: Path, root: Path) -> str:
@@ -185,7 +184,7 @@ def init_workbench(
 def draft_object(
     kind: Annotated[ObjectKind, typer.Argument(help="Object type.")],
     project: Annotated[str, typer.Argument(help="Project name.")],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     name: Annotated[
         str | None, typer.Option("--name", help="Optional filename suffix, e.g. tail-cause.")
     ] = None,
@@ -222,7 +221,7 @@ def draft_object(
 def role_inputs(
     project: Annotated[str, typer.Argument(help="Project name.")],
     role: Annotated[str, typer.Argument(help="Role with an input manifest, e.g. reviewer.")],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     claims: Annotated[
         list[str] | None,
         typer.Option("--claim", help="Give only these Claims; may be repeated."),
@@ -258,10 +257,10 @@ def new_object(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher authorizing intake. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher authorizing intake. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     confirm: Annotated[
         bool, typer.Option("--confirm", help="Explicitly confirm this draft's intake.")
     ] = False,
@@ -273,9 +272,7 @@ def new_object(
         raise typer.BadParameter(str(error), param_hint="project") from error
     actor = confirmer(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     try:
         path = create_object(root, project, kind, input_path, actor, confirm)
     except (OSError, ValueError) as error:
@@ -290,7 +287,7 @@ def intake_drafts(
     output: Annotated[
         str, typer.Argument(help="Archived raw review output containing a draft block.")
     ],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     take: Annotated[
         list[str] | None,
         typer.Option(
@@ -308,7 +305,7 @@ def intake_drafts(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher choosing these outcomes. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher choosing these outcomes. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -322,9 +319,7 @@ def intake_drafts(
         raise typer.BadParameter(str(error), param_hint="project") from error
     actor = confirmer(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     chosen: dict[str, str | None] = {}
     for item in ",".join(take or []).split(","):
         if item.strip():
@@ -363,7 +358,7 @@ def intake_drafts(
 @app.command("review")
 def review_project(
     project: Annotated[str, typer.Argument(help="Project name.")],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     personas: Annotated[
         str | None,
         typer.Option("--personas", help="Comma list of critique roles; default from models.toml."),
@@ -383,7 +378,7 @@ def review_project(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -399,9 +394,7 @@ def review_project(
         raise typer.BadParameter(str(error), param_hint="project") from error
     actor = confirmer(actor)
     if actor is None and not dry_run:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
 
     def split(value: str | None) -> list[str] | None:
         return (
@@ -433,7 +426,7 @@ def synthesize_runs(
     runs: Annotated[
         list[str], typer.Argument(help="Completed review or crossval Runs, e.g. R-002.")
     ],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     model: Annotated[
         str | None,
         typer.Option("--model", help="Override the rotated synthesizer model ([models] name)."),
@@ -445,7 +438,7 @@ def synthesize_runs(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher starting this synthesis. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher starting this synthesis. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -473,7 +466,7 @@ def crossval_question(
     question: Annotated[
         str, typer.Argument(help="Question file in the project's runs/drafts/, root-relative.")
     ],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     models: Annotated[
         str | None,
         typer.Option("--models", help="Comma list of [models] names; default from models.toml."),
@@ -492,7 +485,7 @@ def crossval_question(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher starting this round. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -531,9 +524,7 @@ def _round_actor(project: str, actor: str | None, dry_run: bool) -> str:
         raise typer.BadParameter(str(error), param_hint="project") from error
     actor = confirmer(actor)
     if actor is None and not dry_run:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     return actor or ""
 
 
@@ -541,7 +532,7 @@ def _round_actor(project: str, actor: str | None, dry_run: bool) -> str:
 def rule_object(
     project: Annotated[str, typer.Argument(help="Project name.")],
     object_id: Annotated[str, typer.Argument(help="Object ID in this project, e.g. O-001.")],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     status: Annotated[
         str | None, typer.Option("--status", help="New stored status chosen by the researcher.")
     ] = None,
@@ -576,7 +567,7 @@ def rule_object(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher making this ruling. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher making this ruling. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -590,9 +581,7 @@ def rule_object(
         raise typer.BadParameter(str(error), param_hint="project") from error
     actor = confirmer(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     texts: dict[str, str] = {}
     pairs: list[tuple[str, str | None]] = [("Response", response), ("Ruling", ruling)]
     for item in section or []:
@@ -647,7 +636,7 @@ def show_status(
     project: Annotated[
         str | None, typer.Argument(help="Child project name; omit for the workspace.")
     ] = None,
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     workspace: Annotated[
         bool, typer.Option("--workspace", help="Workspace scope (the same as omitting PROJECT).")
     ] = False,
@@ -820,7 +809,7 @@ def _workspace_status(root: Path, verbose: bool) -> None:
 @app.command("handoff")
 def handoff(
     project: Annotated[str, typer.Argument(help="Project name.")],
-    root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     input_path: Annotated[
         str | None,
         typer.Option(
@@ -838,7 +827,7 @@ def handoff(
         str | None,
         typer.Option(
             "--confirmed-by",
-            help=f"Researcher authorizing application. Defaults to ${ACTOR_VARIABLE}.",
+            help=f"Researcher authorizing application. Defaults to ${ACTOR_VARIABLE}, then config.",
         ),
     ] = None,
     confirm: Annotated[
@@ -857,7 +846,7 @@ def handoff(
     if apply_path is not None:
         actor = confirmer(actor)
         if actor is None:
-            raise typer.BadParameter(f"--apply requires --confirmed-by or {ACTOR_VARIABLE}")
+            raise typer.BadParameter(f"--apply requires an actor: {ACTOR_HINT}")
     try:
         path = (
             draft_handoff(root, project, input_path)

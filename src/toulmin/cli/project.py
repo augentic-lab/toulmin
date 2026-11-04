@@ -1,12 +1,12 @@
 """Reviewed child creation: propose a sealed packet, then create or reject it."""
 
-import os
 import shlex
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.protocols.project_creation import CreationOutcome, create, propose, reject
 
 app = typer.Typer(
@@ -14,16 +14,17 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-ACTOR_VARIABLE = "TOULMIN_ACTOR"
 Name = Annotated[str, typer.Argument(help="Child project name (lowercase, hyphenated).")]
-Root = Annotated[Path, typer.Option("--root", help="Workspace root.")]
+Root = Annotated[Path, root_option("Workspace root.")]
 Packet = Annotated[
     str,
     typer.Option("--from", help="Creation packet runs/<stamp>-project-<hex> (or packet.md)."),
 ]
 Actor = Annotated[
     str | None,
-    typer.Option("--confirmed-by", help=f"Confirming researcher; defaults to ${ACTOR_VARIABLE}."),
+    typer.Option(
+        "--confirmed-by", help=f"Confirming researcher; defaults to ${ACTOR_VARIABLE}, then config."
+    ),
 ]
 Confirm = Annotated[bool, typer.Option("--confirm", help="Confirm this exact reviewed packet.")]
 
@@ -91,11 +92,9 @@ def _fail(error: Exception) -> typer.Exit:
 
 
 def _actor(actor: str | None) -> str:
-    actor = actor if actor is not None else os.environ.get(ACTOR_VARIABLE) or None
+    actor = resolve_actor(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     return actor
 
 

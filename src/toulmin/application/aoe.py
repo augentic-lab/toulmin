@@ -92,7 +92,14 @@ def render_scope(state: ResearchState | WorkspaceState) -> str:
 class AoEWorkspace:
     """One scope's binding: the workspace (``project`` None) or a named child project."""
 
-    def __init__(self, root: Path, project: str | None, client: AoEClient | None = None) -> None:
+    def __init__(
+        self,
+        root: Path,
+        project: str | None,
+        client: AoEClient | None = None,
+        *,
+        default_profile: str | None = None,
+    ) -> None:
         self.repository = Repository(root)
         self.root = self.repository.root
         self.project = project
@@ -113,6 +120,8 @@ class AoEWorkspace:
         self.runs = self.scope.records("runs")
         self.binding_path = self.repository.path(self.binding_relative)
         self.client = client
+        # Profile for a scope without a saved binding (WX2: environment, then user config).
+        self.default_profile = default_profile
 
     def _workspace_name(self) -> str:
         path = self.repository.path(CHARTER_FILE, "file")
@@ -264,7 +273,9 @@ class AoEWorkspace:
 
     def _client(self, binding: Binding | None = None) -> AoEClient:
         client = self.client or AoEClient(
-            binding.profile if binding else os.environ.get("AGENT_OF_EMPIRES_PROFILE", "main")
+            binding.profile
+            if binding
+            else self.default_profile or os.environ.get("AGENT_OF_EMPIRES_PROFILE", "main")
         )
         if binding and client.profile != binding.profile:
             raise FormatError("Profile differs from binding; use explicit bind --replace")
@@ -658,14 +669,28 @@ class AoEWorkspace:
         # Binding is safe inside a busy native session: it prepares files, never sends into itself.
         return self.status()
 
-    def open(self, agent: str = "codex", *, new_session: bool = False) -> WorkspaceView:
-        if agent not in {"codex", "claude"}:
+    def open(
+        self,
+        agent: str | None = None,
+        *,
+        new_session: bool = False,
+        fallback_agent: str = "codex",
+    ) -> WorkspaceView:
+        """Reuse the bound session, or create one with ``agent``.
+
+        Without ``agent`` a new session uses the replaced binding's agent, else
+        ``fallback_agent``. An existing binding keeps its own agent.
+        """
+        if agent is not None and agent not in {"codex", "claude"}:
+            raise FormatError("Native agent must be codex or claude")
+        if fallback_agent not in {"codex", "claude"}:
             raise FormatError("Native agent must be codex or claude")
         with self._lock():
             state = self._state()
             binding = self._read()
             client = self._client(binding)
             self._unique(client.profile, "")
+            replaced = binding
             if binding and binding.session_id and new_session:
                 available = client.list_sessions()
                 old = next((item for item in available if item.id == binding.session_id), None)
@@ -684,6 +709,7 @@ class AoEWorkspace:
                 # (F06); any candidate still requires inspection, never a duplicate.
                 binding = None
             if binding is None:
+                agent = agent or (replaced.agent if replaced else fallback_agent)
                 available = client.list_sessions()
                 binding = self._new_binding(
                     client.profile,

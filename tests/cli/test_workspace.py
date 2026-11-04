@@ -255,7 +255,12 @@ def test_child_qualified_references_are_unchanged_in_workspace(workspace):
 def test_status_from_project_directory_names_the_root(workspace, monkeypatch):
     child = add_child(workspace)
     monkeypatch.chdir(child)
+    # WX2: an omitted --root finds the workbench above and says so.
     result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0, result.output
+    assert f"Using workbench root {workspace}" in result.stderr
+    # An explicit --root is used as given and keeps the hint.
+    result = runner.invoke(app, ["status", "--root", "."])
     assert result.exit_code == 1
     assert f"rerun with --root {workspace}" in result.stderr
 

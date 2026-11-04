@@ -1,6 +1,5 @@
 """Reviewed workspace changes: propose a sealed packet, then apply or reject it."""
 
-import os
 import shlex
 from pathlib import Path
 from typing import Annotated
@@ -8,6 +7,7 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.initialize import adoption_templates
+from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.protocols.adoption import adopt, preview
 from toulmin.protocols.workspace_change import Outcome, apply, propose, reject
 
@@ -16,15 +16,16 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-ACTOR_VARIABLE = "TOULMIN_ACTOR"
-Root = Annotated[Path, typer.Option("--root", help="Workspace root.")]
+Root = Annotated[Path, root_option("Workspace root.")]
 Draft = Annotated[
     str,
     typer.Option("--draft", help="Packet directory runs/<stamp>-proposal-<hex> (or packet.md)."),
 ]
 Actor = Annotated[
     str | None,
-    typer.Option("--confirmed-by", help=f"Confirming researcher; defaults to ${ACTOR_VARIABLE}."),
+    typer.Option(
+        "--confirmed-by", help=f"Confirming researcher; defaults to ${ACTOR_VARIABLE}, then config."
+    ),
 ]
 Confirm = Annotated[bool, typer.Option("--confirm", help="Confirm this exact reviewed packet.")]
 
@@ -116,10 +117,10 @@ def apply_command(
         )
         raise typer.Exit(1)
     if confirm:
-        actor = actor if actor is not None else os.environ.get(ACTOR_VARIABLE) or None
+        actor = resolve_actor(actor)
         if actor is None:
             raise typer.BadParameter(
-                f"required: pass --confirmed-by or set {ACTOR_VARIABLE}",
+                f"required: {ACTOR_HINT}",
                 param_hint="--confirmed-by",
             )
     try:
@@ -147,11 +148,9 @@ def reject_command(
     if not confirm:
         typer.echo("Error: not rejected; confirmation missing. Rerun with --confirm.", err=True)
         raise typer.Exit(1)
-    actor = actor if actor is not None else os.environ.get(ACTOR_VARIABLE) or None
+    actor = resolve_actor(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     try:
         outcome = reject(root, draft, reason, actor)
     except (OSError, ValueError) as error:
@@ -224,11 +223,9 @@ def adopt_command(
         return
     if plan_digest is None:
         raise typer.BadParameter("required with --confirm", param_hint="--plan-digest")
-    actor = actor if actor is not None else os.environ.get(ACTOR_VARIABLE) or None
+    actor = resolve_actor(actor)
     if actor is None:
-        raise typer.BadParameter(
-            f"required: pass --confirmed-by or set {ACTOR_VARIABLE}", param_hint="--confirmed-by"
-        )
+        raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     try:
         result = adopt(root, name, templates, plan_digest, actor, approval_text=approval_text)
     except (OSError, ValueError) as error:

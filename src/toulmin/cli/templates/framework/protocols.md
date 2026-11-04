@@ -31,7 +31,7 @@ When manually changing an existing status or project stage, the researcher creat
 
 Draft skeletons (U1): `toulmin draft <kind> <project>` writes a commented skeleton to `runs/drafts/<kind>-<UTC>[-name].md`, never overwriting and never creating a formal object.
 Skeleton values that need human input contain `<fill: ...>`. Intake rejects any draft whose header values or body still contain that marker, reporting the field, so an unedited skeleton cannot become an object.
-A default confirmer may come from the operator's `TOULMIN_ACTOR` environment variable when `--confirmed-by` is omitted; it is local operator configuration, not workbench state. `--confirm` remains mandatory.
+A default confirmer may come from the operator's `TOULMIN_ACTOR` environment variable, or else the `actor` of the user config file (WX2), when `--confirmed-by` is omitted; both are local operator configuration, not workbench state. `--confirm` remains mandatory.
 This L2 change adds a draft location and an intake precondition only; object fields and the v1 format are unchanged.
 
 Confirmed rulings (U2): `toulmin rule <project> <ID>` records the researcher's explicit choice on one object in that project; it never selects a status itself.
@@ -431,3 +431,23 @@ The live AoE trial changed no L1/L2 behavior. Recorded for the binding contract:
   replacement still needs the old session renamed in AoE.
 - A provider identity that AoE reports only after the first turn still resets the binding and
   sends one new context (researcher decision W1, 2026-11-04: keep the AOE3 rule).
+
+### WX2 entry and preferences (L3 only)
+
+After the partial WI8 researcher trial (observation O1: too many setup commands), the CLI gained
+user preferences and a heuristic entry. No L1/L2 format or behavior changed.
+- Preferences: `$XDG_CONFIG_HOME/toulmin/config.toml` (default `~/.config/toulmin/config.toml`)
+  with `actor` and `[aoe] profile/agent/attach`. It is user configuration outside every
+  workbench, never research data. Unknown keys or invalid values stop the command; nothing is
+  repaired. Precedence: flag > saved binding > environment variable > config > default. Wherever
+  a contract names `TOULMIN_ACTOR` as the actor default, the configured actor is a further
+  fallback; it supplies attribution, never confirmation.
+- Root discovery: an omitted `--root` means the nearest workspace or legacy workbench at or
+  above the current directory, announced on stderr when it is not the current directory. An
+  explicit `--root` is used as given. Discovery never selects a scope for `aoe` commands:
+  omitting PROJECT still means the workspace.
+- `toulmin open [NAME]` selects the scope (NAME, else the child directory you are in, else the
+  workspace) and delegates to `aoe open`. On an empty or interrupted-init directory it
+  initializes only after an explicit yes in a terminal; it refuses unrelated directories and
+  asks for a project name on legacy workbenches. A new session's agent is the flag, else the
+  replaced binding's, else the configured one, else codex; an existing binding keeps its own.
