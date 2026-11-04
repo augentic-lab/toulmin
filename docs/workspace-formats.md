@@ -3,9 +3,8 @@
 Status: contract frozen in WI1 on 2026-11-04 from the accepted WS1 state design, WS2 operation
 scheme and WS3 acceptance plan. Implemented so far: sections 2.1, 4 and 12 (init, WI2), and
 sections 5–7 with the section 10 journal for workspace changes (WI3), section 8 workspace
-handoffs (WI4), section 11 native bindings and context scope (WI5), and section 9 child
-creation (WI6). Adoption is not implemented; WI7 adds it, and until a release note says a
-command exists, do not create those files by hand. WS3 acceptance cases remain NOT RUN.
+handoffs (WI4), section 11 native bindings and context scope (WI5), section 9 child
+creation (WI6), and section 12 legacy adoption (WI7). WS3 acceptance cases remain NOT RUN.
 
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
@@ -1040,9 +1039,10 @@ refuses and lists unexpected entries. `init ROOT
 --project NAME` keeps its documented behavior on legacy and empty roots, and is refused on a
 workspace root (use `project propose`/`create`).
 
-Adoption (`workspace adopt ROOT`) is read-only for recognized legacy roots. It prints a plan and
-its digest, the SHA-256 of the plan bytes. The plan contains no time or absolute path.
-Schematic example (angle brackets mark digests computed at preview):
+Adoption (`workspace adopt ROOT [--name NAME]`, name defaulting to the directory name as for
+init) is read-only for recognized legacy roots. It prints a plan and its digest, the SHA-256 of
+the plan bytes. The plan contains no time or absolute path, so the same files give the same
+digest anywhere. Schematic example (angle brackets mark digests computed at preview):
 
 ````markdown
 ---
@@ -1050,35 +1050,64 @@ schema_version: 1
 kind: adoption-plan
 name: "Serving Research"
 creates:
+  - {path: runs/drafts/.gitkeep, sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  - {path: sessions/.gitkeep, sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  - {path: shared/resources/.gitkeep, sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
   - {path: WORKSPACE.md, sha256: 3a9d405abca38945ad12898f8e3b61c79e012bc310671de496ac8e4d366d6793}
-  - {path: framework/workspace-formats.md, sha256: <digest of the packaged contract>}
 edits:
+  - {path: AGENTS.md, before_sha256: <current digest>, after_sha256: <digest after edit>}
   - {path: .gitignore, before_sha256: <current digest>, after_sha256: <digest after edit>}
 absent: [WORKSPACE.md, runs, sessions, shared/resources, .aoe/binding.json]
 conflicts: []
 ---
 ## Changes
-(unified diff per created or edited file, fenced as in 7.2)
+(unified diff per created or edited file, fenced as in 7.2; framework/workspace-formats.md is
+summarized by digest and line count; empty placeholders are listed on one line)
+
+## Conflicts
+None.
 
 ## Not changed
-Projects, objects, references, handoffs, bindings, context archives, tools/models.toml,
-roles, global/profile.md and Git history.
+Projects kept as they are: alpha, beta. Their
+objects, references, handoffs, bindings and context archives, tools/models.toml,
+roles, global/profile.md, the other framework files and Git history are unchanged.
+No model, native session, binding, context receipt or workspace handoff is created;
+WORKSPACE.md starts with no confirmed direction.
 ````
 
-Rules: `runs/`, `sessions/` and `shared/resources/` must be absent or empty, otherwise they are
-conflicts (existing root data is never reclassified). AGENTS.md: if byte-identical to a released
-template (the package lists their digests) it is replaced by the current one; if customized, the plan appends the template's
-`## Workspace and project scopes` section unless a section of that name exists, which is a
-conflict. `.gitignore` gains only missing journal patterns. A differing
-`framework/workspace-formats.md` is a conflict. WORKSPACE.md starts as in section 4, direction
-absent. A plan with conflicts cannot be confirmed.
+Rules, in plan order (`creates` and `edits` list the same changes split by kind):
+- AGENTS.md: identical to the current workspace template, no change; byte-identical to a
+  released template (the package's `released.json` lists the digest of every shipped copy of
+  the shared and workspace AGENTS templates), replaced by the current workspace template;
+  customized, the template's `## Workspace and project scopes` section is appended after one
+  blank line, unless a section of that name exists, which is a conflict. A link or missing file
+  is a conflict.
+- `framework/workspace-formats.md`: absent, created from the packaged copy; byte-identical to a
+  released copy, replaced by the current one; any other content is a conflict. Other framework
+  files, roles, tools and global files are never compared or reinstalled.
+- `.gitignore` gains only the missing journal patterns (`.workspace-pending/`,
+  `.workspace-prepare-*/`, `.workspace-completed-*/`, `projects/.creating-*/`); an absent
+  file is created with them.
+- `runs/`, `sessions/` and `shared/resources/` must be absent or hold only empty `.gitkeep`
+  files, otherwise they are conflicts (existing root data is never reclassified); their missing
+  placeholders (`runs/drafts/`, `sessions/`, `shared/resources/`) are created. A root
+  `.aoe/binding.json` is a conflict; it is never reinterpreted as a workspace binding.
+- WORKSPACE.md starts as in section 4, direction absent, and is the last change.
+
+A plan with conflicts is printed with each conflict and cannot be confirmed; preview exits 0.
+A root with workbench files but no projects (an interrupted init) is refused like init.
 
 `workspace adopt ROOT --plan-digest DIGEST --confirmed-by ACTOR --confirm` recomputes the plan;
-DIGEST must equal it in full or by a unique prefix of at least 16 hex digits, else nothing is
-written (stale plan). Publication uses the journal, then writes `runs/<stamp>-adoption-<hex>/`
-with `plan.md` (exact plan bytes), `seal` and a `workspace-receipt` whose `record_sha256` is the
-plan digest. No model, binding, context receipt or old handoff is created. Repeating with the
-same digest returns that receipt; any other adopt on a workspace root reports it is configured.
+DIGEST must equal it in full or by a prefix of at least 16 lowercase hex digits, else nothing is
+written (stale plan). Publication uses the journal (operation `adoption`): the plan's other
+changes, then `runs/<stamp>-adoption-<hex>/plan.md` (exact plan bytes) and `seal`, then
+WORKSPACE.md, and last the `workspace-receipt` (record `.../plan.md`, `record_sha256` the plan
+digest, `results` the plan's changes). The root therefore becomes a workspace only when the rest
+exists; while the journal exists, status reports the incomplete adoption, preview names the
+digest to rerun with, and the same command finishes it with the first confirmation's actor.
+No model, binding, context receipt or old handoff is created. Repeating with the same digest
+returns that receipt; any other adopt on a workspace root reports it is configured (preview
+names the adoption archive when one exists).
 
 ## 13. Operation matrix
 

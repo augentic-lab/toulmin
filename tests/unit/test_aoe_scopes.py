@@ -347,7 +347,7 @@ def test_cli_stale_workspace_suggests_the_scoped_refresh(root, cli, fake):
 def test_workspace_instructions_are_scope_aware_and_legacy_template_is_unchanged(root, tmp_path):
     text = (root / "AGENTS.md").read_text()
     for phrase in (
-        "## Scopes",
+        "## Workspace and project scopes",
         "Scope is recorded data, not filesystem isolation",
         "never claim a complete transcript",
         "toulmin aoe handoff --workspace",

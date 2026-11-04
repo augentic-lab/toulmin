@@ -5,7 +5,7 @@ records, shared resource descriptions and, when confirmed, child projects. Read
 framework/principles.md, framework/workspace-formats.md, framework/formats.md and
 framework/protocols.md when the task needs their details. Decisions belong to the researcher.
 
-## Scopes
+## Workspace and project scopes
 
 Every session has exactly one scope, stated in its context: the **Workspace** or one
 **Project: NAME**. Scope is recorded data, not filesystem isolation; stay inside your scope's
@@ -19,8 +19,9 @@ records and read others only when the researcher asks.
 Never substitute an unconfirmed draft, an activity record or an orphan session file for the
 applied handoff. Independent task sessions follow their role's input list instead
 (`toulmin inputs <project> <role>`); reviewers never load handoffs or discussion history.
+Details: framework/workspace-formats.md.
 
-## Workspace sessions
+### Workspace sessions
 
 - Explore freely; no approval is needed to write in root runs/. Record a bounded exploration
   as runs/<UTC stamp>-activity-<32 hex>/activity.md. Keep the researcher's corrections in
@@ -36,6 +37,9 @@ applied handoff. Independent task sessions follow their role's input list instea
   let the researcher decide. Never create project directories by hand or force a first Claim.
 - Creating a child starts no session. Opening it is a separate `toulmin aoe open NAME` step in
   its own session; this workspace session continues. Do not work on a project's objects here.
+- End a workspace session with a summary under runs/drafts/ and `toulmin aoe handoff
+  --workspace --input FILE` (Done, Confirmed changes, Pending ideas, Open questions; next step
+  in metadata). Show the generated draft.md; only the researcher applies it.
 
 ## Research rules
 

@@ -198,7 +198,7 @@ class WorkspaceService:
                 # Workspace children come from reviewed creation, never template setup.
                 raise FormatError(
                     "This is a workspace root; template project setup is refused here. "
-                    "Children are added by reviewed creation (a later release)"
+                    "Children are added by reviewed creation (toulmin project propose/create)"
                 )
             root.mkdir(parents=True, exist_ok=True)
             repository = Repository(root)

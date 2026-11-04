@@ -804,7 +804,10 @@ def _workspace_status(root: Path, verbose: bool) -> None:
                 f"{resource.title}"
             )  # fmt: skip
     else:
-        typer.echo("Next: project commands keep working; adoption arrives in a later release")
+        typer.echo(
+            "Next: project commands keep working; preview adoption with "
+            f"`toulmin workspace adopt {report.root.root}`"
+        )
     typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")

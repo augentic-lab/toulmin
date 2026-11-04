@@ -123,7 +123,22 @@ uv run --locked toulmin status --root /path/to/research   # workspace view; no P
 ```
 
 `WORKSPACE.md` starts with no confirmed direction. Rerunning init on a workspace reports it and
-writes nothing. Existing workbenches are not upgraded by init (adoption is a later release).
+writes nothing. Existing workbenches are not upgraded by init; adopt them with a previewed plan
+(contract section 12). Preview writes nothing and prints the exact plan and its digest;
+confirming with that digest adds only the planned workspace files (WORKSPACE.md, record
+locations, journal ignore patterns, the workspace contract and scope instructions in AGENTS.md:
+replaced if pristine, a section appended if customized). Projects, objects, handoffs, bindings,
+context archives, configuration and history are unchanged, and no model is started:
+
+```sh
+uv run --locked toulmin workspace adopt /path/to/research --name "Serving Research"
+uv run --locked toulmin workspace adopt /path/to/research --name "Serving Research" \
+  --plan-digest <digest> --confirmed-by "Your Name" --confirm
+```
+
+A plan with conflicts (existing root runs/ or sessions/ data, an edited contract copy, an
+existing scope section) cannot be confirmed; a changed workbench makes the old digest stale.
+Existing project native contexts become stale afterwards because they now include WORKSPACE.md.
 
 The direction and shared resource descriptions change only through a reviewed packet. Write a
 change input under `runs/drafts/` (contract section 7.1), then:
@@ -391,7 +406,7 @@ environment merely because a shell hook has removed its PATH entry.
 
 - [Python/Textual TUI design](docs/tui-design.md): approved workflow, architecture and implementation plan.
 
-- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract (implemented through WI6; adoption pending)](docs/workspace-formats.md).
+- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract](docs/workspace-formats.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 
 Maintain documentation, templates and progress records in English. Conversation follows the user's language.

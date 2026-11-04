@@ -101,6 +101,7 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 | project propose NAME --input F | WI6: validate a creation input from root runs/drafts/ and freeze one sealed packet (question, scope, generated PROJECT.md and Brief, sources with coverage, pins) | Writes only a new runs/<stamp>-project-<hex>/ directory; no project directory |
 | project create NAME --from P | WI6: preview without --confirm; with --confirm and an actor, publish the complete child and a receipt | Only the new projects/NAME (built in projects/.creating-<hex>, renamed once) and the packet's receipt.md, via the root journal; replays return the receipt; never starts a session |
 | project reject NAME --from P --reason R | WI6: record a final rejection for a pending creation packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
+| workspace adopt ROOT [--name N] | WI7: preview the deterministic additive plan and its digest for a legacy workbench; with --plan-digest, --confirm and an actor, apply that unchanged plan | Preview: read-only. Confirm: only the planned workspace files and one runs/<stamp>-adoption-<hex>/ archive (plan, seal, receipt), via the root journal; never projects, bindings or contexts |
 | aoe open/bind/status/refresh/ack [PROJECT \| --workspace] | WI5: without PROJECT on a workspace root, the workspace scope's native session, binding and context; with PROJECT, that child (AOE3 behavior, plus the read-only WORKSPACE.md on workspace roots) | Scope's binding (`.aoe/binding.json` or `projects/NAME/.aoe/binding.json`) and context archives in that scope's runs/ only; never research objects |
 | aoe handoff [--workspace] --input F / --apply D | WI4: without PROJECT, seal a workspace handoff draft from a structured summary; apply previews without --confirm and, confirmed, records the session | Draft: one new runs/<stamp>-handoff-<hex>/ directory. Apply: one new sessions/ record and WORKSPACE.md next_step/last_handoff only, via the root journal; replays return the record |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
@@ -317,7 +318,7 @@ validated by the operations that consume them. A pending journal, malformed char
 child or tampered packet makes the view invalid (exit 1) without repairing anything. The legacy
 `init --project` route and template project setup in the TUI are refused on workspace roots;
 elsewhere they are unchanged. Workspace conversations, proposals, handoffs, child creation and
-adoption are later tasks; a fresh workspace's AGENTS.md is still the shared template.
+adoption were later tasks (WI3–WI7).
 
 ### WI3 reviewed workspace changes and resource descriptions
 
@@ -397,3 +398,22 @@ journal. Reasons for the L1/L2 additions:
 - Creation never starts a native session; the result prints `aoe open NAME`. A launch that left
   no matching AoE session may be retried with an explicit `open --new-session`; any matching
   candidate still requires inspection, so a duplicate session is never created silently.
+
+### WI7 previewed legacy adoption
+
+`workspace adopt` implements workspace-formats.md section 12 with the section 10 journal
+(operation `adoption`). Reasons for the L1/L2 additions:
+- The plan is computed from current files only and rendered without time or absolute path, so
+  its digest identifies what was previewed; confirmation recomputes it under the root lock and
+  refuses any other digest. Conflicts are part of the plan and block confirmation.
+- "Released" templates are recognized by digest from the packaged `released.json` (every shipped
+  copy of the AGENTS templates and of the workspace contract), supplied by L3 as plain data; L2
+  reads no package files. Pristine copies are replaced; a customized AGENTS.md receives only the
+  template's scope section; an edited contract copy is a conflict (a clarification: an older
+  pristine contract copy, present in workbenches initialized after WI1, is replaced).
+- The workspace template's scope rules now form one `## Workspace and project scopes` section,
+  so the appended text is exactly the template's.
+- WORKSPACE.md is published after the archive and just before the receipt, so a crash leaves a
+  legacy-classified root or an incomplete workspace, both reported with the digest to rerun.
+  Project bindings (version 1) and their context archives are untouched; their contexts become
+  stale because a child of a workspace root also receives WORKSPACE.md.

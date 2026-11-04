@@ -94,3 +94,14 @@
   `toulmin aoe open NAME`. An occupied name is refused; an interrupted create finishes when
   rerun. `aoe open --new-session` may retry a launch that left no AoE session.
 - Additive: existing projects and workbenches are unchanged; no migration.
+
+## WI7 — Previewed adoption of existing workbenches
+
+- `toulmin workspace adopt ROOT [--name N]` previews the exact additive plan and its digest;
+  `--plan-digest D --confirmed-by ACTOR --confirm` applies that unchanged plan: WORKSPACE.md,
+  empty record locations, journal ignore patterns, the workspace contract and scope
+  instructions (pristine AGENTS.md replaced, customized AGENTS.md gains one section).
+- Projects, objects, handoffs, bindings, context archives, configuration and history are
+  unchanged; no model or session is started. Conflicts and stale digests write nothing; an
+  interrupted adoption finishes when rerun with the same digest.
+- Existing project native contexts become stale after adoption (they gain WORKSPACE.md).

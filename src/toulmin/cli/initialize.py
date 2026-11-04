@@ -1,6 +1,7 @@
 """L3 repository scaffolding, including instruction-file adapters and local Git."""
 
 import errno
+import json
 import os
 import shutil
 import subprocess
@@ -15,6 +16,7 @@ from toulmin.core.atomic import handoff_mutex
 from toulmin.core.codec import decode
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.workspace import CHARTER_FILE, render_initial, validate_charter, validate_name
+from toulmin.protocols.adoption import AdoptionTemplates
 from toulmin.protocols.workspace_state import RootState, classify_root
 
 # Empty record locations of a fresh workspace (docs/workspace-formats.md, section 12).
@@ -59,6 +61,18 @@ def workspace_setup() -> dict[str, bytes]:
     return {path.as_posix(): content for path, content in _templates(None).items()}
 
 
+def adoption_templates() -> AdoptionTemplates:
+    """Packaged inputs of legacy adoption: current files and every released copy's digest."""
+    package = files("toulmin.cli")
+    released = json.loads(package.joinpath("workspace_templates", "released.json").read_text())
+    return AdoptionTemplates(
+        package.joinpath("workspace_templates", "AGENTS.md").read_bytes(),
+        package.joinpath("templates", "framework", "workspace-formats.md").read_bytes(),
+        {path: frozenset(values) for path, values in released.items()},
+        workspace_setup(),
+    )
+
+
 def _ancestors(path: Path) -> Iterator[Path]:
     yield from reversed(path.parents)
     yield path
@@ -99,7 +113,7 @@ def initialize(root: Path, project: str) -> int:
     if os.path.lexists(root / CHARTER_FILE):
         raise ValueError(
             f"{root} is a workspace root: init --project is refused there. Children are "
-            "added by reviewed creation (toulmin project propose/create, a later release)"
+            "added by reviewed creation (toulmin project propose/create)"
         )
     return _publish(root, _templates(project))
 
@@ -151,8 +165,8 @@ def initialize_workspace(root: Path, name: str | None = None) -> WorkspaceInit:
         if report.state == RootState.LEGACY:
             raise ValueError(
                 f"{root} is an existing workbench without workspace state; init does not "
-                "upgrade it. Project commands keep working; previewed adoption "
-                "(toulmin workspace adopt) arrives in a later release"
+                "upgrade it. Project commands keep working; preview adoption with "
+                f"`toulmin workspace adopt {root}`"
             )
         if report.state == RootState.UNRELATED:
             listed = ", ".join(report.unexpected)

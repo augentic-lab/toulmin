@@ -396,14 +396,16 @@ def _receipt(repository: Repository, loaded: Loaded) -> Receipt | None:
     return receipt_for(repository, loaded.directory, loaded.seal)
 
 
-def receipt_for(repository: Repository, directory: str, seal: str) -> Receipt | None:
-    """The valid receipt of a sealed packet directory, None when absent."""
+def receipt_for(
+    repository: Repository, directory: str, seal: str, record: str = "packet.md"
+) -> Receipt | None:
+    """The valid receipt of a sealed record directory, None when absent."""
     relative = f"{directory}/receipt.md"
     if not os.path.lexists(repository.root / relative):
         return None
     path = repository.path(relative, "file")
     receipt = validate_receipt(decode(path.read_bytes(), str(path)))
-    if receipt.record != f"{directory}/packet.md" or receipt.record_sha256 != seal:
+    if receipt.record != f"{directory}/{record}" or receipt.record_sha256 != seal:
         raise FormatError(f"{relative}: receipt does not belong to this sealed packet")
     return receipt
 

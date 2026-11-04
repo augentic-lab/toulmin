@@ -200,7 +200,7 @@ def test_legacy_workbench_stays_valid_and_is_not_upgraded(tmp_path):
     assert result.exit_code == 0, result.output
     assert "Workspace state: not configured" in result.stdout
     assert "demo | stage=explore" in result.stdout
-    assert "adoption arrives in a later release" in result.stdout
+    assert f"preview adoption with `toulmin workspace adopt {root}`" in result.stdout
     result = init(root)
     assert result.exit_code == 1
     assert "init does not upgrade it" in result.stderr
