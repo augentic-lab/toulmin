@@ -1,5 +1,22 @@
 # Toulmin development progress
 
+## 2026-11-05 — W8 fix and WX6 workspace registry design
+
+- Decision: after the v2 trial questions, the researcher chose option ① ("是①，按你的建议写设计并修 W8"): fix W8 and write a registry design. No trial ruling was given; WI8 and the WX5 trial item stay open.
+- W8 (observed in the trial files, read only): a proposal was applied, then the agent drafted a workspace handoff with `confirmed_changes: []` whose next step still asked to decide it; applying the handoff copied that stale next step into WORKSPACE.md. Drafting only checked that cited receipts are applied.
+- Fix:
+  - L2 (read-only, reason recorded in docs/protocols.md "W8"): `workspace_handoff.uncited_receipts(root, cited)` lists applied workspace change receipts later than the latest applied handoff (all before the first) that the summary does not cite. It reuses `applied_receipt`; absent, rejected or unreadable receipts are not listed.
+  - L3: `handoff_preview` prints a warning naming them and advising a redraft; this covers the agent's draft output, the `--apply` preview and `toulmin decide`, whose own run-only note is removed. Warning only, never a refusal.
+  - Native workspace context asks the agent to cite every such receipt and redraft when warned. The workspace AGENTS.md template is unchanged (no released.json change).
+  - Packaged protocols.md copy and framework CHANGELOG updated.
+- Tests: two new tests in `tests/cli/test_workspace_handoff.py` (helper cases: no handoff, cited, older than the last handoff, rejected, later change; trial scenario through the CLI draft and preview, nothing else written); existing draft test asserts no warning when cited; decide test asserts the warning.
+- WX6 design (documentation only, outside the repository): `~/notes/toulmin/workspace-registry-design.md`. A user-level registry `~/.local/state/toulmin/workspaces.json` (cache, path as identity, never research data) written on init/open/adopt; `toulmin open` offers known workspaces when none is found; `toulmin open --in NAME [CHILD]`; `toulmin workspaces` list/forget; optional explicit `scan` from AoE session paths. No stable workspace ID (that would be an L1 change). The researcher then accepted all five decisions ("按你的建议，五个决定都同意"); per decision 5, implementation follows the trial ruling.
+- Ledger: `~/notes/toulmin/wi8-2026-11-04/ledger.md` gains "Researcher v2 trial questions" with W8 and Q3; MANIFEST regenerated and checked.
+- Checks: `uv run --locked pytest -q` 1259 passed (7m07s); ruff check, ruff format --check and mypy clean; `git diff --check` clean; packaged protocols.md byte-matches docs. Record-only edits after the run (AGENTS/TODO/PROGRESS) were inspected in the diff.
+- Not done: no live AoE run; the trial ruling is pending. Noted for the researcher: the trial's `projects/scheduling` has no applied handoff (A10 apparently not applied), and the v1 session "Workspace: Serving Research" (141011097a524196) still needs archiving.
+- Blockers: none. Next step: the researcher gives the WI8 v2 trial ruling; then WX6 implementation on their go-ahead.
+- Session ID: unavailable.
+
 ## 2026-11-04 — WX5: trial instructions v2 for the improved entry
 
 - Decision: the researcher authorized WX5 ("好的，开始 WX5"). Documentation only; no code changed.

@@ -128,8 +128,8 @@ def test_apply_reject_and_stale_handoff_regeneration_in_one_pass(root, pending):
     # The handoff drafted before the change went stale; it was regenerated and applied.
     assert "Regenerated from the same summary" in result.output
     assert (
-        "Note: applied in this run but not cited by this summary (the record will not list "
-        f"them): {packet}/receipt.md\n"
+        "Warning: workspace changes applied since the last handoff are not cited by this "
+        f"summary: {packet}/receipt.md\n"
     ) in result.output
     regenerated = re.search(r"Regenerated from the same summary: (\S+)", result.output)[1]
     assert regenerated != handoff

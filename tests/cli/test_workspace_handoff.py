@@ -179,6 +179,7 @@ def test_draft_cli_shows_scope_summary_and_apply_command(applied):
         "--confirmed-by ACTOR --confirm",
     ):
         assert line in result.stdout, line
+    assert "Warning:" not in result.stdout  # every applied change is cited
     explicit = invoke("aoe", "handoff", "--workspace", "--root", applied, "--input", path)
     assert explicit.exit_code == 0, explicit.output
     both = invoke("aoe", "handoff", "scheduling", "--workspace", "--root", applied, "--input", path)
@@ -233,6 +234,39 @@ def test_confirmed_changes_must_be_applied_receipts(applied):
     )
     with pytest.raises(FormatError, match="expected an applied receipt; found rejected"):
         draft(applied, path)
+
+
+def test_uncited_receipts_are_those_applied_since_the_last_handoff(applied):
+    # W8: no handoff yet, one applied change (FIRST is still pending, a rejection is not cited).
+    other = propose(applied, write_input(applied, FOCUS, "other.md"))
+    reject(applied, other.loaded.directory, "No.", "R")
+    assert workspace_handoff.uncited_receipts(applied, ()) == [RECEIPT]
+    assert workspace_handoff.uncited_receipts(applied, (RECEIPT,)) == []
+    example(applied)
+    apply(applied, DRAFT, "Tianchi YU", confirmed=True, now=precise("2026-11-04T11:35:00.108Z"))
+    assert workspace_handoff.uncited_receipts(applied, ()) == []  # older than the last handoff
+    later = propose(applied, write_input(applied, FOCUS, "later.md"))
+    confirm(applied, later.loaded.directory)
+    assert workspace_handoff.uncited_receipts(applied, ()) == [
+        f"{later.loaded.directory}/receipt.md"
+    ]
+
+
+def test_draft_and_preview_warn_about_uncited_applied_changes(applied):
+    # The WI8 trial case: a change applied, then a summary that still calls it pending.
+    path = summary(applied)
+    before = contents(applied)
+    result = invoke("aoe", "handoff", "--root", applied, "--input", path)
+    assert result.exit_code == 0, result.output
+    warning = (
+        "Warning: workspace changes applied since the last handoff are not cited by this "
+        f"summary: {RECEIPT}\n"
+    )
+    assert warning in result.stdout and "draft the handoff again" in result.stdout
+    drafted = result.stdout.split("Draft: ", 1)[1].split("\n", 1)[0]
+    preview = invoke("aoe", "handoff", "--root", applied, "--apply", drafted)
+    assert warning in preview.stdout
+    assert contents(applied) == before  # a warning, not a refusal: nothing else was written
 
 
 def test_next_step_is_inherited_or_required(applied):

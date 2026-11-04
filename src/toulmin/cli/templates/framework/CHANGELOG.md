@@ -114,3 +114,5 @@
   change; existing commands are unchanged.
 - WX3 (L3 only): `aoe status`/`open` show the model the native session log reports (name and
   effort only). Display provenance; nothing is written and no behavior depends on it.
+- W8 (L2 read-only helper; L3 text): handoff previews warn when workspace changes applied since
+  the last handoff are not cited by the summary. Warning only; no format or behavior change.

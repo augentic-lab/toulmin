@@ -17,7 +17,7 @@ from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
 from toulmin.core.proposals import PACKET_DIR
 from toulmin.core.repository import Repository
-from toulmin.core.workspace import CHARTER_FILE, validate_charter
+from toulmin.core.workspace import CHARTER_FILE, RECEIPT, validate_charter
 from toulmin.core.workspace_handoffs import (
     HandoffDraft,
     HandoffRecord,
@@ -195,6 +195,34 @@ def check(root: Path, loaded: LoadedDraft) -> list[str]:
         except (OSError, ValueError) as error:
             problems.append(f"confirmed_changes: {error}")
     return problems
+
+
+def _moment(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def uncited_receipts(root: Path, cited: tuple[str, ...]) -> list[str]:
+    """Workspace changes applied since the latest applied handoff that a summary omits.
+
+    A summary written without them may still call those changes pending (WI8 W8). This is a
+    warning for the reviewer, never a refusal: the summary remains the session's record.
+    Unreadable receipts are skipped here; workspace status reports them.
+    """
+    repository = Repository(root)
+    latest = latest_handoff(repository.root)
+    since = _moment(latest.record.applied_at) if latest is not None else None
+    found = []
+    for directory in sorted(repository.root.glob("runs/*-proposal-*")):
+        relative = f"runs/{directory.name}/receipt.md"
+        if not RECEIPT.fullmatch(relative) or relative in cited:
+            continue
+        try:
+            receipt = applied_receipt(repository.root, relative)
+        except (OSError, ValueError):
+            continue  # absent, rejected or unreadable: nothing applied to cite
+        if since is None or _moment(receipt.at) > since:
+            found.append(relative)
+    return found
 
 
 def apply(

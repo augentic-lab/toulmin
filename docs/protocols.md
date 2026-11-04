@@ -465,8 +465,8 @@ After the partial WI8 researcher trial (observation O3: per-item apply/handoff c
   a"`. There is no bulk decision. An item that fails is reported and stays pending.
 - A change packet and a workspace handoff draft both pin the whole WORKSPACE.md digest. When a
   change applied in the same run makes a pending handoff draft stale, decide drafts it again from
-  the same summary (only if the summary's digest is unchanged) and shows the new draft, noting
-  applied receipts that the summary does not cite. After a workspace handoff is applied, further
+  the same summary (only if the summary's digest is unchanged) and shows the new draft with
+  the W8 warning below. After a workspace handoff is applied, further
   workspace handoff drafts are skipped as superseded; the same holds per project.
 - Like every confirming command, decide relies on being run by the researcher. It adds no
   enforcement and removes none; without a terminal it only lists items.
@@ -487,3 +487,18 @@ view shows which model answered. Toulmin still chooses only the native CLI.
 - `aoe status`/`open` print `Model: … (reported by the <agent> session log)` under BINDING;
   `--json` carries the same report. It is display provenance, never a control branch, and is
   not written to bindings, contexts or research files.
+
+### W8 uncited applied changes in a workspace handoff (L2 read-only, L3 text)
+
+In the WI8 researcher trial a change was applied, and the agent then wrote a handoff summary with
+`confirmed_changes: []` whose next step still asked to decide that change. Applying the handoff
+copied the stale next step into WORKSPACE.md. Drafting only checks that cited receipts are
+applied; nothing noticed an applied change that was omitted.
+- L2 reason: `workspace_handoff.uncited_receipts(root, cited)` lists applied workspace change
+  receipts later than the latest applied handoff (all of them before the first) that `cited`
+  omits. It is read-only and reuses the receipt check that drafting applies to cited receipts;
+  absent, rejected or unreadable receipts are not listed (workspace status reports damage).
+- The handoff preview (draft output, `--apply` preview and `toulmin decide`) prints a warning
+  naming them. It is a warning, never a refusal: the summary stays the agent's record, and the
+  researcher may apply it knowingly. The native workspace context asks the agent to cite every
+  such receipt and to draft again when warned. No format or command behavior changed.

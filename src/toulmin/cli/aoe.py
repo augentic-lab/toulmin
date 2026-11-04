@@ -487,6 +487,16 @@ def handoff_preview(
     typer.echo("")
     for problem in outcome.problems:
         typer.echo(f"Refused now: {problem}")
+    uncited = workspace_handoffs.uncited_receipts(root, loaded.draft.confirmed_changes)
+    if uncited:
+        typer.echo(
+            "Warning: workspace changes applied since the last handoff are not cited by this "
+            "summary: " + ", ".join(uncited)
+        )
+        typer.echo(
+            "The summary may still describe them as pending. Ask the agent to draft the "
+            "handoff again citing them, or apply knowing the record will not list them."
+        )
     typer.echo(
         "Confirming records this summary only: no direction, resource or project changes, "
         "and pending ideas stay pending."

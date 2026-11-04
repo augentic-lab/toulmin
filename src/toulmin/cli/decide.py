@@ -131,7 +131,6 @@ class Run:
     rejected: int = 0
     skipped: int = 0
     failed: int = 0
-    receipts: list[str] = field(default_factory=list)  # workspace receipts applied now
     charter_changed: bool = False
     handoff_applied: bool = False
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
@@ -165,7 +164,6 @@ class Run:
             )
             workspace_cli._result(result)
             self.applied += 1
-            self.receipts.append(result.receipt_path)
             assert result.receipt is not None
             if any(path == CHARTER_FILE for path, _, _ in result.receipt.results):
                 self.charter_changed = True
@@ -240,13 +238,7 @@ class Run:
         if outcome.status != "preview":
             typer.echo(f"No longer pending ({outcome.status}); skipped.")
             return True
-        handoff_preview(outcome, self.root, commands=False)
-        uncited = [r for r in self.receipts if r not in outcome.loaded.draft.confirmed_changes]
-        if uncited:
-            typer.echo(
-                "Note: applied in this run but not cited by this summary (the record will not "
-                "list them): " + ", ".join(uncited)
-            )
+        handoff_preview(outcome, self.root, commands=False)  # warns about uncited receipts
         choice = self._choose("sq" if outcome.problems else "asq")
         if choice == "a":
             result = workspace_handoffs.apply(self.root, path, self.actor, confirmed=True)
