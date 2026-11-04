@@ -193,11 +193,20 @@ class AoEClient:
     def current(self) -> AoESession:
         return self._parse_session(self._json("session", "current", "--json"))
 
-    def create(self, root: Path, project: str, agent: str) -> AoESession:
+    def create(
+        self, root: Path, project: str | None, agent: str, *, title: str | None = None
+    ) -> AoESession:
+        """Create and launch one native session at ``root``; ``project`` None is the workspace."""
         try:
-            validate_project_name(project)
+            if project is not None:
+                validate_project_name(project)
         except ValueError as error:
             raise AoEError(str(error)) from error
+        if project is None and title is None:
+            raise AoEError("A workspace session needs an explicit title")
+        title = title if title is not None else f"Toulmin: {project}"
+        if not title.strip() or len(title) > 200 or any(ord(c) < 32 or c == "\x7f" for c in title):
+            raise AoEError("AoE session title must be one printable line of at most 200 characters")
         if agent not in ("codex", "claude"):
             raise AoEError("AoE native agent must be codex or claude")
         root = root.expanduser().resolve()
@@ -207,9 +216,9 @@ class AoEClient:
             "add",
             str(root),
             "-t",
-            f"Toulmin: {project}",
+            title,
             "-g",
-            f"research/{project}",
+            "research" if project is None else f"research/{project}",
             "--tool",
             agent,
             "--launch",

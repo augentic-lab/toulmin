@@ -115,6 +115,13 @@ def research_state(root: Path, project: str) -> ResearchState:
             remember(repository, f"projects/{project}/PROJECT.md")
 
         base = f"projects/{project}"
+        if os.path.lexists(repository.root / "WORKSPACE.md"):
+            # A child of a workspace root also receives the workspace charter and its own
+            # creation record (contract section 11); a legacy root keeps the AOE3 set.
+            for relative in ("WORKSPACE.md", f"{base}/runs/creation/creation.md"):
+                if relative == "WORKSPACE.md" or os.path.lexists(repository.root / relative):
+                    if remember(repository, relative):
+                        context.append(relative)
         for directory in DIRECTORIES.values():
             try:
                 folder = repository.path(f"{base}/{directory}", "directory")

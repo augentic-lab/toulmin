@@ -2,10 +2,10 @@
 
 Status: contract frozen in WI1 on 2026-11-04 from the accepted WS1 state design, WS2 operation
 scheme and WS3 acceptance plan. Implemented so far: sections 2.1, 4 and 12 (init, WI2), and
-sections 5–7 with the section 10 journal for workspace changes (WI3), and section 8 workspace
-handoffs (WI4). Child creation, bindings and adoption are not implemented; WI5–WI7 add them in
-order, and until a release note says a command exists, do not create those files by hand. WS3
-acceptance cases remain NOT RUN.
+sections 5–7 with the section 10 journal for workspace changes (WI3), section 8 workspace
+handoffs (WI4), and section 11 native bindings and context scope (WI5). Child creation and
+adoption are not implemented; WI6–WI7 add them, and until a release note says a command exists,
+do not create those files by hand. WS3 acceptance cases remain NOT RUN.
 
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
@@ -915,7 +915,11 @@ session's path must be the root; a project session's path is the root or its dir
 Version 1 compatibility. Existing project bindings stay valid where they are, are updated in
 version 1 form, keep the legacy creation-recovery title `Toulmin: NAME`, and are never converted
 or reinterpreted as workspace bindings. Only an explicit `bind --replace` or `open
---new-session` within the same scope writes version 2. Missing workspace binding means no
+--new-session` within the same scope writes version 2. "Every new binding" means every new
+binding on a workspace root: a root without WORKSPACE.md (legacy) has no workspace scope and
+keeps writing exactly the AOE3 version 1 form, titles and contexts. New native sessions are
+created at the root in AoE group `research` (workspace) or `research/NAME` (project); a bound
+existing session keeps its own title. Missing workspace binding means no
 workspace session yet. One `(profile, session_id)` may appear in at most one binding of the
 workbench, across both versions and all scopes (F08); all bindings share the existing writer lock.
 

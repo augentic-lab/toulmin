@@ -11,39 +11,61 @@ from typing import Annotated
 import typer
 
 from toulmin.adapters.aoe import AoEClient, AoEError
-from toulmin.application.aoe import AoEWorkspace, WorkspaceView
+from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
 from toulmin.core.identifiers import validate_project_name
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
-from toulmin.protocols.research_workspace import render_state
 
 app = typer.Typer(
     help="Bind research sessions and explicitly refresh their context.", no_args_is_help=True
 )
 
-Project = Annotated[str, typer.Argument(help="Existing research project name.")]
+Project = Annotated[
+    str | None,
+    typer.Argument(help="Research project name; omit (or pass --workspace) for the workspace."),
+]
+Workspace = Annotated[
+    bool, typer.Option("--workspace", help="Select the workspace scope explicitly.")
+]
 Root = Annotated[Path, typer.Option("--root", help="Research workbench root.")]
 Profile = Annotated[
     str | None, typer.Option("--profile", help="AoE profile; defaults to saved binding.")
 ]
 
 
+def _select(project: str | None, workspace: bool) -> str | None:
+    """Omitted PROJECT selects the workspace (contract 2.2); never inferred from history."""
+    if project is not None and workspace:
+        raise typer.BadParameter("give PROJECT or --workspace, not both", param_hint="project")
+    if project is not None:
+        try:
+            validate_project_name(project)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="project") from error
+    return project
+
+
+def _selector(project: str | None) -> list[str]:
+    return ["--workspace"] if project is None else [project]
+
+
 def _workspace(
-    root: Path, project: str, profile: str | None, *, offline: bool = False
+    root: Path, project: str | None, profile: str | None, *, offline: bool = False
 ) -> AoEWorkspace:
-    validate_project_name(project)
+    if project is not None:
+        validate_project_name(project)
     client = AoEClient(profile) if profile is not None and not offline else None
     return AoEWorkspace(root, project, client=client)
 
 
-def _refresh_command(root: Path, project: str, profile: str | None) -> str:
-    args = ["toulmin", "aoe", "refresh", project, "--root", str(root.absolute())]
+def _refresh_command(root: Path, project: str | None, profile: str | None) -> str:
+    args = ["toulmin", "aoe", "refresh", *_selector(project), "--root", str(root.absolute())]
     if profile is not None:
         args.extend(("--profile", profile))
     return shlex.join(args)
 
 
-def _recovery(root: Path, project: str, profile: str | None) -> None:
+def _recovery(root: Path, project: str | None, profile: str | None) -> None:
     selected = profile or os.environ.get("AGENT_OF_EMPIRES_PROFILE", "main")
     local = Path.home() / ".local/bin/aoe"
     command = os.environ.get("TOULMIN_AOE_COMMAND") or (
@@ -61,12 +83,14 @@ def _recovery(root: Path, project: str, profile: str | None) -> None:
 def _present(
     view: WorkspaceView,
     root: Path,
-    project: str,
+    project: str | None,
     *,
     bound_only: bool = False,
     offline: bool = False,
 ) -> None:
-    typer.echo(render_state(view.research), nl=False)
+    typer.echo(f"Root: {root.absolute()}")
+    typer.echo("Scope: " + ("Workspace" if project is None else f"Project: {project}") + "\n")
+    typer.echo(render_scope(view.research), nl=False)
     typer.echo("\nBINDING")
     binding = view.binding
     if binding is None:
@@ -76,6 +100,8 @@ def _present(
             f"Profile: {binding.profile} | agent: {binding.agent} | "
             f"session: {binding.session_id or 'unresolved'}"
         )
+        if binding.title:
+            typer.echo(f"Title: {binding.title} | binding version {binding.version}")
         if view.session is not None:
             typer.echo(
                 f"Session state: {view.session.state} | status: {view.session.status or 'unknown'}"
@@ -110,7 +136,7 @@ def _present(
 
 def _execute(
     root: Path,
-    project: str,
+    project: str | None,
     profile: str | None,
     action: Callable[[AoEWorkspace], WorkspaceView],
     *,
@@ -162,7 +188,8 @@ def _execute(
 
 @app.command("open")
 def open_workspace(
-    project: Project,
+    project: Project = None,
+    workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
     agent: Annotated[str, typer.Option("--agent", help="Native CLI: codex or claude.")] = "codex",
@@ -177,6 +204,7 @@ def open_workspace(
     ] = False,
 ) -> None:
     """Open or recover one research session, with checked context delivery."""
+    project = _select(project, workspace)
     if agent not in {"codex", "claude"}:
         raise typer.BadParameter("expected codex or claude", param_hint="--agent")
     _execute(
@@ -191,7 +219,8 @@ def open_workspace(
 
 @app.command("bind")
 def bind_workspace(
-    project: Project,
+    project: Project = None,
+    workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
     session: Annotated[
@@ -203,6 +232,7 @@ def bind_workspace(
     ] = False,
 ) -> None:
     """Bind an existing session and prepare context files without sending a message."""
+    project = _select(project, workspace)
     _execute(
         root,
         project,
@@ -214,7 +244,8 @@ def bind_workspace(
 
 @app.command("status")
 def workspace_status(
-    project: Project,
+    project: Project = None,
+    workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
     offline: Annotated[
@@ -225,6 +256,7 @@ def workspace_status(
     ] = False,
 ) -> None:
     """Show current research, binding and context receipt state."""
+    project = _select(project, workspace)
     _execute(
         root,
         project,
@@ -237,7 +269,8 @@ def workspace_status(
 
 @app.command("refresh")
 def refresh_workspace(
-    project: Project,
+    project: Project = None,
+    workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
     resend: Annotated[
@@ -248,6 +281,7 @@ def refresh_workspace(
     ] = False,
 ) -> None:
     """Prepare changed research context and submit it only when the native session is ready."""
+    project = _select(project, workspace)
     _execute(
         root,
         project,
@@ -259,12 +293,14 @@ def refresh_workspace(
 
 @app.command("ack")
 def acknowledge_context(
-    project: Project,
     token: Annotated[str, typer.Option("--token", help="Receipt token from the context file.")],
+    project: Project = None,
+    workspace: Workspace = False,
     root: Root = Path("."),
     profile: Profile = None,
 ) -> None:
     """Record a context-read receipt; this does not approve research changes."""
+    project = _select(project, workspace)
     _execute(root, project, profile, lambda service: service.acknowledge(token), offline=True)
 
 

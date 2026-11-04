@@ -15,15 +15,23 @@ from uuid import uuid4
 
 from toulmin.adapters.aoe import AoEClient, AoEError, AoESession
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
+from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
 from toulmin.core.repository import Repository
+from toulmin.core.scope import Scope
+from toulmin.core.workspace import CHARTER_FILE, validate_charter
 from toulmin.protocols.research_workspace import ResearchState, render_state, research_state
+from toulmin.protocols.workspace_context import (
+    WorkspaceState,
+    render_workspace,
+    workspace_research,
+)
 
 
 @dataclass(frozen=True)
 class Binding:
     root: str
-    project: str
+    project: str | None  # None: the workspace scope (version 2 only)
     profile: str
     agent: str
     session_id: str | None = None
@@ -35,11 +43,32 @@ class Binding:
     delivery: str = "none"
     known_ids: tuple[str, ...] = ()
     message: str = ""
+    # Version 2 (workspace roots) carries scope and title; version 1 keeps the AOE3 form.
+    version: int = 1
+    title: str | None = None
+
+
+V1_FIELDS = (
+    "root",
+    "project",
+    "profile",
+    "agent",
+    "session_id",
+    "provider_session_id",
+    "context",
+    "token",
+    "fingerprint",
+    "manifest_sha256",
+    "delivery",
+    "known_ids",
+    "message",
+)
+V2_FIELDS = ("scope", "title", *(name for name in V1_FIELDS if name != "project"))
 
 
 @dataclass(frozen=True)
 class WorkspaceView:
-    research: ResearchState
+    research: ResearchState | WorkspaceState
     binding: Binding | None
     session: AoESession | None
     context_status: str
@@ -50,15 +79,79 @@ class WorkspaceView:
 DELIVERY_STATES = {"none", "prepared", "sending", "submitted", "uncertain", "acknowledged"}
 
 
+def scope_state(root: Path, project: str | None) -> ResearchState | WorkspaceState:
+    return workspace_research(root) if project is None else research_state(root, project)
+
+
+def render_scope(state: ResearchState | WorkspaceState) -> str:
+    if isinstance(state, WorkspaceState):
+        return render_workspace(state)
+    return render_state(state)
+
+
 class AoEWorkspace:
-    def __init__(self, root: Path, project: str, client: AoEClient | None = None) -> None:
+    """One scope's binding: the workspace (``project`` None) or a named child project."""
+
+    def __init__(self, root: Path, project: str | None, client: AoEClient | None = None) -> None:
         self.repository = Repository(root)
         self.root = self.repository.root
         self.project = project
-        self.directory = self.repository.project(project)
-        self.binding_relative = f"projects/{project}/.aoe/binding.json"
+        self.scope = Scope(project)
+        # Legacy roots keep AOE3 version 1 bindings exactly; workspace roots write version 2.
+        self.workspace_root = os.path.lexists(self.root / CHARTER_FILE)
+        if project is None:
+            if not self.workspace_root:
+                raise FormatError(
+                    f"{self.root}: workspace state not configured (no {CHARTER_FILE}); "
+                    "open a project session with aoe open PROJECT"
+                )
+            self.directory = self.root
+            self.binding_relative = ".aoe/binding.json"
+        else:
+            self.directory = self.repository.project(project)
+            self.binding_relative = f"projects/{project}/.aoe/binding.json"
+        self.runs = self.scope.records("runs")
         self.binding_path = self.repository.path(self.binding_relative)
         self.client = client
+
+    def _workspace_name(self) -> str:
+        path = self.repository.path(CHARTER_FILE, "file")
+        return validate_charter(decode(path.read_bytes(), str(path))).name
+
+    def _title(self) -> str:
+        """The native session title for a new binding of this scope."""
+        if not self.workspace_root:
+            return f"Toulmin: {self.project}"
+        if self.project is None:
+            return f"Workspace: {self._workspace_name()}"
+        return f"Project: {self.project} | {self._workspace_name()}"
+
+    def _new_binding(
+        self,
+        profile: str,
+        agent: str,
+        *,
+        session_id: str | None = None,
+        title: str | None = None,
+        known_ids: tuple[str, ...] = (),
+        message: str = "",
+    ) -> Binding:
+        if not self.workspace_root:
+            return Binding(
+                str(self.root), self.project, profile, agent, session_id,
+                known_ids=known_ids, message=message,
+            )  # fmt: skip
+        return Binding(
+            str(self.root),
+            self.project,
+            profile,
+            agent,
+            session_id,
+            known_ids=known_ids,
+            message=message,
+            version=2,
+            title=title or self._title(),
+        )
 
     def _lock(self) -> AbstractContextManager[None]:
         # All project bindings share one lock: one session must not silently serve two projects.
@@ -73,12 +166,24 @@ class AoEWorkspace:
             value = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(value, dict) or type(value.get("schema_version")) is not int:
                 raise ValueError("expected versioned binding mapping")
-            if value.pop("schema_version") != 1:
+            version = value.pop("schema_version")
+            if version == 1:
+                if self.project is None:
+                    raise ValueError("a version 1 binding is a project binding")
+                if set(value) != set(V1_FIELDS):
+                    raise ValueError("binding fields differ from version 1")
+            elif version == 2:
+                if set(value) != set(V2_FIELDS):
+                    raise ValueError("binding fields differ from version 2")
+                if Scope.from_data(value.pop("scope")) != self.scope:
+                    raise ValueError("scope does not match binding location")
+                if not isinstance(value["title"], str) or not value["title"].strip():
+                    raise ValueError("invalid binding title")
+                value["project"] = self.project
+            else:
                 raise ValueError("unsupported binding version")
-            required = set(Binding.__dataclass_fields__)
-            if set(value) != required:
-                raise ValueError("binding fields differ from version 1")
-            for field in ("root", "project", "profile", "agent", "delivery", "message"):
+            value["version"] = version
+            for field in ("root", "profile", "agent", "delivery", "message"):
                 if not isinstance(value[field], str):
                     raise ValueError(f"invalid binding {field}")
             for field in (
@@ -111,7 +216,7 @@ class AoEWorkspace:
             ):
                 raise ValueError("invalid binding session ID")
             if binding.context is not None:
-                prefix = f"projects/{self.project}/runs/"
+                prefix = f"{self.runs}/"
                 if not binding.context.startswith(prefix) or not re.fullmatch(
                     r"[0-9]{8}T[0-9]{6}Z-aoe-context-[0-9a-f]{32}",
                     binding.context.removeprefix(prefix),
@@ -136,7 +241,12 @@ class AoEWorkspace:
         path = self.repository.path(self.binding_relative)
         path.parent.mkdir(exist_ok=True)
         self.repository.path(self.binding_relative)
-        value = {"schema_version": 1, **asdict(binding)}
+        fields = asdict(binding)
+        if binding.version == 1:
+            value = {"schema_version": 1, **{name: fields[name] for name in V1_FIELDS}}
+        else:
+            value = {"schema_version": 2, "scope": self.scope.to_data()}
+            value.update({name: fields[name] for name in V2_FIELDS if name != "scope"})
         write_atomic(path, (json.dumps(value, indent=2) + "\n").encode(), replace=path.exists())
 
     def _client(self, binding: Binding | None = None) -> AoEClient:
@@ -151,6 +261,8 @@ class AoEWorkspace:
         if session.path.absolute() not in {self.root, self.directory}:
             raise FormatError(
                 "AoE session path must be this workbench or selected project directory"
+                if self.project is not None
+                else "A workspace session's path must be the workbench root"
             )
         if session.tool not in {"codex", "claude"}:
             raise FormatError("Research bindings require a native codex or claude session")
@@ -160,9 +272,16 @@ class AoEWorkspace:
             raise FormatError("Bound session is not live; use open --new-session or bind --replace")
 
     def _unique(self, profile: str, session_id: str) -> None:
+        """One native session serves at most one scope in this workbench (F08)."""
+        if self.project is not None and self.workspace_root:
+            candidate = self.repository.path(".aoe/binding.json")
+            if candidate.exists():
+                saved = AoEWorkspace(self.root, None)._read(allow_moved=True)
+                if saved and saved.profile == profile and saved.session_id == session_id:
+                    raise FormatError("Session already bound to the workspace")
         projects = self.repository.path("projects", "directory")
         for other in projects.iterdir():
-            if other.name == self.project or not other.is_dir():
+            if other.name == self.project or not other.is_dir() or other.name.startswith("."):
                 continue
             candidate = self.repository.path(f"projects/{other.name}/.aoe/binding.json")
             if candidate.exists():
@@ -170,21 +289,29 @@ class AoEWorkspace:
                 if saved and saved.profile == profile and saved.session_id == session_id:
                     raise FormatError(f"Session already bound to project {other.name}")
 
-    def _state(self) -> ResearchState:
-        state = research_state(self.root, self.project)
+    def _state(self) -> ResearchState | WorkspaceState:
+        state = scope_state(self.root, self.project)
         if state.errors:
+            subject = "workspace" if self.project is None else "project"
             raise FormatError(
-                "Repair project data before loading context: " + "; ".join(state.errors)
+                f"Repair {subject} data before loading context: " + "; ".join(state.errors)
             )
         return state
 
-    def _context(self, binding: Binding, state: ResearchState) -> Binding:
+    def _ack_command(self, token: str) -> str:
+        selector = ["--workspace"] if self.project is None else [self.project]
+        return shlex.join(
+            [sys.executable, "-m", "toulmin", "aoe", "ack", *selector, "--root", str(self.root),
+             "--token", token]
+        )  # fmt: skip
+
+    def _context(self, binding: Binding, state: ResearchState | WorkspaceState) -> Binding:
         if binding.context and binding.fingerprint == state.fingerprint:
             self._verify_context(binding)
             return binding
         token = uuid4().hex
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        relative = f"projects/{self.project}/runs/{stamp}-aoe-context-{token}"
+        relative = f"{self.runs}/{stamp}-aoe-context-{token}"
         archive = self.repository.path(relative)
         archive.mkdir()
         hashes: dict[str, str] = {}
@@ -195,27 +322,62 @@ class AoEWorkspace:
             target.parent.mkdir(parents=True, exist_ok=True)
             write_atomic(target, data)
             hashes[f"inputs/{name}"] = digest(data)
-        card = render_state(state)
+        card = render_scope(state)
         write_atomic(archive / "state.md", card.encode())
         hashes["state.md"] = digest(card.encode())
-        command = shlex.join(
-            [
-                sys.executable,
-                "-m",
-                "toulmin",
-                "aoe",
-                "ack",
-                self.project,
-                "--root",
-                str(self.root),
-                "--token",
-                token,
-            ]
+        command = self._ack_command(token)
+        if self.project is None:
+            instructions = self._workspace_instructions(state, command)
+        else:
+            instructions = self._project_instructions(binding, state, command)
+        write_atomic(archive / "context.md", instructions.encode())
+        hashes["context.md"] = digest(instructions.encode())
+        manifest: dict[str, object] = {"schema_version": binding.version}
+        if binding.version == 2:
+            manifest["scope"] = self.scope.to_data()
+        manifest.update(
+            {
+                "token": token,
+                "fingerprint": state.fingerprint,
+                "profile": binding.profile,
+                "session_id": binding.session_id,
+                "provider_session_id": binding.provider_session_id,
+                "files": hashes,
+            }
         )
-        instructions = (
+        write_atomic(archive / "manifest.json", (json.dumps(manifest, indent=2) + "\n").encode())
+        if self._state().fingerprint != state.fingerprint:
+            raise FormatError(
+                "Research changed while preparing context; archive retained, retry refresh"
+            )
+        binding = replace(
+            binding,
+            context=relative,
+            token=token,
+            fingerprint=state.fingerprint,
+            manifest_sha256=digest((archive / "manifest.json").read_bytes()),
+            delivery="prepared",
+            message="Context prepared; not yet sent",
+        )
+        self._save(binding)
+        return binding
+
+    def _project_instructions(
+        self, binding: Binding, state: ResearchState | WorkspaceState, command: str
+    ) -> str:
+        scope = ""
+        if binding.version == 2:
+            scope = (
+                f"Scope: Project: {self.project}. WORKSPACE.md is the shared charter, supplied "
+                "read-only; workspace discussion, sibling projects and creation sources are not "
+                f"resident (read them only on request). Save outputs under {self.runs}/. Scope "
+                "is recorded data, not filesystem isolation.\n\n"
+            )
+        return (
             "# Research session context\n\n"
             f"Project: {self.project}\nWorkbench: {self.root}\n\n"
-            "Read state.md and the listed input snapshots before continuing. They contain the "
+            + scope
+            + "Read state.md and the listed input snapshots before continuing. They contain the "
             "current recorded state, not an authorization to apply research decisions. "
             "The recorded next step is historical guidance; compare it with current objects.\n\n"
             + "\n".join(f"- inputs/{name}" for name in state.context_files)
@@ -235,33 +397,49 @@ class AoEWorkspace:
             "suggest applying a research proposal or the source summary. Do not apply it "
             "yourself. Closing a terminal is not confirmation.\n"
         )
-        write_atomic(archive / "context.md", instructions.encode())
-        hashes["context.md"] = digest(instructions.encode())
-        manifest = {
-            "schema_version": 1,
-            "token": token,
-            "fingerprint": state.fingerprint,
-            "profile": binding.profile,
-            "session_id": binding.session_id,
-            "provider_session_id": binding.provider_session_id,
-            "files": hashes,
-        }
-        write_atomic(archive / "manifest.json", (json.dumps(manifest, indent=2) + "\n").encode())
-        if self._state().fingerprint != state.fingerprint:
-            raise FormatError(
-                "Research changed while preparing context; archive retained, retry refresh"
-            )
-        binding = replace(
-            binding,
-            context=relative,
-            token=token,
-            fingerprint=state.fingerprint,
-            manifest_sha256=digest((archive / "manifest.json").read_bytes()),
-            delivery="prepared",
-            message="Context prepared; not yet sent",
+
+    def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:
+        root = str(self.root)
+        handoff = shlex.join(
+            ["toulmin", "aoe", "handoff", "--workspace", "--root", root, "--input", "SUMMARY"]
         )
-        self._save(binding)
-        return binding
+        propose = shlex.join(
+            ["toulmin", "workspace", "propose", "--root", root, "--input", "runs/drafts/FILE"]
+        )
+        return (
+            "# Workspace session context\n\n"
+            f"Scope: Workspace\nWorkbench: {root}\n\n"
+            "Read state.md and the listed input snapshots before continuing. They contain the "
+            "current recorded workspace state, not an authorization to change it. The recorded "
+            "next step is historical guidance; compare it with current files.\n\n"
+            + "\n".join(f"- inputs/{name}" for name in state.context_files)
+            + "\n\nAfter reading these files, record a context-read receipt with:\n\n```sh\n"
+            + command
+            + "\n```\n\nThe receipt does not approve research or guarantee comprehension. "
+            "Show the supplied state card with ACTIONS as available choices, not action "
+            "history, then wait for researcher input.\n\n"
+            "This session is the shared workspace. Projects have their own sessions; do not "
+            "work on a project's objects here, and do not create a project. Scope is recorded "
+            "data, not filesystem isolation.\n\n"
+            "Keep everything you produce in root runs/. Record a bounded exploration as "
+            "runs/<UTC stamp>-activity-<32 hex>/activity.md (workspace-formats.md section 5): "
+            "keep the researcher's corrections and feedback in their own words under "
+            "Researcher feedback, and state capture coverage honestly (full, selected, summary "
+            "or unknown, with limits). You see only part of the native conversation; never "
+            "claim a complete transcript.\n\n"
+            "Direction, constraints, focus and shared resource descriptions change only "
+            "through a reviewed packet: write a change input under runs/drafts/ (section 7.1), "
+            f"run {propose}, show the packet path, diff and the exact apply/reject commands it "
+            "prints, and let the researcher confirm. Never apply or reject a packet yourself. "
+            "A registered resource is not Evidence for any Claim.\n\n"
+            "Only when the researcher asks to end the session, save a structured summary "
+            "under runs/drafts/ (section 8: Done, Confirmed changes, Pending ideas, Open "
+            f"questions; next step in metadata) and run {handoff} with --input pointing to it. "
+            "Show the returned runs/<archive>/draft.md path and contents. Only that generated "
+            "draft is the --apply input: never a change input, a packet or the summary. Do not "
+            "apply it yourself. Pending ideas stay pending. Closing a terminal is not "
+            "confirmation.\n"
+        )
 
     def _verify_context(self, binding: Binding) -> None:
         if not binding.context:
@@ -274,7 +452,8 @@ class AoEWorkspace:
             manifest = json.loads(raw)
             if (
                 not isinstance(manifest, dict)
-                or manifest.get("schema_version") != 1
+                or manifest.get("schema_version") != binding.version
+                or (binding.version == 2 and manifest.get("scope") != self.scope.to_data())
                 or manifest.get("token") != binding.token
                 or manifest.get("fingerprint") != binding.fingerprint
                 or manifest.get("profile") != binding.profile
@@ -297,7 +476,8 @@ class AoEWorkspace:
                 receipt = json.loads(receipt_path.read_bytes())
                 if (
                     not isinstance(receipt, dict)
-                    or receipt.get("schema_version") != 1
+                    or receipt.get("schema_version") != binding.version
+                    or (binding.version == 2 and receipt.get("scope") != self.scope.to_data())
                     or receipt.get("token") != binding.token
                     or receipt.get("fingerprint") != binding.fingerprint
                 ):
@@ -380,7 +560,7 @@ class AoEWorkspace:
                 self._save(replace(current, delivery=outcome, message=description))
 
     def status(self, *, check_session: bool = True) -> WorkspaceView:
-        state = research_state(self.root, self.project)
+        state = scope_state(self.root, self.project)
         diagnostics: list[str] = []
         session = None
         try:
@@ -440,7 +620,10 @@ class AoEWorkspace:
                 )
                 and not replace_existing
             ):
-                raise FormatError("Project already bound; use explicit bind --replace")
+                raise FormatError(
+                    ("Project" if self.project else "Workspace")
+                    + " already bound; use explicit bind --replace"
+                )
             self._unique(client.profile, session.id)
             if (
                 previous
@@ -453,8 +636,8 @@ class AoEWorkspace:
                     raise FormatError("Profile differs; use bind --replace")
                 binding = previous
             else:
-                binding = Binding(
-                    str(self.root), self.project, client.profile, session.tool, session.id
+                binding = self._new_binding(
+                    client.profile, session.tool, session_id=session.id, title=session.title
                 )
                 self._save(binding)
             binding = self._sync_identity(binding, session)
@@ -480,9 +663,7 @@ class AoEWorkspace:
                 binding = None
             if binding is None:
                 known = tuple(item.id for item in client.list_sessions())
-                binding = Binding(
-                    str(self.root),
-                    self.project,
+                binding = self._new_binding(
                     client.profile,
                     agent,
                     known_ids=known,
@@ -490,7 +671,11 @@ class AoEWorkspace:
                 )
                 self._save(binding)
                 try:
-                    session = client.create(self.root, self.project, agent)
+                    if binding.version == 1:
+                        assert self.project is not None
+                        session = client.create(self.root, self.project, agent)
+                    else:
+                        session = client.create(self.root, self.project, agent, title=binding.title)
                 except AoEError as error:
                     sid = getattr(error, "session_id", None)
                     binding = replace(binding, session_id=sid, message=str(error))
@@ -505,7 +690,7 @@ class AoEWorkspace:
                     if item.id not in binding.known_ids
                     and item.path.absolute() == self.root
                     and item.tool == binding.agent
-                    and item.title == f"Toulmin: {self.project}"
+                    and item.title == (binding.title or f"Toulmin: {self.project}")
                 ]
                 if len(candidates) != 1:
                     raise FormatError(
@@ -548,8 +733,10 @@ class AoEWorkspace:
                 raise FormatError("Context is stale; refresh before acknowledging")
             if binding.delivery == "acknowledged":
                 return self.status(check_session=False)
-            receipt = {
-                "schema_version": 1,
+            receipt: dict[str, object] = {"schema_version": binding.version}
+            if binding.version == 2:
+                receipt["scope"] = self.scope.to_data()
+            receipt |= {
                 "token": token,
                 "fingerprint": binding.fingerprint,
                 "at": datetime.now(UTC).isoformat(),

@@ -73,3 +73,12 @@
   WORKSPACE.md `next_step` and `last_handoff`. Without `--confirm` it previews.
 - Status shows pending, stale and incomplete handoff drafts and reports orphan session records.
 - `aoe handoff PROJECT` is unchanged. Additive: no migration.
+
+## WI5 — Workspace and project native sessions
+
+- On a workspace root, `toulmin aoe open|bind|status|refresh|ack` without PROJECT (or with
+  `--workspace`) manage the workspace session; with PROJECT, that project's session. Each scope
+  has its own binding and context; one native session never serves two scopes.
+- New bindings on workspace roots are version 2; existing version 1 bindings are kept until an
+  explicit `bind --replace` or `open --new-session`. Legacy workbenches are unchanged.
+- New workspaces get scope-aware research instructions in AGENTS.md.

@@ -98,6 +98,7 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 | workspace propose --input F | WI3: validate a change input from root runs/drafts/ and freeze one sealed review packet (diffs, sources with coverage, pins, after images) | Writes only a new runs/<stamp>-proposal-<hex>/ directory; WORKSPACE.md and resources unchanged |
 | workspace apply --draft P | WI3: preview without --confirm; with --confirm and an actor, publish the packet's after images and a receipt | Only the listed WORKSPACE.md/resource targets, via the root journal; replays return the receipt |
 | workspace reject --draft P --reason R | WI3: record a final rejection for a pending packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
+| aoe open/bind/status/refresh/ack [PROJECT \| --workspace] | WI5: without PROJECT on a workspace root, the workspace scope's native session, binding and context; with PROJECT, that child (AOE3 behavior, plus the read-only WORKSPACE.md on workspace roots) | Scope's binding (`.aoe/binding.json` or `projects/NAME/.aoe/binding.json`) and context archives in that scope's runs/ only; never research objects |
 | aoe handoff [--workspace] --input F / --apply D | WI4: without PROJECT, seal a workspace handoff draft from a structured summary; apply previews without --confirm and, confirmed, records the session | Draft: one new runs/<stamp>-handoff-<hex>/ directory. Apply: one new sessions/ record and WORKSPACE.md next_step/last_handoff only, via the root journal; replays return the record |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
 
@@ -353,3 +354,21 @@ with PROJECT it is the unchanged project handoff. Reasons for the L2 additions:
   pending, stale (base changed), applied, incomplete or invalid, lists only non-applied ones by
   default, and reports a session record outside the chain without a journal as an orphan error,
   preserved and never used as the latest handoff.
+
+### WI5 two-scope native entry
+
+The AoE group implements workspace-formats.md section 11. Reasons for the L3/L2 additions:
+- Omitted PROJECT selects the workspace in open, bind, status, refresh, ack and handoff; PROJECT
+  with `--workspace` is a usage error. Output starts with the resolved root and scope. A legacy
+  root has no workspace scope, and its project bindings keep the exact AOE3 version 1 behavior.
+- On workspace roots, new bindings are version 2 (scope and title), sessions are created at the
+  root, a workspace session must be at the root, and one native session is bound to at most one
+  scope across versions. Existing version 1 bindings are read and updated in place; explicit
+  `bind --replace` or `open --new-session` writes version 2. Manifests and receipts carry the
+  binding's version and, for version 2, its scope, so an ack for another scope is refused.
+- The workspace state card and fingerprint (L2 `workspace_context`) cover the section 11
+  inputs plus handoff draft dispositions. A child on a workspace root adds WORKSPACE.md and its
+  creation record to the AOE3 inputs. Busy, trust-prompt, uncertain-creation and resend rules
+  are unchanged and apply to both scopes.
+- A workspace root's research AGENTS.md comes from a separate scope-aware template; the shared
+  template used by legacy workbenches is unchanged, so their template checks still match.

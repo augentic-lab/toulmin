@@ -48,6 +48,22 @@ permission menus or automatically retries uncertain delivery. Inspect before usi
 `refresh --resend`; use `open --new-session` only after the old session is archived/deleted.
 Repeated opening or refreshing unchanged submitted context does not send another prompt.
 
+On a workspace root (`toulmin init ROOT`), omitting the project selects the shared workspace,
+even when only one project exists; `--workspace` says the same explicitly:
+
+```sh
+toulmin aoe open --root /path/to/research --profile main      # Workspace: <name>
+toulmin aoe open scheduling --root /path/to/research          # Project: scheduling | <name>
+toulmin aoe status --workspace --root /path/to/research --offline
+```
+
+Each scope has its own binding (`.aoe/binding.json` for the workspace) and its own native
+session started at the root; one session never serves two scopes. The workspace context holds
+WORKSPACE.md and the latest applied workspace handoff; a project context adds the read-only
+WORKSPACE.md to its usual inputs, never workspace discussion or sibling histories. Existing
+project bindings keep their version 1 form until an explicit `bind --replace` or
+`open --new-session`.
+
 Handoff uses the existing confirmation protocol, without automatically closing the AoE session:
 
 ```sh

@@ -45,6 +45,10 @@ def _templates(project: str | None) -> dict[Path, bytes]:
 
     collect(templates, Path())
     if project is None:
+        # A workspace root gets scope-aware instructions from a separate template; the
+        # shared AGENTS.md stays unchanged, so legacy workbenches keep matching it.
+        workspace = files("toulmin.cli").joinpath("workspace_templates", "AGENTS.md")
+        result[Path("AGENTS.md")] = workspace.read_bytes()
         for directory in WORKSPACE_DIRECTORIES:
             result[Path(directory) / ".gitkeep"] = b""
     return result
