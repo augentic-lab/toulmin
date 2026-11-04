@@ -340,3 +340,12 @@ AOE1 was a proposal; on 2026-11-04 the researcher explicitly delegated the compl
 
 - [x] Reproduce the reported Codex unified-exec EACCES before command startup; give the outer user namespace its own `/dev`/devpts and verify a newly allocated command PTY can read the mode-0600 context. Preserve formal-path read-only protection, hidden control sockets and process cleanup.
 - [ ] Researcher retries a newly launched native Codex session; an already running split keeps its old mount namespace.
+
+### WS1–WS3 — Workspace-first architecture design (implementation paused)
+
+- [x] Record the researcher-confirmed direction: root is a shared research workbench; permit exploration without a subproject; create an initial child Brief only after scope confirmation, without requiring a Claim; retain the workspace conversation when opening a separate child conversation.
+- [x] WS1 draft: define workspace state, confirmed versus proposed information, file ownership, resource provenance, workspace handoff limits and bounded recovery context. Draft: `/home/tianchi/notes/toulmin/workspace-state-design.md`. Distinguish existing qualified project references from the unimplemented workspace layer; preserve the existing formats and code.
+- [ ] WS1 researcher review: assess the proposed WORKSPACE.md charter, root runs/sessions, shared resource descriptions and separate confirmation boundaries. Document completion is not design acceptance.
+- [ ] WS2: after WS1 review, specify project-free initialization, explicit session scopes, confirmed child creation and compatibility/migration behavior. No command contract is finalized by WS1.
+- [ ] WS3: after operation design, define the complete empty-workspace → exploration → recovery → first-child → scope-switching acceptance walkthrough.
+- Implementation remains paused; no new schemas, templates, runtime code or research state are authorized by these design tasks.

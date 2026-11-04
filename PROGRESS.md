@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-04 — WS1: workspace state and file ownership design
+
+- Authorization: the researcher approved the workspace-first direction, then requested only item 1 of the design sequence. No implementation, new CLI behavior, migration or live research mutations were requested. Recorded this scope in AGENTS/TODO; prior AOE3 implementation and acceptance history remain intact.
+- Delivered English design draft: `/home/tianchi/notes/toulmin/workspace-state-design.md`, outside the repository per the standing notes rule. It separates confirmed organizing decisions from scientific support, exploration/proposal records, shared resource descriptions, applied handoff and operational session state. Recommends WORKSPACE.md, root runs/sessions and shared/resources ownership; no global scientific stage or global seven-object namespace.
+- The draft covers exact-content approval/provenance, rejection/supersession/incomplete records, pending versus applied source archives, version-pinned shared materials, project creation source ownership and bounded recovery context. Applying a workspace handoff updates continuity only, not goals/resources/projects/rulings. Exact schemas, command mechanics and acceptance walkthrough remain WS2/WS3 work. These detailed recommendations are not represented as researcher-approved or implemented.
+- **Verified by source inspection**: design section 5 already defines a shared Git workbench; formats and Repository.resolve already support other-project/C-001. Corrected the earlier conversational implication that cross-project reference syntax was missing. Project-free charter/handoff support remains absent. Existing global/profile.md and project formal objects retain their roles.
+- Validation: read current design/format/protocol contracts and relevant implementation; checked note/source paths, UTF-8/LF, Markdown fences, required scope labels and Git diff whitespace. No application tests or model calls: changes are documentation-only, with no runtime/template/format-contract edits. No actual workspace-state behavior or usability acceptance is claimed.
+- Session ID unavailable. Blockers: none. Next: researcher reviews WS1 recommendations, then proceed to WS2 operation design. Progress/scope records committed locally; personal design note remains outside Git. No push.
+
 ## 2026-11-04 — AOE3 usability fix: zsh activation and handoff input diagnosis
 
 - Researcher reported that `source .venv/bin/activate` did not leave `toulmin` available, and that applying a saved proposal failed with an LF/front-matter parser message. Investigated the actual shell configuration and selected research files read-only; no native agent messages or formal research writes were made.
