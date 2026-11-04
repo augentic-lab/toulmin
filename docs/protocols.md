@@ -253,3 +253,22 @@ reported, not repaired or truncated. Open workspaces/material are not immutable 
 
 This adds no independent-review privileges and makes no complete native provenance claim.
 See docs/native-workspace.md in the development repository for launcher usage and limits.
+
+## Current research state and external session entry (AOE3)
+
+Reason: the delegated AOE2 trial found stale handoff suggestions, model-written action
+history in place of available choices, and native session creation mistaken for readiness.
+The read-only research workspace protocol derives current stored statuses, draft-file
+inventory, pending review intake and available actions from files. The recorded next step
+remains explicitly historical guidance. Invalid data is visible, never silently repaired.
+Resident input planning includes AGENTS, PROJECT, Brief and only the latest applied handoff;
+raw discussions and all historical handoffs are not loaded as resident context.
+
+An L3 AoE adapter may bind native sessions and publish hashed context snapshots with a
+separate context-read receipt. Prepared, submitted and acknowledged are distinct states.
+A receipt grants no research authority; changed files or a replacement native conversation
+require fresh context. Binding metadata and snapshots are auxiliary records, not a Run or
+proof of a complete native transcript. Research output archival remains a separate protocol.
+The adapter owns neither the native terminal nor Chief tasks, and does not answer native
+permission prompts. Handoff drafting/application reuse the existing explicit-confirmation,
+conflict and idempotency rules. Closing an external session cannot apply a handoff or gate.

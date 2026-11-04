@@ -319,13 +319,21 @@ The CLI smoke trial proved plumbing only. The researcher explicitly needs a visi
 ### AOE1 — AoE research workspace integration proposal
 
 - [x] Inspect the current Toulmin, AoE-Chief and installed AoE interfaces; document responsibilities, interaction gaps, confirmation/provenance boundaries and staged acceptance in `/home/tianchi/notes/toulmin/aoe-integration.md` (external personal notes).
-- [ ] Researcher approves or revises the proposed direction: AoE owns the primary interaction surface, Toulmin owns research state, Chief owns bounded execution; pause further standalone TUI/native-runtime expansion while retaining compatibility.
+- [x] Researcher authorized the smallest development slice after AOE2 on 2026-11-04: AoE native interaction plus Toulmin research state; defer further standalone TUI expansion while retaining compatibility. Chief bridge automation remains outside this slice.
 - [x] AOE2/A mechanics: run a delegated temporary-project trial through real AoE native discussion, feedback, confirmed fixture objects/handoff and two fresh recoveries. Confirmed versus draft state and the unapproved p95 idea survived recovery. State-card actions required explicit correction; no persistent research sidebar is claimed.
 - [ ] A researcher acceptance: assess native interaction, progress visibility and available-action clarity. Delegated operator trials do not replace the researcher's actual experience.
 - [x] AOE2/B bounded trial: trace S-001 through a real Chief test-first contract, inspected test approval, execution, separate delivery review, durable Run archive, fresh independent reproduction and explicit fixture Evidence/Decision. Preserve the zero-improvement outcome, raw data/code/review links and human-acceptance boundary. Repeated intake/handoff and duplicate execution archival did not duplicate records; after official worktree cleanup the archived computation and relocated workbench remained valid. Live failed-task retry coverage remains outside this trial.
-- [ ] C: only after the manual trials, implement thin L3 binding/export/import adapters with idempotency, stale-input and interrupted-operation checks. Evaluate a persistent AoE research view if the state card is insufficient; its extension interface remains unverified.
+- [ ] C follow-up: Chief contract export/result import remain deferred. Evaluate a persistent AoE research view if the state card is insufficient; its extension interface remains unverified. The binding subset is implemented separately as AOE3 below.
 
-AOE1 was a proposal; on 2026-11-04 the researcher explicitly delegated the complete A/B trial, recorded as AOE2. The report and durable evidence are at `/home/tianchi/notes/toulmin/aoe-trial-2026-11-04.md` and its same-name directory. This does not retire existing UI features, implement a production bridge or satisfy researcher usability acceptance. Proposed new command names remain illustrative and unimplemented.
+AOE1 was a proposal; on 2026-11-04 the researcher explicitly delegated the complete A/B trial, recorded as AOE2. The report and durable evidence are at `/home/tianchi/notes/toulmin/aoe-trial-2026-11-04.md` and its same-name directory. This does not retire existing UI features, implement a production bridge or satisfy researcher usability acceptance. AOE3 implements `toulmin aoe` entry commands; proposed Chief bridge commands remain unimplemented.
+
+### AOE3 — Minimum native research entry after the live trial
+
+- [x] Derive the English state card and available actions from current files; label recorded next steps as historical and drafts as unconfirmed inventory. Report invalid data without repair. L2 has no AoE/provider dependency; status works offline without AoE installed.
+- [x] Bind an existing native session or create/reuse one via public AoE commands. Reject cross-project identity conflicts, incompatible paths/tools/profiles, and silent replacement. Persist creation intent and recover uncertain creation without blind duplicate launches.
+- [x] Freeze bounded resident inputs, hash context, distinguish prepared/submitted/acknowledged, and validate the read receipt. Changed files or a different known native conversation require fresh context. Busy/menu/occupied input is not submitted; uncertain delivery needs explicit retry. Repeated unchanged opens/refreshes do not resend.
+- [x] Reuse confirmed handoff protocols through the AoE command group; no automatic formal writes, stage changes, handoff application or session shutdown. Preserve existing interfaces and record formats; document commands and recovery behavior.
+- [ ] Researcher acceptance: use a real project in AoE and assess native interaction, on-demand progress/action visibility and confirmed handoff. Automated tests and the delegated isolated Codex smoke do not replace this acceptance. Claude native delivery has adapter coverage but no new live-provider smoke in AOE3.
 
 ### UI-N1 fix — Native command PTY permissions
 

@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.initialize import initialize
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
@@ -22,6 +23,7 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
 )
+app.add_typer(aoe_app, name="aoe")
 
 ACTOR_VARIABLE = "TOULMIN_ACTOR"
 

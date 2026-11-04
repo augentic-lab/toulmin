@@ -2,6 +2,69 @@
 
 A personal research workbench that stores research state in files and leaves rulings to the researcher.
 
+## Research sessions in AoE
+
+Use AoE's native Codex/Claude sessions with Toulmin's file-based research state.
+This entry needs Python/Toulmin and an installed, configured AoE; it does not require Textual.
+Create a workbench with `toulmin init` first. From a shell:
+
+```sh
+toulmin aoe open tail-latency --root /path/to/research --profile main --attach
+```
+
+`open` creates or reuses one project binding. `--attach` explicitly enters its native terminal;
+without it, the command prints the state and stays in your current shell. Native folder-trust,
+login and update prompts remain yours to resolve. If AoE still reports `starting`, open that
+AoE profile and follow the displayed `refresh` command. You can also ask the native agent to
+read the displayed context file directly and run its receipt command. No private tmux server
+or second Toulmin chat window is started.
+
+If you already have a native research session in AoE, bind it without sending into a busy conversation:
+
+```sh
+toulmin aoe bind tail-latency --root /path/to/research --session SESSION_ID --profile main
+```
+
+Omit `--session` when invoking from inside the desired AoE session. Its directory must be the
+workbench root or the selected project directory. Ask the agent to read the returned context
+file and its snapshots; `bind` only prepares files. A session cannot be bound to two projects
+in the same workbench. Use `bind --replace` for an intentional rebind, including after a move.
+
+```sh
+toulmin aoe status tail-latency --root /path/to/research
+toulmin aoe status tail-latency --root /path/to/research --offline
+toulmin aoe refresh tail-latency --root /path/to/research
+```
+
+The English card derives recorded object statuses, draft files and available actions from files.
+`RECORDED NEXT STEP` is historical guidance, not inferred current work. `--offline` needs no AoE;
+`--json` exposes the same structured view. This is an on-demand card, not a persistent sidebar.
+Existing TUI/native proposal trees are not included in its bounded draft inventory.
+
+Context states distinguish prepared, submitted and acknowledged. A read receipt is an agent
+report, not comprehension or research approval. File changes or a different native conversation
+invalidate freshness. Refresh never revives a stopped session, submits occupied input, answers
+permission menus or automatically retries uncertain delivery. Inspect before using explicit
+`refresh --resend`; use `open --new-session` only after the old session is archived/deleted.
+Repeated opening or refreshing unchanged submitted context does not send another prompt.
+
+Handoff uses the existing confirmation protocol, without automatically closing the AoE session:
+
+```sh
+toulmin aoe handoff tail-latency --root /path/to/research --input projects/tail-latency/runs/drafts/summary.md
+toulmin aoe handoff tail-latency --root /path/to/research --apply projects/tail-latency/runs/ARCHIVE/draft.md --confirmed-by 'Your name' --confirm
+```
+
+Inspect the returned draft before applying it. `TOULMIN_ACTOR` may supply attribution; it does
+not supply confirmation. Closing a terminal never confirms a handoff or changes research stage.
+Bindings live in the project's `.aoe/binding.json`; immutable context snapshots and read receipts
+live under `runs/*-aoe-context-*/`. These are auxiliary records, not model-output Runs or a full
+conversation archive. Existing research commands still archive/review/intake actual outputs.
+AoE retains session ownership and native permissions: this entry does not reproduce the old
+native wrapper's read-only mounts. Chief dispatch/import and research rulings remain separate.
+Use `TOULMIN_AOE_COMMAND` to select one AoE executable when necessary; otherwise the local
+`~/.local/bin/aoe` is preferred over PATH. Research bindings never change AoE configuration.
+
 Stage 2 is accepted. Structured review, reviewer personas, model adapters, synthesis and cross-validation (C1–C4) are implemented. The Python/Textual workspace now supports durable discussion and confirmed Brief proposals; TUI review/handoff integration and C5 remain pending.
 
 ## Terminal workspace
