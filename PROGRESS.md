@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-04 — WS3: workspace-first acceptance design
+
+- Authorization: the researcher accepted WS2's operation scheme and requested item 3. Recorded WS2 approval in its external note and TODO; updated AGENTS to the current documentation-only scope. Implementation remains paused, and no acceptance trial was requested or executed.
+- Delivered English plan: `/home/tianchi/notes/toulmin/workspace-acceptance-plan.md`. A01–A10 cover empty workspace initialization, native exploration with feedback, reviewed direction/resource registration, workspace handoff, fresh file-based recovery, reviewed first-child creation, independent child entry, scope switching and child handoff. The small synthetic scheduling fixture requires no formal Claim or performance experiment.
+- F01–F14 specify confirmation, artifact/scope mismatch, changed inputs, duplicate publication, interrupted writes, native launch/delivery failures, binding identity, stale/tampered context, unconfirmed closure, scope selection, malformed roots, missing resource versions and honest capture coverage. L01 covers previewed legacy adoption, reviewed plan digests and preservation of existing projects/custom configuration/bindings. These are future checks, not executed evidence.
+- Human acceptance is separate: the researcher must identify scope, confirmed/pending state, output location and available action through the normal interface. Record path/command/approval friction and author interventions. The plan does not reinstate an obligatory two-day trial, infer live Claude support from fake adapters, claim filesystem isolation from binding scope, or treat transcript summaries as complete provenance.
+- Validation: read accepted WS1/WS2 and historical manual-acceptance documentation; checked unique case IDs/counts, referenced note/source paths, UTF-8/LF, Markdown structure, NOT RUN labels and Git diff whitespace. No code tests or live models: only documentation changed; no templates, runtime code, actual research files or AoE sessions were touched. No usability or new operation is reported as verified.
+- Session ID unavailable. Blockers: none for plan delivery. Next: researcher reviews WS3; only later authorization can start implementation and eventual execution. Scope/progress committed locally; personal design notes remain outside Git. No push.
+
 ## 2026-11-04 — WS2: workspace operations design
 
 - Authorization: the researcher accepted WS1's state/file division and requested item 2, operation design. Recorded WS1 acceptance in its external note and TODO, then updated AGENTS to the current documentation-only scope. Implementation remains paused; WS3 acceptance planning has not started.
