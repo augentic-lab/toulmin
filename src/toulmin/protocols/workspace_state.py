@@ -17,7 +17,9 @@ from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.inspection import marker_errors
 from toulmin.core.project import validate_project
+from toulmin.core.proposals import validate_receipt
 from toulmin.core.repository import Repository
+from toulmin.core.resources import validate_description
 from toulmin.core.workspace import CHARTER_FILE, Charter, validate_charter
 
 LINK = ("CLAUDE.md", "AGENTS.md")
@@ -60,12 +62,21 @@ class Proposal:
 
 
 @dataclass(frozen=True)
+class Resource:
+    name: str
+    title: str | None = None
+    status: str | None = None  # active or withdrawn; None when invalid
+    revision: int | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
 class WorkspaceReport:
     root: RootReport
     charter: Charter | None
     children: tuple[Child, ...]
     proposals: tuple[Proposal, ...]
-    resources: tuple[str, ...]
+    resources: tuple[Resource, ...]
     notices: tuple[str, ...]
     errors: tuple[str, ...]
 
@@ -164,17 +175,19 @@ def workspace_status(root: Path, setup: Mapping[str, bytes]) -> WorkspaceReport:
         return WorkspaceReport(report, None, (), (), (), tuple(notices), ())
     repository = Repository(report.root)
     charter = None
+    journal = _journal(repository, errors)
     if report.state == RootState.WORKSPACE:
         charter = _charter(repository, errors)
+        if charter is not None and charter.receipt is not None and journal is None:
+            _receipted(repository, CHARTER_FILE, charter.receipt, notices, errors)
     else:
         notices.append("workspace state not configured; existing projects remain valid")
-    journal = _journal(repository, errors)
     children = _children(repository, journal, notices, errors)
     proposals: tuple[Proposal, ...] = ()
-    resources: tuple[str, ...] = ()
+    resources: tuple[Resource, ...] = ()
     if report.state == RootState.WORKSPACE:
         proposals = _proposals(repository, journal, errors)
-        resources = _resources(repository, errors)
+        resources = _resources(repository, journal is not None, notices, errors)
         _misplaced(repository, errors)
     return WorkspaceReport(
         report, charter, children, proposals, resources, tuple(notices), tuple(errors)
@@ -310,34 +323,82 @@ def _proposals(
 def _receipt(repository: Repository, relative: str, seal: str, errors: list[str]) -> str:
     try:
         path = repository.path(f"{relative}/receipt.md", "file")
-        header = decode(path.read_bytes(), str(path)).header
-        if (
-            header.get("kind") != "workspace-receipt"
-            or header.get("record") != f"{relative}/packet.md"
-            or header.get("record_sha256") != seal
-            or header.get("disposition") not in {"applied", "rejected"}
-        ):
+        receipt = validate_receipt(decode(path.read_bytes(), str(path)))
+        if receipt.record != f"{relative}/packet.md" or receipt.record_sha256 != seal:
             raise ValueError("receipt does not dispose of this sealed packet")
-        return str(header["disposition"])
+        return receipt.disposition
     except (OSError, ValueError) as error:
         errors.append(f"{relative}: invalid receipt: {error}")
         return "invalid"
 
 
-def _resources(repository: Repository, errors: list[str]) -> tuple[str, ...]:
+def _receipted(
+    repository: Repository, target: str, receipt: str, notices: list[str], errors: list[str]
+) -> None:
+    """Notice a confirmed file whose owned parts differ from its receipted after image.
+
+    Only the charter-owned parts of WORKSPACE.md are compared (section 4): a workspace
+    handoff changes next_step and last_handoff legitimately. Content is still shown.
+    """
+    try:
+        path = repository.path(receipt, "file")
+        record = validate_receipt(decode(path.read_bytes(), str(path)))
+        expected = next((after for name, _, after in record.results if name == target), None)
+        if record.disposition != "applied" or expected is None:
+            raise ValueError(f"{receipt} did not publish {target}")
+        directory = receipt.removesuffix("/receipt.md")
+        packet = decode(repository.path(f"{directory}/packet.md", "file").read_bytes())
+        image = next(
+            item["after"]
+            for item in packet.header.get("targets", [])
+            if isinstance(item, dict) and item.get("path") == target
+        )
+        after = repository.path(f"{directory}/{image}", "file").read_bytes()
+        current = repository.path(target, "file").read_bytes()
+    except (OSError, ValueError, StopIteration) as error:
+        errors.append(f"{target}: receipt {receipt}: {error or 'after image not listed'}")
+        return
+    if digest(after) != expected:
+        errors.append(f"{target}: receipted after image changed; packet is invalid")
+        return
+    if target == CHARTER_FILE:
+        owned = ("name", "charter_revision", "charter_receipt")
+        old, new = decode(after), decode(current)
+        same = old.body == new.body and all(old.header[key] == new.header[key] for key in owned)
+    else:
+        same = current == after
+    if not same:
+        notices.append(f"{target}: differs from its last receipt (edited outside a receipt)")
+
+
+def _resources(
+    repository: Repository, journal: bool, notices: list[str], errors: list[str]
+) -> tuple[Resource, ...]:
+    """Validate descriptions offline; material digests are checked by apply and pins."""
     folder = repository.root / "shared/resources"
     if not folder.exists():
         return ()
     if folder.is_symlink() or not folder.is_dir():
         errors.append(f"{folder}: expected a directory")
         return ()
-    names = []
+    resources = []
     for path in sorted(folder.glob("*.md")):
-        if path.is_symlink() or not path.is_file():
-            errors.append(f"shared/resources/{path.name}: expected a regular file")
+        relative = f"shared/resources/{path.name}"
+        try:
+            if path.is_symlink() or not path.is_file():
+                raise FormatError(f"{relative}: expected a regular file")
+            validate_project_name(path.stem)
+            description = validate_description(decode(path.read_bytes(), str(path)), path.stem)
+        except (OSError, ValueError) as error:
+            errors.append(str(error))
+            resources.append(Resource(path.stem, error=str(error)))
             continue
-        names.append(path.stem)
-    return tuple(names)
+        if not journal:
+            _receipted(repository, relative, description.receipt, notices, errors)
+        resources.append(
+            Resource(path.stem, description.title, description.status, description.revision)
+        )
+    return tuple(resources)
 
 
 def _misplaced(repository: Repository, errors: list[str]) -> None:

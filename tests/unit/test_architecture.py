@@ -20,6 +20,7 @@ DATA_MODULES = {
     "contextlib",
     "dataclasses",
     "datetime",
+    "difflib",  # deterministic unified diffs in review packets (WI3)
     "enum",
     "fcntl",
     "fnmatch",  # pure string matching for role manifest patterns (C2)

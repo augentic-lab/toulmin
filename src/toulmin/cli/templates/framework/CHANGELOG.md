@@ -57,3 +57,11 @@
   direction), empty projects/, runs/drafts/, sessions/ and shared/resources/. `status` without
   PROJECT shows the workspace. `init --project` is refused on workspace roots only.
 - Additive: project object v1 and existing workbenches are unchanged; no migration.
+
+## WI3 — Reviewed workspace changes and shared resources
+
+- `toulmin workspace propose --input F` freezes a sealed review packet; `workspace apply --draft
+  P` previews it, and with `--confirm` and an actor publishes WORKSPACE.md or
+  shared/resources/ descriptions plus a receipt. `workspace reject` records a final rejection.
+- Interrupted applies leave `.workspace-pending/`; rerunning the same apply finishes it.
+- Additive: project object v1 and existing workbenches are unchanged; no migration.

@@ -108,6 +108,21 @@ uv run --locked toulmin status --root /path/to/research   # workspace view; no P
 
 `WORKSPACE.md` starts with no confirmed direction. Rerunning init on a workspace reports it and
 writes nothing. Existing workbenches are not upgraded by init (adoption is a later release).
+
+The direction and shared resource descriptions change only through a reviewed packet. Write a
+change input under `runs/drafts/` (contract section 7.1), then:
+
+```sh
+uv run --locked toulmin workspace propose --root /path/to/research --input runs/drafts/direction.md
+uv run --locked toulmin workspace apply --root /path/to/research --draft runs/<stamp>-proposal-<hex>
+uv run --locked toulmin workspace apply --root /path/to/research --draft runs/<stamp>-proposal-<hex> \
+  --confirmed-by "Your Name" --confirm
+uv run --locked toulmin workspace reject --root /path/to/research --draft runs/<stamp>-proposal-<hex> \
+  --reason "Not yet." --confirmed-by "Your Name" --confirm
+```
+
+Propose and preview write nothing outside the packet; apply publishes exactly the reviewed diff
+and a receipt. A registered resource is a located, versioned description, never Evidence.
 Reviewed child creation, workspace conversations and handoffs are not available yet; see the
 [workspace-first contract](docs/workspace-formats.md).
 

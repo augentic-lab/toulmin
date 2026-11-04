@@ -1,9 +1,11 @@
 # Workspace-first file contract (WI1)
 
 Status: contract frozen in WI1 on 2026-11-04 from the accepted WS1 state design, WS2 operation
-scheme and WS3 acceptance plan. **Not implemented**: no command in this release reads or writes
-the files below. WI2–WI7 implement them in order; until a release note says a command exists,
-do not create these files by hand. WS3 acceptance cases remain NOT RUN.
+scheme and WS3 acceptance plan. Implemented so far: sections 2.1, 4 and 12 (init, WI2), and
+sections 5–7 with the section 10 journal for workspace changes (WI3). Workspace handoffs, child
+creation, bindings and adoption are not implemented; WI4–WI7 add them in order, and until a
+release note says a command exists, do not create those files by hand. WS3 acceptance cases
+remain NOT RUN.
 
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
@@ -362,7 +364,7 @@ complete archive by renaming a dot-prefixed staging directory in `runs/`:
 runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/
   packet.md        review packet (below)
   input.md         exact input bytes
-  sources/N.md     exact snapshots of local sources, in `sources` order
+  sources/N.EXT    exact snapshots of local sources (N in `sources` order, original suffix)
   targets/N.md     exact after images, in `targets` order
   seal             SHA-256 of packet.md, then LF
 ```
@@ -449,8 +451,8 @@ Adopt the single-node scheduling direction and register the synthetic trace for 
 - The trace's burst pattern resembles production arrivals (unverified).
 
 ## Not changed
-No project, Claim, Evidence, Decision, stage or handoff is created or changed. Registering
-the trace does not make it Evidence for any Claim.
+No project, Claim, Evidence, Decision, stage or handoff is created or changed. A
+registered resource is not Evidence for any Claim.
 ````
 
 Binding preview to confirmation. The packet, its subfiles and its seal are written once and never
@@ -512,7 +514,7 @@ Body: the fixed sentence shown in the example.
 schema_version: 1
 kind: workspace-receipt
 record: runs/20261104T101500Z-proposal-a41c9e07d3b24f5e9b6c8d7e1f203a4b/packet.md
-record_sha256: 5042d640c6a8859a36cd27fbe516c5f5b0deef0eaacec150df9fbd28be290bcb
+record_sha256: 24c921f88c515268b33de5f2df45f2e1ee677206aa9a456ef04315b2568cca20
 disposition: applied
 actor: "Tianchi YU"
 at: "2026-11-04T10:20:00Z"
@@ -723,7 +725,7 @@ Unknown; no measurement yet.
 Replay the registered synthetic trace under FIFO and one size-aware policy.
 ````
 
-Packet: `runs/<stamp>-project-<hex>/` with `packet.md`, `input.md`, `sources/N.md`,
+Packet: `runs/<stamp>-project-<hex>/` with `packet.md`, `input.md`, `sources/N.EXT`,
 `targets/PROJECT.md`, `targets/brief.md` and `seal`, sealed and previewed exactly as in 7.2.
 Header: `kind: project-creation`, `scope: {kind: workspace}`, `created`, `project`, `input`,
 `supersedes`, `sources`, `pins` (full form), `relationships`, `targets` (only `path`,
@@ -798,7 +800,7 @@ ACTOR --confirm`. NAME must equal the packet's `project`. Checks follow 7.4 with
 existing project (F04). Publication builds the complete child in `projects/.creating-<hex>/`
 (hex from the packet directory): PROJECT.md and brief.md from the after images, the seven object
 directories plus `runs/` and `sessions/` with `.gitkeep` files, and `runs/creation/` containing
-copies of `packet.md`, `seal` and `sources/N.md` and the record below. It then renames the
+copies of `packet.md`, `seal` and `sources/N.EXT` and the record below. It then renames the
 staging directory to `projects/NAME` in one step and publishes the workspace receipt (`results`
 list the three generated documents). WORKSPACE.md, other projects and original workspace
 records are untouched.

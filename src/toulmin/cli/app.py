@@ -9,6 +9,7 @@ import typer
 
 from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
+from toulmin.cli.workspace import app as workspace_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
@@ -25,6 +26,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(aoe_app, name="aoe")
+app.add_typer(workspace_app, name="workspace")
 
 ACTOR_VARIABLE = "TOULMIN_ACTOR"
 
@@ -775,7 +777,13 @@ def _workspace_status(root: Path, verbose: bool) -> None:
         )
         if hidden and not verbose:
             typer.echo(f"  ({hidden} applied, rejected or superseded; --verbose lists them)")
-        typer.echo("Resources: " + (", ".join(report.resources) if report.resources else "none"))
+        typer.echo("Resources:" + ("" if report.resources else " none"))
+        for resource in report.resources:
+            typer.echo(
+                f"  {resource.name} | invalid data" if resource.error else
+                f"  {resource.name} | {resource.status} | revision {resource.revision} | "
+                f"{resource.title}"
+            )  # fmt: skip
     else:
         typer.echo("Next: project commands keep working; adoption arrives in a later release")
     typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")

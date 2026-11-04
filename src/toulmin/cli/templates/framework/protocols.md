@@ -95,6 +95,9 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 | new <type> <project> | Complete draft and human confirmation; return new ID/path | Create one formal object only; archive AI drafts first and reject existing targets; no placeholder “valid objects” |
 | status <project> | PROJECT, relevant objects and explicit brief references; return summary/diagnostics | Entirely read-only, including no cache/index writes or mtime updates |
 | status [--workspace] | WI2: without PROJECT, the workspace view: root, scope, charter (direction or its absence), recorded next step, last handoff, child stages, proposal dispositions and resource names | Read-only as above; never initializes; legacy roots report workspace state not configured |
+| workspace propose --input F | WI3: validate a change input from root runs/drafts/ and freeze one sealed review packet (diffs, sources with coverage, pins, after images) | Writes only a new runs/<stamp>-proposal-<hex>/ directory; WORKSPACE.md and resources unchanged |
+| workspace apply --draft P | WI3: preview without --confirm; with --confirm and an actor, publish the packet's after images and a receipt | Only the listed WORKSPACE.md/resource targets, via the root journal; replays return the receipt |
+| workspace reject --draft P --reason R | WI3: record a final rejection for a pending packet (requires --confirm and an actor) | Writes only the packet's receipt.md |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
 
 init preflights every planned target before writing. Existing files must match their templates; otherwise report a conflict and write none of the planned files.
@@ -275,12 +278,12 @@ The adapter owns neither the native terminal nor Chief tasks, and does not answe
 permission prompts. Handoff drafting/application reuse the existing explicit-confirmation,
 conflict and idempotency rules. Closing an external session cannot apply a handoff or gate.
 
-## Workspace-first contracts (WI1; not implemented)
+## Workspace-first contracts (WI1; implemented in parts from WI2)
 
 Reason: the researcher accepted the workspace-first state design, operation scheme and
 acceptance plan (WS1–WS3) and authorized WI1 to freeze their file contracts before any writer
-exists. [workspace-formats.md](workspace-formats.md) is the contract; no command implements it
-yet, and WS3 acceptance cases remain NOT RUN. The L2 rules it fixes for later tasks:
+exists. [workspace-formats.md](workspace-formats.md) is the contract; WI2 and WI3 below
+implement parts of it, and WS3 acceptance cases remain NOT RUN. The L2 rules it fixes for later tasks:
 - Scope is explicit data (`{kind: workspace}` or a named child). Omitting PROJECT in the AoE and
   workspace commands selects the workspace; nothing is inferred from history or the only child.
 - Changes to the workspace charter or shared resource descriptions go input → sealed packet →
@@ -310,3 +313,24 @@ child or tampered packet makes the view invalid (exit 1) without repairing anyth
 `init --project` route and template project setup in the TUI are refused on workspace roots;
 elsewhere they are unchanged. Workspace conversations, proposals, handoffs, child creation and
 adoption are later tasks; a fresh workspace's AGENTS.md is still the shared template.
+
+### WI3 reviewed workspace changes and resource descriptions
+
+`workspace propose/apply/reject` implement workspace-formats.md sections 5–7 and the section 10
+journal for one operation, `workspace-change`. Reasons for the L2 additions:
+- Propose re-derives every after image from current files and refuses no-op, occupied or
+  unregistered targets, missing or mismatched material and cited activity records whose
+  coverage differs from the input; it runs no model and never fetches a URL. Local sources up to
+  1,000,000 bytes are snapshotted as `sources/N<suffix>`; larger ones keep path and digest only.
+- Apply checks, in the contract's order, the journal, the seal and frozen digests, an existing
+  receipt (replayed unchanged, whatever actor is given), supersession, then the packet's own
+  targets, sources, pins and registered material. Nothing else is compared, so edits to other
+  files, resources or child projects never conflict. Preview takes no lock and writes nothing.
+- Publication journals the before and after images and the receipt (as the last image), then
+  writes forward. A rerun of the same apply finishes it with the first confirmation's actor,
+  time and approval text; a file matching neither image stops recovery with every file kept.
+  While a journal exists, other workspace proposals and applies are refused.
+- Status validates resource descriptions and receipts, and notices a charter (owned parts only)
+  or description that differs from its receipted after image. Material digests are checked by
+  propose, apply and pins, not by status. The charter after image is rendered from the
+  canonical field order rather than round-tripped, so untouched nulls stay `null`.

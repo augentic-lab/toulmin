@@ -400,7 +400,10 @@ def receipt(root, relative, seal, disposition):
     (root / relative / "receipt.md").write_text(
         "---\nschema_version: 1\nkind: workspace-receipt\n"
         f"record: {relative}/packet.md\nrecord_sha256: {seal}\n"
-        f"disposition: {disposition}\n---\nReceipt.\n"
+        f'disposition: {disposition}\nactor: R\nat: "2026-11-04T10:20:00Z"\n'
+        "approval_text: null\n"
+        + ("reason: null\n" if disposition == "applied" else 'reason: "Not now."\n')
+        + "results: []\n---\nReceipt.\n"
     )
 
 
@@ -451,7 +454,10 @@ def test_misplaced_root_run_object_is_an_error(workspace):
     assert "misplaced Run object" in result.stderr
 
 
-def test_resources_are_listed_without_becoming_evidence(workspace):
-    (workspace / "shared/resources/synthetic-queue-trace.md").write_text("---\n---\n")
+def test_invalid_resource_description_is_reported_not_repaired(workspace):
+    path = workspace / "shared/resources/synthetic-queue-trace.md"
+    path.write_text("---\n---\n")
     result = status(workspace)
-    assert "Resources: synthetic-queue-trace" in result.stdout
+    assert result.exit_code == 1
+    assert "synthetic-queue-trace | invalid data" in result.stdout
+    assert path.read_text() == "---\n---\n"
