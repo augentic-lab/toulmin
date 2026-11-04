@@ -55,6 +55,13 @@ toulmin aoe handoff tail-latency --root /path/to/research --input projects/tail-
 toulmin aoe handoff tail-latency --root /path/to/research --apply projects/tail-latency/runs/ARCHIVE/draft.md --confirmed-by 'Your name' --confirm
 ```
 
+There are three distinct files: a research proposal, a structured session summary supplied
+to `--input`, and the generated handoff `runs/<archive>/draft.md` returned by that command.
+Only the last is the `--apply` input. A file under `runs/drafts/` is not automatically a
+handoff draft. Ask the agent to return the exact generated path; do not add YAML delimiters
+to a proposal to make it pass validation. The summary format is defined in `roles/scribe.md`
+and `framework/protocols.md` in the research workbench.
+
 Inspect the returned draft before applying it. `TOULMIN_ACTOR` may supply attribution; it does
 not supply confirmation. Closing a terminal never confirms a handoff or changes research stage.
 Bindings live in the project's `.aoe/binding.json`; immutable context snapshots and read receipts
@@ -287,6 +294,25 @@ export PATH="$PWD/.tools/bin:$PATH"
 export UV_CACHE_DIR="$PWD/.uv-cache"
 export UV_PYTHON_INSTALL_DIR="$PWD/.tools/python"
 ```
+
+### Shell activation troubleshooting
+
+From the software checkout, `source .venv/bin/activate` should make `toulmin` available.
+If it disappears at the next zsh prompt, a `pyenv-virtualenv` prompt hook may be deactivating
+the externally managed environment. This was reproduced on this host: activation succeeded,
+then `_pyenv_virtualenv_hook` removed it. For the current zsh only:
+
+```zsh
+precmd_functions=(${precmd_functions:#_pyenv_virtualenv_hook})
+source .venv/bin/activate
+command -v toulmin
+toulmin --help
+```
+
+This temporarily disables pyenv's automatic prompt switching in that shell; a new shell
+loads its normal hooks again. It changes neither `.zshrc` nor the system Python. Alternatively,
+run `.venv/bin/toulmin` directly from the checkout without activation. Do not recreate the
+environment merely because a shell hook has removed its PATH entry.
 
 ## Project documentation
 

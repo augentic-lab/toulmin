@@ -17,6 +17,53 @@ def invoke(root, *arguments):
     return CliRunner().invoke(app, ["handoff", "demo", "--root", str(root), *arguments])
 
 
+@pytest.mark.parametrize("prefix", [[], ["aoe"]])
+@pytest.mark.parametrize(
+    "content",
+    [
+        "# Research proposal\n\nUnconfirmed research goal and first Claim.\n",
+        "---\nnext_step: Discuss the proposal\nrecent_decisions: []\n---\n"
+        "## Done\nDiscussed the goal.\n## Decisions\nNone.\n## Open questions\nScope.\n",
+    ],
+)
+def test_apply_proposal_or_source_summary_explains_required_draft_without_writes(
+    workbench, prefix, content
+):
+    relative = "projects/demo/runs/drafts/session-notes.md"
+    source = workbench / relative
+    source.parent.mkdir(exist_ok=True)
+    source.write_text(content)
+    project = workbench / "projects/demo"
+
+    def files():
+        return {
+            str(path.relative_to(project)): path.read_bytes()
+            for path in project.rglob("*")
+            if path.is_file()
+        }
+
+    before = files()
+    result = CliRunner().invoke(
+        app,
+        [
+            *prefix,
+            "handoff",
+            "demo",
+            "--root",
+            str(workbench),
+            "--apply",
+            relative,
+            "--confirmed-by",
+            "Fixture Researcher",
+            "--confirm",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "Application requires a complete handoff draft" in result.output
+    assert "archived draft.md returned by handoff drafting" in result.output
+    assert files() == before
+
+
 def summary(root, next_step="Respond to O-001", **fields):
     path = root / "projects/demo/runs/manual/summary.md"
     path.parent.mkdir(exist_ok=True)

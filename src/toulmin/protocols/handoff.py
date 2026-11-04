@@ -89,8 +89,16 @@ def apply_handoff(root: Path, project: str, draft_path: str, actor: str, confirm
     if not draft_file.is_relative_to(directory / "runs"):
         raise FormatError("Handoff draft must be archived inside the selected project's runs/")
     raw = draft_file.read_bytes()
-    draft = decode(raw, str(draft_file))
-    validate_handoff(draft, project)
+    try:
+        draft = decode(raw, str(draft_file))
+        validate_handoff(draft, project)
+    except FormatError as error:
+        raise FormatError(
+            f"{error}\nApplication requires a complete handoff draft, not a research "
+            "proposal or an input summary. Select the archived draft.md returned by "
+            "handoff drafting. Preserve the original file; adding an opening --- "
+            "alone will not make it a handoff draft."
+        ) from error
     if not confirmed:
         draft.fail("applied_by", "explicit researcher confirmation required")
     text(draft, actor, "applied_by")

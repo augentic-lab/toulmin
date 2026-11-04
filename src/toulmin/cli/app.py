@@ -670,11 +670,17 @@ def handoff(
     project: Annotated[str, typer.Argument(help="Project name.")],
     root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
     input_path: Annotated[
-        str | None, typer.Option("--input", help="Session summary path relative to --root.")
+        str | None,
+        typer.Option(
+            "--input", help="Structured session summary (YAML + Markdown), relative to --root."
+        ),
     ] = None,
     apply_path: Annotated[
         str | None,
-        typer.Option("--apply", help="Archived draft to apply or recover, relative to --root."),
+        typer.Option(
+            "--apply",
+            help="Generated handoff draft.md, not a proposal or summary; relative to --root.",
+        ),
     ] = None,
     actor: Annotated[
         str | None,

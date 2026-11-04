@@ -227,8 +227,13 @@ class AoEWorkspace:
             "do not change formal objects, Brief, stage or confirmed handoff without explicit "
             "researcher review. Native permissions remain in force. After displaying the card, "
             "wait for researcher input. Only when the researcher asks to end the research "
-            "session, prepare a handoff summary under runs/drafts/ to inspect and apply using "
-            "toulmin handoff (or toulmin aoe handoff). Closing a terminal is not confirmation.\n"
+            "session, save a structured summary under runs/drafts/ according to "
+            "roles/scribe.md and framework/protocols.md. Run toulmin aoe handoff with "
+            "--input pointing to that summary to generate an archived handoff draft. "
+            "Show its contents and the exact returned runs/<archive>/draft.md path for "
+            "researcher review. Only that generated draft is the --apply input; never "
+            "suggest applying a research proposal or the source summary. Do not apply it "
+            "yourself. Closing a terminal is not confirmation.\n"
         )
         write_atomic(archive / "context.md", instructions.encode())
         hashes["context.md"] = digest(instructions.encode())
