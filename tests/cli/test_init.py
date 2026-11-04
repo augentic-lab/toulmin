@@ -125,7 +125,9 @@ def test_workspace_rules_and_role_contracts_are_independent_of_development(tmp_p
             assert field in text
 
 
-@pytest.mark.parametrize("name", ["formats.md", "format-examples.md", "protocols.md"])
+@pytest.mark.parametrize(
+    "name", ["formats.md", "format-examples.md", "protocols.md", "workspace-formats.md"]
+)
 def test_packaged_framework_contracts_match_canonical_documents(name):
     assert (ROOT / "src/toulmin/cli/templates/framework" / name).read_bytes() == (
         ROOT / "docs" / name

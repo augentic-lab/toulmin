@@ -318,11 +318,11 @@ environment merely because a shell hook has removed its PATH entry.
 
 - [Python/Textual TUI design](docs/tui-design.md): approved workflow, architecture and implementation plan.
 
-- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md).
+- [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract (not implemented)](docs/workspace-formats.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 
 Maintain documentation, templates and progress records in English. Conversation follows the user's language.
-The published templates framework/formats.md, format-examples.md and protocols.md are copies of their namesakes in docs/.
+The published templates framework/formats.md, format-examples.md, protocols.md and workspace-formats.md are copies of their namesakes in docs/.
 Synchronize them when editing contracts; tests check equality, and the installed CLI does not depend on the source checkout.
 
 Dependencies point downward: `cli` (L3) → `protocols` (L2) → `core` (L1); L3 may also use L1 directly.

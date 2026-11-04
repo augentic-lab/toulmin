@@ -272,3 +272,28 @@ proof of a complete native transcript. Research output archival remains a separa
 The adapter owns neither the native terminal nor Chief tasks, and does not answer native
 permission prompts. Handoff drafting/application reuse the existing explicit-confirmation,
 conflict and idempotency rules. Closing an external session cannot apply a handoff or gate.
+
+## Workspace-first contracts (WI1; not implemented)
+
+Reason: the researcher accepted the workspace-first state design, operation scheme and
+acceptance plan (WS1–WS3) and authorized WI1 to freeze their file contracts before any writer
+exists. [workspace-formats.md](workspace-formats.md) is the contract; no command implements it
+yet, and WS3 acceptance cases remain NOT RUN. The L2 rules it fixes for later tasks:
+- Scope is explicit data (`{kind: workspace}` or a named child). Omitting PROJECT in the AoE and
+  workspace commands selects the workspace; nothing is inferred from history or the only child.
+- Changes to the workspace charter or shared resource descriptions go input → sealed packet →
+  explicit apply or reject. Apply checks only the packet's targets, selected sources and pins,
+  publishes only listed files, and is idempotent. Saving drafts needs no approval.
+- A workspace handoff changes only WORKSPACE `next_step` and `last_handoff`. Confirming it
+  approves the summary, not the ideas it quotes; no direction, resource or child is bundled.
+- Child creation publishes one complete project (PROJECT, initial Brief, empty collections,
+  creation provenance) from a reviewed packet, with no Claim and no native launch. Opening its
+  conversation is a separate, retryable step.
+- One journal per workspace root serializes these writes; recovery is forward-only and reruns
+  the same command; external edits are preserved and refused, never rolled back.
+- Legacy workbenches gain workspace state only by a previewed adoption plan confirmed by its
+  digest. Project bindings version 1 and their context archives stay readable and unconverted.
+Manual editing has the same authority as the commands: the researcher may hand-edit the
+charter or a resource description (readers report it as unreceipted); agents prepare proposals
+instead; packets, seals, receipts and applied records are never edited. Existing project
+protocols above are unchanged.

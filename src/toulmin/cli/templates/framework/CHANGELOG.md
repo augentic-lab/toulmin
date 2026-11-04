@@ -42,3 +42,11 @@
   Existing object fields/version are unchanged; no existing research data needs migration.
 - Setup recovery preserves exact before/after files and conflicts. Opening projects never
   rewrites workbench templates. Conversation and review UI actions remain later work.
+
+## WI1 — Workspace-first file contracts (not implemented)
+
+- workspace-formats.md freezes additive formats for WORKSPACE.md, activity records, shared
+  resource descriptions, sealed change and child-creation packets, receipts, workspace
+  handoffs, the publication journal, scope-aware bindings (version 2) and legacy adoption.
+- Project object v1, project handoffs and AOE3 version 1 bindings are unchanged; no migration.
+  No command reads or writes the new files yet; later releases implement them in order.
