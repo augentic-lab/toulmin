@@ -25,6 +25,7 @@ DATA_MODULES = {
     "fnmatch",  # pure string matching for role manifest patterns (C2)
     "hashlib",
     "io",
+    "json",  # JSON strings are YAML-safe quoted scalars for the workspace name (WI2)
     "math",
     "os",
     "pathlib",
@@ -33,6 +34,7 @@ DATA_MODULES = {
     "shutil",
     "tempfile",
     "typing",
+    "unicodedata",  # reject line-break/control characters in display names (WI2)
     "uuid",
 }
 

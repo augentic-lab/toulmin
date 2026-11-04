@@ -99,6 +99,20 @@ For interface validation use `uv run --locked --extra tui pytest -q` and include
 
 ## Initialize a research workbench
 
+A workbench starts as a shared workspace with no project, goal or Claim:
+
+```sh
+uv run --locked toulmin init /path/to/research --name "Serving Research"
+uv run --locked toulmin status --root /path/to/research   # workspace view; no PROJECT
+```
+
+`WORKSPACE.md` starts with no confirmed direction. Rerunning init on a workspace reports it and
+writes nothing. Existing workbenches are not upgraded by init (adoption is a later release).
+Reviewed child creation, workspace conversations and handoffs are not available yet; see the
+[workspace-first contract](docs/workspace-formats.md).
+
+The legacy route still creates a template project in a non-workspace workbench:
+
 ```sh
 uv run --locked toulmin init /path/to/research --project tail-latency
 uv run --locked toulmin init /path/to/research --project second-project

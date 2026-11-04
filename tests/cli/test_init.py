@@ -331,6 +331,7 @@ def test_init_inside_parent_git_creates_an_independent_repository(tmp_path):
 
 
 def test_missing_required_arguments_are_usage_errors(tmp_path):
-    result = runner.invoke(app, ["init", str(tmp_path / "research")])
+    # WI2: init ROOT without --project creates a workspace; only ROOT is required.
+    result = runner.invoke(app, ["init", "--project", "demo"])
     assert result.exit_code == 2
     assert list(tmp_path.iterdir()) == []

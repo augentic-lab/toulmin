@@ -42,8 +42,20 @@ def brief_text_errors(
     found: list[tuple[int, str]] | None = None,
 ) -> list[str]:
     """Validate proposed brief text using the same reference rules as saved briefs."""
-    errors: list[str] = []
     path = repository.path(f"projects/{project}/brief.md")
+    return marker_errors(repository, project, content, str(path), found)
+
+
+def marker_errors(
+    repository: Repository,
+    project: str | None,
+    content: str,
+    location: str,
+    found: list[tuple[int, str]] | None = None,
+) -> list[str]:
+    """Check explicit [[...]] markers; project None is workspace scope, which has no objects."""
+    errors: list[str] = []
+    path = location
     if "\r" in content:
         errors.append(f"{path}:1: encoding: expected LF line endings")
     fence = ""
@@ -72,7 +84,14 @@ def brief_text_errors(
                 break
             value = line[start + 2 : end]
             try:
-                repository.resolve(project, value)
+                owner = project
+                if owner is None:
+                    owner = ObjectRef.parse(value).project
+                    if owner is None:
+                        raise ValueError(
+                            "unqualified reference in workspace scope; write project/C-001"
+                        )
+                repository.resolve(owner, value)
                 if found is not None:
                     found.append((line_number, value))
             except (OSError, ValueError) as error:

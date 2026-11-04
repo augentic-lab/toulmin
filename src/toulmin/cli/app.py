@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.aoe import app as aoe_app
-from toulmin.cli.initialize import initialize
+from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
@@ -17,6 +17,7 @@ from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import intake_review
 from toulmin.protocols.ruling import apply_ruling
 from toulmin.protocols.status import project_status
+from toulmin.protocols.workspace_state import RootState, project_hint, workspace_status
 
 app = typer.Typer(
     help="Toulmin research workbench. Initialize, create objects and inspect project state.",
@@ -117,19 +118,58 @@ def main(
 @app.command("init")
 def init_workbench(
     root: Annotated[Path, typer.Argument(help="Directory for the research workbench.")],
-    project: Annotated[str, typer.Option("--project", help="Project name, e.g. tail-latency.")],
+    project: Annotated[
+        str | None,
+        typer.Option(
+            "--project",
+            help="Legacy route: also create a template project (refused on workspace roots).",
+        ),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option("--name", help="Workspace display name (default: the directory name)."),
+    ] = None,
 ) -> None:
-    """Create a workbench and project without overwriting existing content."""
+    """Create a project-free research workspace without overwriting existing content.
+
+    No child project, research direction, object or model session is created.
+    """
+    if project is not None and name is not None:
+        raise typer.BadParameter(
+            "applies to workspace initialization only, not --project", param_hint="--name"
+        )
+    if project is not None:
+        try:
+            validate_project_name(project)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--project") from error
+        try:
+            created = initialize(root, project)
+        except (OSError, ValueError, RuntimeError) as error:
+            typer.echo(f"Error: {error}", err=True)
+            raise typer.Exit(1) from error
+        typer.echo(
+            f"Workbench: {root.absolute()} | project: {project} | created entries: {created}"
+        )
+        return
     try:
-        validate_project_name(project)
-    except ValueError as error:
-        raise typer.BadParameter(str(error), param_hint="--project") from error
-    try:
-        created = initialize(root, project)
+        result = initialize_workspace(root, name)
     except (OSError, ValueError, RuntimeError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
-    typer.echo(f"Workbench: {root.absolute()} | project: {project} | created entries: {created}")
+    for remnant in result.remnants:
+        typer.echo(f"Notice: {remnant}: interrupted initialization remnant (left in place)")
+    if result.existing:
+        typer.echo(
+            f"Workspace already initialized: {result.root} | name: {result.name} | nothing written"
+        )
+    else:
+        typer.echo(
+            f"Workspace: {result.root} | name: {result.name} | created entries: {result.created}\n"
+            "Scope: Workspace | direction: none confirmed | projects: none | "
+            "no model session started"
+        )
+    typer.echo(f"Next: toulmin status --root {result.root}")
 
 
 @app.command("draft")
@@ -595,8 +635,13 @@ def rule_object(
 
 @app.command("status")
 def show_status(
-    project: Annotated[str, typer.Argument(help="Project name.")],
+    project: Annotated[
+        str | None, typer.Argument(help="Child project name; omit for the workspace.")
+    ] = None,
     root: Annotated[Path, typer.Option("--root", help="Research workbench root.")] = Path("."),
+    workspace: Annotated[
+        bool, typer.Option("--workspace", help="Workspace scope (the same as omitting PROJECT).")
+    ] = False,
     verbose: Annotated[
         bool,
         typer.Option(
@@ -604,7 +649,12 @@ def show_status(
         ),
     ] = False,
 ) -> None:
-    """Show stored state, conditions and data problems without changing files."""
+    """Show stored state without changing files. Without PROJECT, show the workspace."""
+    if project is not None and workspace:
+        raise typer.BadParameter("give PROJECT or --workspace, not both", param_hint="--workspace")
+    if project is None:
+        _workspace_status(root, verbose)
+        return
     try:
         validate_project_name(project)
     except ValueError as error:
@@ -657,6 +707,78 @@ def show_status(
         typer.echo(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
         if settled.summary:
             typer.echo(f"      {settled.summary}")
+    for notice in report.notices:
+        typer.echo(f"Notice: {notice}")
+    for message in report.errors:
+        typer.echo(f"Error: {message}", err=True)
+    if report.errors:
+        raise typer.Exit(1)
+
+
+def _workspace_status(root: Path, verbose: bool) -> None:
+    try:
+        report = workspace_status(root, workspace_setup())
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    state = report.root.state
+    typer.echo(f"Root: {report.root.root}\nScope: Workspace")
+    if state not in {RootState.WORKSPACE, RootState.LEGACY}:
+        message = {
+            RootState.MISSING: "directory does not exist; `toulmin init ROOT` creates a workspace",
+            RootState.EMPTY: "not initialized; `toulmin init ROOT` creates a workspace",
+            RootState.INCOMPLETE: "setup incomplete; rerun `toulmin init ROOT` to finish it",
+            RootState.UNRELATED: "not a Toulmin workbench; nothing was initialized",
+        }[state]
+        for notice in report.notices:
+            typer.echo(f"Notice: {notice}")
+        typer.echo(f"Error: {report.root.root}: {message}", err=True)
+        hint = project_hint(report.root.root)
+        if hint is not None:
+            typer.echo(
+                f"Error: this looks like a project directory of {hint}; rerun with --root {hint}",
+                err=True,
+            )
+        raise typer.Exit(1)
+    charter = report.charter
+    if state == RootState.LEGACY:
+        typer.echo("Workspace state: not configured (existing workbench; projects remain valid)")
+    elif charter is not None:
+        typer.echo(f"Workspace: {charter.name}")
+        typer.echo(f"Charter revision: {charter.revision}")
+        sections = dict(charter.sections)
+        typer.echo(
+            "Direction: "
+            + (" ".join(sections["Direction"].split()) if "Direction" in sections else
+               "No confirmed direction yet")
+        )  # fmt: skip
+        for heading in ("Constraints", "Focus"):
+            if heading in sections:
+                typer.echo(f"{heading}: " + " ".join(sections[heading].split()))
+        typer.echo(f"Recorded next step: {charter.next_step or 'none'}")
+        typer.echo(
+            "Last handoff: "
+            + (f"sessions/{charter.last_handoff}" if charter.last_handoff else
+               "none (no applied workspace handoff)")
+        )  # fmt: skip
+    typer.echo("Projects:" + ("" if report.children else " none"))
+    for child in report.children:
+        typer.echo(f"  {child.name} | stage={child.stage or 'unknown (invalid data)'}")
+    if state == RootState.WORKSPACE:
+        typer.echo("Proposals:" + ("" if report.proposals else " none"))
+        for proposal in report.proposals:
+            if verbose or proposal.disposition in {"pending", "incomplete", "invalid"}:
+                typer.echo(f"  {proposal.path} | {proposal.kind} | {proposal.disposition}")
+        hidden = sum(
+            proposal.disposition in {"applied", "rejected", "superseded"}
+            for proposal in report.proposals
+        )
+        if hidden and not verbose:
+            typer.echo(f"  ({hidden} applied, rejected or superseded; --verbose lists them)")
+        typer.echo("Resources: " + (", ".join(report.resources) if report.resources else "none"))
+    else:
+        typer.echo("Next: project commands keep working; adoption arrives in a later release")
+    typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

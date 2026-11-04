@@ -180,8 +180,10 @@ Permitted changes (all other bytes stay identical):
 
 Manual editing. The researcher may edit the charter by hand; that edit is their own
 authorization but has no receipt. Readers then report "charter differs from its last receipt"
-when the current bytes differ from the receipted after image and no journal explains it; the
-content is still shown, labeled as edited outside a receipt. Agents must not hand-edit this file;
+when the charter-owned parts (`name`, `charter_revision`, `charter_receipt` and the body) differ
+from the receipted after image and no journal explains it; handoff fields are not compared,
+because a workspace handoff changes them legitimately. The content is still shown, labeled as
+edited outside a receipt. Agents must not hand-edit this file;
 they prepare a proposal. Any edit makes pending proposals and drafts based on the old bytes stale.
 
 ## 5. Activity records and drafts (unconfirmed)
@@ -932,7 +934,9 @@ It creates the common templates, `projects/`, `runs/drafts/`, `sessions/` and
 `shared/resources/` (each with `.gitkeep`) and the Git repository as today, and publishes
 WORKSPACE.md last, so its presence means setup finished. On a workspace root it reports the
 identity and writes nothing, without comparing edited templates. On legacy roots it refuses and
-points to adoption; on unrelated roots it refuses and lists unexpected entries. `init ROOT
+points to adoption (a legacy-looking root without projects, such as an interrupted init whose
+templates were edited, is refused with the modified entries listed); on unrelated roots it
+refuses and lists unexpected entries. `init ROOT
 --project NAME` keeps its documented behavior on legacy and empty roots, and is refused on a
 workspace root (use `project propose`/`create`).
 

@@ -14,6 +14,7 @@ from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
 from toulmin.core.setup import IMAGES, SetupRecord, initial_documents, validate_setup
+from toulmin.core.workspace import CHARTER_FILE
 
 
 @dataclass(frozen=True)
@@ -193,6 +194,12 @@ class WorkspaceService:
         validate_setup(record.document(), project, images)
         # The root lock also serializes shared-template initialization across projects.
         with handoff_mutex(root):
+            if os.path.lexists(root / CHARTER_FILE):
+                # Workspace children come from reviewed creation, never template setup.
+                raise FormatError(
+                    "This is a workspace root; template project setup is refused here. "
+                    "Children are added by reviewed creation (a later release)"
+                )
             root.mkdir(parents=True, exist_ok=True)
             repository = Repository(root)
             directory = repository.path(f"projects/{project}")

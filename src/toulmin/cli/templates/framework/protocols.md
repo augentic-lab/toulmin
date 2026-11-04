@@ -90,9 +90,11 @@ Errors go to stderr and results to stdout. By default, commands request no netwo
 
 | Command | Input and output | Write boundary |
 | --- | --- | --- |
-| init <root> --project <name> | Initialize templates/project and a Git repository, without committing | Create missing items; identical templates are unchanged and conflicts rejected; adding another project does not rewrite global files |
+| init <root> [--name N] | WI2: a project-free workspace (templates, WORKSPACE.md published last, empty projects/ and record locations) and a Git repository, without committing | Missing, empty or incomplete-init roots only; an existing workspace is reported and left unchanged; legacy and unrelated roots are refused |
+| init <root> --project <name> | Legacy route: initialize templates/project and a Git repository, without committing; refused on a workspace root | Create missing items; identical templates are unchanged and conflicts rejected; adding another project does not rewrite global files |
 | new <type> <project> | Complete draft and human confirmation; return new ID/path | Create one formal object only; archive AI drafts first and reject existing targets; no placeholder “valid objects” |
 | status <project> | PROJECT, relevant objects and explicit brief references; return summary/diagnostics | Entirely read-only, including no cache/index writes or mtime updates |
+| status [--workspace] | WI2: without PROJECT, the workspace view: root, scope, charter (direction or its absence), recorded next step, last handoff, child stages, proposal dispositions and resource names | Read-only as above; never initializes; legacy roots report workspace state not configured |
 | handoff <project> | Generate a reviewable draft from supplied session content | Write only runs by default; --apply <draft> writes sessions and non-ruling PROJECT fields only after confirmation |
 
 init preflights every planned target before writing. Existing files must match their templates; otherwise report a conflict and write none of the planned files.
@@ -297,3 +299,14 @@ Manual editing has the same authority as the commands: the researcher may hand-e
 charter or a resource description (readers report it as unreceipted); agents prepare proposals
 instead; packets, seals, receipts and applied records are never edited. Existing project
 protocols above are unchanged.
+
+### WI2 project-free initialization and workspace status
+
+`init ROOT` without `--project` implements workspace-formats.md section 12, and `status`
+without PROJECT the read-only workspace view (sections 2.1, 4 and 7.3). Status checks only what
+determines a proposal's disposition (seal, receipt, successor, journal); packet schemas are
+validated by the operations that consume them. A pending journal, malformed charter, invalid
+child or tampered packet makes the view invalid (exit 1) without repairing anything. The legacy
+`init --project` route and template project setup in the TUI are refused on workspace roots;
+elsewhere they are unchanged. Workspace conversations, proposals, handoffs, child creation and
+adoption are later tasks; a fresh workspace's AGENTS.md is still the shared template.

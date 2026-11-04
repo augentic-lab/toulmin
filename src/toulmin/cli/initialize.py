@@ -6,29 +6,53 @@ import shutil
 import subprocess
 import tempfile
 from collections.abc import Iterator
+from dataclasses import dataclass
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path
 
+from toulmin.core.atomic import handoff_mutex
+from toulmin.core.codec import decode
 from toulmin.core.identifiers import validate_project_name
+from toulmin.core.workspace import CHARTER_FILE, render_initial, validate_charter, validate_name
+from toulmin.protocols.workspace_state import RootState, classify_root
+
+# Empty record locations of a fresh workspace (docs/workspace-formats.md, section 12).
+WORKSPACE_DIRECTORIES = ("projects", "runs/drafts", "sessions", "shared/resources")
 
 
-def _templates(project: str) -> dict[Path, bytes]:
-    """Read package data, so installed wheels need no source checkout."""
+def _templates(project: str | None) -> dict[Path, bytes]:
+    """Read package data, so installed wheels need no source checkout.
+
+    Without a project, the project template is left out and the workspace record
+    locations are added: a workspace starts with no child, guessed goal or object.
+    """
     templates = files("toulmin.cli").joinpath("templates")
     result: dict[Path, bytes] = {}
 
     def collect(source: Traversable, relative: Path) -> None:
         # Traversable includes archive-backed resources, not just filesystem paths.
         for child in sorted(source.iterdir(), key=lambda item: item.name):
-            destination = relative / child.name.replace("PROJECT_NAME", project)
+            if project is None and relative == Path("projects"):
+                continue
+            destination = relative / child.name.replace("PROJECT_NAME", project or "")
             if child.is_dir():
                 collect(child, destination)
-            else:
+            elif project is not None:
                 result[destination] = child.read_bytes().replace(b"{{project}}", project.encode())
+            else:
+                result[destination] = child.read_bytes()
 
     collect(templates, Path())
+    if project is None:
+        for directory in WORKSPACE_DIRECTORIES:
+            result[Path(directory) / ".gitkeep"] = b""
     return result
+
+
+def workspace_setup() -> dict[str, bytes]:
+    """Expected setup files of a workspace root (without WORKSPACE.md), for classification."""
+    return {path.as_posix(): content for path, content in _templates(None).items()}
 
 
 def _ancestors(path: Path) -> Iterator[Path]:
@@ -59,18 +83,97 @@ def _run_git(git: str, *arguments: str) -> str:
 
 
 def initialize(root: Path, project: str) -> int:
-    """Preflight the entire plan, then publish complete files with exclusive creation.
+    """Legacy project route: workbench templates plus one template project.
 
-    Roll back entries created by this invocation on ordinary I/O errors. Existing
-    files are never rewritten, even when identical. A hard interruption can leave
-    a subset of files or Git metadata requiring inspection before rerunning.
+    Refused on a workspace root, where children are added by reviewed creation only.
     """
     validate_project_name(project)
     if ".." in root.parts:
         raise ValueError("Workbench root must not contain '..'")
     root = root.absolute()
     _check_directory(root)
-    contents = _templates(project)
+    if os.path.lexists(root / CHARTER_FILE):
+        raise ValueError(
+            f"{root} is a workspace root: init --project is refused there. Children are "
+            "added by reviewed creation (toulmin project propose/create, a later release)"
+        )
+    return _publish(root, _templates(project))
+
+
+@dataclass(frozen=True)
+class WorkspaceInit:
+    root: Path
+    name: str
+    created: int
+    existing: bool
+    remnants: tuple[str, ...] = ()
+
+
+def initialize_workspace(root: Path, name: str | None = None) -> WorkspaceInit:
+    """Create a project-free workspace; on a workspace root, report it and write nothing.
+
+    Allowed on missing, empty and incomplete-init roots. WORKSPACE.md is published
+    last, so its presence means setup finished. Edited files are never compared or
+    rewritten on an existing workspace; legacy and unrelated roots are refused.
+    """
+    if ".." in root.parts:
+        raise ValueError("Workbench root must not contain '..'")
+    root = root.absolute()
+    _check_directory(root)
+    if name is not None:
+        validate_name(name)
+    with handoff_mutex(root):
+        report = classify_root(root, workspace_setup())
+        if report.state == RootState.WORKSPACE:
+            path = root / CHARTER_FILE
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f"{path}: expected a regular file; init does not repair it")
+            try:
+                charter = validate_charter(decode(path.read_bytes(), str(path)))
+            except ValueError as error:
+                raise ValueError(f"{error}; init does not repair an existing charter") from error
+            if name is not None and name != charter.name:
+                raise ValueError(
+                    f"{root} is already the workspace {charter.name!r}; init does not rename "
+                    "it (renaming is a reviewed charter change)"
+                )
+            return WorkspaceInit(root, charter.name, 0, True, report.remnants)
+        if report.state == RootState.LEGACY and report.unexpected:
+            raise ValueError(
+                f"{root} has workbench files but no WORKSPACE.md and no projects (unexpected "
+                f"or modified: {', '.join(report.unexpected)}); nothing written. If this is an "
+                "interrupted init, restore those files and rerun"
+            )
+        if report.state == RootState.LEGACY:
+            raise ValueError(
+                f"{root} is an existing workbench without workspace state; init does not "
+                "upgrade it. Project commands keep working; previewed adoption "
+                "(toulmin workspace adopt) arrives in a later release"
+            )
+        if report.state == RootState.UNRELATED:
+            listed = ", ".join(report.unexpected)
+            raise ValueError(
+                f"{root} is not empty and not a Toulmin workspace (unexpected or modified: "
+                f"{listed}); nothing written. Choose an empty directory"
+            )
+        try:
+            chosen = validate_name(name if name is not None else root.name)
+        except ValueError as error:
+            raise ValueError(f"{error}; pass --name") from error
+        created = _publish(root, _templates(None), (root / CHARTER_FILE, render_initial(chosen)))
+        return WorkspaceInit(root, chosen, created, False, report.remnants)
+
+
+def _publish(
+    root: Path, contents: dict[Path, bytes], final: tuple[Path, bytes] | None = None
+) -> int:
+    """Preflight the entire plan, then publish complete files with exclusive creation.
+
+    Roll back entries created by this invocation on ordinary I/O errors. Existing
+    files are never rewritten, even when identical. A hard interruption can leave
+    a subset of files or Git metadata requiring inspection before rerunning. The
+    optional final file is published after everything else, including Git.
+    """
     link = root / "CLAUDE.md"
     directories = {root}
     missing: dict[Path, bytes] = {}
@@ -103,7 +206,9 @@ def initialize(root: Path, project: str) -> int:
         bare = _run_git(git, f"--git-dir={git_dir}", "rev-parse", "--is-bare-repository")
         if bare != "false":
             raise ValueError(f"Expected a non-bare Git repository: {git_dir}")
-    if not missing and not create_link and not create_git:
+    if final is not None and os.path.lexists(final[0]):
+        raise ValueError(f"Conflicting file (kept unchanged): {final[0]}")
+    if not missing and not create_link and not create_git and final is None:
         return 0
 
     staging_parent = next(path for path in reversed(list(_ancestors(root))) if path.exists())
@@ -114,6 +219,9 @@ def initialize(root: Path, project: str) -> int:
             source = staging / str(index)
             source.write_bytes(content)
             staged[path] = source
+        if final is not None:
+            final_source = staging / "final"
+            final_source.write_bytes(final[1])
         if create_git:
             _run_git(
                 git,
@@ -146,6 +254,9 @@ def initialize(root: Path, project: str) -> int:
                 git_dir.mkdir()
                 created_dirs.append(git_dir)
                 shutil.copytree(staging / "repo" / ".git", git_dir, dirs_exist_ok=True)
+            if final is not None:
+                os.link(final_source, final[0])
+                created_files.append(final[0])
         except (OSError, ValueError) as error:
             cleanup_errors = []
             for path in reversed(created_files):

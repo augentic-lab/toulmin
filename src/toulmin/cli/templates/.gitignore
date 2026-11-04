@@ -4,3 +4,7 @@
 .handoff-completed-*/
 .handoff-*.tmp
 .new-*.tmp
+.workspace-pending/
+.workspace-prepare-*/
+.workspace-completed-*/
+projects/.creating-*/

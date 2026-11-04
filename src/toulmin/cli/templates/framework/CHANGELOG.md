@@ -50,3 +50,10 @@
   handoffs, the publication journal, scope-aware bindings (version 2) and legacy adoption.
 - Project object v1, project handoffs and AOE3 version 1 bindings are unchanged; no migration.
   No command reads or writes the new files yet; later releases implement them in order.
+
+## WI2 — Project-free workspace and offline status
+
+- `toulmin init ROOT [--name]` creates a workspace without a project: WORKSPACE.md (no confirmed
+  direction), empty projects/, runs/drafts/, sessions/ and shared/resources/. `status` without
+  PROJECT shows the workspace. `init --project` is refused on workspace roots only.
+- Additive: project object v1 and existing workbenches are unchanged; no migration.
