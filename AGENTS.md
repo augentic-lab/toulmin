@@ -38,7 +38,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 
 2026-11-04: The researcher authorized WI7: previewed additive legacy-workbench adoption (`workspace adopt`, plan digest confirmation, preserved projects/bindings/contexts). WI7 is implemented on temporary fixtures only; WI8 requires separate authorization.
 
-2026-11-04: The researcher authorized WI8, including real AoE native sessions on temporary test workspaces only. Agent-run technical evidence and live Codex/Claude trials are recorded (ledger under ~/notes/toulmin/wi8-2026-11-04/); two readiness defects were fixed. The researcher trial and the W1/W3 decisions remain pending; agent-run evidence is not acceptance.
+2026-11-04: The researcher authorized WI8, including real AoE native sessions on temporary test workspaces only. Agent-run technical evidence and live Codex/Claude trials are recorded (ledger under ~/notes/toulmin/wi8-2026-11-04/); two readiness defects were fixed. The researcher then kept W1 (one resend when the native identity appears late) and approved numbered replacement titles for W3 (implemented). The researcher trial remains pending; agent-run evidence is not acceptance.
 
 ## Project goals and scope
 

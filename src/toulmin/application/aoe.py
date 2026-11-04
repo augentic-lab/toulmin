@@ -126,6 +126,19 @@ class AoEWorkspace:
             return f"Workspace: {self._workspace_name()}"
         return f"Project: {self.project} | {self._workspace_name()}"
 
+    def _free_title(self, sessions: tuple[AoESession, ...]) -> str:
+        """The scope title, numbered when a session at this root already uses it.
+
+        AoE refuses to add a session whose title and path match an existing one, archived
+        and trashed sessions included, so a replacement needs its own title (WI8 W3).
+        """
+        base = self._title()
+        taken = {item.title for item in sessions if item.path.absolute() == self.root}
+        title, number = base, 2
+        while title in taken:
+            title, number = f"{base} ({number})", number + 1
+        return title
+
     def _new_binding(
         self,
         profile: str,
@@ -671,11 +684,12 @@ class AoEWorkspace:
                 # (F06); any candidate still requires inspection, never a duplicate.
                 binding = None
             if binding is None:
-                known = tuple(item.id for item in client.list_sessions())
+                available = client.list_sessions()
                 binding = self._new_binding(
                     client.profile,
                     agent,
-                    known_ids=known,
+                    title=self._free_title(available),
+                    known_ids=tuple(item.id for item in available),
                     message="Session creation started; do not create a duplicate",
                 )
                 self._save(binding)

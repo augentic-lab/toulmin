@@ -971,7 +971,7 @@ Binding version 2 (JSON), written for every new binding:
 | --- | --- |
 | `schema_version` | `2` |
 | `scope` | `{"kind": "workspace"}` or `{"kind": "project", "project": NAME}` |
-| `title` | native session title at creation: `Workspace: <name>` or `Project: NAME \| <workspace name>` |
+| `title` | native session title at creation: `Workspace: <name>` or `Project: NAME \| <workspace name>`, followed by ` (N)` (N = 2, 3, …) when an AoE session at the root, archived or trashed included, already has that title, since AoE refuses a duplicate title and path |
 | `root`, `profile`, `agent`, `session_id`, `provider_session_id`, `context`, `token`, `fingerprint`, `manifest_sha256`, `delivery`, `known_ids`, `message` | as in version 1 |
 
 Location: workspace `.aoe/binding.json`; project `projects/NAME/.aoe/binding.json`. A workspace

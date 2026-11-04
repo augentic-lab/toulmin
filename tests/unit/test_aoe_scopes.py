@@ -53,6 +53,9 @@ class FakeAoE(AoEClient):
         return session
 
     def create(self, root, project, agent, *, title=None):
+        # Real AoE refuses a title and path already used, even by an archived session (WI8 W3).
+        if any(s.path == root and s.title == (title or "") for s in self.sessions.values()):
+            raise AoEError("Session already exists with same title and path")
         self.created.append((root, project, agent, title))
         session = self.add(f"{len(self.created):016x}", root, title or "", tool=agent)
         if self.create_error == "unknown":
@@ -185,6 +188,33 @@ def test_busy_session_is_not_sent_and_uncertain_creation_is_recovered(root, fake
     fake.create_error = None
     AoEWorkspace(root, None, fake).open()  # recovers by the recorded title; no new session
     assert len(fake.created) == 2 and stored(root)["session_id"] == f"{2:016x}"
+
+
+def test_replacement_sessions_get_numbered_titles_aoe_accepts(root, fake):
+    service = AoEWorkspace(root, None, fake)
+    service.open()
+    other = root.parent / "elsewhere"
+    other.mkdir()
+    fake.add("c" * 16, other, "Workspace: Serving Research (2)")  # another root: no clash
+    for number in (2, 3):
+        old = stored(root)["session_id"]
+        fake.sessions[old] = replace(fake.sessions[old], state="archived")
+        service.open(new_session=True)
+        title = f"Workspace: Serving Research ({number})"
+        assert fake.created[-1][3] == title and stored(root)["title"] == title
+        assert stored(root)["session_id"] != old and stored(root)["delivery"] == "submitted"
+    # An uncertain numbered creation is still recovered by its recorded title.
+    old = stored(root)["session_id"]
+    fake.sessions[old] = replace(fake.sessions[old], state="archived")
+    fake.create_error = "unknown"
+    with pytest.raises(AoEError):
+        service.open(new_session=True)
+    fake.create_error = None
+    created = len(fake.created)
+    service.open()
+    assert len(fake.created) == created
+    assert stored(root)["title"] == "Workspace: Serving Research (4)"
+    assert stored(root)["session_id"] == f"{created:016x}"
 
 
 def test_native_identity_change_requires_new_context(root, fake):
