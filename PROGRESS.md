@@ -1,5 +1,18 @@
 # Toulmin development progress
 
+## 2026-11-05 — WI8 passed; trial cleanup
+
+- Decision: the researcher tried WX6 (scan, picker, `--in`) and judged it good ("蛮好的"), declined renaming `workspaces` after a `workspace scan` slip, and instructed "按你的建议，记录 WI8 通过并清理". WI8 is passed; the WI8 condition item is ticked.
+- Cleanup (operator, on instruction):
+  - Trial workbenches copied without .git to `~/notes/toulmin/wi8-2026-11-04/researcher-v2/` (verified identical with `diff -rq`), then `/tmp/toulmin-trial-1ajH` and `/tmp/toulmin-trial-v2` removed.
+  - Three live sessions in profile `toulmin-trial-wi8` archived. `aoe list` shows all four trial sessions archived; no tmux session or process refers to the trial folders; tmux count 9.
+  - Both entries forgotten from the researcher's workspace list (now empty). The profile, the `~/.local/bin/toulmin` link and the researcher's config are kept.
+  - Ledger section "WI8 passed and cleanup" added; MANIFEST regenerated and checked (712 files).
+- Finding W9 (recorded, not fixed): `handoff_mutex` lock files accumulate in /tmp (about 14,800 from test runs). They were not deleted. Candidate fix in tests only; requires authorization.
+- Checks: documentation and records only; no code changed, so tests were not rerun (last full run 1276 passed at a0f1f6a). Diff inspected.
+- Blockers: none. Next step: real use on a research workspace (`toulmin open` in a real folder); W7 and W9 are open candidates.
+- Session ID: unavailable.
+
 ## 2026-11-05 — WI8 v2 trial ruling and WX6 known workspaces
 
 - Decision: the researcher ruled the WI8 v2 trial a **conditional pass** ("按你的建议，有条件通过，开始实现 WX6"): usable, on condition that workspaces outside the current directory are recognized (trial question 3). The same message authorized WX6. WI8 stays open until the researcher confirms WX6 meets the condition; agent tests are not that confirmation.
