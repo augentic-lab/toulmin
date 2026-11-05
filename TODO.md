@@ -272,8 +272,8 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 - [x] H1 — Design draft (2026-11-05): loop L1–L8 with G1/G2 checks; H-A project items in decide (object drafts, review-round requests, intake recommendations, ruling, Brief and stage proposals); H-B read-only G1/G2 readiness in status; H-C agent guidance; H-D stage rulings. Documentation only.
 - [x] H1 researcher review — 2026-11-05: D1–D6 accepted as recommended (proposals directory, rejection reasons, review rounds started only from decide, stage proposals applied through decide, Brief proposals, order H2 → H6 → H3 → H4 → H5 → C5).
 - [x] H2 — G1/G2 readiness in `status PROJECT` (2026-11-05: read-only L2 `gates` report, checkbox output; tests in `tests/cli/test_gates.py`).
-- [ ] H6 — agent guidance for the project loop (next; requires authorization).
-- [ ] H3 — object drafts and ruling proposals in decide.
+- [x] H6 — agent guidance for the project loop (2026-11-05: state card GATES and stage-aware next suggestion; project context loop steps 1–8; workspace AGENTS.md "Project sessions"; released.json regenerated; no format change).
+- [ ] H3 — object drafts and ruling proposals in decide (next; requires authorization).
 - [ ] H4 — review-round requests and intake recommendations in decide.
 - [ ] H5 — Brief proposals and stage proposals in decide (D4: the first command writing `stage`, applied by the researcher).
 

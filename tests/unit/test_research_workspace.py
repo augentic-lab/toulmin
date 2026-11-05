@@ -238,3 +238,39 @@ def test_relevant_object_edits_never_mutate_the_files(populated):
     assert len(state.objects) == 7 and not state.errors
     assert "records, not scientific validation" in render_state(state)
     assert tree(populated) == before
+
+
+# H6: the card shows gate readiness and the loop's next suggestion; it never rules.
+
+
+def core(root: Path, number: int, kind: str) -> None:
+    source = decode((root / "projects/demo/claims/C-001.md").read_bytes())
+    source.header.update(id=f"C-{number:03d}", type=kind, importance="core", status="proposed")
+    (root / f"projects/demo/claims/C-{number:03d}.md").write_bytes(encode(source))
+
+
+def test_card_shows_gates_and_the_loop_suggestion_for_the_stage(populated):
+    card = render_state(research_state(populated, "demo"))
+    assert (
+        "GATES\nReadiness from files; the stage changes only by the researcher's ruling.\n" in card
+    )
+    assert "G1 -> critique: not met; missing: core magnitude Claim (the problem's size)" in card
+    assert "G2 -> brief-final: not met; missing: " in card
+    assert "Draft the missing core Claims for researcher confirmation: core magnitude" in card
+    for number, kind in ((2, "magnitude"), (3, "mechanism"), (4, "novelty")):
+        core(populated, number, kind)
+    card = render_state(research_state(populated, "demo"))
+    assert "G1 -> critique: met\n" in card
+    assert "G1 conditions hold; the researcher may rule the stage change to critique." in card
+    edit(populated, "PROJECT.md", stage="critique")
+    card = render_state(research_state(populated, "demo"))
+    assert "Work toward G2: " in card and "G1 conditions hold" not in card
+    stored = decode((populated / "projects/demo/PROJECT.md").read_bytes()).header["stage"]
+    assert stored == "critique"  # the card suggests; it never changes the stage
+
+
+def test_card_gates_are_unknown_on_invalid_data(populated):
+    (populated / "projects/demo/claims/C-009.md").write_text("not a claim\n")
+    card = render_state(research_state(populated, "demo"))
+    assert "G1 -> critique: unknown (data invalid)" in card
+    assert "Draft the missing core Claims" not in card

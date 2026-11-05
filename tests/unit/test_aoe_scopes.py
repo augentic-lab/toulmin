@@ -455,3 +455,25 @@ def test_status_reports_the_model_from_the_native_session_log(root, fake):
     log.write_text(json.dumps({"type": "turn_context", "payload": {"model": "gpt-6-luna"}}) + "\n")
     report = service.status().model
     assert (report.model, report.effort, report.log) == ("gpt-6-luna", None, str(log))
+
+
+def test_project_context_walks_the_research_loop_without_confirming(root, fake):
+    # H6: the agent drafts and proposes; every confirming command is the researcher's.
+    prefix = shlex.join([sys.executable, "-m", "toulmin"])
+    add_child(root)
+    AoEWorkspace(root, "scheduling", fake).open()
+    context = (root / stored(root, "scheduling")["context"] / "context.md").read_text()
+    for own in ("draft claim scheduling --root", "status scheduling --root", "review scheduling"):
+        assert f"{prefix} {own}" in context, own
+    assert "--dry-run" in context and "Never start a round yourself" in context
+    for researcher in ("`toulmin new KIND PROJECT", "`toulmin review PROJECT ... --confirm`"):
+        assert researcher in context, researcher
+    assert "never run it yourself" in context
+    assert "never edit PROJECT.md stage or status fields yourself" in context
+    state = (root / stored(root, "scheduling")["context"] / "state.md").read_text()
+    assert "GATES" in state and "G1 -> critique: not met" in state
+    template = (root / "AGENTS.md").read_text()
+    assert "### Project sessions" in template and "toulmin review NAME --dry-run" in template
+    AoEWorkspace(root, None, fake).open()
+    workspace = (root / stored(root)["context"] / "context.md").read_text()
+    assert "Research loop" not in workspace  # the workspace scope gets no project loop

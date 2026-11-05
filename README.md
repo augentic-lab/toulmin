@@ -191,7 +191,9 @@ toulmin aoe status tail-latency --root /path/to/research --offline
 toulmin aoe refresh tail-latency --root /path/to/research
 ```
 
-The English card derives recorded object statuses, draft files and available actions from files.
+The English card derives recorded object statuses, draft files, G1/G2 readiness (GATES) and
+available actions from files; for a project at explore or critique, ACTIONS suggests the next
+loop step (draft missing core Claims, or note that a gate's conditions hold for your ruling).
 `RECORDED NEXT STEP` is historical guidance, not inferred current work. `--offline` needs no AoE;
 `--json` exposes the same structured view. This is an on-demand card, not a persistent sidebar.
 Existing TUI/native proposal trees are not included in its bounded draft inventory.

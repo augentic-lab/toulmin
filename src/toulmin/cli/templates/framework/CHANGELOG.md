@@ -123,3 +123,6 @@
   (`<python> -m toulmin …`), so they work without `toulmin` on the agent's PATH. No format change.
 - H2 (L2 read-only): `status PROJECT` reports G1/G2 readiness item by item from files. It never
   changes stage or status. No format change.
+- H6 (presentation and guidance): the project state card shows GATES and a stage-aware next
+  suggestion; project contexts and the workspace AGENTS.md describe the research loop. No
+  format change; the agent still never confirms anything.

@@ -16,6 +16,7 @@ from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
 from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols.session import entry_files
+from toulmin.protocols.status import GateReadiness, project_status
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,8 @@ class ResearchState:
     errors: tuple[str, ...]
     fingerprint: str
     context_files: tuple[str, ...]
+    # G1/G2 readiness (H2), derived from files already in the fingerprint; display only.
+    gates: tuple[GateReadiness, ...] = ()
 
 
 def _file_digest(repository: Repository, relative: str) -> str:
@@ -67,6 +70,7 @@ def research_state(root: Path, project: str) -> ResearchState:
     last_handoff = None
     objects: tuple[tuple[str, str], ...] = ()
     pending: tuple[str, ...] = ()
+    gates: tuple[GateReadiness, ...] = ()
 
     def remember(repository: Repository, relative: str) -> bool:
         try:
@@ -148,6 +152,7 @@ def research_state(root: Path, project: str) -> ResearchState:
                 errors.append(str(error))
 
         _draft_inventory(repository, f"{base}/runs", drafts, digests, errors)
+        gates = project_status(repository.root, project).gates
     except (OSError, ValueError) as error:
         errors.append(str(error))
 
@@ -175,6 +180,7 @@ def research_state(root: Path, project: str) -> ResearchState:
         errors_tuple,
         fingerprint.hexdigest(),
         tuple(context),
+        gates,
     )
 
 
@@ -244,6 +250,16 @@ def render_state(state: ResearchState) -> str:
     )
     lines.extend(state.draft_files or ("No draft files found.",))
     lines.extend(f"Review intake pending: {item}" for item in state.pending_review)
+    if state.gates:
+        lines.extend(
+            (
+                "",
+                "GATES",
+                "Readiness from files; the stage changes only by the researcher's ruling.",
+            )
+        )
+    for gate in state.gates:
+        lines.append(f"{gate.gate} -> {gate.enters}: {_readiness(gate)}")
     lines.extend(
         (
             "",
@@ -267,6 +283,7 @@ def render_state(state: ResearchState) -> str:
             lines.append(
                 f"Inspect open objections and choose responses/rulings: {', '.join(opened)}."
             )
+        lines.extend(_loop_actions(state))
         if any(
             object_id.startswith("C-") and status != "superseded"
             for object_id, status in state.objects
@@ -278,3 +295,34 @@ def render_state(state: ResearchState) -> str:
     if state.errors:
         lines.extend(("", "ERRORS", *state.errors))
     return "\n".join(lines) + "\n"
+
+
+def _missing(gate: GateReadiness) -> str:
+    return "; ".join(
+        item.label + (f" ({item.detail})" if item.detail else "")
+        for item in gate.items
+        if not item.met
+    )
+
+
+def _readiness(gate: GateReadiness) -> str:
+    if gate.met is None:
+        return "unknown (data invalid)"
+    return "met" if gate.met else f"not met; missing: {_missing(gate)}"
+
+
+def _loop_actions(state: ResearchState) -> list[str]:
+    """The project loop's next suggestion for the current stage (H6); never a ruling."""
+    gates = {gate.gate: gate for gate in state.gates}
+    step = {"explore": "G1", "critique": "G2"}.get(state.stage)
+    gate = gates.get(step) if step else None
+    if gate is None or gate.met is None:
+        return []
+    if gate.met:
+        return [
+            f"{gate.gate} conditions hold; the researcher may rule the stage change to "
+            f"{gate.enters}."
+        ]
+    if gate.gate == "G1":
+        return [f"Draft the missing core Claims for researcher confirmation: {_missing(gate)}."]
+    return [f"Work toward G2: {_missing(gate)}."]

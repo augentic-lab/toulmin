@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-05 — H6: project research loop guidance
+
+- Decision: the researcher authorized H6 ("continue H6").
+- L2 presentation (reason in docs/protocols.md "H6"): `ResearchState.gates` (from H2's `project_status`); the card adds GATES (one line per gate with missing items) and a stage-aware ACTIONS line (explore: draft the missing core Claims, or "G1 conditions hold; the researcher may rule the stage change"; critique: the same for G2). Gates derive from files already in the fingerprint.
+- L3 text: the project context adds "Research loop" steps 1–8; the agent's own commands (`draft claim`, `status`, `review --dry-run`) are interpreter-qualified, and the researcher's confirming commands (`new`, `review --confirm`, `synthesize`, `intake`, `rule`) are named for them, since `decide` does not cover these until H3–H5. Stage changes stay rulings; the agent never edits stage or status fields.
+- Template: workspace AGENTS.md gains "Project sessions"; released.json regenerated (AGENTS.md 14 digests, workspace-formats 8). README card description, packaged protocols.md and framework CHANGELOG updated.
+- Tests: `test_card_shows_gates_and_the_loop_suggestion_for_the_stage`, `test_card_gates_are_unknown_on_invalid_data` (unit/test_research_workspace.py), `test_project_context_walks_the_research_loop_without_confirming` (unit/test_aoe_scopes.py). No live AoE session run.
+- Checks: `uv run --locked pytest -q` 1286 passed (7m24s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Blockers: none. Next step: H3 (object drafts and ruling proposals in decide), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-05 — H2: G1/G2 readiness in status
 
 - Decision: the researcher accepted H1's D1–D6 as recommended and authorized H2 ("按你的建议，D1–D6 都同意，开始实现 H2").

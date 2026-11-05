@@ -429,7 +429,9 @@ class AoEWorkspace:
             "Retrieve further project objects only as needed. Keep model output in runs/; "
             "do not change formal objects, Brief, stage or confirmed handoff without explicit "
             "researcher review. Native permissions remain in force. After displaying the card, "
-            "wait for researcher input. Only when the researcher asks to end the research "
+            "wait for researcher input.\n\n"
+            + self._loop_instructions()
+            + "Only when the researcher asks to end the research "
             "session, save a structured summary under runs/drafts/ according to "
             "roles/scribe.md and framework/protocols.md. Run "
             + _command(
@@ -441,6 +443,45 @@ class AoEWorkspace:
             "suggest applying a research proposal or the source summary. Do not apply it "
             "yourself; the researcher decides it with `toulmin decide`. Closing a terminal is "
             "not confirmation.\n"
+        )
+
+    def _loop_instructions(self) -> str:
+        """The project research loop (H6): the agent drafts and proposes; the researcher rules."""
+        name, root = str(self.project), str(self.root)
+        draft = _command("draft", "claim", name, "--root", root)
+        status = _command("status", name, "--root", root)
+        dry_run = _command("review", name, "--root", root, "--dry-run")
+        return (
+            "Research loop (design section 7). The GATES lines in state.md and "
+            f"`{status}` show G1/G2 readiness; follow the step the project is at.\n"
+            "1. Explore: discuss; keep notes and explorations in "
+            f"{self.runs}/.\n"
+            "2. Core Claims (G1): draft one core Claim each for the problem existing, its "
+            "magnitude, the mechanism (the approach works) and novelty, plus key assumptions: "
+            f"`{draft}` writes a skeleton under {self.runs}/drafts/ (also evidence, objection, "
+            "decision, exploration). Fill every field; state Evidence grades honestly "
+            "(model-asserted unless a reproducible check verified it) and put needed experiments "
+            "in validation_plan. Show each draft.\n"
+            "3. The researcher creates objects in their own terminal: give the exact "
+            "`toulmin new KIND PROJECT --input DRAFT --confirm` command; never run it yourself.\n"
+            "4. Independent review: when the core Claims exist, or after substantial revisions, "
+            "propose one round (personas, models, Claims, why now) and show its plan with "
+            f"`{dry_run}` (add --personas/--models/--claim). Only the researcher starts it with "
+            "`toulmin review PROJECT ... --confirm` (it uses quota), and `toulmin synthesize` "
+            "groups two or more outputs. Never start a round yourself and never review your own "
+            "work; reviewers see only their role's inputs.\n"
+            "5. Intake: read each review output (and its synthesis) and recommend, for every "
+            "draft label, take (with severity), reject (with a reason) or partly, citing the Run "
+            "and label. The researcher records the outcomes with `toulmin intake PROJECT OUTPUT "
+            "--take ... --reject ... --confirm`.\n"
+            "6. Respond: for each open Objection, draft a Response, new Evidence, a superseding "
+            "Claim or a validation plan.\n"
+            "7. Rulings: when status reports a condition met, suggest the status change and draft "
+            "its Decision; the researcher rules with `toulmin rule ... --confirm`.\n"
+            "8. Brief: propose brief.md sections that cite objects as [[C-001]], including Kill "
+            "criteria and the minimal validation experiment; the researcher edits brief.md.\n"
+            "Stage changes are the researcher's ruling: when a gate's conditions hold, say so and "
+            "stop; never edit PROJECT.md stage or status fields yourself.\n\n"
         )
 
     def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:

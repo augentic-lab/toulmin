@@ -538,3 +538,23 @@ brief-final had to be worked out by hand.
   files status already reads, writes nothing, and never changes stage or object status; the
   CLI labels it "readiness from files; the stage changes only by your ruling".
 - No format change. Stage rulings through `toulmin decide` (D4) are a later slice.
+
+### H6 project research loop guidance (L2 presentation, L3 text, template)
+
+Design: `~/notes/toulmin/project-research-loop-design.md` (H-C). Project agents had the rules
+but no loop, so when to draft Claims, propose a review round or recommend intake was left to
+each session.
+- L2 (presentation only): the project state card adds GATES (G1/G2 readiness from H2, one line
+  each with the missing items) and one stage-aware ACTIONS line: at explore, draft the missing
+  core Claims or, when G1 holds, note that the researcher may rule the stage change; at
+  critique, the same for G2. Gates derive from files already in the fingerprint, so freshness
+  is unchanged. The card never changes stage or status.
+- L3 text: the project context describes the loop (explore, core Claims, objects created by
+  the researcher, independent review rounds proposed with a `--dry-run` plan and started only
+  by the researcher, intake recommendations per draft label, responses, rulings, Brief
+  sections, stage changes as rulings). The agent's own commands (`draft`, `status`,
+  `review --dry-run`) use the serving interpreter (W7); confirming commands are named for the
+  researcher.
+- The workspace AGENTS.md template gains "Project sessions" with the same loop;
+  released.json is regenerated. No format change. Moving the researcher's confirmations into
+  `toulmin decide` is H3–H5.
