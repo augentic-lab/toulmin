@@ -126,3 +126,7 @@
 - H6 (presentation and guidance): the project state card shows GATES and a stage-aware next
   suggestion; project contexts and the workspace AGENTS.md describe the research loop. No
   format change; the agent still never confirms anything.
+- H3 (L1 additive, L2, L3): ready object drafts and ruling proposals go under
+  projects/NAME/runs/proposals/ and are decided in `toulmin decide`; each decision is an
+  `<stem>.outcome.md` record beside the proposal (rejections keep the reason). `new` and
+  `rule` gain a write-nothing preview. Existing files unchanged; no migration.

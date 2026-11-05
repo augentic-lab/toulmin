@@ -15,6 +15,7 @@ from toulmin.core.identifiers import validate_project_name
 from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
 from toulmin.core.workspace_journal import incomplete_child
+from toulmin.protocols import project_proposals
 from toulmin.protocols.session import entry_files
 from toulmin.protocols.status import GateReadiness, project_status
 
@@ -35,6 +36,8 @@ class ResearchState:
     context_files: tuple[str, ...]
     # G1/G2 readiness (H2), derived from files already in the fingerprint; display only.
     gates: tuple[GateReadiness, ...] = ()
+    # Undecided H3 proposals under runs/proposals/, awaiting `toulmin decide`.
+    proposals: tuple[str, ...] = ()
 
 
 def _file_digest(repository: Repository, relative: str) -> str:
@@ -71,6 +74,7 @@ def research_state(root: Path, project: str) -> ResearchState:
     objects: tuple[tuple[str, str], ...] = ()
     pending: tuple[str, ...] = ()
     gates: tuple[GateReadiness, ...] = ()
+    proposals: tuple[str, ...] = ()
 
     def remember(repository: Repository, relative: str) -> bool:
         try:
@@ -152,6 +156,16 @@ def research_state(root: Path, project: str) -> ResearchState:
                 errors.append(str(error))
 
         _draft_inventory(repository, f"{base}/runs", drafts, digests, errors)
+        found = project_proposals.inventory(repository.root, project)
+        proposals = tuple(
+            item.path + (" (interrupted application)" if item.interrupted else "")
+            for item in found.items
+        )
+        errors.extend(found.errors)
+        notices.extend(
+            f"{path}: not offered by decide; name proposals KIND-YYYYMMDDTHHMMSSZ[-name].md"
+            for path in found.unrecognized
+        )
         gates = project_status(repository.root, project).gates
     except (OSError, ValueError) as error:
         errors.append(str(error))
@@ -181,6 +195,7 @@ def research_state(root: Path, project: str) -> ResearchState:
         fingerprint.hexdigest(),
         tuple(context),
         gates,
+        proposals,
     )
 
 
@@ -193,17 +208,17 @@ def _draft_inventory(
 ) -> None:
     """Inspect explicit draft storage and archive-side intake/draft files only."""
 
-    def visit(relative: str, recursive: bool = False) -> None:
+    def visit(relative: str, recursive: bool = False, listed: bool = True) -> None:
         try:
             path = repository.path(relative)
             if path.is_dir():
                 if recursive:
                     for entry in sorted(path.iterdir()):
-                        visit(entry.relative_to(repository.root).as_posix(), True)
+                        visit(entry.relative_to(repository.root).as_posix(), True, listed)
                     return
                 raise ValueError(f"{relative}: expected regular file")
             digests[relative] = _file_digest(repository, relative)
-            if path.name != "intake.md" and path.name != ".gitkeep":
+            if listed and path.name != "intake.md" and path.name != ".gitkeep":
                 drafts.append(relative)
         except (OSError, ValueError) as error:
             errors.append(str(error))
@@ -218,6 +233,9 @@ def _draft_inventory(
                 if not archive.is_dir():
                     raise ValueError(f"{relative}: expected draft directory")
                 visit(relative, True)
+            elif archive.name == "proposals" and archive.is_dir():
+                # Proposals and outcomes join the fingerprint; the card lists them apart.
+                visit(relative, True, listed=False)
             elif archive.is_dir() and archive.name not in {"conversations", "native"}:
                 # Never descend into research workspaces, captured conversations,
                 # frozen inputs or raw model outputs.
@@ -250,6 +268,15 @@ def render_state(state: ResearchState) -> str:
     )
     lines.extend(state.draft_files or ("No draft files found.",))
     lines.extend(f"Review intake pending: {item}" for item in state.pending_review)
+    if state.proposals:
+        lines.extend(
+            (
+                "",
+                "PROPOSALS",
+                "Awaiting the researcher's `toulmin decide`; not formal objects until applied.",
+                *state.proposals,
+            )
+        )
     if state.gates:
         lines.extend(
             (
@@ -278,6 +305,11 @@ def render_state(state: ResearchState) -> str:
             lines.append("Inspect draft files; confirm any formal application separately.")
         if state.pending_review:
             lines.append("Inspect pending review drafts and choose intake outcomes.")
+        if state.proposals:
+            lines.append(
+                f"Ask the researcher to run `toulmin decide` for {len(state.proposals)} "
+                "pending proposal(s)."
+            )
         opened = [object_id for object_id, status in state.objects if status == "open"]
         if opened:
             lines.append(

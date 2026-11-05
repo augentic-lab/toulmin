@@ -558,3 +558,39 @@ each session.
 - The workspace AGENTS.md template gains "Project sessions" with the same loop;
   released.json is regenerated. No format change. Moving the researcher's confirmations into
   `toulmin decide` is H3–H5.
+
+### H3 project proposals in decide (L1 additive, L2, L3)
+
+Design: `~/notes/toulmin/project-research-loop-design.md` (H-A items 1 and 4; D1, D2). Before
+H3 the researcher typed `new … --confirm` and `rule … --confirm` for each agent draft, and
+nothing distinguished a ready draft from a scratch file.
+- Location (D1): an agent marks an item ready by putting it directly under
+  `projects/NAME/runs/proposals/`, named `KIND-YYYYMMDDTHHMMSSZ[-name].md`, where KIND is
+  claim, evidence, objection, decision, exploration, spec or ruling. An object draft is moved
+  there from runs/drafts/ with its filename unchanged. Other files there are not offered;
+  the state card names them.
+- Ruling proposal: header `schema_version: 1`, `kind: ruling-proposal`, `object` (an ID in
+  the same project), optional `status`, `decision` (D-NNN, or the filename of a decision
+  draft in the same folder) and `links` (the fields `rule` may set); body `## Why` (required,
+  shown to the researcher, never stored) plus any of Response, Ruling, Invalidation or
+  Rationale, whose text is added to the object as `rule` adds it. At least one of status, a
+  section text or a link is required.
+- Outcome (D2): the decision is recorded beside the proposal as `<stem>.outcome.md`: header
+  `schema_version: 1`, `kind: proposal-outcome`, `proposal`, `proposal_sha256`,
+  `disposition` (applying, applied or rejected), `actor`, `at`, `approval_text`, `reason`
+  (rejected only, required) and `result` (applied only: the created or ruled object ID). The
+  proposal is never edited, moved or deleted.
+- L2: `create_object` and `apply_ruling` gain a write-nothing `preview` mode (and
+  `apply_ruling` direct section texts); confirmed behavior is unchanged. `project_proposals`
+  lists undecided proposals (object drafts before rulings), previews, applies exactly the
+  previewed bytes and rejects with a reason. Application first writes an `applying` outcome
+  exclusively, so a second decider fails and an interrupted application is never repeated
+  blindly: the next preview looks for the object (same body, created after the marker) or the
+  ruling already on the object, and apply then only records it. A ruling whose decision draft
+  is undecided or rejected is not applicable.
+- L3: `toulmin decide` offers each project's proposals after workspace items and before
+  project handoffs, with the predicted path or the status change, Decision, sections and
+  links, and apply / reject (with a reason) / skip / quit. The state card lists PROPOSALS;
+  project contexts and the workspace AGENTS.md tell the agent where to put ready items.
+- Compatibility: additive. No existing file changes meaning; runs/proposals/ is new. `new`
+  and `rule --confirm` still work as before. No migration.

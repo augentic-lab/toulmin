@@ -466,14 +466,15 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     for own in ("draft claim scheduling --root", "status scheduling --root", "review scheduling"):
         assert f"{prefix} {own}" in context, own
     assert "--dry-run" in context and "Never start a round yourself" in context
-    for researcher in ("`toulmin new KIND PROJECT", "`toulmin review PROJECT ... --confirm`"):
-        assert researcher in context, researcher
-    assert "never run it yourself" in context
+    assert "`toulmin review PROJECT ... --confirm`" in context
+    assert "runs/proposals/" in context and "`toulmin decide`" in context  # H3
+    assert "kind: ruling-proposal" in context and "Never create objects" in context
     assert "never edit PROJECT.md stage or status fields yourself" in context
     state = (root / stored(root, "scheduling")["context"] / "state.md").read_text()
     assert "GATES" in state and "G1 -> critique: not met" in state
     template = (root / "AGENTS.md").read_text()
     assert "### Project sessions" in template and "toulmin review NAME --dry-run" in template
+    assert "projects/NAME/runs/proposals/" in template
     AoEWorkspace(root, None, fake).open()
     workspace = (root / stored(root)["context"] / "context.md").read_text()
     assert "Research loop" not in workspace  # the workspace scope gets no project loop

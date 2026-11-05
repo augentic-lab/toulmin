@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-05 — H3: object drafts and ruling proposals in decide
+
+- Decision: the researcher authorized H3 ("可以，开始 H3") under accepted D1 (proposals directory) and D2 (rejections record a reason).
+- L1 (additive): `core/project_proposals.py`: proposal filenames `KIND-YYYYMMDDTHHMMSSZ[-name].md` (claim, evidence, objection, decision, exploration, spec, ruling); the ruling-proposal format (object, optional status/decision/links, `## Why` plus Response/Ruling/Invalidation/Rationale texts); the proposal-outcome record (`<stem>.outcome.md`: applying/applied/rejected, reason on rejection, result on apply).
+- L2 (reason in docs/protocols.md "H3"): `create_object` and `apply_ruling` gain a write-nothing `preview` mode (`apply_ruling` also takes direct section texts); confirmed behavior unchanged. New `protocols/project_proposals.py`: inventory (object drafts before rulings), preview, apply exactly the previewed bytes behind an exclusive `applying` marker (an interrupted application is recognized and only recorded, never repeated blindly), reject with a reason. A ruling citing a decision draft resolves it through that draft's applied outcome. The state card lists PROPOSALS and fingerprints runs/proposals/.
+- L3: `toulmin decide` offers each project's proposals after workspace items and before project handoffs, with the predicted path or the status change/Decision/sections/links; misnamed files are reported as not offered. Project context step 3/7 and the workspace AGENTS.md "Project sessions" now direct ready items to proposals/; released.json regenerated (AGENTS.md 15 digests). README, packaged protocols.md and framework CHANGELOG updated. Compatibility: additive; `new`/`rule --confirm` unchanged; no migration.
+- Tests: `tests/cli/test_project_proposals.py` (10: ruling format, apply/skip writes nothing until applied, rejection reason, invalid draft offers no apply, decision-then-ruling chain, undecided decision blocks the ruling, changed-since-preview refusal, interrupted recovery with and without a created object, second decider refused); `test_aoe_scopes` loop assertions updated. No live AoE session run.
+- Checks: `uv run --locked pytest -q` 1296 passed (7m28s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Pending: researcher use of the proposal flow (not acceptance by these tests). Blockers: none. Next step: H4 (review-round requests and intake recommendations in decide), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-05 — H6: project research loop guidance
 
 - Decision: the researcher authorized H6 ("continue H6").

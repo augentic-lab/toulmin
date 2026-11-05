@@ -24,7 +24,7 @@ from toulmin.core.handoffs import validate_handoff
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.repository import Repository
 from toulmin.core.workspace import CHARTER_FILE
-from toulmin.protocols import project_creation, workspace_change
+from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff
 from toulmin.protocols.workspace_state import RootState, workspace_status
@@ -33,6 +33,8 @@ LABEL = {
     "change": "Workspace change",
     "creation": "Child creation",
     "handoff": "Workspace handoff",
+    "object": "Object draft",
+    "ruling": "Ruling proposal",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
@@ -49,21 +51,54 @@ class Item:
 class Inventory:
     items: tuple[Item, ...]
     stale: int  # handoff drafts already stale before this run: not offered
+    ignored: tuple[str, ...] = ()  # proposal-folder files that cannot be offered, with why
 
 
-def _project_handoffs(repository: Repository) -> tuple[list[Item], int]:
-    """Unapplied project handoff drafts whose base PROJECT.md is still current."""
-    items: list[Item] = []
-    stale = 0
+def _projects(repository: Repository) -> list[str]:
+    """Project names whose charter is readable; status reports the others."""
+    names: list[str] = []
     folder = repository.root / "projects"
     if not folder.is_dir() or folder.is_symlink():
-        return items, stale
+        return names
     for child in sorted(folder.iterdir()):
         name = child.name
         if name.startswith(".") or child.is_symlink() or not child.is_dir():
             continue
         try:
             validate_project_name(name)
+            repository.path(f"projects/{name}/PROJECT.md", "file")
+        except (OSError, ValueError):
+            continue
+        names.append(name)
+    return names
+
+
+def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
+    """Undecided H3 proposals of every project: object drafts, then rulings, per project."""
+    items: list[Item] = []
+    ignored: list[str] = []
+    for name in _projects(repository):
+        try:
+            found = project_proposals.inventory(repository.root, name)
+        except (OSError, ValueError) as error:
+            ignored.append(str(error))
+            continue
+        kinds = {"ruling": "ruling"}
+        items += [Item(kinds.get(item.kind, "object"), item.path, name) for item in found.items]
+        ignored += [
+            f"{path}: not named KIND-YYYYMMDDTHHMMSSZ[-name].md" for path in found.unrecognized
+        ]
+        ignored += list(found.errors)
+    return items, ignored
+
+
+def _project_handoffs(repository: Repository) -> tuple[list[Item], int]:
+    """Unapplied project handoff drafts whose base PROJECT.md is still current."""
+    items: list[Item] = []
+    stale = 0
+    for name in _projects(repository):
+        child = repository.root / "projects" / name
+        try:
             charter = digest(repository.path(f"projects/{name}/PROJECT.md", "file").read_bytes())
         except (OSError, ValueError):
             continue  # status reports broken projects; nothing here is decidable
@@ -98,8 +133,10 @@ def inventory(root: Path) -> Inventory:
         Item("handoff", item.path) for item in report.handoffs if item.disposition == "pending"
     ]
     stale = sum(item.disposition == "stale" for item in report.handoffs)
-    projects, project_stale = _project_handoffs(Repository(report.root.root))
-    return Inventory(tuple(items + projects), stale + project_stale)
+    repository = Repository(report.root.root)
+    proposals, ignored = _project_proposals(repository)
+    projects, project_stale = _project_handoffs(repository)
+    return Inventory(tuple(items + proposals + projects), stale + project_stale, tuple(ignored))
 
 
 def _interactive() -> bool:
@@ -141,6 +178,8 @@ class Run:
             "change": self._change,
             "creation": self._creation,
             "handoff": self._handoff,
+            "object": self._proposal,
+            "ruling": self._proposal,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -247,6 +286,35 @@ class Run:
             self.handoff_applied = self.charter_changed = True
         return choice != "q"
 
+    def _proposal(self, item: Item) -> bool:
+        assert item.project is not None
+        shown = project_proposals.preview(self.root, item.project, item.path)
+        if shown.problems and shown.problems[0].startswith("already "):
+            typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
+            return True
+        _show_proposal(shown, item.project)
+        if shown.interrupted:
+            choices = "sq" if shown.problems else "asq"
+        else:
+            choices = "rsq" if shown.problems else "arsq"
+        choice = self._choose(choices)
+        if choice == "a":
+            done = project_proposals.apply(
+                self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
+            )
+            verb = "Ruled" if item.kind == "ruling" else "Created"
+            typer.echo(f"{verb}: {done.result}")
+            typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
+            self.applied += 1
+        elif choice == "r":
+            reason = _reason()
+            project_proposals.reject(
+                self.root, item.project, item.path, self.actor, reason, shown.sha256
+            )
+            typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
+            self.rejected += 1
+        return choice != "q"
+
     def _project_handoff(self, item: Item) -> bool:
         assert item.project is not None
         repository = Repository(self.root)
@@ -286,6 +354,40 @@ class Run:
         return choice != "q"
 
 
+def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
+    typer.echo(f"Project: {project}")
+    if shown.interrupted:
+        typer.echo("An earlier application of this proposal started but did not finish.")
+        if shown.recovered is not None:
+            typer.echo(
+                f"It already produced {shown.recovered}; apply only records that, changing "
+                "nothing else."
+            )
+        else:
+            typer.echo("Nothing it would have produced was found; apply runs it now.")
+    if shown.kind != "ruling" and shown.target is not None and shown.recovered is None:
+        typer.echo(f"Would create: {shown.target} (the ID is assigned when applied)")
+    change = shown.change
+    if change is not None:
+        line = f"Ruling on: {change.object_id}"
+        if change.status != change.previous_status:
+            line += f" ({change.previous_status} -> {change.status})"
+        typer.echo(line)
+        if change.decision is not None:
+            typer.echo(f"Decision: {change.decision}")
+        if change.sections:
+            typer.echo("Adds to sections: " + ", ".join(change.sections))
+        if change.links:
+            typer.echo("Sets: " + "; ".join(change.links))
+    typer.echo("")
+    typer.echo(shown.text.rstrip("\n"))
+    typer.echo("")
+    for problem in shown.problems:
+        typer.echo(f"Problem: {problem}")
+    if shown.kind == "ruling":
+        typer.echo("The Why section is shown to you only; it is not written to the object.")
+
+
 def decide_command(
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     actor: Annotated[
@@ -297,14 +399,17 @@ def decide_command(
 ) -> None:
     """Decide everything awaiting you, one item at a time, in your own terminal.
 
-    Shows each pending workspace change, child creation and handoff draft with its preview,
-    then asks apply / reject / skip / quit. Skipped items stay pending.
+    Shows each pending workspace change, child creation, project proposal (object draft or
+    ruling under projects/NAME/runs/proposals/) and handoff draft with its preview, then asks
+    apply / reject / skip / quit. Skipped items stay pending.
     """
     try:
         found = inventory(root)
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
+    for line in found.ignored:
+        typer.echo(f"Not offered: {line}")
     if found.stale:
         typer.echo(
             f"Not offered: {found.stale} stale handoff draft(s); `toulmin status` shows them."

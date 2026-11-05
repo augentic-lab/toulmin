@@ -5,6 +5,7 @@ active Decision that names the object for every status change, keeps all existin
 writes the complete file atomically or not at all.
 """
 
+import contextlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -89,12 +90,16 @@ def apply_ruling(
     decision: str | None = None,
     sections: dict[str, str] | None = None,
     links: dict[str, str | list[str]] | None = None,
+    *,
+    texts: dict[str, str] | None = None,
+    preview: bool = False,
 ) -> RulingResult:
     """Record a confirmed status change, section text and/or links; return what changed.
 
     `sections` maps a body section name to a root-relative (or in-root absolute) file
-    whose text is added to that section. `links` sets status-required reference fields
-    (superseded_by, adopted_as, or Spec evidence to append).
+    whose text is added to that section; `texts` gives section text directly (H3 ruling
+    proposals). `links` sets status-required reference fields (superseded_by, adopted_as, or
+    Spec evidence to append). `preview` runs every check and writes nothing.
     """
     repository = Repository(root)
     repository.project(project)
@@ -104,13 +109,22 @@ def apply_ruling(
         raise FormatError(f"{object_id}: id: {error}") from error
     if not actor.strip():
         raise FormatError("confirmed_by.actor: expected nonempty string")
-    if not confirmed:
+    if not confirmed and not preview:
         raise FormatError(
             f"{object_id}: explicit researcher confirmation required; nothing written"
         )
     if target.kind == ObjectKind.RUN:
         raise FormatError(f"{object_id}: status: Run outcomes are immutable once archived")
-    texts: dict[str, str] = {}
+    given = dict(texts or {})
+    texts = {}
+    for name, content in given.items():
+        if name not in _ALLOWED[target.kind]:
+            raise FormatError(
+                f"{object_id}: body.{name}: rule may add to {sorted(_ALLOWED[target.kind])}"
+            )
+        if PLACEHOLDER in content:
+            raise FormatError(f"{object_id}: body.{name}: unfilled <fill: ...> placeholder")
+        texts[name] = content
     for name, source in (sections or {}).items():
         if name not in _ALLOWED[target.kind]:
             raise FormatError(
@@ -135,7 +149,7 @@ def apply_ruling(
         raise FormatError(f"{object_id}: links require a researcher Decision")
 
     relative = f"projects/{project}/{DIRECTORIES[target.kind]}/{target}.md"
-    with repository.creation_lock(project):
+    with contextlib.nullcontext() if preview else repository.creation_lock(project):
         document = repository.load(project, target)
         original = repository.path(relative, "file").read_bytes()
         previous = document.header["status"]
@@ -191,7 +205,8 @@ def apply_ruling(
         destination = repository.path(relative, "file")
         if destination.read_bytes() != original:
             raise FormatError(f"{destination}: changed while ruling; nothing written")
-        write_atomic(destination, updated, replace=True)
+        if not preview:
+            write_atomic(destination, updated, replace=True)
     return RulingResult(
         destination,
         str(target),

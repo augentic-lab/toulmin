@@ -51,12 +51,15 @@ which conditions of G1 (enter critique) and G2 (enter brief-final) hold.
 1. Draft the core Claims G1 asks for — the problem exists, its magnitude, the mechanism works,
    novelty — and key assumptions with `toulmin draft KIND NAME`; state Evidence grades honestly
    and put needed experiments in validation_plan.
-2. The researcher creates objects (`toulmin new … --confirm`), starts independent review
-   rounds (`toulmin review NAME … --confirm`, which uses quota), records intake outcomes
-   (`toulmin intake … --confirm`) and rules on statuses (`toulmin rule … --confirm`). You
-   prepare drafts, show `toulmin review NAME --dry-run` plans and recommend intake outcomes for
-   every draft label; you never run a confirming command or review your own work.
-3. Answer open Objections with Responses, Evidence, superseding Claims or validation plans.
+2. Mark a complete object draft ready by moving it, filename unchanged, to
+   projects/NAME/runs/proposals/; propose a status change or Response/Ruling text as a
+   Decision draft plus a `ruling-…` proposal there (framework/protocols.md, H3). The
+   researcher decides them with `toulmin decide`; you never create objects or write outcomes.
+3. The researcher starts independent review rounds (`toulmin review NAME … --confirm`, which
+   uses quota) and records intake outcomes (`toulmin intake … --confirm`). You show
+   `toulmin review NAME --dry-run` plans and recommend intake outcomes for every draft label;
+   you never run a confirming command or review your own work. Answer open Objections with
+   Responses, Evidence, superseding Claims or validation plans.
 4. Propose brief.md sections that cite objects, including Kill criteria and the minimal
    validation experiment.
 5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so; never edit
