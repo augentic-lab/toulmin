@@ -119,3 +119,5 @@
 - WX6 (L3 only): a user-level list of known workspaces outside every workbench lets `toulmin
   open` offer and `open --in NAME` open workspaces elsewhere; `toulmin workspaces` lists,
   forgets and scans AoE sessions. No research file or format change.
+- W7 (L3 text): native contexts name commands the agent runs with the serving interpreter
+  (`<python> -m toulmin …`), so they work without `toulmin` on the agent's PATH. No format change.

@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-05 — W7 and W9 fixes
+
+- Decision: the researcher authorized both ("按你的建议，修 W7 和 W9").
+- W7 (L3 text, `application/aoe.py`): `_command()` builds `<sys.executable> -m toulmin …` for the receipt, workspace propose, workspace handoff and project handoff commands in native contexts (the project context previously said "Run toulmin aoe handoff" in prose). Both contexts add one sentence telling the agent to use the prefix wherever files or the state card write `toulmin …` for it to run, and to name `toulmin decide` as written for the researcher. The workspace AGENTS.md template and the L2 state card are unchanged, so released.json is unchanged. Framework CHANGELOG updated. Test: `test_context_commands_name_the_interpreter_not_a_bare_toulmin`.
+- W9 (tests only): about 14,900 empty `/tmp/toulmin-handoff-1004-*.lock` files. A trace showed `tempfile.tempdir` back at /tmp inside the crash-recovery tests: their `monkeypatch.undo()` also undid conftest's isolation (config, state, CLI homes), so after an undo those tests could also read the researcher's real config. conftest now isolates with a private `pytest.MonkeyPatch.context()` and points `tempfile.tempdir`/`TMPDIR` at a per-test directory. Regression test `tests/unit/test_isolation.py`. Measured: the four leaking tests plus three related files leaked 0 lock files afterwards (4 before).
+- Existing lock files: no process held any (checked `/proc/*/fd`), but the operator's deletion was refused by the permission check; left for the researcher to remove.
+- Checks: `uv run --locked pytest -q` 1278 passed (7m23s); ruff check, ruff format --check, mypy and `git diff --check` clean. /tmp lock count after the full suite was 14,943, equal to the count derived from the earlier measured runs (the pre-suite count was not captured directly; the targeted before/after measurement showed 0 new locks).
+- Blockers: none. Next step: real use on a research workspace.
+- Session ID: unavailable.
+
 ## 2026-11-05 — WI8 passed; trial cleanup
 
 - Decision: the researcher tried WX6 (scan, picker, `--in`) and judged it good ("蛮好的"), declined renaming `workspaces` after a `workspace scan` slip, and instructed "按你的建议，记录 WI8 通过并清理". WI8 is passed; the WI8 condition item is ticked.

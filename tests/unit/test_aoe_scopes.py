@@ -5,7 +5,9 @@ Children here are synthetic prepared copies of the project template, not WI6 cre
 
 import json
 import os
+import shlex
 import shutil
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -258,6 +260,23 @@ def test_child_on_a_workspace_root_gets_the_charter_not_workspace_discussion(roo
     assert all(not name.startswith("inputs/runs/") for name in files)
     context = (root / binding["context"] / "context.md").read_text()
     assert "Scope: Project: scheduling." in context and "aoe ack scheduling" in context
+
+
+def test_context_commands_name_the_interpreter_not_a_bare_toulmin(root, fake):
+    # W7: the agent's shell may lack `toulmin` on PATH; every command it runs is qualified.
+    prefix = shlex.join([sys.executable, "-m", "toulmin"])
+    AoEWorkspace(root, None, fake).open()
+    workspace = (root / stored(root)["context"] / "context.md").read_text()
+    for command in ("workspace propose --root", "aoe handoff --workspace --root", "aoe ack"):
+        assert f"{prefix} {command}" in workspace, command
+    add_child(root)
+    AoEWorkspace(root, "scheduling", fake).open()
+    project = (root / stored(root, "scheduling")["context"] / "context.md").read_text()
+    assert f"{prefix} aoe handoff scheduling --root" in project
+    for text in (workspace, project):
+        assert f"Run every toulmin command you execute yourself as `{prefix} ...`" in text
+        assert "Run toulmin aoe" not in text and "run toulmin workspace" not in text
+        assert "`toulmin decide`" in text  # the researcher's own command stays as written
 
 
 def test_scopes_coexist_but_never_share_a_native_session(root, fake):

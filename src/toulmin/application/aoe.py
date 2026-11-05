@@ -91,6 +91,21 @@ def render_scope(state: ResearchState | WorkspaceState) -> str:
     return render_state(state)
 
 
+def _command(*args: str) -> str:
+    """A toulmin command for the agent's shell, which may not have ``toulmin`` on PATH (W7)."""
+    return shlex.join([sys.executable, "-m", "toulmin", *args])
+
+
+def _prefix_note() -> str:
+    return (
+        "Run every toulmin command you execute yourself as `"
+        + shlex.join([sys.executable, "-m", "toulmin"])
+        + " ...`: the bare `toulmin` name may not be on this shell's PATH. Wherever files "
+        "or the state card write `toulmin ...` for you to run, use this prefix; "
+        "`toulmin decide` is the researcher's own command, so name it as written.\n\n"
+    )
+
+
 class AoEWorkspace:
     """One scope's binding: the workspace (``project`` None) or a named child project."""
 
@@ -326,9 +341,8 @@ class AoEWorkspace:
 
     def _ack_command(self, token: str) -> str:
         selector = ["--workspace"] if self.project is None else [self.project]
-        return shlex.join(
-            [sys.executable, "-m", "toulmin", "aoe", "ack", *selector, "--root", str(self.root),
-             "--token", token]
+        return _command(
+            "aoe", "ack", *selector, "--root", str(self.root), "--token", token
         )  # fmt: skip
 
     def _context(self, binding: Binding, state: ResearchState | WorkspaceState) -> Binding:
@@ -403,6 +417,7 @@ class AoEWorkspace:
             "# Research session context\n\n"
             f"Project: {self.project}\nWorkbench: {self.root}\n\n"
             + scope
+            + _prefix_note()
             + "Read state.md and the listed input snapshots before continuing. They contain the "
             "current recorded state, not an authorization to apply research decisions. "
             "The recorded next step is historical guidance; compare it with current objects.\n\n"
@@ -416,8 +431,11 @@ class AoEWorkspace:
             "researcher review. Native permissions remain in force. After displaying the card, "
             "wait for researcher input. Only when the researcher asks to end the research "
             "session, save a structured summary under runs/drafts/ according to "
-            "roles/scribe.md and framework/protocols.md. Run toulmin aoe handoff with "
-            "--input pointing to that summary to generate an archived handoff draft. "
+            "roles/scribe.md and framework/protocols.md. Run "
+            + _command(
+                "aoe", "handoff", str(self.project), "--root", str(self.root), "--input", "SUMMARY"
+            )
+            + " with --input pointing to that summary to generate an archived handoff draft. "
             "Show its contents and the exact returned runs/<archive>/draft.md path for "
             "researcher review. Only that generated draft is the --apply input; never "
             "suggest applying a research proposal or the source summary. Do not apply it "
@@ -427,12 +445,8 @@ class AoEWorkspace:
 
     def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:
         root = str(self.root)
-        handoff = shlex.join(
-            ["toulmin", "aoe", "handoff", "--workspace", "--root", root, "--input", "SUMMARY"]
-        )
-        propose = shlex.join(
-            ["toulmin", "workspace", "propose", "--root", root, "--input", "runs/drafts/FILE"]
-        )
+        handoff = _command("aoe", "handoff", "--workspace", "--root", root, "--input", "SUMMARY")
+        propose = _command("workspace", "propose", "--root", root, "--input", "runs/drafts/FILE")
         return (
             "# Workspace session context\n\n"
             f"Scope: Workspace\nWorkbench: {root}\n\n"
@@ -445,7 +459,8 @@ class AoEWorkspace:
             + "\n```\n\nThe receipt does not approve research or guarantee comprehension. "
             "Show the supplied state card with ACTIONS as available choices, not action "
             "history, then wait for researcher input.\n\n"
-            "This session is the shared workspace. Projects have their own sessions; do not "
+            + _prefix_note()
+            + "This session is the shared workspace. Projects have their own sessions; do not "
             "work on a project's objects here, and do not create a project. Scope is recorded "
             "data, not filesystem isolation.\n\n"
             "Keep everything you produce in root runs/. Record a bounded exploration as "

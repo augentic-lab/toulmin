@@ -54,6 +54,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-05: The researcher accepted all five WX6 recommendations. WX6 is implemented after the WI8 v2 trial ruling, on the researcher's go-ahead; until then it is design only.
 2026-11-05: The researcher ruled the WI8 v2 trial a conditional pass (condition: workspace recognition outside the current directory, WX6) and authorized WX6, now implemented with fake AoE clients only. WI8 closes when the researcher confirms WX6 resolves the condition.
 2026-11-05: The researcher confirmed WX6 meets the condition; WI8 is passed. Trial sessions were archived and the trial folders preserved under ~/notes/toulmin/wi8-2026-11-04/researcher-v2/, then removed. Next: real use on a research workspace; W7 and W9 are open candidates requiring authorization.
+2026-11-05: The researcher authorized W7 and W9. W7: native contexts use interpreter-qualified toulmin commands. W9: tests isolate user config, state, CLI homes and the temporary directory with a private MonkeyPatch. Next: real use on a research workspace.
 
 ## Project goals and scope
 
