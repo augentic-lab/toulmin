@@ -502,3 +502,23 @@ applied; nothing noticed an applied change that was omitted.
   naming them. It is a warning, never a refusal: the summary stays the agent's record, and the
   researcher may apply it knowingly. The native workspace context asks the agent to cite every
   such receipt and to draft again when warned. No format or command behavior changed.
+
+### WX6 known workspaces (L3 only)
+
+After the WI8 v2 trial (question 3: an earlier workspace in another folder was not recognized),
+`toulmin open` can find workspaces outside the current directory tree. Accepted design:
+`~/notes/toulmin/workspace-registry-design.md`. No research file or format changed.
+- `$XDG_STATE_HOME/toulmin/workspaces.json` (default `~/.local/state/...`) lists absolute,
+  normalized paths with the last seen name and last opened time (schema_version 1). It is a
+  user-level cache outside every workbench: `init`, `open` and a confirmed `workspace adopt` add
+  to it, read-only commands never write it, writes are atomic, and a damaged file is reported,
+  never rewritten or repaired. A failed update is a notice; the command still succeeds.
+- Recognition still comes from the folder: each listing re-reads WORKSPACE.md (or the legacy
+  signature) and marks entries missing or damaged. The list never decides anything.
+- With no workbench at or above the current directory and no explicit `--root`, `open` lists
+  the known workspaces and asks which to open (`i` initializes an empty directory; default
+  quit). Without a terminal it only lists. With an empty list the WX2 behavior is unchanged.
+- `open --in NAME_OR_PATH [CHILD]` opens a known workspace by case-insensitive name or by path;
+  an ambiguous name lists the candidates and stops. `toulmin workspaces` lists, `forget PATH`
+  removes an entry without touching the folder, and `scan [--profile]` reads AoE's session list
+  (read-only) and adds workspace roots, or roots of `projects/NAME` sessions.

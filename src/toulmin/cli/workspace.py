@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 
 from toulmin.cli.initialize import adoption_templates
+from toulmin.cli.registry import note as register_workspace
 from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.protocols.adoption import adopt, preview
 from toulmin.protocols.workspace_change import Outcome, apply, propose, reject
@@ -234,6 +235,7 @@ def adopt_command(
         raise _fail(error) from error
     receipt = result.receipt
     assert receipt is not None
+    register_workspace(result.root)
     typer.echo(f"Root: {result.root}")
     typer.echo("Scope: Workspace")
     typer.echo(f"Adoption: {result.directory}")

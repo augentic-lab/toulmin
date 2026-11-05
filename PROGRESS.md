@@ -1,5 +1,22 @@
 # Toulmin development progress
 
+## 2026-11-05 — WI8 v2 trial ruling and WX6 known workspaces
+
+- Decision: the researcher ruled the WI8 v2 trial a **conditional pass** ("按你的建议，有条件通过，开始实现 WX6"): usable, on condition that workspaces outside the current directory are recognized (trial question 3). The same message authorized WX6. WI8 stays open until the researcher confirms WX6 meets the condition; agent tests are not that confirmation.
+- WX6, L3 only (accepted design `~/notes/toulmin/workspace-registry-design.md`, §7 notes):
+  - `cli/registry.py`: `$XDG_STATE_HOME/toulmin/workspaces.json` (default `~/.local/state/...`), schema_version 1, entries `{path, name, last_opened}` keyed by normalized absolute path. Strict validation; a damaged file is reported and never rewritten; atomic writes. Each listing re-checks the folder (workspace, legacy, damaged, missing).
+  - Registration: `init` (workspace), `toulmin open` (just before delegating to AoE) and a confirmed `workspace adopt`. A failed update is a stderr notice only. Read-only commands never write.
+  - `toulmin open`: with no workbench at or above the current directory, no `--root`/`--in` and no CHILD, it lists the known workspaces and asks which to open. `i` initializes an empty directory; the default is quit. Without a terminal it only lists. An empty list keeps the WX2 behavior.
+  - `toulmin open --in NAME_OR_PATH [CHILD]`: case-insensitive name or path; an ambiguous or unknown name lists the candidates (exit 2); `--in` cannot be combined with `--root`.
+  - `toulmin workspaces` lists (name, path, last opened, missing/pending flags); `forget PATH` removes an entry without touching the folder; `scan [--profile]` reads `aoe list` (read-only) and adds workspace roots or the roots of `projects/NAME` sessions, recorded as "found by scan".
+  - `config show` prints the list location. conftest isolates `XDG_STATE_HOME`.
+  - README, docs/protocols.md WX6 section (packaged copy synced) and framework CHANGELOG updated.
+- Tests: `tests/cli/test_workspaces.py` (17 cases: location, refresh, unusable files, registration and read-only commands, live listing and forget, picker open/quit/invalid/missing/init/non-terminal/inside a workbench, `--in` name/path/child/ambiguous/unknown/conflict, scan with a fake AoE client). Pseudo-terminal smoke with isolated XDG dirs and `TOULMIN_AOE_COMMAND=/bin/false`: the picker listed two same-named folders, choice 2 opened the chosen root, and the stand-in AoE then failed as expected. No live AoE session run.
+- Records: TODO (WX5 trial ticked as a conditional pass, WX6 implementation ticked, new open item "WI8 condition"), AGENTS dated entry, ledger "Researcher ruling on the v2 trial" with MANIFEST regenerated and checked.
+- Checks: `uv run --locked pytest -q` 1276 passed (7m06s; test_workspaces.py rerun after ruff formatting: 17 passed); ruff check, ruff format --check and mypy clean; `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Blockers: none. Next step: the researcher uses `toulmin open` from outside a workspace (or `toulmin workspaces scan` for the v1 trial workspace) and confirms whether the WI8 condition is met.
+- Session ID: unavailable.
+
 ## 2026-11-05 — W8 fix and WX6 workspace registry design
 
 - Decision: after the v2 trial questions, the researcher chose option ① ("是①，按你的建议写设计并修 W8"): fix W8 and write a registry design. No trial ruling was given; WI8 and the WX5 trial item stay open.

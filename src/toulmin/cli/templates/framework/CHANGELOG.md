@@ -116,3 +116,6 @@
   effort only). Display provenance; nothing is written and no behavior depends on it.
 - W8 (L2 read-only helper; L3 text): handoff previews warn when workspace changes applied since
   the last handoff are not cited by the summary. Warning only; no format or behavior change.
+- WX6 (L3 only): a user-level list of known workspaces outside every workbench lets `toulmin
+  open` offer and `open --in NAME` open workspaces elsewhere; `toulmin workspaces` lists,
+  forgets and scans AoE sessions. No research file or format change.

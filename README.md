@@ -16,6 +16,23 @@ explicit yes in a terminal and never on an unrelated, non-empty directory. A leg
 needs a project name; it prints the `workspace adopt` preview command instead. When items await
 your decision it says so.
 
+From anywhere else, `toulmin open` lists the workspaces it knows and asks which to open (in an
+empty directory it also offers to initialize there):
+
+```sh
+toulmin open --in serving              # a known workspace by name (or --in PATH)
+toulmin open --in serving scheduling   # its child project
+toulmin workspaces                     # known workspaces, last opened, pending decisions
+toulmin workspaces forget PATH         # drop an entry; the folder is not touched
+toulmin workspaces scan                # add workspaces that have sessions in your AoE profile
+```
+
+The list is `~/.local/state/toulmin/workspaces.json` (or `$XDG_STATE_HOME/toulmin/...`). It is a
+user-level cache, not research data: `init`, `open` and a confirmed `workspace adopt` add to it,
+read-only commands never write it, and deleting it loses only the list. Entries are identified
+by path, so two workspaces with the same name are told apart by path; every listing re-checks the
+folder and marks moved or deleted ones as missing. A damaged list is reported, never rewritten.
+
 ```sh
 toulmin decide        # in your own terminal, at the end of a session
 ```
@@ -26,7 +43,8 @@ and project) with the same preview its own command prints, one at a time, and as
 calls the same function as the item's own `--confirm` command, with your configured actor and
 `approval_text: "toulmin decide: a"`; rejecting asks for the recorded reason. A workspace
 handoff drafted before a change you just applied is stale; decide redrafts it from the same,
-unchanged summary and shows it again, noting receipts the summary does not cite. A second
+unchanged summary and shows it again. Every handoff preview warns about workspace changes
+applied since the last handoff that the summary does not cite (W8). A second
 handoff after one applied in the same run is skipped as superseded. Without a terminal it only
 lists the items. The individual `apply`/`create`/`reject`/`handoff --apply` commands still work.
 

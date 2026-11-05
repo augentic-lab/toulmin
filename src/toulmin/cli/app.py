@@ -11,8 +11,10 @@ from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
 from toulmin.cli.project import app as project_app
+from toulmin.cli.registry import note as register_workspace
 from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.cli.workspace import app as workspace_app
+from toulmin.cli.workspaces import app as workspaces_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
 from toulmin.protocols.drafting import write_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
@@ -37,6 +39,7 @@ app.add_typer(aoe_app, name="aoe")
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
 app.add_typer(config_app, name="config")
+app.add_typer(workspaces_app, name="workspaces")
 app.command("open")(open_research)
 app.command("decide")(decide_command)
 
@@ -167,6 +170,7 @@ def init_workbench(
     except (OSError, ValueError, RuntimeError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
+    register_workspace(result.root)
     for remnant in result.remnants:
         typer.echo(f"Notice: {remnant}: interrupted initialization remnant (left in place)")
     if result.existing:
