@@ -121,3 +121,5 @@
   forgets and scans AoE sessions. No research file or format change.
 - W7 (L3 text): native contexts name commands the agent runs with the serving interpreter
   (`<python> -m toulmin …`), so they work without `toulmin` on the agent's PATH. No format change.
+- H2 (L2 read-only): `status PROJECT` reports G1/G2 readiness item by item from files. It never
+  changes stage or status. No format change.

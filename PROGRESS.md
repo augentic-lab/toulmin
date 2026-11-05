@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-05 — H2: G1/G2 readiness in status
+
+- Decision: the researcher accepted H1's D1–D6 as recommended and authorized H2 ("按你的建议，D1–D6 都同意，开始实现 H2").
+- L2 (read-only; reason in docs/protocols.md "H2"): `project_status` adds `gates` (`GateReadiness` with `GateItem`s). G1: a current core Claim of each type problem, magnitude, mechanism, novelty. G2: no open fatal/major Objection; every current core Claim has valid verified supporting Evidence or a `validation_plan` (refuted never qualifies); brief.md Kill criteria written (blanks and HTML comments do not count; fenced code opaque). Unknown while data is invalid or brief.md unreadable.
+- L3: `status PROJECT` prints the gates as checkboxes under "Gates (readiness from files; the stage changes only by your ruling)". README status section, packaged protocols.md and framework CHANGELOG updated.
+- Tests: `tests/cli/test_gates.py` (5: empty project, G1 types/importance/superseded, G2 objections/support/plan/refuted/kill criteria, CLI output with no file changes, invalid data unknown). Smoke: `status demo` on a fresh temporary project shows both gates not met with every missing item.
+- Checks: `uv run --locked pytest -q` 1283 passed; ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Blockers: none. Next step: H6 (agent guidance for the project loop), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-05 — H1: project research loop design
 
 - Decision: the researcher declined a workspace removal command for now and returned to the mainline: "按你的建议，开始写 H1 设计". Documentation only.

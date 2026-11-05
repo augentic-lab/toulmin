@@ -57,6 +57,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-05: The researcher authorized W7 and W9. W7: native contexts use interpreter-qualified toulmin commands. W9: tests isolate user config, state, CLI homes and the temporary directory with a private MonkeyPatch. Next: real use on a research workspace.
 
 2026-11-05: The researcher returned to the mainline (stage 3) and authorized H1 only: a design (documentation only, `~/notes/toulmin/project-research-loop-design.md`) for running the project research loop (claims, independent review rounds, intake, rulings, Brief, G1/G2) through `toulmin open`/`toulmin decide`. H2–H6 and C5 require separate authorization.
+2026-11-05: The researcher accepted H1's D1–D6 (including D4: stage proposals applied through `toulmin decide` with a Decision) and authorized H2: read-only G1/G2 readiness in `status`. H2 is implemented; H6, H3–H5 and C5 require separate authorization.
 
 ## Project goals and scope
 

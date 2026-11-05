@@ -522,3 +522,19 @@ After the WI8 v2 trial (question 3: an earlier workspace in another folder was n
   an ambiguous name lists the candidates and stops. `toulmin workspaces` lists, `forget PATH`
   removes an entry without touching the folder, and `scan [--profile]` reads AoE's session list
   (read-only) and adds workspace roots, or roots of `projects/NAME` sessions.
+
+### H2 gate readiness in status (L2 read-only)
+
+Design: `~/notes/toulmin/project-research-loop-design.md` (H1, accepted with D1–D6). Before H2,
+`status` reported per-Claim conditions only, so whether a project could enter critique or
+brief-final had to be worked out by hand.
+- L2 reason: `project_status` adds `gates`, a G1 and a G2 readiness report computed from the
+  project files (design section 7). G1: a current (not superseded) core Claim of each type
+  problem, magnitude, mechanism, novelty. G2: no open fatal or major Objection; every current
+  core Claim has valid verified supporting Evidence or a nonempty `validation_plan`, and a
+  refuted core Claim never qualifies; the brief.md "Kill criteria" section has content other
+  than blanks and HTML comments (fenced code is opaque).
+- Readiness is unknown while project data is invalid or brief.md is unreadable. It reads only
+  files status already reads, writes nothing, and never changes stage or object status; the
+  CLI labels it "readiness from files; the stage changes only by your ruling".
+- No format change. Stage rulings through `toulmin decide` (D4) are a later slice.

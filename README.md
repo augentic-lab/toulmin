@@ -485,6 +485,11 @@ uv run --locked toulmin status tail-latency --root /path/to/research --verbose
 Shows the stored stage, next step, Claim statuses, counts of valid verified supporting evidence, and open objections ordered fatal/major/minor.
 Open-objection presence and eligibility for supported are reported separately; a minor objection can coexist with eligibility.
 Gaining or losing eligibility produces a manual-review notice. Stored statuses and stages are preserved.
+A Gates block reports G1 (entering critique) and G2 (entering brief-final) readiness item by item:
+G1 needs a current core Claim of each type problem, magnitude, mechanism and novelty; G2 needs no open
+fatal or major Objection, verified supporting Evidence or a `validation_plan` for every current core
+Claim (a refuted one never qualifies), and written Kill criteria in brief.md. Readiness is unknown while
+data is invalid. It is a report, never a stage change: the stage moves only by your ruling.
 
 Checks cover the selected project's seven object types, PROJECT, explicit brief references and direct cross-project references.
 They do not scan other projects for incoming evidence/objections or infer semantic consistency between brief prose and evidence.

@@ -711,6 +711,14 @@ def show_status(
         typer.echo(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
         if settled.summary:
             typer.echo(f"      {settled.summary}")
+    if report.gates:
+        typer.echo("Gates (readiness from files; the stage changes only by your ruling):")
+    for gate in report.gates:
+        state = "unknown (data invalid)" if gate.met is None else "met" if gate.met else "not met"
+        typer.echo(f"  {gate.gate} -> {gate.enters}: {state}")
+        for item in gate.items:
+            detail = f": {item.detail}" if item.detail else ""
+            typer.echo(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

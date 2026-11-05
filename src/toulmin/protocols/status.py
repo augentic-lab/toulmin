@@ -1,5 +1,6 @@
 """L2 condition assessment; never a state transition or gate ruling."""
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,6 +45,23 @@ class SupersededClaim:
 
 
 @dataclass(frozen=True)
+class GateItem:
+    label: str
+    met: bool
+    detail: str
+
+
+@dataclass(frozen=True)
+class GateReadiness:
+    """Whether a gate's conditions hold in the files now; never a stage change (H2)."""
+
+    gate: str
+    enters: str
+    met: bool | None  # None while project data is invalid
+    items: tuple[GateItem, ...]
+
+
+@dataclass(frozen=True)
 class StatusReport:
     project: str
     stage: str | None
@@ -55,6 +73,7 @@ class StatusReport:
     last_handoff: str | None = None
     superseded: tuple[SupersededClaim, ...] = ()
     settled_objections: tuple[SettledObjection, ...] = ()
+    gates: tuple[GateReadiness, ...] = ()
 
 
 SUMMARY_LENGTH = 100
@@ -183,7 +202,122 @@ def project_status(root: Path, project: str) -> StatusReport:
         ),
         tuple(superseded),
         settled,
+        _gates(Repository(root), project, snapshot, complete),
     )
+
+
+G1_TYPES = ("problem", "magnitude", "mechanism", "novelty")
+G1_LABELS = {
+    "problem": "the problem exists",
+    "magnitude": "the problem's size",
+    "mechanism": "the approach works",
+    "novelty": "novelty",
+}
+KILL_CRITERIA = "Kill criteria"
+
+
+def _brief_section(text: str, title: str) -> str:
+    """The body of one level-two section of brief.md; fenced code stays opaque."""
+    found: list[str] = []
+    inside = False
+    fence = ""
+    for line in text.splitlines():
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if fence:
+            if marker and marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                fence = ""
+        elif marker:
+            fence = marker[1]
+        elif re.match(r"^## ", line):
+            inside = line[3:].strip() == title
+            continue
+        if inside:
+            found.append(line)
+    return "\n".join(found)
+
+
+def _written(text: str) -> bool:
+    """Any line besides blanks and HTML comments counts as written content."""
+    body = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    return any(line.strip() for line in body.splitlines())
+
+
+def _gates(
+    repository: Repository, project: str, snapshot: ProjectSnapshot, complete: bool
+) -> tuple[GateReadiness, ...]:
+    """G1/G2 conditions of design section 7, computed from files only.
+
+    Superseded Claims are left out (their successors carry the conditions); a refuted core
+    Claim still counts as written for G1 but never satisfies G2.
+    """
+    claims = sorted(
+        (
+            doc
+            for doc in snapshot.objects
+            if doc.object_id.kind == ObjectKind.CLAIM
+            and doc.header["status"] != "superseded"
+            and doc.header.get("importance") == "core"
+        ),
+        key=lambda doc: doc.object_id.number,
+    )
+    g1 = []
+    for kind in G1_TYPES:
+        ids = [str(doc.object_id) for doc in claims if doc.header.get("type") == kind]
+        g1.append(GateItem(f"core {kind} Claim ({G1_LABELS[kind]})", bool(ids), ", ".join(ids)))
+    blocking = sorted(
+        (
+            doc
+            for doc in snapshot.objects
+            if doc.object_id.kind == ObjectKind.OBJECTION
+            and doc.header["status"] == "open"
+            and doc.header["severity"] in {"fatal", "major"}
+        ),
+        key=lambda doc: doc.object_id.number,
+    )
+    g2 = [
+        GateItem(
+            "no open fatal or major Objection",
+            not blocking,
+            ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in blocking),
+        )
+    ]
+    if not claims:
+        g2.append(GateItem("core Claims supported or planned", False, "no core Claims"))
+    for claim in claims:
+        supports = [
+            str(doc.object_id)
+            for doc in snapshot.objects
+            if doc.object_id.kind == ObjectKind.EVIDENCE
+            and local_target(doc, project) == claim.object_id
+            and doc.header["status"] == "valid"
+            and doc.header["grade"] == "verified"
+            and doc.header["direction"] == "supports"
+        ]
+        plan = str(claim.header.get("validation_plan") or "").strip()
+        if claim.header["status"] == "refuted":
+            met, detail = False, "refuted"
+        elif supports:
+            met, detail = True, "verified support " + ", ".join(supports)
+        elif plan:
+            met, detail = True, "validation_plan set"
+        else:
+            met, detail = False, "no verified support and no validation_plan"
+        g2.append(GateItem(f"{claim.object_id} supported or planned", met, detail))
+    try:
+        path = repository.path(f"projects/{project}/brief.md", "file")
+        written = _written(_brief_section(path.read_text(encoding="utf-8"), KILL_CRITERIA))
+        g2.append(
+            GateItem("Kill criteria written in brief.md", written, "" if written else "empty")
+        )
+    except (OSError, ValueError):
+        g2.append(GateItem("Kill criteria written in brief.md", False, "brief.md unreadable"))
+        complete = False
+
+    def readiness(gate: str, enters: str, items: list[GateItem]) -> GateReadiness:
+        met = all(item.met for item in items) if complete else None
+        return GateReadiness(gate, enters, met, tuple(items))
+
+    return (readiness("G1", "critique", g1), readiness("G2", "brief-final", g2))
 
 
 def _revision_notices(snapshot: ProjectSnapshot, project: str) -> list[str]:
