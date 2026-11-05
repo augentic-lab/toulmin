@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-05 — H1: project research loop design
+
+- Decision: the researcher declined a workspace removal command for now and returned to the mainline: "按你的建议，开始写 H1 设计". Documentation only.
+- Output (outside the repository): `~/notes/toulmin/project-research-loop-design.md`. Facts (from `--help` and code): the critique tools (draft/new, review, synthesize, crossval, intake, rule) exist; reviews are headless and do not use AoE; `toulmin decide` covers only workspace items and handoffs; `status` has no G1/G2 readiness; no command writes PROJECT.md `stage`; the project agent's guidance has rules but no loop.
+- Proposal: loop L1–L8 (explore, core Claims, Evidence, review round, intake, responses, rulings, Brief) with G1/G2 checks; H-A project items in decide; H-B read-only gate readiness in status (L2 addition); H-C agent guidance; H-D stage rulings (manual, or a stage proposal applied through decide, which would be the first command writing `stage`). Decisions D1–D6 await the researcher; recommended order H2 → H6 → H3 → H4 → H5 → C5.
+- Checks: documentation only; no code changed, tests not run. Diff inspected.
+- Blockers: none. Next step: researcher review of D1–D6.
+- Session ID: unavailable.
+
 ## 2026-11-05 — ~/toulmin-tryout removed
 
 - Decision: the researcher asked to delete the tryout workbench too ("按你的建议，tryout 也删除").

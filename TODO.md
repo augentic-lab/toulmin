@@ -265,6 +265,13 @@ Design notes:
 - Crossval answers use a new `crossval` role (operation `answer`) with a point block. The question must be a file directly in the project's `runs/drafts/`.
 - Order change: the researcher asked for C4 on 2026-11-02 after UI1, ahead of UI2 (Q29 had ordered UI1–UI5 first).
 
+### H — Project research loop in the workspace flow (before C5)
+
+Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the thinking stages (Explore → G1 → Critique → G2 → Brief final) in a child project: conversation in the project's AoE session, independent headless reviews, every formal change decided with `toulmin decide`.
+
+- [x] H1 — Design draft (2026-11-05): loop L1–L8 with G1/G2 checks; H-A project items in decide (object drafts, review-round requests, intake recommendations, ruling, Brief and stage proposals); H-B read-only G1/G2 readiness in status; H-C agent guidance; H-D stage rulings. Documentation only.
+- [ ] H1 researcher review of decisions D1–D6; H2–H6 require separate authorization.
+
 ### C5 — Calibration report and stage trial
 
 - [ ] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report.

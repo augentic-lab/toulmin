@@ -56,6 +56,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-05: The researcher confirmed WX6 meets the condition; WI8 is passed. Trial sessions were archived and the trial folders preserved under ~/notes/toulmin/wi8-2026-11-04/researcher-v2/, then removed. Next: real use on a research workspace; W7 and W9 are open candidates requiring authorization.
 2026-11-05: The researcher authorized W7 and W9. W7: native contexts use interpreter-qualified toulmin commands. W9: tests isolate user config, state, CLI homes and the temporary directory with a private MonkeyPatch. Next: real use on a research workspace.
 
+2026-11-05: The researcher returned to the mainline (stage 3) and authorized H1 only: a design (documentation only, `~/notes/toulmin/project-research-loop-design.md`) for running the project research loop (claims, independent review rounds, intake, rulings, Brief, G1/G2) through `toulmin open`/`toulmin decide`. H2–H6 and C5 require separate authorization.
+
 ## Project goals and scope
 
 - Toulmin is a project-based research workbench for a single systems researcher. Open files preserve the claim–evidence–objection network and its full provenance.
