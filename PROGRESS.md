@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-05 — ~/toulmin-tryout removed
+
+- Decision: the researcher asked to delete the tryout workbench too ("按你的建议，tryout 也删除").
+- Done: AoE session 8ad3ca2632c74213 "Toulmin: tryout" (profile main) archived, then moved to AoE's trash (restorable with `aoe session restore`; `aoe rm --purge` deletes it permanently). No tmux session or process remained in the folder; `~/toulmin-tryout` (legacy workbench with project `tryout`, no git commits) deleted. The other test workspaces await the researcher's run of `~/notes/toulmin/cleanup-test-workspaces.sh`.
+- Checks: `aoe list` shows the session trashed; the folder no longer exists. No code changed.
+- Session ID: unavailable.
+
 ## 2026-11-05 — README opening rewritten; test workspace cleanup prepared
 
 - Decision: the researcher asked to remove the earlier test workspaces, check for a removal command and check the README; then authorized rewriting the README opening ("按你的建议，重写 README 开头"). Documentation only.
