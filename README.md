@@ -1,13 +1,96 @@
 # Toulmin
 
-A personal research workbench that stores research state in files and leaves rulings to the researcher.
+Toulmin is a research workbench for one researcher. You think through a research direction
+with an AI agent (Codex or Claude) in a terminal session; Toulmin keeps the outcome in plain
+files — the direction, shared materials, session summaries and, per project, the Claims,
+Evidence and Objections — and changes them only when you decide. Agents propose; you confirm.
+
+## Requirements
+
+- Linux, Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+- Agent of Empires (`aoe`) installed and configured; it runs the agent sessions in tmux.
+- The Codex CLI or Claude Code, installed and logged in.
+
+## Install
+
+From this repository:
+
+```sh
+uv sync --locked
+ln -s "$PWD/.venv/bin/toulmin" ~/.local/bin/toulmin   # any directory on your PATH
+toulmin --help
+```
+
+Optional preferences (`~/.config/toulmin/config.toml`; check with `toulmin config show`):
+
+```toml
+actor = "Your Name"     # recorded as who confirmed a decision
+[aoe]
+agent = "codex"         # or "claude"
+attach = true           # enter the session after `toulmin open`
+```
 
 ## Quick start
 
 ```sh
-mkdir ~/research/serving && cd ~/research/serving
-toulmin open          # empty directory: asks "Initialize ... and open its session? [y/N]"
+mkdir -p ~/research/my-topic && cd ~/research/my-topic   # a new, empty directory
+toulmin open        # answer y: creates the workspace and opens the agent session
 ```
+
+1. Tell the agent your question, constraints and what you already know. When a direction is
+   settled, it proposes a change to `WORKSPACE.md`.
+2. In a second terminal in the same directory, run `toulmin decide` and apply or reject what
+   it shows. Nothing changes until you do.
+3. To finish, ask the agent to end the session (it drafts a summary), then `toulmin decide`
+   once more. The next session continues from the files.
+
+## Daily use
+
+| When | Command |
+| --- | --- |
+| Start or resume | `toulmin open` in the workspace; from elsewhere it lists your workspaces, or `toulmin open --in NAME` |
+| Something awaits your review | `toulmin decide` (in your own terminal) |
+| End of a session | ask the agent to end it, then `toulmin decide` |
+| Fresh conversation (context full, next day) | `toulmin open --new-session` |
+| Where things stand | `toulmin status` |
+| A concrete direction becomes a project | ask the agent to propose a child project, `toulmin decide`, then `cd projects/NAME && toulmin open` |
+
+## Concepts
+
+- **Workspace**: the directory `toulmin open` creates. `WORKSPACE.md` holds the confirmed
+  direction; `shared/` holds materials; `sessions/` holds confirmed session summaries.
+- **Child project**: `projects/NAME/`, with its own agent session and its own Claims,
+  Evidence and Objections. Created only through a proposal you accept.
+- **runs/**: everything an agent produces lands here first, as a draft or record.
+- **Decisions**: only `toulmin decide` (or a command with `--confirm`) run by you changes the
+  confirmed files. Agreeing in chat records nothing.
+- Files are the only source of truth; every file is plain text you can read and edit.
+
+## Removing a workspace
+
+Toulmin has no delete command. To remove a workspace:
+
+1. Remove its agent sessions in AoE: `aoe remove "Workspace: NAME"` and each
+   `aoe remove "Project: CHILD | NAME"` (`-p PROFILE` if not the default profile).
+2. Delete the directory.
+3. `toulmin workspaces forget PATH` drops it from the list of known workspaces.
+
+## Status
+
+Workspaces, child projects, `toulmin open`/`decide` and the AoE entry are in use. Stage 2 is
+accepted. Structured review, reviewer personas, model adapters, synthesis and
+cross-validation (C1–C4) are implemented. The Python/Textual workspace supports durable
+discussion and confirmed Brief proposals; TUI review/handoff integration and C5 remain
+pending. See [TODO.md](TODO.md) and [PROGRESS.md](PROGRESS.md).
+
+---
+
+# Reference
+
+The sections below document every command in detail. The Textual terminal workspace and the
+native CLI with a project board are older interfaces that remain supported.
+
+## Entry, decisions and preferences
 
 `toulmin open` finds the nearest workbench at or above the current directory. It opens the
 workspace session, or the child project whose directory you are in (`toulmin open NAME` picks
@@ -74,7 +157,7 @@ before the first turn. Only the model name and effort are read from `$CODEX_HOME
 or `$CLAUDE_CONFIG_DIR/projects/` (defaults `~/.codex`, `~/.claude`); change the model in the
 CLI's own configuration.
 
-## Research sessions in AoE
+## Research sessions in AoE (lower-level commands)
 
 Use AoE's native Codex/Claude sessions with Toulmin's file-based research state.
 This entry needs Python/Toulmin and an installed, configured AoE; it does not require Textual.
@@ -160,9 +243,7 @@ native wrapper's read-only mounts. Chief dispatch/import and research rulings re
 Use `TOULMIN_AOE_COMMAND` to select one AoE executable when necessary; otherwise the local
 `~/.local/bin/aoe` is preferred over PATH. Research bindings never change AoE configuration.
 
-Stage 2 is accepted. Structured review, reviewer personas, model adapters, synthesis and cross-validation (C1–C4) are implemented. The Python/Textual workspace now supports durable discussion and confirmed Brief proposals; TUI review/handoff integration and C5 remain pending.
-
-## Terminal workspace
+## Terminal workspace (older interface)
 
 Install the optional interface and launch from the software checkout:
 
@@ -488,7 +569,7 @@ Synchronize them when editing contracts; tests check equality, and the installed
 Dependencies point downward: `cli` (L3) → `protocols` (L2) → `core` (L1); L3 may also use L1 directly.
 Core and protocols do not depend on Typer, specific model tools or networking. Research workbench templates and the software development repository are managed separately.
 
-## Native CLI with a project board
+## Native CLI with a project board (older interface)
 
 Open a project in the TUI and press **F4 Native CLI**, or run:
 

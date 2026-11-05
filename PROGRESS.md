@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-05 — README opening rewritten; test workspace cleanup prepared
+
+- Decision: the researcher asked to remove the earlier test workspaces, check for a removal command and check the README; then authorized rewriting the README opening ("按你的建议，重写 README 开头"). Documentation only.
+- README: new opening (what Toulmin is, requirements, install via `uv sync --locked` and a `~/.local/bin` link, optional config, a three-step quick start, a daily-use table, concepts, removing a workspace, status), followed by a "Reference" part. The former quick-start prose moved unchanged to "Entry, decisions and preferences"; the stage status paragraph moved to "Status"; the low-level AoE section and the Textual/native sections are labelled as lower-level or older interfaces. No other section changed.
+- Removal: Toulmin has no delete command (checked `toulmin --help`). The README documents the manual steps (remove AoE sessions, delete the directory, `toulmin workspaces forget`). A `toulmin workspaces remove` command was not designed (recommendation: only if removal becomes frequent).
+- Test workspace cleanup: the operator's `aoe profile delete` of the four test profiles was refused by the permission check, so nothing was deleted. `~/notes/toulmin/cleanup-test-workspaces.sh` (checked with `bash -n`; refuses if any listed profile has a live session) deletes profiles toulmin-aoe3-smoke, toulmin-trial-20261104, toulmin-trial-wi8 and toulmin-wi8, 13 test workbenches under /tmp and the W9 lock files, for the researcher to run. `~/toulmin-tryout` (live AoE session "Toulmin: tryout") is left pending the researcher's answer.
+- Checks: documentation only; no code changed, tests not rerun (no test reads README.md; last full run 1278 passed at cecddb8). Diff and code fences inspected.
+- Blockers: deletions need the researcher (permission check). Next step: the researcher runs the cleanup script and starts real use.
+- Session ID: unavailable.
+
 ## 2026-11-05 — W7 and W9 fixes
 
 - Decision: the researcher authorized both ("按你的建议，修 W7 和 W9").
