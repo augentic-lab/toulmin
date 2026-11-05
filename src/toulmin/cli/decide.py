@@ -155,7 +155,7 @@ def _ask(choices: str) -> str:
 
 def _reason() -> str:
     while True:
-        reason = str(typer.prompt("Reason for rejecting (recorded in the receipt)")).strip()
+        reason = str(typer.prompt("Reason for rejecting (it is recorded)")).strip()
         if reason:
             return reason
 

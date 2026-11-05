@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-05 — H3 follow-up: draft hints and reject prompt
+
+- Decision: after a simulated H3 run on a temporary workspace (agent proposals, two `decide` rounds in a pseudo-terminal; all outcomes as designed), the researcher approved fixing the two wording issues found ("按你的建议，先修这两处小问题").
+- Fix 1: `toulmin draft` output and the skeleton header comment (core/skeletons.py, comment text only; no format change) now say to move a complete object draft, name unchanged, to `projects/NAME/runs/proposals/` for `toulmin decide`, with `toulmin new … --confirm` as the alternative. Run drafts keep only the `new` hint (Runs are not decide proposals).
+- Fix 2: decide's rejection prompt says "Reason for rejecting (it is recorded)" instead of "recorded in the receipt" (project proposals record outcomes, not receipts).
+- Tests: `test_draft_writes_only_a_skeleton_that_intake_rejects_until_filled` asserts the proposals hint for object kinds and its absence for Runs.
+- Checks: `uv run --locked pytest -q` 1296 passed (7m25s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Blockers: none. Next step: H4, on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-05 — H3: object drafts and ruling proposals in decide
 
 - Decision: the researcher authorized H3 ("可以，开始 H3") under accepted D1 (proposals directory) and D2 (rejections record a reason).

@@ -9,6 +9,7 @@ from typing import Any
 
 from toulmin.core.documents import Document, sections
 from toulmin.core.identifiers import ObjectKind
+from toulmin.core.project_proposals import OBJECT_KINDS
 from toulmin.core.schema import (
     CLAIM_TYPES,
     DIRECTIONS,
@@ -137,7 +138,16 @@ def skeleton(
         "---",
         f"# {kind.value.capitalize()} draft for project {project}.",
         "# Replace every <fill: ...> value. id, created, confirmed_by and the initial",
-        "# status are assigned at intake. Then run:",
+        "# status are assigned at intake.",
+        *(
+            [
+                f"# When complete, move this file (name unchanged) to projects/{project}/"
+                "runs/proposals/",
+                "# for the researcher's `toulmin decide`, or the researcher runs:",
+            ]
+            if kind.value in OBJECT_KINDS  # decide's object proposals (H3); not Runs
+            else ["# Then run:"]
+        ),
         f"#   toulmin new {kind.value} {project} --input {path} --confirm",
         *fields,
         "---",

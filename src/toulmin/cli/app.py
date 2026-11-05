@@ -216,11 +216,15 @@ def draft_object(
     relative = display(path, root)
     typer.echo(relative)
     location = "" if root == Path(".") else f" --root {root}"
-    typer.echo(
-        f"Fill every <fill: ...> value, then: toulmin new {kind.value} {project}{location} "
-        f"--input {relative} --confirm",
-        err=True,
-    )
+    new = f"toulmin new {kind.value} {project}{location} --input {relative} --confirm"
+    if kind == ObjectKind.RUN:
+        typer.echo(f"Fill every <fill: ...> value, then: {new}", err=True)
+    else:
+        typer.echo(
+            "Fill every <fill: ...> value, then move it (name unchanged) to "
+            f"projects/{project}/runs/proposals/ for `toulmin decide`, or: {new}",
+            err=True,
+        )
 
 
 @app.command("inputs")

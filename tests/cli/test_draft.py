@@ -77,6 +77,9 @@ def test_draft_writes_only_a_skeleton_that_intake_rejects_until_filled(populated
     assert re.fullmatch(rf"projects/demo/runs/drafts/{kind}-\d{{8}}T\d{{6}}Z\.md", relative)
     assert set(files(populated)) - set(before) == {relative}
     assert f"toulmin new {kind} demo" in path.read_text()
+    # H3: object drafts point to decide's proposals folder first; Runs keep `new` only.
+    proposals = "move this file (name unchanged) to projects/demo/runs/proposals/"
+    assert (proposals in path.read_text()) is (kind != ObjectKind.RUN)
     decode(path.read_bytes(), str(path))  # strict YAML subset, comments allowed
 
     result = new(populated, kind, relative, "--confirmed-by", "Tianchi YU", "--confirm")
