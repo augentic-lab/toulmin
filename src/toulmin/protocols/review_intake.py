@@ -89,12 +89,15 @@ def intake_review(
     take: dict[str, str | None] | None = None,
     reject: dict[str, str] | None = None,
     partly: dict[str, str] | None = None,
+    *,
+    preview: bool = False,
 ) -> IntakeResult:
     """Apply the researcher's choices for drafts in one archived raw review output.
 
     `take` maps label → severity override (None keeps the reviewer's); an override is
     recorded as partly adopted. `reject` maps label → reason. `partly` maps label → an
-    existing Objection the researcher wrote from that draft by hand.
+    existing Objection the researcher wrote from that draft by hand. ``preview`` (H4) runs
+    every check and returns the Run with no lines; nothing is written.
     """
     take, reject, partly = dict(take or {}), dict(reject or {}), dict(partly or {})
     repository = Repository(root)
@@ -133,10 +136,12 @@ def intake_review(
         source = objection.header["source"]
         if source.get("kind") != "run" or source["ref"] != run or source["path"] != output:
             objection.fail("source", f"must cite {run} and {output} to record {label}")
+    record_path = repository.path(f"{directory}/{INTAKE_FILE}")
+    if preview:
+        return IntakeResult(run, record_path, ())
     if not confirmed:
         raise FormatError(f"{output}: explicit researcher confirmation required; nothing written")
 
-    record_path = repository.path(f"{directory}/{INTAKE_FILE}")
     lines: list[IntakeLine] = []
     with repository.creation_lock(project):
         outcomes = _load_record(record_path, run, output)
@@ -171,6 +176,28 @@ def intake_review(
             _append(record_path, run, output, entry)
             lines.append(IntakeLine(label, wanted, object_id))
     return IntakeResult(run, record_path, tuple(lines))
+
+
+@dataclass(frozen=True)
+class OutputState:
+    run: str
+    drafts: dict[str, ReviewDraft]  # by label, in output order
+    recorded: dict[str, dict[str, Any]]  # label -> intake.md entry
+
+
+def output_state(root: Path, project: str, output_path: str) -> OutputState:
+    """The drafts of one raw review output and the outcomes already recorded; read-only."""
+    repository = Repository(root)
+    repository.project(project)
+    output = repository.relative(output_path)
+    raw_path = repository.path(output, "file")
+    run, directory = find_run(repository, project, output)
+    drafts = {
+        draft.label: draft
+        for draft in parse_review(raw_path.read_text(encoding="utf-8"), str(raw_path))
+    }
+    record = _load_record(repository.path(f"{directory}/{INTAKE_FILE}"), run, output)
+    return OutputState(run, drafts, record)
 
 
 def _objection_id(label: str, value: str) -> ObjectId:

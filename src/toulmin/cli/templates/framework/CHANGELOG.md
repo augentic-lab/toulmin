@@ -130,3 +130,7 @@
   projects/NAME/runs/proposals/ and are decided in `toulmin decide`; each decision is an
   `<stem>.outcome.md` record beside the proposal (rejections keep the reason). `new` and
   `rule` gain a write-nothing preview. Existing files unchanged; no migration.
+- H4 (L1 additive, L2, L3): review-round requests (`review-…`) and intake recommendations
+  (`intake-…`) under runs/proposals/ are decided in `toulmin decide`: a round starts only on
+  the researcher's apply and is followed by synthesis; intake is chosen label by label.
+  Existing files and commands unchanged; no migration.

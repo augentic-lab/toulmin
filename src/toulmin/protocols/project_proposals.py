@@ -1,4 +1,4 @@
-"""L2: decide project proposals (H3): object drafts and ruling proposals.
+"""L2: decide project proposals: object drafts and rulings (H3), intake and reviews (H4).
 
 Reason for this L2 addition (docs/protocols.md, H3): the agent marks an item ready by putting
 it under ``projects/NAME/runs/proposals/``; the researcher decides it in ``toulmin decide``.
@@ -9,6 +9,13 @@ proposal; the proposal itself is never edited, moved or deleted.
 An ``applying`` outcome is written before anything else changes, so an interrupted
 application is never repeated blindly: the next preview looks for the object or ruling it may
 already have produced and offers to record that instead.
+
+H4 (reason in docs/protocols.md, H4): an intake recommendation is recorded label by label with
+``intake_review`` (whose own replay makes it safe to repeat) and is applied once every draft
+label of its output has an outcome. A review request is started by the researcher's apply
+only (D3); the sessions run in L3, which brackets them with ``begin_review`` and
+``finish_review``. An interrupted round is never started again: the next apply records the
+Runs it archived.
 """
 
 from dataclasses import dataclass
@@ -18,29 +25,37 @@ from pathlib import Path
 from toulmin.core.atomic import digest, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import DIRECTORIES, FormatError, sections
-from toulmin.core.identifiers import ObjectId
+from toulmin.core.identifiers import ObjectId, ObjectKind
 from toulmin.core.project_proposals import (
+    INTAKE,
     OBJECT_KINDS,
     OUTCOME_SUFFIX,
     PROPOSALS,
+    REVIEW,
     RULING,
+    IntakeRecommendation,
     Outcome,
+    ReviewRequest,
     RulingProposal,
     proposal_kind,
     render_outcome,
+    validate_intake_recommendation,
     validate_outcome,
+    validate_review_request,
     validate_ruling_proposal,
 )
 from toulmin.core.repository import Repository
+from toulmin.core.review import INTAKE_FILE
 from toulmin.core.schema import utc_text
 from toulmin.protocols.intake import create_object
+from toulmin.protocols.review_intake import IntakeResult, OutputState, intake_review, output_state
 from toulmin.protocols.ruling import RulingResult, apply_ruling
 
 
 @dataclass(frozen=True)
 class Pending:
     path: str  # root-relative proposal file
-    kind: str  # claim … spec, or ruling
+    kind: str  # claim … spec, ruling, intake or review
     interrupted: bool  # an ``applying`` outcome exists
 
 
@@ -64,6 +79,16 @@ class Preview:
     change: RulingResult | None = None
     interrupted: bool = False
     recovered: str | None = None  # object or ruling an interrupted application produced
+    intake: "IntakePreview | None" = None
+    review: ReviewRequest | None = None
+    runs: tuple[str, ...] = ()  # Runs an interrupted review round archived
+
+
+@dataclass(frozen=True)
+class IntakePreview:
+    recommendation: IntakeRecommendation
+    state: OutputState
+    remaining: tuple[str, ...]  # draft labels without an outcome, in output order
 
 
 def outcome_path(relative: str) -> str:
@@ -91,8 +116,7 @@ def inventory(root: Path, project: str) -> Inventory:
     if not folder.exists() and not folder.is_symlink():
         return Inventory((), (), ())
     repository.path(_folder(project), "directory")
-    objects: list[Pending] = []
-    rulings: list[Pending] = []
+    groups: dict[str, list[Pending]] = {INTAKE: [], "object": [], RULING: [], REVIEW: []}
     unrecognized: list[str] = []
     errors: list[str] = []
     for entry in sorted(folder.iterdir()):
@@ -113,8 +137,11 @@ def inventory(root: Path, project: str) -> Inventory:
         if outcome is not None and outcome.disposition != "applying":
             continue
         item = Pending(relative, kind, outcome is not None)
-        (rulings if kind == RULING else objects).append(item)
-    return Inventory(tuple(objects + rulings), tuple(unrecognized), tuple(errors))
+        groups[kind if kind in groups else "object"].append(item)
+    # Loop order: intake creates Objections, objects and rulings answer them, and a new review
+    # round comes last, after the revisions it should see.
+    ordered = tuple(item for group in groups.values() for item in group)
+    return Inventory(ordered, tuple(unrecognized), tuple(errors))
 
 
 def _resolve_decision(repository: Repository, project: str, value: str | None) -> str | None:
@@ -186,6 +213,17 @@ def preview(root: Path, project: str, relative: str) -> Preview:
     if outcome is not None and outcome.disposition != "applying":
         return Preview(relative, kind, sha, text, (f"already {outcome.disposition}",), None)
     interrupted = outcome is not None
+    if kind == INTAKE:
+        return _intake_preview(root, project, relative, sha, text, raw, interrupted)
+    if kind == REVIEW:
+        runs = _runs_since(repository, project, outcome.at) if outcome is not None else ()
+        try:
+            request = validate_review_request(decode(raw, relative))
+        except (OSError, ValueError) as error:
+            return Preview(relative, kind, sha, text, (str(error),), None, interrupted=interrupted,
+                           runs=runs)  # fmt: skip
+        return Preview(relative, kind, sha, text, (), None, interrupted=interrupted,
+                       review=request, runs=runs)  # fmt: skip
     if kind != RULING:
         recovered = None
         if outcome is not None:
@@ -265,6 +303,144 @@ def preview(root: Path, project: str, relative: str) -> Preview:
     )
 
 
+def _intake_preview(
+    root: Path, project: str, relative: str, sha: str, text: str, raw: bytes, interrupted: bool
+) -> Preview:
+    def fail(problem: str) -> Preview:
+        return Preview(relative, INTAKE, sha, text, (problem,), None, interrupted=interrupted)
+
+    try:
+        recommendation = validate_intake_recommendation(decode(raw, relative))
+        state = output_state(root, project, recommendation.output)
+    except (OSError, ValueError) as error:
+        return fail(str(error))
+    given = {item.label: item for item in recommendation.items}
+    unknown = sorted(set(given) - set(state.drafts))
+    if unknown:
+        return fail(f"{recommendation.output}: {unknown[0]}: no such draft label")
+    remaining = tuple(label for label in state.drafts if label not in state.recorded)
+    missing = [label for label in remaining if label not in given]
+    if missing:
+        return fail(
+            f"recommendations: no recommendation for {', '.join(missing)}; cover every label"
+        )
+    take, reject, partly = choices(recommendation, remaining)
+    try:
+        if remaining:
+            intake_review(root, project, recommendation.output, "preview", False, take, reject,
+                          partly, preview=True)  # fmt: skip
+    except (OSError, ValueError) as error:
+        return fail(str(error))
+    target = f"{state.run}: {recommendation.output}"
+    return Preview(relative, INTAKE, sha, text, (), target, interrupted=interrupted,
+                   intake=IntakePreview(recommendation, state, remaining))  # fmt: skip
+
+
+def choices(
+    recommendation: IntakeRecommendation, labels: tuple[str, ...]
+) -> tuple[dict[str, str | None], dict[str, str], dict[str, str]]:
+    """The recommended outcomes for ``labels`` in intake_review's take/reject/partly form."""
+    take: dict[str, str | None] = {}
+    reject: dict[str, str] = {}
+    partly: dict[str, str] = {}
+    for item in recommendation.items:
+        if item.label not in labels:
+            continue
+        if item.outcome == "take":
+            take[item.label] = item.severity
+        elif item.outcome == "reject":
+            reject[item.label] = item.reason
+        else:
+            assert item.object is not None
+            partly[item.label] = item.object
+    return take, reject, partly
+
+
+def record_intake(
+    root: Path,
+    project: str,
+    relative: str,
+    actor: str,
+    sha256: str,
+    take: dict[str, str | None],
+    reject: dict[str, str],
+    partly: dict[str, str],
+    approval_text: str,
+) -> tuple[IntakeResult | None, Outcome | None]:
+    """Record the researcher's chosen outcomes; the recommendation is applied once none remain.
+
+    The choices are the researcher's, label by label; they may differ from the recommendation.
+    """
+    if not actor.strip():
+        raise FormatError("actor: expected nonempty string")
+    current = preview(root, project, relative)
+    if current.sha256 != sha256:
+        raise FormatError(f"{relative}: changed since the preview; nothing written")
+    if current.problems or current.intake is None:
+        raise FormatError(f"{relative}: {(current.problems or ('not an intake item',))[0]}")
+    output = current.intake.recommendation.output
+    result = None
+    if take or reject or partly:
+        result = intake_review(root, project, output, actor, True, take, reject, partly)
+    state = output_state(root, project, output)
+    if any(label not in state.recorded for label in state.drafts):
+        return result, None
+    record = (Path(output).parent / INTAKE_FILE).as_posix()
+    done = Outcome(relative, sha256, "applied", actor, utc_text(datetime.now(UTC)),
+                   approval_text, None, record)  # fmt: skip
+    _write_outcome(Repository(root), relative, done, replace=False)
+    return result, done
+
+
+def _runs_since(repository: Repository, project: str, since: str) -> tuple[str, ...]:
+    """Runs archived at or after an interrupted review round's marker."""
+    directory = repository.path(f"projects/{project}/{DIRECTORIES[ObjectKind.RUN]}", "directory")
+    found = []
+    for path in sorted(directory.glob("R-*.md")):
+        document = decode(path.read_bytes(), str(path))
+        if str(document.header.get("created", "")) >= since:
+            found.append(str(document.header["id"]))
+    return tuple(sorted(found, key=lambda run: int(run[2:])))
+
+
+def begin_review(
+    root: Path, project: str, relative: str, actor: str, sha256: str, approval_text: str
+) -> Outcome:
+    """Write the ``applying`` marker before any session starts; refuse an interrupted round."""
+    if not actor.strip():
+        raise FormatError("actor: expected nonempty string")
+    current = preview(root, project, relative)
+    if current.sha256 != sha256:
+        raise FormatError(f"{relative}: changed since the preview; nothing started")
+    if current.problems or current.review is None:
+        raise FormatError(f"{relative}: {(current.problems or ('not a review request',))[0]}")
+    if current.interrupted:
+        raise FormatError(f"{relative}: an interrupted round is recorded, never started again")
+    marker = Outcome(relative, sha256, "applying", actor, utc_text(datetime.now(UTC)),
+                     approval_text, None, None)  # fmt: skip
+    _write_outcome(Repository(root), relative, marker, replace=False)
+    return marker
+
+
+def finish_review(root: Path, project: str, marker: Outcome, result: str) -> Outcome:
+    """Record what the round produced (or, after an interruption, the Runs it archived)."""
+    done = Outcome(marker.proposal, marker.proposal_sha256, "applied", marker.actor, marker.at,
+                   marker.approval_text, None, result)  # fmt: skip
+    _write_outcome(Repository(root), marker.proposal, done, replace=True)
+    return done
+
+
+def interrupted_marker(root: Path, project: str, relative: str) -> Outcome:
+    """The ``applying`` marker of an interrupted proposal."""
+    repository = Repository(root)
+    repository.project(project)
+    _load(repository, project, relative)
+    outcome = _outcome(repository, relative)
+    if outcome is None or outcome.disposition != "applying":
+        raise FormatError(f"{relative}: no interrupted application to record")
+    return outcome
+
+
 def _write_outcome(
     repository: Repository, relative: str, outcome: Outcome, *, replace: bool
 ) -> None:
@@ -283,6 +459,8 @@ def apply(
         raise FormatError(f"{relative}: changed since the preview; nothing written")
     if current.problems:
         raise FormatError(f"{relative}: {current.problems[0]}")
+    if current.kind in {INTAKE, REVIEW}:
+        raise FormatError(f"{relative}: {current.kind} proposals use their own apply steps")
     now = utc_text(datetime.now(UTC))
     marker = Outcome(relative, sha256, "applying", actor, now, approval_text, None, None)
     # The marker is written exclusively first: a second decider fails here, and a crash after

@@ -22,7 +22,9 @@ from toulmin.core.atomic import digest
 from toulmin.core.codec import decode
 from toulmin.core.handoffs import validate_handoff
 from toulmin.core.identifiers import validate_project_name
+from toulmin.core.project_proposals import Recommendation
 from toulmin.core.repository import Repository
+from toulmin.core.schema import SEVERITIES
 from toulmin.core.workspace import CHARTER_FILE
 from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
@@ -35,9 +37,20 @@ LABEL = {
     "handoff": "Workspace handoff",
     "object": "Object draft",
     "ruling": "Ruling proposal",
+    "intake": "Intake recommendation",
+    "review": "Review round request",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
+# Per draft label of an intake recommendation (H4).
+LABEL_WORDS = {
+    "a": "as recommended",
+    "t": "take",
+    "o": "other severity",
+    "r": "reject",
+    "s": "skip",
+    "q": "quit",
+}
 
 
 @dataclass(frozen=True)
@@ -83,7 +96,7 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
         except (OSError, ValueError) as error:
             ignored.append(str(error))
             continue
-        kinds = {"ruling": "ruling"}
+        kinds = {"ruling": "ruling", "intake": "intake", "review": "review"}
         items += [Item(kinds.get(item.kind, "object"), item.path, name) for item in found.items]
         ignored += [
             f"{path}: not named KIND-YYYYMMDDTHHMMSSZ[-name].md" for path in found.unrecognized
@@ -143,21 +156,36 @@ def _interactive() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def _ask(choices: str) -> str:
-    text = " / ".join(f"[{letter}]{WORDS[letter][1:]}" for letter in choices)
+def _ask(choices: str, words: dict[str, str] = WORDS) -> str:
+    text = " / ".join(f"[{letter}]{words[letter][1:]}" for letter in choices)
     while True:
         answer = str(typer.prompt(text, default="s")).strip().lower()
         letter = answer[:1]
-        if letter in choices and answer in {letter, WORDS[letter]}:
+        if letter in choices and answer in {letter, words[letter]}:
             return letter
-        typer.echo("Choose one of: " + ", ".join(WORDS[letter] for letter in choices))
+        typer.echo("Choose one of: " + ", ".join(words[letter] for letter in choices))
 
 
-def _reason() -> str:
+def _reason(default: str | None = None) -> str:
     while True:
-        reason = str(typer.prompt("Reason for rejecting (it is recorded)")).strip()
+        reason = str(typer.prompt("Reason for rejecting (it is recorded)", default=default)).strip()
         if reason:
             return reason
+
+
+def _severity() -> str:
+    while True:
+        answer = str(typer.prompt("Severity (fatal / major / minor)")).strip().lower()
+        if answer in SEVERITIES:
+            return answer
+
+
+def _advice(advice: Recommendation) -> str:
+    if advice.outcome == "take":
+        return "take" + (f" as {advice.severity}" if advice.severity else "")
+    if advice.outcome == "partly":
+        return f"partly, as {advice.object} (written by hand)"
+    return "reject"
 
 
 @dataclass
@@ -180,6 +208,8 @@ class Run:
             "handoff": self._handoff,
             "object": self._proposal,
             "ruling": self._proposal,
+            "intake": self._intake,
+            "review": self._review,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -313,6 +343,170 @@ class Run:
             )
             typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
             self.rejected += 1
+        return choice != "q"
+
+    def _reject_proposal(self, item: Item, shown: project_proposals.Preview) -> None:
+        assert item.project is not None
+        reason = _reason()
+        project_proposals.reject(
+            self.root, item.project, item.path, self.actor, reason, shown.sha256
+        )
+        typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
+        self.rejected += 1
+
+    def _intake(self, item: Item) -> bool:
+        assert item.project is not None
+        shown = project_proposals.preview(self.root, item.project, item.path)
+        if shown.problems and shown.problems[0].startswith("already "):
+            typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
+            return True
+        typer.echo(f"Project: {item.project}")
+        if shown.intake is None:
+            typer.echo("")
+            typer.echo(shown.text.rstrip("\n"))
+            typer.echo("")
+            for problem in shown.problems:
+                typer.echo(f"Problem: {problem}")
+            choice = self._choose("rsq")
+            if choice == "r":
+                self._reject_proposal(item, shown)
+            return choice != "q"
+        intake = shown.intake
+        state = intake.state
+        recommended = {entry.label: entry for entry in intake.recommendation.items}
+        typer.echo(f"Review output: {intake.recommendation.output} ({state.run})")
+        for label, entry in state.recorded.items():
+            typer.echo(f"  {label}: already {entry['outcome']}")
+        if not intake.remaining:
+            typer.echo("Every draft label already has an outcome in intake.md.")
+            choice = self._choose("asq")
+            if choice == "a":
+                self._record_intake(item, shown, {}, {}, {})
+            return choice != "q"
+        typer.echo(
+            "Decide each draft label; the recommendation is the agent's, the choice is yours. "
+            "Choices are recorded when this output's walk ends; quit records nothing for it."
+        )
+        take: dict[str, str | None] = {}
+        reject: dict[str, str] = {}
+        partly: dict[str, str] = {}
+        for index, label in enumerate(intake.remaining, 1):
+            draft, advice = state.drafts[label], recommended[label]
+            typer.echo(f"\n  ({index}/{len(intake.remaining)}) {label} -> {draft.target} "
+                       f"({draft.severity}): {draft.content}")  # fmt: skip
+            typer.echo(f"    Grounds: {draft.grounds}")
+            if draft.uncertainty:
+                typer.echo(f"    Uncertainty: {draft.uncertainty}")
+            typer.echo(f"    Recommended: {_advice(advice)} - {advice.reason}")
+            choice = _ask("atorsq", LABEL_WORDS)
+            if choice == "q":
+                typer.echo("Nothing recorded for this output; it stays pending.")
+                return False
+            if choice == "s":
+                continue
+            if choice == "a":
+                if advice.outcome == "take":
+                    take[label] = advice.severity
+                elif advice.outcome == "reject":
+                    reject[label] = advice.reason
+                else:
+                    assert advice.object is not None
+                    partly[label] = advice.object
+            elif choice == "t":
+                take[label] = None
+            elif choice == "o":
+                take[label] = _severity()
+            else:
+                default = advice.reason if advice.outcome == "reject" else None
+                reject[label] = _reason(default)
+        if not (take or reject or partly):
+            typer.echo("Nothing chosen; the recommendation stays pending.")
+            self.skipped += 1
+            return True
+        self._record_intake(item, shown, take, reject, partly)
+        return True
+
+    def _record_intake(
+        self,
+        item: Item,
+        shown: project_proposals.Preview,
+        take: dict[str, str | None],
+        reject: dict[str, str],
+        partly: dict[str, str],
+    ) -> None:
+        assert item.project is not None
+        result, done = project_proposals.record_intake(
+            self.root, item.project, item.path, self.actor, shown.sha256, take, reject, partly,
+            "toulmin decide: a",
+        )  # fmt: skip
+        if result is not None:
+            for line in result.lines:
+                target = f" as {line.object_id}" if line.object_id else ""
+                typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
+            record = result.record.relative_to(Repository(self.root).root).as_posix()
+            typer.echo(f"Record: {record}")
+        if done is not None:
+            typer.echo(
+                f"Every label has an outcome; outcome: {project_proposals.outcome_path(item.path)}"
+            )
+        else:
+            typer.echo("Labels you skipped stay undecided; the recommendation stays pending.")
+        self.applied += 1
+
+    def _review(self, item: Item) -> bool:
+        from toulmin.adapters.review import execute_round, prepare_round
+
+        assert item.project is not None
+        shown = project_proposals.preview(self.root, item.project, item.path)
+        if shown.problems and shown.problems[0].startswith("already "):
+            typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
+            return True
+        typer.echo(f"Project: {item.project}")
+        typer.echo("")
+        typer.echo(shown.text.rstrip("\n"))
+        typer.echo("")
+        if shown.interrupted:
+            typer.echo("This round started earlier and did not finish; it is never started again.")
+            typer.echo("Runs archived since it started: " + (", ".join(shown.runs) or "none"))
+            typer.echo("Apply records them as this request's result; no session starts.")
+            choice = self._choose("asq")
+            if choice == "a":
+                marker = project_proposals.interrupted_marker(self.root, item.project, item.path)
+                runs = ", ".join(shown.runs) or "none"
+                project_proposals.finish_review(
+                    self.root, item.project, marker, f"interrupted; Runs archived: {runs}"
+                )
+                typer.echo(f"Recorded; outcome: {project_proposals.outcome_path(item.path)}")
+                self.applied += 1
+            return choice != "q"
+        problems = list(shown.problems)
+        request = shown.review
+        if request is not None and not problems:
+            try:
+                prepare_round(self.root, item.project, request.personas, request.models,
+                              request.claims, typer.echo)  # fmt: skip
+            except (OSError, ValueError) as error:
+                problems.append(str(error))
+        for problem in problems:
+            typer.echo(f"Problem: {problem}")
+        if not problems:
+            typer.echo("Apply starts these sessions now in this terminal (uses quota).")
+        choice = self._choose("rsq" if problems else "arsq")
+        if choice == "a":
+            assert request is not None
+            # Plan again so a changed configuration fails before the marker is written.
+            planned = prepare_round(self.root, item.project, request.personas, request.models,
+                                    request.claims, lambda _: None)  # fmt: skip
+            marker = project_proposals.begin_review(
+                self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
+            )
+            result = execute_round(planned, self.actor, typer.echo)
+            project_proposals.finish_review(self.root, item.project, marker, result.summary())
+            typer.echo(f"Round: {result.summary()}")
+            typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
+            self.applied += 1
+        elif choice == "r":
+            self._reject_proposal(item, shown)
         return choice != "q"
 
     def _project_handoff(self, item: Item) -> bool:

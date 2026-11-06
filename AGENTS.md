@@ -60,6 +60,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-05: The researcher accepted H1's D1–D6 (including D4: stage proposals applied through `toulmin decide` with a Decision) and authorized H2: read-only G1/G2 readiness in `status`. H2 is implemented; H6, H3–H5 and C5 require separate authorization.
 2026-11-05: The researcher authorized H6 ("continue H6"): project research loop guidance (state card GATES, project context loop, workspace AGENTS.md "Project sessions"). H6 is implemented; H3–H5 and C5 require separate authorization.
 2026-11-05: The researcher authorized H3 ("可以，开始 H3"): object drafts and ruling proposals under projects/NAME/runs/proposals/, decided in `toulmin decide` with outcome records beside them. H3 is implemented; H4, H5 and C5 require separate authorization.
+2026-11-06: The researcher authorized H4 ("按你的建议，开始 H4"): review-round requests and intake recommendations decided in `toulmin decide` (rounds start only on the researcher's apply). H4 is implemented; H5 and C5 require separate authorization.
 
 ## Project goals and scope
 

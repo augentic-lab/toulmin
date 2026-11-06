@@ -466,7 +466,7 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     for own in ("draft claim scheduling --root", "status scheduling --root", "review scheduling"):
         assert f"{prefix} {own}" in context, own
     assert "--dry-run" in context and "Never start a round yourself" in context
-    assert "`toulmin review PROJECT ... --confirm`" in context
+    assert "kind: review-request" in context and "kind: intake-recommendation" in context  # H4
     assert "runs/proposals/" in context and "`toulmin decide`" in context  # H3
     assert "kind: ruling-proposal" in context and "Never create objects" in context
     assert "never edit PROJECT.md stage or status fields yourself" in context

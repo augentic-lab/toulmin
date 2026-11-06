@@ -1,8 +1,9 @@
 """L1: project proposals awaiting the researcher's decision (H3).
 
 An agent puts each item it considers ready under ``projects/NAME/runs/proposals/``: an object
-draft (``claim-…``, ``evidence-…`` and so on, in the ordinary draft format) or a ruling
-proposal (``ruling-…``). The researcher's decision is recorded beside it as an outcome
+draft (``claim-…``, ``evidence-…`` and so on, in the ordinary draft format), a ruling
+proposal (``ruling-…``), and since H4 an intake recommendation (``intake-…``) or a review-round
+request (``review-…``). The researcher's decision is recorded beside it as an outcome
 record (``<stem>.outcome.md``); proposals are never edited, moved or deleted. Pure models and
 validation only: no file access here.
 """
@@ -14,7 +15,7 @@ from typing import Any
 from toulmin.core.documents import Document, sections, validate_values
 from toulmin.core.identifiers import ObjectKind
 from toulmin.core.render import header
-from toulmin.core.schema import mapping, text, timestamp
+from toulmin.core.schema import SEVERITIES, mapping, text, timestamp
 
 PROPOSALS = "runs/proposals"
 OUTCOME_SUFFIX = ".outcome.md"
@@ -30,12 +31,17 @@ OBJECT_KINDS = {
     )
 }
 RULING = "ruling"
+INTAKE = "intake"  # H4
+REVIEW = "review"  # H4
 FILENAME = re.compile(
-    rf"({'|'.join([*OBJECT_KINDS, RULING])})-[0-9]{{8}}T[0-9]{{6}}Z"
+    rf"({'|'.join([*OBJECT_KINDS, RULING, INTAKE, REVIEW])})-[0-9]{{8}}T[0-9]{{6}}Z"
     r"(?:-[A-Za-z0-9][A-Za-z0-9_-]{0,63})?\.md"
 )
 RULING_FIELDS = {"schema_version", "kind", "object", "status", "decision", "links"}
 RULING_SECTIONS = {"Response", "Ruling", "Invalidation", "Rationale"}
+REVIEW_FIELDS = {"schema_version", "kind", "personas", "models", "claims"}
+INTAKE_FIELDS = {"schema_version", "kind", "output", "recommendations"}
+INTAKE_OUTCOMES = ("take", "reject", "partly")
 OUTCOME_ORDER = (
     "schema_version",
     "kind",
@@ -168,3 +174,94 @@ def validate_outcome(document: Document) -> Outcome:
     return Outcome(
         proposal, h["proposal_sha256"], h["disposition"], actor, h["at"], approval, reason, result
     )
+
+
+def _version(document: Document, h: dict[str, Any], kind: str) -> None:
+    if type(h["schema_version"]) is not int or h["schema_version"] != 1:
+        document.fail("schema_version", "expected integer version 1")
+    if h["kind"] != kind:
+        document.fail("kind", f"expected {kind}")
+
+
+def _names(document: Document, value: Any, field: str) -> list[str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list) or not value:
+        document.fail(field, "expected a nonempty list, or leave the field out")
+    names = [text(document, item, f"{field}[{i}]") for i, item in enumerate(value)]
+    if len(set(names)) != len(names):
+        document.fail(field, "duplicate entry")
+    return names
+
+
+@dataclass(frozen=True)
+class ReviewRequest:
+    """A review round the agent asks for; only the researcher's apply starts it (D3)."""
+
+    personas: list[str] | None  # None: the defaults in tools/models.toml
+    models: list[str] | None
+    claims: list[str] | None  # None: every current Claim the persona's manifest gives
+    why: str  # "## Why now", shown to the researcher
+
+
+def validate_review_request(document: Document) -> ReviewRequest:
+    validate_values(document)
+    h = mapping(document, document.header, "", {"schema_version", "kind"},
+                REVIEW_FIELDS - {"schema_version", "kind"})  # fmt: skip
+    _version(document, h, "review-request")
+    personas = _names(document, h.get("personas"), "personas")
+    models = _names(document, h.get("models"), "models")
+    claims = _names(document, h.get("claims"), "claims")
+    why = sections(document).get("Why now", "").strip()
+    if not why:
+        document.fail("body.Why now", "explain why this round is needed now")
+    return ReviewRequest(personas, models, claims, why)
+
+
+@dataclass(frozen=True)
+class Recommendation:
+    label: str
+    outcome: str  # take, reject or partly
+    severity: str | None  # take only: a severity other than the reviewer's
+    reason: str  # the agent's grounds; for reject, the proposed recorded reason
+    object: str | None  # partly only: the Objection written by hand from this draft
+
+
+@dataclass(frozen=True)
+class IntakeRecommendation:
+    """The agent's recommendation for every draft label of one raw review output."""
+
+    output: str  # root-relative raw review output
+    items: tuple[Recommendation, ...]
+
+
+def validate_intake_recommendation(document: Document) -> IntakeRecommendation:
+    validate_values(document)
+    h = mapping(document, document.header, "", INTAKE_FIELDS)
+    _version(document, h, "intake-recommendation")
+    output = text(document, h["output"], "output")
+    raw = h["recommendations"]
+    if not isinstance(raw, list) or not raw:
+        document.fail("recommendations", "expected a nonempty list")
+    items: list[Recommendation] = []
+    for index, value in enumerate(raw):
+        field = f"recommendations[{index}]"
+        entry = mapping(document, value, field, {"label", "outcome", "reason"},
+                        {"severity", "object"})  # fmt: skip
+        label = text(document, entry["label"], f"{field}.label")
+        outcome = entry["outcome"]
+        if outcome not in INTAKE_OUTCOMES:
+            document.fail(f"{field}.outcome", f"expected one of {', '.join(INTAKE_OUTCOMES)}")
+        reason = text(document, entry["reason"], f"{field}.reason")
+        severity = entry.get("severity")
+        if severity is not None and (outcome != "take" or severity not in SEVERITIES):
+            document.fail(f"{field}.severity", "only take may set fatal, major or minor")
+        target = entry.get("object")
+        if (target is not None) != (outcome == "partly"):
+            document.fail(f"{field}.object", "partly names the Objection written by hand")
+        if target is not None:
+            text(document, target, f"{field}.object")
+        if any(item.label == label for item in items):
+            document.fail(f"{field}.label", f"{label} recommended twice")
+        items.append(Recommendation(label, outcome, severity, reason, target))
+    return IntakeRecommendation(output, tuple(items))

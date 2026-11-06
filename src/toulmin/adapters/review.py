@@ -8,6 +8,7 @@ the project creation lock refuses rather than waits.
 import shutil
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 
 from toulmin.adapters.base import Session, stop_all
@@ -43,6 +44,22 @@ def run_round(
     echo: Echo,
 ) -> int:
     """Return the number of failed sessions. Validation errors raise before any session."""
+    config, tasks = _plan_round(root, project, personas, models, claims)
+    _show(config, tasks, echo)
+    if not _authorised(dry_run, confirmed, "review"):
+        return 0
+    return sum(
+        item.status == "failed" for item in _execute(root, project, config, tasks, actor, echo)
+    )
+
+
+def _plan_round(
+    root: Path,
+    project: str,
+    personas: list[str] | None,
+    models: list[str] | None,
+    claims: list[str] | None,
+) -> tuple[ReviewConfig, tuple[ReviewTask, ...]]:
     config = load_config(root)
     chosen = _models(config, models)
     tasks = plan_review(
@@ -54,12 +71,72 @@ def run_round(
         claims,
     )
     _preflight(config, [task.model for task in tasks])
+    return config, tasks
+
+
+@dataclass(frozen=True)
+class PlannedRound:
+    """A review round planned and preflighted completely; nothing has started (H4)."""
+
+    root: Path
+    project: str
+    config: ReviewConfig
+    tasks: tuple[ReviewTask, ...]
+    synthesizer: tuple[str, str]  # model name and rotation reason
+
+
+@dataclass(frozen=True)
+class RoundResult:
+    reviews: tuple[ArchivedReview, ...]
+    synthesis: ArchivedReview | None
+    note: str  # why no synthesis ran, when none did
+
+    def summary(self) -> str:
+        reviews = ", ".join(f"{item.run} {item.status}" for item in self.reviews)
+        if self.synthesis is not None:
+            tail = f"synthesis {self.synthesis.run} {self.synthesis.status}"
+        else:
+            tail = self.note
+        return f"reviews {reviews or 'none'}; {tail}"
+
+
+def prepare_round(
+    root: Path,
+    project: str,
+    personas: list[str] | None,
+    models: list[str] | None,
+    claims: list[str] | None,
+    echo: Echo,
+) -> PlannedRound:
+    """Plan, preflight and show a decide review round: reviews, then synthesis (D3)."""
+    config, tasks = _plan_round(root, project, personas, models, claims)
+    name, reason = choose_model(root, project, list(config.models), None)
+    _models(config, [name])
+    _preflight(config, [name])
     _show(config, tasks, echo)
-    if not _authorised(dry_run, confirmed, "review"):
-        return 0
-    return sum(
-        item.status == "failed" for item in _execute(root, project, config, tasks, actor, echo)
-    )
+    echo(f"  then synthesis by {name} ({reason}) when two or more outputs complete with drafts")
+    return PlannedRound(root, project, config, tasks, (name, reason))
+
+
+def execute_round(planned: PlannedRound, actor: str, echo: Echo) -> RoundResult:
+    """Start the planned sessions, then synthesize the usable outputs; return what ran."""
+    root, project, config = planned.root, planned.project, planned.config
+    reviews = _execute(root, project, config, planned.tasks, actor, echo)
+    reviews.sort(key=lambda item: int(item.run[2:]))
+    usable = [item.run for item in reviews if item.status == "completed" and item.drafts]
+    if len(usable) < 2:
+        note = f"synthesis skipped: {len(usable)} usable outputs; at least two are needed"
+        echo(note[0].upper() + note[1:])
+        return RoundResult(tuple(reviews), None, note)
+    name, reason = planned.synthesizer
+    try:
+        task = plan_synthesis(root, project, round_sources(root, project, usable), name, reason)
+    except (OSError, ValueError) as error:
+        note = f"synthesis not run: {error}"
+        echo(note[0].upper() + note[1:])
+        return RoundResult(tuple(reviews), None, note)
+    synthesis = _execute(root, project, config, (task,), actor, echo)
+    return RoundResult(tuple(reviews), synthesis[0], "")
 
 
 def run_synthesis(

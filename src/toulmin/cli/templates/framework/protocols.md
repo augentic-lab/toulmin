@@ -594,3 +594,34 @@ nothing distinguished a ready draft from a scratch file.
   project contexts and the workspace AGENTS.md tell the agent where to put ready items.
 - Compatibility: additive. No existing file changes meaning; runs/proposals/ is new. `new`
   and `rule --confirm` still work as before. No migration.
+
+### H4 review rounds and intake in decide (L1 additive, L2, L3)
+
+Design: `~/notes/toulmin/project-research-loop-design.md` (H-A items 2 and 3; D3). Before H4
+the researcher typed `review … --confirm`, `synthesize` and `intake --take/--reject` by hand
+from the agent's suggestions.
+- Review request `review-YYYYMMDDTHHMMSSZ[-name].md` in runs/proposals/: header
+  `schema_version: 1`, `kind: review-request`, optional nonempty `personas`, `models` and
+  `claims` lists (defaults as for `review`); body `## Why now` (required). Decide previews the
+  `review --dry-run` plan (sessions, cap, inputs) plus the rotated synthesizer; only the
+  researcher's apply starts it (D3). It plans and preflights again, writes the `applying`
+  marker, runs the reviews, then synthesizes when two or more outputs completed with drafts.
+  The outcome's `result` lists each Run and status (or why synthesis was skipped). An
+  interrupted round is never started again: apply records the Runs archived since the marker.
+- Intake recommendation `intake-YYYYMMDDTHHMMSSZ[-name].md`: header `schema_version: 1`,
+  `kind: intake-recommendation`, `output` (a review Run's raw output, never a synthesis) and
+  `recommendations`, one entry per draft label: `label`, `outcome` (take, reject, partly),
+  `reason` (the agent's grounds; for reject the proposed recorded reason), `severity` (take
+  only, to change it) and `object` (partly only, the hand-written Objection). Every label
+  without an outcome in intake.md must be covered. Decide asks per label: as recommended,
+  take, take with other severity, reject (reason; the proposed one is the default), skip or
+  quit; the choices are recorded together through `intake_review` when the output's walk ends
+  (quit records nothing for it). The recommendation is applied (`result`: the intake.md path)
+  once every label has an outcome; skipped labels keep it pending.
+- L2: `intake_review` gains a write-nothing preview; `output_state` reads an output's drafts
+  and recorded outcomes; `project_proposals` validates both kinds and brackets review rounds
+  with `begin_review`/`finish_review`. Inventory order: intake recommendations, object drafts,
+  rulings, review requests (a new round after the revisions it should see).
+- L3: `adapters/review` splits a decide round into `prepare_round` (plan, preflight, show) and
+  `execute_round`; `review` and `synthesize` behave as before.
+- Compatibility: additive; existing files and commands unchanged; no migration.

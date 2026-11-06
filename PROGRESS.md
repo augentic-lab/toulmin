@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-06 — H4: review-round requests and intake recommendations in decide
+
+- Decision: the researcher authorized H4 ("按你的建议，开始 H4") under accepted D3 (review rounds started only from decide; synthesis follows when two or more outputs complete).
+- L1 (additive, core/project_proposals.py): proposal kinds `review` and `intake`; `review-request` (optional personas/models/claims, `## Why now`) and `intake-recommendation` (output, one entry per draft label: label, outcome take/reject/partly, reason, severity for take, object for partly).
+- L2 (reason in docs/protocols.md "H4"): `intake_review(preview=True)` and `output_state`; `project_proposals` validates both kinds (every undecided label covered, labels exist, choices checked by the intake preview), `record_intake` (records the researcher's per-label choices; applied once every label has an outcome), `begin_review`/`finish_review` around a round, and Runs archived since an interrupted round's marker. Inventory order: intake, object drafts, rulings, review requests.
+- L3: `adapters/review.prepare_round`/`execute_round` (plan and preflight before the marker; reviews, then synthesis of usable outputs); `review`/`synthesize` unchanged. Decide shows the dry-run plan and synthesizer, starts the round only on `a`, and records an interrupted round without starting it again; intake asks per label (as recommended / take / other severity / reject with the proposed reason as default / skip / quit; quit records nothing for that output). Project context steps 4–5 and the workspace AGENTS.md "Project sessions" describe both proposals; released.json regenerated (AGENTS.md 16 digests). README, packaged protocols.md and framework CHANGELOG updated. Compatibility: additive; no migration.
+- Tests: `tests/cli/test_review_proposals.py` (7: round starts only on apply then synthesizes, invalid/unplannable requests start nothing, interrupted round recorded without sessions, per-label intake with severity override and default reason, skip/quit semantics, coverage/unknown label/missing output refusals, inventory order) with fake claude/codex; `test_aoe_scopes` guidance assertions. No real model tool or AoE session run.
+- Checks: `uv run --locked pytest -q` 1303 passed (7m30s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Pending: researcher use (tests are not acceptance). Blockers: none. Next step: H5 (Brief and stage proposals in decide), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-05 — H3 follow-up: draft hints and reject prompt
 
 - Decision: after a simulated H3 run on a temporary workspace (agent proposals, two `decide` rounds in a pseudo-terminal; all outcomes as designed), the researcher approved fixing the two wording issues found ("按你的建议，先修这两处小问题").

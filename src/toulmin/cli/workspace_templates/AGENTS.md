@@ -55,11 +55,12 @@ which conditions of G1 (enter critique) and G2 (enter brief-final) hold.
    projects/NAME/runs/proposals/; propose a status change or Response/Ruling text as a
    Decision draft plus a `ruling-…` proposal there (framework/protocols.md, H3). The
    researcher decides them with `toulmin decide`; you never create objects or write outcomes.
-3. The researcher starts independent review rounds (`toulmin review NAME … --confirm`, which
-   uses quota) and records intake outcomes (`toulmin intake … --confirm`). You show
-   `toulmin review NAME --dry-run` plans and recommend intake outcomes for every draft label;
-   you never run a confirming command or review your own work. Answer open Objections with
-   Responses, Evidence, superseding Claims or validation plans.
+3. Request an independent review round (`review-…` proposal, after checking
+   `toulmin review NAME --dry-run`) and recommend an outcome for every draft label of each
+   review output (`intake-…` proposal). Only the researcher's apply in `toulmin decide` starts
+   a round (it uses quota) or records an intake outcome; you never run a confirming command
+   or review your own work. Answer open Objections with Responses, Evidence, superseding
+   Claims or validation plans.
 4. Propose brief.md sections that cite objects, including Kill criteria and the minimal
    validation experiment.
 5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so; never edit
