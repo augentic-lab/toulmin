@@ -1,9 +1,11 @@
 # Toulmin research workspace
 
 This repository is the researcher's shared research workspace: a common direction, exploration
-records, shared resource descriptions and, when confirmed, child projects. Read
-framework/principles.md, framework/workspace-formats.md, framework/formats.md and
-framework/protocols.md when the task needs their details. Decisions belong to the researcher.
+records, shared resource descriptions and, when confirmed, child projects. Decisions belong to
+the researcher. Start from your session context: a project session's guide.md and
+`toulmin draft` skeletons cover routine work. Open framework/principles.md,
+framework/workspace-formats.md, framework/formats.md or framework/protocols.md only for a
+question they leave open, and read only the section you need.
 
 ## Workspace and project scopes
 

@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-09 — R2 follow-up: workspace AGENTS.md points to the session context first
+
+- Decision: the researcher approved tightening the template's opening line ("按你的建议，改 AGENTS.md 那句") after R-sim showed the agent still read framework/formats.md and protocols.md once, probably prompted by "Read framework/… when the task needs their details".
+- Change (template text only): the workspace AGENTS.md opening now says to start from the session context (a project session's guide.md and `toulmin draft` skeletons cover routine work) and to open the framework files only for a question they leave open, one section at a time. released.json regenerated (19 AGENTS.md digests), so existing copies remain recognized. Framework CHANGELOG line. No format or behavior change.
+- Checks: `uv run --locked pytest -q` 1354 passed (7m57s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Not verified: whether a live agent now skips the framework read (needs another real session).
+- Session ID: unavailable.
+
 ## 2026-11-09 — R-sim: live agent simulation of R1/R2/R7; R7 cause corrected
 
 - Decision: the researcher kept framework/protocols.md unsplit for now and asked for a simulation ("按你的建议，先不拆，你直接进行一次模拟测试吧"). Run as an agent-run live trial on a fresh temporary workspace with a dedicated AoE profile (`toulmin-sim-r`); every approval was an operator fixture approval. Ledger and evidence: `~/notes/toulmin/r-sim-2026-11-09/`.

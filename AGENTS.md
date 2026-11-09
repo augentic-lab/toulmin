@@ -69,6 +69,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-09: R-006 (Codex rerun) timed out the same way; the cause was a stdin delivery bug for prompts over 64 KiB, not model speed. The researcher authorized W11 ("按你的建议，立即修复 W11"); it is implemented.
 2026-11-09: After the end-to-end test-toulmin-rdma trial, the researcher asked for a review (`~/notes/toulmin/rdma-trial-review.md`) and authorized R1, R2 and R7 ("按你的建议，先做 R1 + R2 和 R7"). R7 (new native sessions are awaited before context delivery; undelivered context is reported loudly), R1 (prefilled proposal drafts, batch rulings) and R2 (a compact guide.md in project contexts) are implemented with fake clients and temporary workbenches only. R3–R6, R8 and R9 require separate authorization.
 2026-11-09: The researcher kept framework/protocols.md unsplit and asked for a simulation ("按你的建议，先不拆，你直接进行一次模拟测试吧"). An agent-run live trial on a temporary workspace (`~/notes/toulmin/r-sim-2026-11-09/`) confirmed R1/R2 behavior and corrected R7's cause (the Codex folder-trust menu above blank rows); the readiness check now sees it.
+2026-11-09: The researcher approved the R2 follow-up ("按你的建议，改 AGENTS.md 那句"): the workspace AGENTS.md template now sends agents to the session context and guide.md before the framework files.
 
 ## Project goals and scope
 

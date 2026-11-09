@@ -153,3 +153,5 @@
 - R2 (L3 text, template): project contexts carry `guide.md`, a compact guide to the loop and
   the `toulmin draft` proposal commands; the workspace AGENTS.md project steps name them.
   Formats unchanged.
+- R2 follow-up (template text): the workspace AGENTS.md opening sends agents to the session
+  context (guide.md, `toulmin draft`) before the framework files. Formats unchanged.
