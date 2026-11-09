@@ -625,3 +625,6 @@ from the agent's suggestions.
 - L3: `adapters/review` splits a decide round into `prepare_round` (plan, preflight, show) and
   `execute_round`; `review` and `synthesize` behave as before.
 - Compatibility: additive; existing files and commands unchanged; no migration.
+- Follow-up (2026-11-09, after a simulated run): decide shows beside each label where completed
+  syntheses placed it (`synthesis_groups`, L2 read-only: group, kind, the other drafts, note),
+  and counts a recommendation with labels still undecided as "Partly recorded", not Applied.

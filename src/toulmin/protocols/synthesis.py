@@ -17,7 +17,7 @@ from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import ObjectId, ObjectKind
 from toulmin.core.repository import Repository
 from toulmin.core.review import parse_review
-from toulmin.core.synthesis import parse_points
+from toulmin.core.synthesis import parse_points, parse_synthesis
 from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.review import MODEL_NAME, OUTPUT_FILE, ReviewTask, build_prompt
 
@@ -72,6 +72,54 @@ def round_sources(root: Path, project: str, runs: list[str]) -> tuple[Source, ..
     if len(roles) > 1:
         raise FormatError("synthesis: do not mix cross-validation answers with reviews")
     return tuple(sources)
+
+
+def synthesis_groups(
+    root: Path, project: str, run: str
+) -> tuple[dict[str, tuple[str, ...]], tuple[str, ...]]:
+    """Where completed syntheses placed each label of ``run``; read-only display help (H4).
+
+    Returns label -> lines such as ``R-003 g1 agreement with R-002/x: note``, plus one problem
+    line per synthesis citing ``run`` that cannot be read.
+    """
+    repository = Repository(root)
+    folder = repository.path(f"projects/{project}/runs", "directory")
+    headers = {}
+    for path in sorted(folder.glob("R-*.md")):
+        headers[path.stem] = repository.load(project, ObjectId.parse(path.stem)).header
+    by_output = {header["output"]: run_id for run_id, header in headers.items()}
+    placed: dict[str, list[str]] = {}
+    problems: list[str] = []
+    for run_id, header in sorted(headers.items(), key=lambda item: int(item[0][2:])):
+        if header["role"] != SYNTHESIZER or header["status"] != "completed":
+            continue
+        sources = [
+            by_output[parent]
+            for value in header["input_files"]
+            if (parent := PurePosixPath(value).parent.as_posix()) in by_output
+            and PurePosixPath(value).name == OUTPUT_FILE
+        ]
+        if run not in sources:
+            continue
+        try:
+            known = [
+                item for source in round_sources(root, project, sources) for item in source.items
+            ]
+            output = f"{header['output']}/{OUTPUT_FILE}"
+            raw = repository.path(output, "file").read_text(encoding="utf-8")
+            groups = parse_synthesis(raw, output, known)
+        except (OSError, ValueError) as error:
+            problems.append(f"{run_id}: synthesis not shown: {error}")
+            continue
+        for group in groups:
+            for item in group.items:
+                if item.split("/", 1)[0] != run:
+                    continue
+                others = [entry for entry in group.items if entry != item]
+                joined = f" with {', '.join(others)}" if others else ""
+                line = f"{run_id} {group.group} {group.kind}{joined}: {group.note}"
+                placed.setdefault(item.split("/", 1)[1], []).append(line)
+    return {label: tuple(lines) for label, lines in placed.items()}, tuple(problems)
 
 
 def choose_model(

@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-09 — H4 follow-up: synthesis groups beside labels; partial count
+
+- Decision: after a simulated H4 run on the temporary workspace (fake claude/codex by absolute path, temporary CODEX_HOME; review request skipped then applied: 2 reviews plus synthesis; two intake recommendations decided label by label, one label skipped then taken with a changed severity; every outcome as designed), the researcher approved fixing the two issues found ("按你的建议，先修这两处小问题").
+- Fix 1 (L2 read-only, reason in docs/protocols.md "H4" follow-up): `protocols/synthesis.synthesis_groups` reports where completed syntheses placed each label of a Run (synthesis Run, group, kind, the other drafts, note); decide shows it as a `Synthesis:` line under each label and notes an unreadable synthesis instead of failing.
+- Fix 2 (L3): an intake recommendation recorded with labels still undecided counts as "Partly recorded" in decide's summary, not Applied, and triggers the "run decide again" line.
+- Tests: `tests/cli/test_review_proposals.py` asserts the Synthesis line after a decide round and the Partly recorded count. Checked on the simulation workspace: R-001/R-002 labels map to R-003 g1 (agreement), g2 and g3 (singletons).
+- Checks: `uv run --locked pytest -q` 1303 passed (7m29s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Blockers: none. Next step: H5 (Brief and stage proposals in decide), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-06 — H4: review-round requests and intake recommendations in decide
 
 - Decision: the researcher authorized H4 ("按你的建议，开始 H4") under accepted D3 (review rounds started only from decide; synthesis follows when two or more outputs complete).

@@ -29,6 +29,7 @@ from toulmin.core.workspace import CHARTER_FILE
 from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff
+from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
 
 LABEL = {
@@ -196,6 +197,7 @@ class Run:
     rejected: int = 0
     skipped: int = 0
     failed: int = 0
+    partial: int = 0  # intake recommendations with labels still undecided (H4)
     charter_changed: bool = False
     handoff_applied: bool = False
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
@@ -375,6 +377,9 @@ class Run:
         state = intake.state
         recommended = {entry.label: entry for entry in intake.recommendation.items}
         typer.echo(f"Review output: {intake.recommendation.output} ({state.run})")
+        grouped, unreadable = synthesis_groups(self.root, item.project, state.run)
+        for problem in unreadable:
+            typer.echo(f"Note: {problem}")
         for label, entry in state.recorded.items():
             typer.echo(f"  {label}: already {entry['outcome']}")
         if not intake.remaining:
@@ -397,6 +402,8 @@ class Run:
             typer.echo(f"    Grounds: {draft.grounds}")
             if draft.uncertainty:
                 typer.echo(f"    Uncertainty: {draft.uncertainty}")
+            for line in grouped.get(label, ()):
+                typer.echo(f"    Synthesis: {line}")
             typer.echo(f"    Recommended: {_advice(advice)} - {advice.reason}")
             choice = _ask("atorsq", LABEL_WORDS)
             if choice == "q":
@@ -449,9 +456,10 @@ class Run:
             typer.echo(
                 f"Every label has an outcome; outcome: {project_proposals.outcome_path(item.path)}"
             )
+            self.applied += 1
         else:
             typer.echo("Labels you skipped stay undecided; the recommendation stays pending.")
-        self.applied += 1
+            self.partial += 1
 
     def _review(self, item: Item) -> bool:
         from toulmin.adapters.review import execute_round, prepare_round
@@ -635,9 +643,11 @@ def decide_command(
             run.failed += 1
     typer.echo(
         f"\nApplied: {run.applied} | Rejected: {run.rejected} | Skipped: {run.skipped} | "
-        f"Failed: {run.failed}" + (f" | Not shown: {remaining}" if remaining else "")
+        f"Failed: {run.failed}"
+        + (f" | Partly recorded: {run.partial}" if run.partial else "")
+        + (f" | Not shown: {remaining}" if remaining else "")
     )
-    if run.skipped or run.failed or remaining:
+    if run.skipped or run.failed or run.partial or remaining:
         typer.echo("Undecided items stay pending; run `toulmin decide` again to continue.")
     if run.failed:
         raise typer.Exit(1)

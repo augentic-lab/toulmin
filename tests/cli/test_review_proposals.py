@@ -153,6 +153,19 @@ def test_a_review_request_starts_only_on_apply_then_synthesizes(bench, fakes):
     assert recorded.disposition == "applied" and recorded.approval_text == "toulmin decide: a"
     assert recorded.result == "reviews R-002 completed, R-003 completed; synthesis R-004 completed"
     assert "Nothing awaits your decision." in run(bench).stdout
+    # The synthesis placement is shown beside each label of a later intake recommendation.
+    put(
+        bench,
+        "intake-20261106T110000Z.md",
+        recommendation(
+            output(bench, "R-002"),
+            {"label": "draft-1", "outcome": "take", "reason": "Shared by both reviews."},
+            {"label": "draft-2", "outcome": "reject", "reason": "Out of scope."},
+        ),
+    )
+    shown = run(bench, "s\ns\n").stdout
+    assert "    Synthesis: R-004 g1 agreement with R-002/draft-2, R-003/draft-1" in shown
+    assert ": All agree." in shown
 
 
 def test_an_invalid_or_unplannable_request_starts_nothing(bench, fakes):
@@ -229,6 +242,7 @@ def test_skipped_labels_stay_pending_and_quit_records_nothing(reviewed):
     assert result.exit_code == 0, result.output
     assert "draft-1: taken as O-002 (R-003)" in result.stdout
     assert "stays pending" in result.stdout
+    assert "Applied: 0 |" in result.stdout and "| Partly recorded: 1" in result.stdout
     assert not (reviewed / project_proposals.outcome_path(relative)).exists()
     result = run(reviewed, "r\nNot convinced.\n")  # only draft-2 is asked again
     assert "draft-1: already taken" in result.stdout and "(1/1) draft-2" in result.stdout
