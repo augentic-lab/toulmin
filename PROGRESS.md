@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-09 — C5: calibration report
+
+- Decision: the researcher authorized C5 ("按你的建议，开始 C5"). Implemented: the report. Not started: the stage trial (real model sessions on a real research project need separate authorization; acceptance is the researcher's ruling).
+- L2 (read-only; reason in docs/protocols.md "C5"): `protocols/calibration.py` groups every Run of one project or all projects by operation (review / synthesis / crossval / other, from the role), recorded model and role; counts runs completed/failed, review draft labels, intake outcomes (taken / partly / rejected / pending), adoption (taken + partly) / decided, and the current status of Objections created by intake. Unreadable Runs, outputs without a draft block and missing Objections are listed under "Not counted". Deterministic Markdown, no timestamps.
+- L3: `toulmin calibration [--project NAME] [--write]` prints the report; `--write` (re)writes `global/calibration/calibration.md` or `calibration-NAME.md` (Q22: regenerable, never a second store). README daily-use row, packaged protocols.md and framework CHANGELOG updated. No format change.
+- Checked on the H4/H5 simulation workspace: claude 2 drafts taken (100%), codex 1 partly + 1 rejected duplicate (50%); the report notes that rejections include duplicates.
+- Tests: `tests/cli/test_calibration.py` (6: per model/role/operation counts and printing writes nothing; Objection status follows later rulings; failed Runs; `--write` regenerates identically and overwrites hand edits, `--project` file; unknown project; empty workbench). Runs are found by model because parallel sessions number Runs in completion order.
+- Checks: `uv run --locked pytest -q` 1320 passed (7m34s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Pending: the C5 stage trial (one brief, three review rounds across two vendors, every Objection traced, quota per round) on the researcher's authorization. Blockers: none.
+- Session ID: unavailable.
+
 ## 2026-11-09 — H5 follow-up: header edits keep null
 
 - Decision: after a simulated H5 run on the temporary workspace (two Claims completing G1, a Decision, a Brief proposal made stale by a hand edit and rejected with a reason, a current Brief proposal replacing three sections, a stage ruling explore -> critique with the G1 checklist; every outcome as designed), the researcher approved fixing the one defect found ("按你的建议，先修 null 改写问题").

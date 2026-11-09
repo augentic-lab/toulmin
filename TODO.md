@@ -279,8 +279,8 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 
 ### C5 — Calibration report and stage trial
 
-- [ ] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report.
-- [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance.
+- [x] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report (2026-11-09: read-only, deterministic, `--write` to global/calibration/; tests in `tests/cli/test_calibration.py`).
+- [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance. (Needs real model sessions on a real research project: separate authorization.)
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 

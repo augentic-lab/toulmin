@@ -641,6 +641,48 @@ def rule_object(
             typer.echo(f"Notice: {notice}")
 
 
+@app.command("calibration")
+def calibration_report(
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
+    project: Annotated[
+        str | None, typer.Option("--project", help="Count one project only; default: all.")
+    ] = None,
+    write: Annotated[
+        bool,
+        typer.Option(
+            "--write", help="Also (re)write the report under global/calibration/ (regenerable)."
+        ),
+    ] = False,
+) -> None:
+    """Adoption of review drafts per model, role and operation, derived from files (C5)."""
+    from toulmin.core.atomic import write_atomic
+    from toulmin.core.repository import Repository
+    from toulmin.protocols.calibration import calibration, render
+
+    if project is not None:
+        try:
+            validate_project_name(project)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--project") from error
+    try:
+        text = render(calibration(root, project), project)
+        if write:
+            repository = Repository(root)
+            repository.path("global/calibration", "directory")
+            name = f"calibration-{project}.md" if project else "calibration.md"
+            relative = f"global/calibration/{name}"
+            destination = repository.path(relative)
+            if destination.exists() and not destination.is_file():
+                raise ValueError(f"{relative}: expected a regular file")
+            write_atomic(destination, text.encode(), replace=destination.exists())
+    except (OSError, ValueError) as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(text, nl=False)
+    if write:
+        typer.echo(f"\nWritten: {relative} (regenerable; derived from files only)")
+
+
 @app.command("status")
 def show_status(
     project: Annotated[

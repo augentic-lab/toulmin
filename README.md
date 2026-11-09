@@ -53,6 +53,7 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 | End of a session | ask the agent to end it, then `toulmin decide` |
 | Fresh conversation (context full, next day) | `toulmin open --new-session` |
 | Where things stand | `toulmin status` |
+| How often each model's review findings were adopted | `toulmin calibration` (`--write` saves it under global/calibration/) |
 | A concrete direction becomes a project | ask the agent to propose a child project, `toulmin decide`, then `cd projects/NAME && toulmin open` |
 
 ## Concepts

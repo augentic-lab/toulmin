@@ -658,3 +658,19 @@ Textual/native interfaces) and no command wrote PROJECT.md `stage`.
 - Inventory order: intake, object drafts, rulings, Brief, stage, review requests. A project
   handoff drafted before a stage ruling in the same run is reported as made stale by it.
 - Compatibility: additive; PROJECT.md and brief.md formats unchanged; no migration.
+
+### C5 calibration report (L2 read-only, L3)
+
+Design §9 "Reliability calibration" and Q22: adoption rates come from the files, never from a
+second store. `toulmin calibration [--project NAME] [--write]` reads every Run of the chosen
+project (or of all projects), groups them by operation (review for `reviewer` roles,
+synthesis, crossval, other), the model name each Run recorded and the role, and counts runs
+completed/failed. For review Runs it counts the draft labels of the raw output and the
+researcher's intake outcomes (taken, partly, rejected; the rest pending), the adoption rate
+(taken + partly) / decided, and the current status of every Objection an intake outcome
+created. Unreadable Runs, outputs without a draft block and missing Objections are listed
+under "Not counted", never guessed. The report has no timestamps, so identical files give an
+identical report; `--write` (re)writes `global/calibration/calibration.md` (or
+`calibration-NAME.md`) and hand edits there do not survive regeneration. The command never
+changes research files and makes no recommendation about role assignment; reading the rates
+is the researcher's call. No format change.

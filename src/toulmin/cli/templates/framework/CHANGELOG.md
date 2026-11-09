@@ -141,3 +141,6 @@
 - H5 follow-up (L1 presentation only): header edits (`rule`, handoffs, stage rulings) write
   None as `null`, as the templates do, instead of a blank value. Both parse to null; a blank
   value already in a file becomes `null` the next time that header is edited. No migration.
+- C5 (L2 read-only, L3): `toulmin calibration` derives adoption of review drafts per model,
+  role and operation from Runs, intake.md and Objections; `--write` regenerates
+  global/calibration/calibration.md. Formats unchanged.
