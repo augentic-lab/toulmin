@@ -284,6 +284,15 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 
+### V — Research map (requested during the C5 trial setup, 2026-11-09)
+
+Design: `/home/tianchi/notes/toulmin/research-map-design.md`. A read-only, file-derived view of the stage track, the next gate, what waits on the researcher, suggested next moves (who acts) and the Claim → Evidence/Objection → Decision tree, refreshed live beside AoE. Boundaries: no enforced order, no stored state, no rulings, no L1 change.
+
+- [x] V1 — Design draft (2026-11-09, documentation only): `toulmin map [NAME] [--watch]`, rule table shared with the state card, manual pane beside AoE first; decisions D1–D6 for the researcher.
+- [ ] V1 researcher review (D1–D6).
+- [ ] V2 — Implement `toulmin map` (L2 `research_map`, shared `next_moves`, L3 rendering and `--watch`). Requires separate authorization.
+- [ ] V3 — AoE placement beyond a manual pane (automatic pane or AoE sidebar). Separate design and authorization.
+
 ## UI0 — Python/Textual TUI proposal
 
 - [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.

@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-09 — V1: research map design
+
+- Decision: during the C5 trial setup the researcher noted that the unenforced loop needs a better view of where the project is and what can happen next (a tree or graph, live, viewable under AoE), and authorized the design ("可以，我授权你先写设计文档"). Documentation only.
+- Written: `~/notes/toulmin/research-map-design.md`: `toulmin map [NAME] [--watch]` with stage track, next-gate checklist, what waits on the researcher, up to three suggested moves from one rule table shared with the state card, and the current argument tree; `--watch` polls file stats, recomputes only on change, writes nothing; placement P1 (manual tmux split or second terminal beside AoE) for V2, P2 automatic pane and P3 AoE plugin sidebar later; L2 `research_map` + L3 rendering, no L1 change; decisions D1–D6 with recommendations.
+- Checked: the cited outputs and fields exist (`status`, state card ACTIONS/`_loop_actions`, statuses, grades, AoE runs sessions in tmux and has a plugin system). Whether a tmux split works inside an attached AoE session is a guess for V2 to check.
+- TODO: new section V (V1 ticked; researcher review, V2, V3 open). AGENTS.md dated line.
+- Pending: the researcher's review of D1–D6; the C5 trial continues. Blockers: none.
+- Session ID: unavailable.
+
 ## 2026-11-09 — C5 trial fix: repeated --personas/--models
 
 - Decision: during the researcher's C5 trial setup, a preflight (`toulmin review rdma-vs-tcp --personas reviewer-skeptic --personas reviewer-why-not-x --dry-run`) planned only the last persona; the researcher asked for the fix ("顺手把 --personas 重复只保留最后一个的问题修了").

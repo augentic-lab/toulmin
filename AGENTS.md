@@ -63,6 +63,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-06: The researcher authorized H4 ("按你的建议，开始 H4"): review-round requests and intake recommendations decided in `toulmin decide` (rounds start only on the researcher's apply). H4 is implemented; H5 and C5 require separate authorization.
 2026-11-09: The researcher authorized H5 ("可以开始 H5"): Brief proposals and stage proposals decided in `toulmin decide`; a stage proposal writes PROJECT.md `stage` only on the researcher's apply, backed by an active Decision. H5 is implemented; C5 requires separate authorization.
 2026-11-09: The researcher authorized C5 ("按你的建议，开始 C5"). The `toulmin calibration` report is implemented (read-only, regenerable under global/calibration/); the C5 stage trial needs real model sessions and remains pending separate authorization and the researcher's ruling.
+2026-11-09: During the C5 trial setup the researcher asked for a live view of project state and possible next steps, and authorized V1 only ("可以，我授权你先写设计文档"): a research map design (documentation only, `~/notes/toulmin/research-map-design.md`). V2 implementation and V3 AoE placement require separate authorization; the C5 trial continues.
 
 ## Project goals and scope
 
