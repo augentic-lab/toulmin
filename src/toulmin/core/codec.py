@@ -100,10 +100,20 @@ def patch_header(data: bytes, changes: dict[str, Any], order: tuple[str, ...] = 
     it in `order` (appended when none does), so contract field order survives edits.
     """
     from ruamel.yaml import YAML
+    from ruamel.yaml.representer import RoundTripRepresenter
+
+    class Representer(RoundTripRepresenter):
+        """Write None as ``null``, as the templates do; ruamel's default leaves it blank."""
+
+    Representer.add_representer(
+        type(None),
+        lambda representer, _: representer.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
 
     decode(data)  # Apply the same restricted input syntax before round-trip loading.
     header, _, body = data.decode("utf-8")[4:].partition("\n---\n")
     yaml = YAML(typ="rt")
+    yaml.Representer = Representer
     yaml.preserve_quotes = True
     yaml.width = 4096
     metadata = yaml.load(header)

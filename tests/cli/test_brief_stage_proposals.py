@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from toulmin.cli import decide
 from toulmin.cli.app import app
-from toulmin.core.codec import decode
+from toulmin.core.codec import decode, patch_header
 from toulmin.core.documents import FormatError
 from toulmin.core.project_proposals import Outcome, render_outcome, validate_outcome
 from toulmin.protocols import project_proposals
@@ -143,6 +143,8 @@ def test_a_stage_ruling_creates_its_decision_then_writes_stage(populated):
     assert "Stage: explore -> critique, backed by D-002" in result.stdout
     assert "G1 readiness (advice; the ruling is yours): not met" in result.stdout
     assert "  -stage: explore" in result.stdout and "  +stage: critique" in result.stdout
+    assert "  -last_handoff" not in result.stdout and "  +last_handoff" not in result.stdout
+    assert "   last_handoff: null" in result.stdout  # unchanged context, as written
     assert "Stage ruled: stage critique (D-002)" in result.stdout
     assert "changed by the stage ruling in this run" in result.stdout
     charter = decode((workbench / PROJECT).read_bytes()).header
@@ -181,3 +183,15 @@ def test_a_stage_ruling_waits_for_its_decision_and_needs_an_active_one(populated
         project_proposals.apply(populated, "demo", f"{FOLDER}/stage-20261109T100001Z-critique.md",
                                 "R", "0" * 64, "a")  # fmt: skip
     assert decode((populated / PROJECT).read_bytes()).header["stage"] == "explore"
+
+
+def test_header_edits_keep_null_values_as_written():
+    # Found by the H5 simulation: a stage ruling's PROJECT.md diff showed last_handoff: null
+    # rewritten as a blank value. Header edits now keep null, so the diff shows only the ruling.
+    data = (
+        b"---\nschema_version: 1\nproject: demo\nstage: explore\nrecent_decisions: []\n"
+        b'next_step: "Go."\nlast_handoff: null\n---\n## Goal\nG.\n'
+    )
+    after = patch_header(data, {"stage": "critique", "recent_decisions": ["D-001"]})
+    assert b"last_handoff: null\n" in after and b"stage: critique\n" in after
+    assert after.endswith(b"---\n## Goal\nG.\n")

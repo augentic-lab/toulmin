@@ -138,3 +138,6 @@
   recorded brief.md digest) and stage proposals (`stage-…`, backed by an active Decision) are
   decided in `toulmin decide`. A stage proposal is the first path that writes PROJECT.md
   `stage`, only on the researcher's apply. Formats unchanged; no migration.
+- H5 follow-up (L1 presentation only): header edits (`rule`, handoffs, stage rulings) write
+  None as `null`, as the templates do, instead of a blank value. Both parse to null; a blank
+  value already in a file becomes `null` the next time that header is edited. No migration.

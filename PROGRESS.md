@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-09 — H5 follow-up: header edits keep null
+
+- Decision: after a simulated H5 run on the temporary workspace (two Claims completing G1, a Decision, a Brief proposal made stale by a hand edit and rejected with a reason, a current Brief proposal replacing three sections, a stage ruling explore -> critique with the G1 checklist; every outcome as designed), the researcher approved fixing the one defect found ("按你的建议，先修 null 改写问题").
+- Defect: the stage ruling's PROJECT.md diff showed `last_handoff: null` rewritten as a blank value. Cause: `core/codec.patch_header` (shared by `rule`, handoffs and stage rulings) used ruamel's round-trip representer, which writes None as an empty scalar.
+- Fix (L1 presentation only; compatibility: both forms parse to null, a blank value already in a file becomes `null` the next time that header is edited; no migration): `patch_header` uses a private representer subclass that writes `null`; the global ruamel representer is unchanged. Framework CHANGELOG updated.
+- Tests: `test_header_edits_keep_null_values_as_written`; the stage ruling test asserts `last_handoff: null` is unchanged context in the diff.
+- Checks: `uv run --locked pytest -q` 1314 passed (7m36s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Blockers: none. Next step: C5 (calibration report and stage trial), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-09 — H5: Brief and stage proposals in decide
 
 - Decision: the researcher authorized H5 ("可以开始 H5") under accepted D4 = b (stage proposals applied through decide with a Decision) and D5 (Brief proposals with apply).
