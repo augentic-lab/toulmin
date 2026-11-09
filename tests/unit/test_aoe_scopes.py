@@ -26,6 +26,7 @@ from toulmin.protocols.workspace_change import propose
 
 SID = "a" * 16
 OTHER = "b" * 16
+TRUST_PROMPT = "Native screen contains a selection menu (trust prompt); resolve it in AoE"
 FOCUS = '  - target: charter\n    sections: {Focus: "Compare FIFO and SRPT first."}\n'
 
 
@@ -66,7 +67,7 @@ class FakeAoE(AoEClient):
         return session
 
     def ready(self, session_id):
-        return self.is_ready, "idle" if self.is_ready else "trust prompt; open AoE and refresh"
+        return self.is_ready, "idle" if self.is_ready else TRUST_PROMPT
 
     def send(self, session_id, message):
         self.sent.append((session_id, message))
@@ -463,14 +464,22 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     add_child(root)
     AoEWorkspace(root, "scheduling", fake).open()
     context = (root / stored(root, "scheduling")["context"] / "context.md").read_text()
-    for own in ("draft claim scheduling --root", "status scheduling --root", "review scheduling"):
+    for own in ("draft KIND scheduling --root", "status scheduling --root", "review scheduling"):
         assert f"{prefix} {own}" in context, own
-    assert "--dry-run" in context and "Never start a round yourself" in context
-    assert "kind: review-request" in context and "kind: intake-recommendation" in context  # H4
+    assert "--dry-run" in context and "only the researcher's apply starts it" in context
     assert "runs/proposals/" in context and "`toulmin decide`" in context  # H3
-    assert "kind: ruling-proposal" in context and "Never create objects" in context
+    assert "Never create objects" in context
     assert "Never edit PROJECT.md stage or status fields yourself" in context
-    assert "kind: brief-proposal" in context and "kind: stage-proposal" in context  # H5
+    # R2: the formats moved to guide.md, delivered with the context and listed in its manifest.
+    for kind in ("ruling (--object", "intake (--run", "review, brief (--section", "stage (--to"):
+        assert kind in context, kind
+    archive = root / stored(root, "scheduling")["context"]
+    guide = (archive / "guide.md").read_text()
+    assert (
+        "toulmin draft ruling NAME --object ID" in guide and "Never read Toulmin's source" in guide
+    )
+    assert "guide.md" in json.loads((archive / "manifest.json").read_text())["files"]
+    assert "guide.md" in context and len(guide.encode()) < 8000
     state = (root / stored(root, "scheduling")["context"] / "state.md").read_text()
     assert "GATES" in state and "G1 -> critique: not met" in state
     template = (root / "AGENTS.md").read_text()
@@ -479,3 +488,4 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     AoEWorkspace(root, None, fake).open()
     workspace = (root / stored(root)["context"] / "context.md").read_text()
     assert "Research loop" not in workspace  # the workspace scope gets no project loop
+    assert not (root / stored(root)["context"] / "guide.md").exists()

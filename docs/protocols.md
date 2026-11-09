@@ -570,7 +570,7 @@ nothing distinguished a ready draft from a scratch file.
   there from runs/drafts/ with its filename unchanged. Other files there are not offered;
   the state card names them.
 - Ruling proposal: header `schema_version: 1`, `kind: ruling-proposal`, `object` (an ID in
-  the same project), optional `status`, `decision` (D-NNN, or the filename of a decision
+  the same project; since R1 `objects`, a list of two or more, may replace it), optional `status`, `decision` (D-NNN, or the filename of a decision
   draft in the same folder) and `links` (the fields `rule` may set); body `## Why` (required,
   shown to the researcher, never stored) plus any of Response, Ruling, Invalidation or
   Rationale, whose text is added to the object as `rule` adds it. At least one of status, a
@@ -702,3 +702,56 @@ top level), recomputes only on change and writes nothing.
   are replaced by "Suggested next" lines from the same table; the other ACTIONS lines and the
   fingerprint are unchanged (the moves derive from files already fingerprinted).
 - Suggestions are advice: nothing changes stage, status or objects. No format change.
+
+### R1 prefilled proposal drafts and batch rulings (L1 additive, L2, L3)
+
+Review: `~/notes/toulmin/rdma-trial-review.md` (R1). In the test-toulmin-rdma trial the project
+agent learned the proposal formats by reading this file (19 times) and Toulmin's source (51
+times), because `toulmin draft` made skeletons only for objects and Runs. Deferring eleven
+Objections with one reason took one Decision and eleven ruling proposals.
+- L3: `toulmin draft KIND PROJECT` also takes the proposal kinds, each written under
+  runs/drafts/ with the proposal filename, for the agent to fill and move to runs/proposals/:
+  `ruling --object ID [--object ID…] [--status S] [--decision D]` (the current status of
+  each object in a comment; status choices exclude it; the sections a ruling may add for that
+  kind), `intake --run R-NNN|OUTPUT` (one recommendation per draft label still without an
+  intake outcome, with each draft's target, severity and content in a comment), `review
+  [--claim] [--persona] [--model]`, `brief --section NAME…` (the quoted `base_sha256` of
+  brief.md and the sections' current text) and `stage [--to STAGE] [--decision D]` (`from`
+  is the current stage; `to` defaults to the next). Options that do not belong to the kind
+  are refused; nothing is written on refusal.
+- L1 (additive): `core/proposal_skeletons.py` renders those skeletons from data the caller
+  read. A ruling proposal may name `objects: [ID, ID, …]` (two or more distinct IDs of one
+  kind) instead of `object`; the status, Decision and section texts apply to each, and
+  `links` are refused with `objects` (a successor belongs to one object). Exactly one of
+  `object` and `objects` is required.
+- L2 reason: `protocols/drafting.write_proposal_draft` reads the files a skeleton needs and
+  writes it as `write_draft` does (exclusive, never overwriting). `project_proposals` previews
+  every object of a batch, applies them one after another (each file atomically) and records
+  `result` as the comma-separated IDs; after an interruption the next preview lists the
+  objects that already carry the ruling (`done`) and apply rules only the rest. The Decision
+  must name every ruled object in `related`, as for one object. Decide refuses a ruling,
+  intake, review, Brief or stage proposal that still contains a `<fill:` placeholder, so an
+  unfinished skeleton can never write a placeholder into brief.md or a status.
+- A Response and a status already fit one ruling proposal (`status` plus `## Response`); the
+  ruling skeleton shows both, which is the intended path for "answer and close" in one step.
+- Compatibility: additive. Existing proposals keep their meaning (none in the trial workspace
+  contains a placeholder). An older Toulmin reports a batch proposal as invalid (no
+  `object`) rather than misapplying it. No migration.
+
+### R2 compact project-session guide (L3 text, template)
+
+Review: `~/notes/toulmin/rdma-trial-review.md` (R2). The trial's project session read this file
+(62 KB) 19 times; most of it is development history the agent does not need, and the formats
+it did need were spread over the H3–H5 sections.
+- `src/toulmin/application/project-guide.md` (about 6 KB): what a project agent may write,
+  the loop stage by stage with the gate conditions, object-draft essentials, rulings (answer
+  and close in one proposal; one ruling for several objects), intake and ending the session,
+  each with its `toulmin draft` command (R1). It is copied into every project context archive
+  as `guide.md` (listed in the manifest), so workspaces created earlier get it as well;
+  context.md names it first. Workspace contexts do not carry it.
+- The project context's loop text (H6) shrinks to the draft commands and the boundaries; the
+  per-kind format paragraphs now live only in the guide and this file. The workspace AGENTS.md
+  template's project steps name the draft commands and the guide (released.json regenerated,
+  so earlier copies are still recognized).
+- This file keeps the rules and their change history unchanged; framework/protocols.md remains
+  its byte copy. No format change.

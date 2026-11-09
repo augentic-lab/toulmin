@@ -41,7 +41,7 @@ FILENAME = re.compile(
     rf"({'|'.join([*OBJECT_KINDS, RULING, INTAKE, REVIEW, BRIEF, STAGE])})-[0-9]{{8}}T[0-9]{{6}}Z"
     r"(?:-[A-Za-z0-9][A-Za-z0-9_-]{0,63})?\.md"
 )
-RULING_FIELDS = {"schema_version", "kind", "object", "status", "decision", "links"}
+RULING_FIELDS = {"schema_version", "kind", "object", "objects", "status", "decision", "links"}
 RULING_SECTIONS = {"Response", "Ruling", "Invalidation", "Rationale"}
 REVIEW_FIELDS = {"schema_version", "kind", "personas", "models", "claims"}
 INTAKE_FIELDS = {"schema_version", "kind", "output", "recommendations"}
@@ -75,23 +75,44 @@ def proposal_kind(filename: str) -> str | None:
 
 @dataclass(frozen=True)
 class RulingProposal:
-    object: str
+    object: str  # the ruled object; with ``objects``, the first of them
     status: str | None
     decision: str | None  # D-NNN, or a decision proposal in the same directory
     links: dict[str, str | list[str]]
     texts: dict[str, str]  # body sections to add to the object
     why: str  # shown to the researcher; never written to the object
+    batch: tuple[str, ...] = ()  # R1: ``objects``, the same ruling for each, in order
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        return self.batch or (self.object,)
 
 
 def validate_ruling_proposal(document: Document) -> RulingProposal:
     validate_values(document)
-    h = mapping(document, document.header, "", {"schema_version", "kind", "object"},
-                RULING_FIELDS - {"schema_version", "kind", "object"})  # fmt: skip
+    h = mapping(document, document.header, "", {"schema_version", "kind"},
+                RULING_FIELDS - {"schema_version", "kind"})  # fmt: skip
     if type(h["schema_version"]) is not int or h["schema_version"] != 1:
         document.fail("schema_version", "expected integer version 1")
     if h["kind"] != "ruling-proposal":
         document.fail("kind", "expected ruling-proposal")
-    target = text(document, h["object"], "object")
+    if ("object" in h) == ("objects" in h):
+        document.fail("object", "give object (one ID) or objects (a list of two or more IDs)")
+    batch: tuple[str, ...] = ()
+    if "objects" in h:
+        names = _names(document, h["objects"], "objects")
+        assert names is not None
+        if len(names) < 2:
+            document.fail("objects", "list two or more IDs; use object for one")
+        if "links" in h:
+            document.fail("links", "links name one object's successor; rule each separately")
+        kinds = {name.split("-", 1)[0] for name in names}
+        if len(kinds) > 1:
+            document.fail("objects", "one ruling covers objects of one kind")
+        batch = tuple(names)
+        target = batch[0]
+    else:
+        target = text(document, h["object"], "object")
     status = h.get("status")
     if status is not None:
         text(document, status, "status")
@@ -117,7 +138,7 @@ def validate_ruling_proposal(document: Document) -> RulingProposal:
     texts = {name: body[name] for name in sorted(RULING_SECTIONS) if body.get(name, "").strip()}
     if status is None and not texts and not links:
         document.fail("status", "nothing to rule: give status, a section text or a link")
-    return RulingProposal(target, status, decision, links, texts, why)
+    return RulingProposal(target, status, decision, links, texts, why, batch)
 
 
 @dataclass(frozen=True)

@@ -110,6 +110,61 @@ def test_busy_bind_prepares_context_without_sending_or_creating(workbench, fake)
     assert len(fake.sent) == 1
 
 
+def test_a_new_session_is_awaited_while_its_cli_starts(workbench, fake, monkeypatch):
+    replies = iter(
+        [(False, "Native capture is empty"), (False, "Native input prompt is not recognizable")]
+    )
+    checks = []
+
+    def ready(session_id):
+        checks.append(session_id)
+        return next(replies, (True, "idle"))
+
+    monkeypatch.setattr(fake, "ready", ready)
+    monkeypatch.setattr("toulmin.application.aoe.time.sleep", lambda _: None)
+    view = workspace(workbench, fake).open()
+    assert view.context_status == "submitted" and len(fake.sent) == 1
+    assert len(checks) == 4  # three while waiting, one more under the lock before sending
+
+
+def test_the_startup_wait_ends_on_a_prompt_only_the_researcher_can_clear(
+    workbench, fake, monkeypatch
+):
+    checks = []
+
+    def ready(session_id):
+        checks.append(session_id)
+        return False, "Native screen contains a selection menu; resolve it in AoE"
+
+    monkeypatch.setattr(fake, "ready", ready)
+    monkeypatch.setattr(
+        "toulmin.application.aoe.time.sleep", lambda _: pytest.fail("must not wait")
+    )
+    view = workspace(workbench, fake).open()
+    assert view.context_status == "prepared" and not fake.sent and len(checks) == 2
+    assert "selection menu" in stored(workbench)["message"]
+
+
+def test_the_startup_wait_is_bounded(workbench, fake, monkeypatch):
+    clock = iter(range(0, 1000, 10))
+    monkeypatch.setattr(fake, "ready", lambda session_id: (False, "Native capture is empty"))
+    monkeypatch.setattr("toulmin.application.aoe.time.monotonic", lambda: next(clock))
+    monkeypatch.setattr("toulmin.application.aoe.time.sleep", lambda _: None)
+    view = workspace(workbench, fake).open()
+    assert view.context_status == "prepared" and not fake.sent
+    assert stored(workbench)["message"] == "Context not sent: Native capture is empty"
+
+
+def test_reuse_does_not_wait(workbench, fake, monkeypatch):
+    fake.add_session()
+    workspace(workbench, fake).bind()
+    fake.is_ready = False
+    monkeypatch.setattr(
+        "toulmin.application.aoe.time.sleep", lambda _: pytest.fail("must not wait")
+    )
+    assert workspace(workbench, fake).open().context_status == "prepared"
+
+
 @pytest.mark.parametrize("failure", ["unknown", "identified"])
 def test_create_failure_preserves_intent_and_recovers_without_duplication(workbench, fake, failure):
     app = workspace(workbench, fake)

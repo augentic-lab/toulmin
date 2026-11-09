@@ -7,13 +7,14 @@ import os
 import re
 import shlex
 import sys
+import time
 from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from toulmin.adapters.aoe import AoEClient, AoEError, AoESession
+from toulmin.adapters.aoe import AoEClient, AoEError, AoESession, settling
 from toulmin.adapters.provider_logs import ModelReport, reported_model
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
@@ -91,6 +92,9 @@ def render_scope(state: ResearchState | WorkspaceState) -> str:
     return render_state(state)
 
 
+PROJECT_GUIDE = Path(__file__).with_name("project-guide.md")
+
+
 def _command(*args: str) -> str:
     """A toulmin command for the agent's shell, which may not have ``toulmin`` on PATH (W7)."""
     return shlex.join([sys.executable, "-m", "toulmin", *args])
@@ -108,6 +112,11 @@ def _prefix_note() -> str:
 
 class AoEWorkspace:
     """One scope's binding: the workspace (``project`` None) or a named child project."""
+
+    # A just-created native CLI needs a few seconds before its prompt is drawn; one
+    # immediate readiness check left the WI8/C5 workspace session without context (R7).
+    startup_wait = 30.0
+    startup_poll = 1.0
 
     def __init__(
         self,
@@ -365,6 +374,12 @@ class AoEWorkspace:
         card = render_scope(state)
         write_atomic(archive / "state.md", card.encode())
         hashes["state.md"] = digest(card.encode())
+        if self.project is not None:
+            # R2: the compact agent guide travels with each project context, so workspaces
+            # created before it existed get it too and agents need not read protocols.md.
+            guide = PROJECT_GUIDE.read_bytes()
+            write_atomic(archive / "guide.md", guide)
+            hashes["guide.md"] = digest(guide)
         command = self._ack_command(token)
         if self.project is None:
             instructions = self._workspace_instructions(state, command)
@@ -418,9 +433,11 @@ class AoEWorkspace:
             f"Project: {self.project}\nWorkbench: {self.root}\n\n"
             + scope
             + _prefix_note()
-            + "Read state.md and the listed input snapshots before continuing. They contain the "
-            "current recorded state, not an authorization to apply research decisions. "
-            "The recorded next step is historical guidance; compare it with current objects.\n\n"
+            + "Read state.md, guide.md (how this project session works: the loop, what you may "
+            "write and a `toulmin draft` command for every proposal) and the listed input "
+            "snapshots before continuing. They contain the current recorded state, not an "
+            "authorization to apply research decisions. The recorded next step is historical "
+            "guidance; compare it with current objects.\n\n"
             + "\n".join(f"- inputs/{name}" for name in state.context_files)
             + "\n\nAfter reading these files, record a context-read receipt with:\n\n```sh\n"
             + command
@@ -433,7 +450,7 @@ class AoEWorkspace:
             + self._loop_instructions()
             + "Only when the researcher asks to end the research "
             "session, save a structured summary under runs/drafts/ according to "
-            "roles/scribe.md and framework/protocols.md. Run "
+            "roles/scribe.md. Run "
             + _command(
                 "aoe", "handoff", str(self.project), "--root", str(self.root), "--input", "SUMMARY"
             )
@@ -446,62 +463,28 @@ class AoEWorkspace:
         )
 
     def _loop_instructions(self) -> str:
-        """The project research loop (H6): the agent drafts and proposes; the researcher rules."""
+        """The project research loop (H6), now detailed in guide.md (R2)."""
         name, root = str(self.project), str(self.root)
-        draft = _command("draft", "claim", name, "--root", root)
+        draft = _command("draft", "KIND", name, "--root", root)
         status = _command("status", name, "--root", root)
         dry_run = _command("review", name, "--root", root, "--dry-run")
         return (
-            "Research loop (design section 7). The GATES lines in state.md and "
-            f"`{status}` show G1/G2 readiness; follow the step the project is at.\n"
-            "1. Explore: discuss; keep notes and explorations in "
-            f"{self.runs}/.\n"
-            "2. Core Claims (G1): draft one core Claim each for the problem existing, its "
-            "magnitude, the mechanism (the approach works) and novelty, plus key assumptions: "
-            f"`{draft}` writes a skeleton under {self.runs}/drafts/ (also evidence, objection, "
-            "decision, exploration). Fill every field; state Evidence grades honestly "
-            "(model-asserted unless a reproducible check verified it) and put needed experiments "
-            "in validation_plan. Show each draft.\n"
-            f"3. Mark a complete draft ready by moving it, filename unchanged, to "
-            f"{self.runs}/proposals/; the researcher decides it with `toulmin decide` in their "
-            "own terminal (apply creates the object, reject records a reason). Never create "
-            "objects or write outcome files yourself.\n"
-            "4. Independent review: when the core Claims exist, or after substantial revisions, "
-            f"check the plan with `{dry_run}` (add --personas/--models/--claim), then request one "
-            f"round in {self.runs}/proposals/review-YYYYMMDDTHHMMSSZ-NAME.md: header "
-            "schema_version: 1, kind: review-request, optional personas, models and claims "
-            "lists; body ## Why now. Only the researcher's apply in `toulmin decide` starts it "
-            "(it uses quota) and synthesis follows when two or more outputs complete. Never start "
-            "a round yourself and never review your own work; reviewers see only their role's "
-            "inputs.\n"
-            "5. Intake: read each review output (and its synthesis) and write one recommendation "
-            f"per raw output, {self.runs}/proposals/intake-YYYYMMDDTHHMMSSZ-NAME.md: header "
-            "schema_version: 1, kind: intake-recommendation, output (the review Run's output.md, "
-            "never a synthesis), recommendations: a list covering every draft label with label, "
-            "outcome (take, reject or partly), reason, and severity (take, only to change it) or "
-            "object (partly: the Objection written by hand). The researcher decides each label "
-            "in `toulmin decide`.\n"
-            "6. Respond: for each open Objection, draft a Response, new Evidence, a superseding "
-            "Claim or a validation plan.\n"
-            f"7. Rulings: when a condition holds, put the Decision draft in {self.runs}/proposals/ "
-            "(related names the object) and a ruling proposal beside it, "
-            "ruling-YYYYMMDDTHHMMSSZ-NAME.md: header schema_version: 1, kind: ruling-proposal, "
-            "object (e.g. O-001), optional status, decision (D-NNN or the decision draft's "
-            "filename), optional links; body ## Why (for the researcher, never stored) plus any "
-            "Response, Ruling, Invalidation or Rationale text to add. `toulmin decide` offers "
-            "drafts before rulings.\n"
-            f"8. Brief: propose sections in {self.runs}/proposals/brief-YYYYMMDDTHHMMSSZ-NAME.md: "
-            "header schema_version: 1, kind: brief-proposal, base_sha256 (the quoted sha256 of "
-            "brief.md as you read it); body ## Why, then one ## section per brief section to "
-            "replace with its complete new text, citing objects as [[C-001]] (Kill criteria and "
-            "the minimal validation experiment included). It is refused once brief.md changes; "
-            "redraft then.\n"
-            "Stage changes are the researcher's ruling: when a gate's conditions hold, say so and "
-            f"propose it in {self.runs}/proposals/: a Decision draft (related: the Claims the gate "
-            "rests on) plus "
-            "stage-YYYYMMDDTHHMMSSZ-NAME.md (schema_version: 1, kind: stage-proposal, from, to, "
-            "decision: D-NNN or the decision draft's filename; body ## Why) for `toulmin decide`. "
-            "Never edit PROJECT.md stage or status fields yourself.\n\n"
+            "Research loop (design section 7; guide.md has the steps and formats). The GATES "
+            f"lines in state.md and `{status}` show G1/G2 readiness; follow the step the "
+            "project is at.\n"
+            f"- `{draft}` writes every skeleton under {self.runs}/drafts/: claim, evidence, "
+            "objection, decision, exploration, spec, and the proposals ruling (--object, "
+            "repeatable for one ruling on several objects; --status), intake (--run R-NNN), "
+            "review, brief (--section) and stage (--to). Fill every <fill: …> value, then move "
+            f"the file, filename unchanged, to {self.runs}/proposals/; the researcher decides it "
+            "with `toulmin decide` in their own terminal. Never create objects or write "
+            "outcome files yourself.\n"
+            "- A ruling may carry a status and its Response or Ruling text together; one "
+            "Decision may back one ruling for several objects of one kind.\n"
+            f"- Check a review round with `{dry_run}` before requesting it; only the "
+            "researcher's apply starts it. Never review your own work.\n"
+            "- Stage changes are the researcher's ruling: propose them (a Decision draft plus a "
+            "stage proposal). Never edit PROJECT.md stage or status fields yourself.\n\n"
         )
 
     def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:
@@ -777,6 +760,7 @@ class AoEWorkspace:
             client = self._client(binding)
             self._unique(client.profile, "")
             replaced = binding
+            created = False
             if binding and binding.session_id and new_session:
                 available = client.list_sessions()
                 old = next((item for item in available if item.id == binding.session_id), None)
@@ -818,6 +802,7 @@ class AoEWorkspace:
                     raise
                 binding = replace(binding, session_id=session.id, message="Session created")
                 self._save(binding)
+                created = True
             elif binding.session_id is None:
                 candidates = self._creation_candidates(client, binding)
                 if len(candidates) != 1:
@@ -840,8 +825,24 @@ class AoEWorkspace:
             self._unique(client.profile, session.id)
             binding = self._sync_identity(binding, session)
             binding = self._context(binding, state)
+        if created:
+            assert binding.session_id is not None
+            self._await_startup(client, binding.session_id)
         self._dispatch(client, expected_token=binding.token)
         return self.status()
+
+    def _await_startup(self, client: AoEClient, session_id: str) -> None:
+        """Poll a new session until it can take input, outside the binding lock.
+
+        Bounded: refusals only the researcher can clear (a menu, typed input) end the wait at
+        once, and ``_dispatch`` repeats the full check under the lock before sending.
+        """
+        deadline = time.monotonic() + self.startup_wait
+        while True:
+            ready, reason = client.ready(session_id)
+            if ready or not settling(reason) or time.monotonic() >= deadline:
+                return
+            time.sleep(self.startup_poll)
 
     def _creation_candidates(self, client: AoEClient, binding: Binding) -> list[AoESession]:
         """New sessions that match an unresolved creation's path, tool and title."""

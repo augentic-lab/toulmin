@@ -67,6 +67,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-09: The researcher accepted D1–D6 and authorized V2 ("按你的建议，全部接受，开始 V2"). V2 is implemented: `toulmin map [--watch]` and the shared `next_moves` rule table behind the state card ACTIONS. V3 requires separate authorization.
 2026-11-09: R-005 (round 1 synthesis, Claude) timed out with no diagnostics. The researcher reruns it with Codex and authorized W10 ("按你的建议，两者都做"): independent Claude sessions stream their events so a timed-out session keeps its partial answer and progress. W10 is implemented.
 2026-11-09: R-006 (Codex rerun) timed out the same way; the cause was a stdin delivery bug for prompts over 64 KiB, not model speed. The researcher authorized W11 ("按你的建议，立即修复 W11"); it is implemented.
+2026-11-09: After the end-to-end test-toulmin-rdma trial, the researcher asked for a review (`~/notes/toulmin/rdma-trial-review.md`) and authorized R1, R2 and R7 ("按你的建议，先做 R1 + R2 和 R7"). R7 (new native sessions are awaited before context delivery; undelivered context is reported loudly), R1 (prefilled proposal drafts, batch rulings) and R2 (a compact guide.md in project contexts) are implemented with fake clients and temporary workbenches only. R3–R6, R8 and R9 require separate authorization.
 
 ## Project goals and scope
 

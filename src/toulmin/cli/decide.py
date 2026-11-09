@@ -583,16 +583,21 @@ def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
         and shown.recovered is None
     ):
         typer.echo(f"Would create: {shown.target} (the ID is assigned when applied)")
-    change = shown.change
-    if change is not None:
+    if shown.done:
+        typer.echo("Already ruled before the interruption: " + ", ".join(shown.done))
+    changes = shown.changes or ((shown.change,) if shown.change is not None else ())
+    for change in changes:
         line = f"Ruling on: {change.object_id}"
         if change.status != change.previous_status:
             line += f" ({change.previous_status} -> {change.status})"
         typer.echo(line)
+    if changes:
+        change = changes[0]
         if change.decision is not None:
             typer.echo(f"Decision: {change.decision}")
         if change.sections:
-            typer.echo("Adds to sections: " + ", ".join(change.sections))
+            each = " (each object)" if len(changes) > 1 else ""
+            typer.echo("Adds to sections: " + ", ".join(change.sections) + each)
         if change.links:
             typer.echo("Sets: " + "; ".join(change.links))
     typer.echo("")

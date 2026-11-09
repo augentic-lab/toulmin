@@ -69,6 +69,7 @@ from toulmin.core.project_proposals import (
 from toulmin.core.repository import Repository
 from toulmin.core.review import INTAKE_FILE
 from toulmin.core.schema import utc_text
+from toulmin.core.skeletons import PLACEHOLDER
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import IntakeResult, OutputState, intake_review, output_state
 from toulmin.protocols.ruling import RulingResult, apply_ruling
@@ -99,7 +100,7 @@ class Preview:
     target: str | None  # predicted object path (objects) or the ruled object ID (rulings)
     ruling: RulingProposal | None = None
     decision: str | None = None  # the Decision the ruling cites, resolved to D-NNN
-    change: RulingResult | None = None
+    change: RulingResult | None = None  # the first (or only) object's change
     interrupted: bool = False
     recovered: str | None = None  # object or ruling an interrupted application produced
     intake: "IntakePreview | None" = None
@@ -111,6 +112,8 @@ class Preview:
     before_sha256: str | None = None  # that file as previewed
     after: bytes | None = None  # that file exactly as apply writes it
     gate: GateReadiness | None = None  # readiness of the gate the stage change enters
+    changes: tuple[RulingResult, ...] = ()  # every object a ruling still changes (R1 batch)
+    done: tuple[str, ...] = ()  # batch objects an interrupted application already ruled
 
 
 @dataclass(frozen=True)
@@ -227,10 +230,14 @@ def _created_after(
 
 
 def _ruled(
-    repository: Repository, project: str, proposal: RulingProposal, decision: str | None
+    repository: Repository,
+    project: str,
+    proposal: RulingProposal,
+    decision: str | None,
+    target: str | None = None,
 ) -> bool:
     """Whether the object already carries everything the ruling proposal asks for."""
-    document = repository.load(project, ObjectId.parse(proposal.object))
+    document = repository.load(project, ObjectId.parse(target or proposal.object))
     if proposal.status is not None and document.header["status"] != proposal.status:
         return False
     if decision is not None and decision not in document.header.get("decisions", []):
@@ -250,6 +257,10 @@ def preview(root: Path, project: str, relative: str) -> Preview:
     if outcome is not None and outcome.disposition != "applying":
         return Preview(relative, kind, sha, text, (f"already {outcome.disposition}",), None)
     interrupted = outcome is not None
+    if kind in {RULING, INTAKE, REVIEW, BRIEF, STAGE} and PLACEHOLDER in text:
+        # R1 skeletons mark every open choice; none may reach a brief, a status or an intake.
+        problem = "unfilled <fill: ...> placeholder; ask the agent to finish the draft"
+        return Preview(relative, kind, sha, text, (problem,), None, interrupted=interrupted)
     if kind == INTAKE:
         return _intake_preview(root, project, relative, sha, text, raw, interrupted)
     if kind == BRIEF:
@@ -299,15 +310,18 @@ def preview(root: Path, project: str, relative: str) -> Preview:
         )
     try:
         decision = _resolve_decision(repository, project, proposal.decision)
-        recovered = None
-        if outcome is not None and _ruled(repository, project, proposal, decision):
-            recovered = proposal.object
-        change = None
-        if recovered is None:
-            change = apply_ruling(
+        # An interrupted batch may have ruled some objects already; those are only recorded.
+        done = tuple(
+            target
+            for target in proposal.targets
+            if outcome is not None and _ruled(repository, project, proposal, decision, target)
+        )
+        recovered = ", ".join(proposal.targets) if len(done) == len(proposal.targets) else None
+        changes = tuple(
+            apply_ruling(
                 root,
                 project,
-                proposal.object,
+                target,
                 "preview",
                 False,
                 status=proposal.status,
@@ -316,6 +330,10 @@ def preview(root: Path, project: str, relative: str) -> Preview:
                 texts=proposal.texts,
                 preview=True,
             )
+            for target in proposal.targets
+            if target not in done
+        )
+        change = changes[0] if changes else None
     except (OSError, ValueError) as error:
         return Preview(
             relative,
@@ -341,6 +359,8 @@ def preview(root: Path, project: str, relative: str) -> Preview:
         change,
         interrupted,
         recovered,
+        changes=changes,
+        done=done if recovered is None else (),
     )
 
 
@@ -657,18 +677,23 @@ def apply(
     elif result is None:
         ruling = current.ruling
         assert ruling is not None
-        ruled = apply_ruling(
-            root,
-            project,
-            ruling.object,
-            actor,
-            True,
-            status=ruling.status,
-            decision=current.decision,
-            links=ruling.links or None,
-            texts=ruling.texts,
-        )
-        result = ruled.object_id
+        # Each object is written atomically; a crash between two leaves the marker, and the
+        # next preview rules only the objects not yet carrying the ruling (``done``).
+        for target in ruling.targets:
+            if target in current.done:
+                continue
+            apply_ruling(
+                root,
+                project,
+                target,
+                actor,
+                True,
+                status=ruling.status,
+                decision=current.decision,
+                links=ruling.links or None,
+                texts=ruling.texts,
+            )
+        result = ", ".join(ruling.targets)
     done = Outcome(relative, sha256, "applied", actor, now, approval_text, None, result)
     _write_outcome(repository, relative, done, replace=True)
     return done

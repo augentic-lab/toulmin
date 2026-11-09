@@ -46,26 +46,29 @@ Details: framework/workspace-formats.md.
 ### Project sessions
 
 Follow the research loop; `toulmin status NAME` and the GATES lines of the state card show
-which conditions of G1 (enter critique) and G2 (enter brief-final) hold.
+which conditions of G1 (enter critique) and G2 (enter brief-final) hold. The guide.md in your
+session context covers the loop and every proposal format; `toulmin draft KIND NAME` writes
+each skeleton, so never read Toulmin's source to learn a format.
 
 1. Draft the core Claims G1 asks for — the problem exists, its magnitude, the mechanism works,
    novelty — and key assumptions with `toulmin draft KIND NAME`; state Evidence grades honestly
    and put needed experiments in validation_plan.
 2. Mark a complete object draft ready by moving it, filename unchanged, to
-   projects/NAME/runs/proposals/; propose a status change or Response/Ruling text as a
-   Decision draft plus a `ruling-…` proposal there (framework/protocols.md, H3). The
-   researcher decides them with `toulmin decide`; you never create objects or write outcomes.
-3. Request an independent review round (`review-…` proposal, after checking
+   projects/NAME/runs/proposals/; propose a status change with its Response/Ruling text as a
+   Decision draft plus one ruling proposal (`toulmin draft ruling NAME --object ID`; repeat
+   --object for one ruling on several objects). The researcher decides them with
+   `toulmin decide`; you never create objects or write outcomes.
+3. Request an independent review round (`toulmin draft review NAME`, after checking
    `toulmin review NAME --dry-run`) and recommend an outcome for every draft label of each
-   review output (`intake-…` proposal). Only the researcher's apply in `toulmin decide` starts
-   a round (it uses quota) or records an intake outcome; you never run a confirming command
-   or review your own work. Answer open Objections with Responses, Evidence, superseding
-   Claims or validation plans.
+   review output (`toulmin draft intake NAME --run R-NNN`). Only the researcher's apply in
+   `toulmin decide` starts a round (it uses quota) or records an intake outcome; you never
+   run a confirming command or review your own work. Answer open Objections with Responses,
+   Evidence, superseding Claims or validation plans.
 4. Propose brief.md sections that cite objects, including Kill criteria and the minimal
-   validation experiment, as a `brief-…` proposal drafted against the current brief.md.
+   validation experiment (`toulmin draft brief NAME --section NAME`).
 5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so and put a
-   Decision draft plus a `stage-…` proposal in proposals/ for `toulmin decide`; never edit
-   PROJECT.md stage or status fields.
+   Decision draft plus a stage proposal (`toulmin draft stage NAME`) in proposals/ for
+   `toulmin decide`; never edit PROJECT.md stage or status fields.
 
 ## Research rules
 

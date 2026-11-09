@@ -30,6 +30,18 @@ _BLOCKED = re.compile(
 )
 _BORDER = re.compile(r"[\s─━═╭╮╰╯│┃]*")
 _BLOCKED_REASON = "Native screen contains a busy state or confirmation/menu; resolve it in AoE"
+# Readiness refusals that only the researcher can clear; every other one may clear by
+# itself while a freshly launched native CLI draws its first screen (R7).
+_NEEDS_RESEARCHER = (
+    "Native screen contains a selection menu",
+    "Native input contains text",
+    "Readiness supports",
+)
+
+
+def settling(reason: str) -> bool:
+    """Whether a readiness refusal can clear without the researcher (a starting CLI)."""
+    return not reason.startswith(_NEEDS_RESEARCHER)
 
 
 class AoEError(RuntimeError):

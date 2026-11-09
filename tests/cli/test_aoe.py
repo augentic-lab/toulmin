@@ -205,6 +205,40 @@ def test_unready_delivery_shows_shell_quoted_profile_and_refresh_commands(
     assert "add --resend only to explicitly retry" in result.output
 
 
+def test_undelivered_context_is_loud_and_repeated_after_attach(
+    workbench, fake_service, monkeypatch
+):
+    binding = replace(fake_service.result.binding, delivery="prepared")
+    fake_service.result = replace(fake_service.result, binding=binding, context_status="prepared")
+    order = []
+    original = aoe.typer.echo
+
+    def echo(message=None, **kwargs):
+        order.append(str(message))
+        original(message, **kwargs)
+
+    class Client:
+        def __init__(self, profile):
+            pass
+
+        def attach(self, session_id):
+            order.append("ATTACHED")
+            return 0
+
+    monkeypatch.setattr(aoe.typer, "echo", echo)
+    monkeypatch.setattr(aoe, "AoEClient", Client)
+    result = invoke(workbench, "open", "demo", "--attach")
+    assert result.exit_code == 0, result.output
+    assert "CONTEXT NOT DELIVERED" in result.output and "AGENTS.md alone" in result.output
+    after = order[order.index("ATTACHED") + 1 :]
+    assert after[0] == "Context still not delivered. When the native prompt is ready, run:"
+    assert after[1].startswith("toulmin aoe refresh demo --root ")
+    fake_service.result = replace(
+        fake_service.result, binding=replace(binding, delivery="submitted")
+    )
+    assert "CONTEXT NOT DELIVERED" not in invoke(workbench, "open", "demo").output
+
+
 def test_online_failure_is_friendly_and_recovery_uses_recorded_profile(workbench, fake_service):
     fake_service.failure = AoEError("Native startup is unresolved")
     result = invoke(workbench, "open", "demo")

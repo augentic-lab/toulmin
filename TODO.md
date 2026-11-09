@@ -296,6 +296,14 @@ Design: `/home/tianchi/notes/toulmin/research-map-design.md`. A read-only, file-
 - [x] V2 — `toulmin map` (2026-11-09: L2 `research_map` and shared `next_moves`; L3 rendering at any width, ASCII fallback, `--claim`, workspace scope, `--watch` polling file metadata; state card ACTIONS use the same table; automated tests, a pseudo-terminal watch smoke on a copy of the trial workspace). Researcher use in the C5 trial pending; whether a tmux split works inside an attached AoE session is unchecked.
 - [ ] V3 — AoE placement beyond a manual pane (automatic pane or AoE sidebar). Separate design and authorization.
 
+### R — Follow-ups from the test-toulmin-rdma trial review (2026-11-09)
+
+Review: `/home/tianchi/notes/toulmin/rdma-trial-review.md` (agent-run analysis, not acceptance). The researcher authorized R1, R2 and R7 ("按你的建议，先做 R1 + R2 和 R7"); R3–R6, R8 and R9 need separate authorization.
+
+- [x] R7 — Workspace context delivery (2026-11-09): the trial's workspace session was created at 13:31:03Z and checked once at once; Codex wrote its first log line at 13:31:07Z, so the capture was empty and the context stayed `prepared`; the warning then scrolled away under the attach. `open` now polls a session it just created (up to 30 s, 1 s apart, outside the binding lock) while the refusal can clear by itself; a selection menu, typed input or an unsupported tool ends the wait at once. Undelivered context prints CONTEXT NOT DELIVERED and repeats the refresh command after attach returns. Fake-client tests only; not yet observed with a real session.
+- [x] R1 — Prefilled proposal drafts (2026-11-09): `toulmin draft ruling|intake|review|brief|stage NAME` with `--object` (repeatable), `--status`, `--decision`, `--run`, `--section`, `--persona`/`--model`/`--claim`, `--to`; skeletons show current statuses, every undecided draft label, brief.md's digest and current section text, and the current stage. L1 additive: a ruling proposal may name `objects` (one Decision, one ruling for several objects of one kind; interrupted batches resume per object). Decide refuses proposals with unfilled placeholders. A Response and its status already fit one ruling; the skeleton and guide now say so. Agent-run tests and a smoke run on a copy of the trial workspace; not yet used by a live project agent.
+- [x] R2 — Compact project-session guide (2026-11-09): `guide.md` (~6 KB) in every project context archive, context.md and the workspace AGENTS.md template point to it and to the draft commands; the context's inline format paragraphs are gone. Not done: moving the development rationale out of framework/protocols.md (see PROGRESS); the token effect is unmeasured until the next live session.
+
 ## UI0 — Python/Textual TUI proposal
 
 - [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.

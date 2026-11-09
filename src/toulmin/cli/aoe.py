@@ -94,6 +94,16 @@ def _recovery(root: Path, project: str | None, profile: str | None) -> None:
     )
 
 
+def _undelivered(view: WorkspaceView, bound_only: bool) -> bool:
+    binding = view.binding
+    return (
+        binding is not None
+        and binding.session_id is not None
+        and binding.delivery == "prepared"
+        and not bound_only
+    )
+
+
 def _model_line(model: ModelReport | None, agent: str) -> str:
     """Which model answered, as the native CLI logged it; Toulmin never chooses one."""
     if model is None:
@@ -144,6 +154,11 @@ def _present(
         typer.echo("\nDIAGNOSTICS")
         for message in view.diagnostics:
             typer.echo(message)
+    if _undelivered(view, bound_only):
+        typer.echo(
+            "\nCONTEXT NOT DELIVERED: the native agent has not been sent its research context "
+            "and works from AGENTS.md alone until it is."
+        )
     if binding and (
         binding.delivery in {"sending", "uncertain"}
         or (binding.delivery == "prepared" and not bound_only)
@@ -191,6 +206,10 @@ def _execute(
                 raise AoEError("Cannot attach: no verified live bound session")
             client = workspace.client or AoEClient(binding.profile)
             code = client.attach(session.id)
+            if _undelivered(view, bound_only):
+                # Attaching replaced the screen that carried the warning (R7).
+                typer.echo("Context still not delivered. When the native prompt is ready, run:")
+                typer.echo(_refresh_command(root, project, binding.profile))
             if code:
                 raise typer.Exit(code)
     except (AoEError, OSError, ValueError) as error:

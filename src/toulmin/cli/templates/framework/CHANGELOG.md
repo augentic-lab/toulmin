@@ -147,3 +147,9 @@
 - V2 (L2 read-only, L3): `toulmin map [--watch]` shows stage, next gate, pending decisions,
   suggested moves and the argument tree from files; one rule table (`next_moves`) now also
   writes the state card's suggested ACTIONS. Formats unchanged.
+- R1 (L1 additive, L2, L3): `toulmin draft` writes prefilled ruling, intake, review, Brief and
+  stage proposal drafts; a ruling proposal may name `objects` (one ruling for several objects
+  of one kind); decide refuses proposals with unfilled placeholders. Existing files unchanged.
+- R2 (L3 text, template): project contexts carry `guide.md`, a compact guide to the loop and
+  the `toulmin draft` proposal commands; the workspace AGENTS.md project steps name them.
+  Formats unchanged.

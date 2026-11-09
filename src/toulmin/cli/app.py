@@ -2,6 +2,7 @@
 
 import re
 import sys
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -18,7 +19,7 @@ from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.cli.workspaces import app as workspaces_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
-from toulmin.protocols.drafting import write_draft
+from toulmin.protocols.drafting import ProposalOptions, write_draft, write_proposal_draft
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
 from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.intake import create_object
@@ -188,9 +189,26 @@ def init_workbench(
     typer.echo(f"Next: toulmin status --root {result.root}")
 
 
+class DraftKind(StrEnum):
+    """Object and Run drafts (``toulmin new``), and since R1 the proposal kinds of decide."""
+
+    CLAIM = "claim"
+    EVIDENCE = "evidence"
+    OBJECTION = "objection"
+    DECISION = "decision"
+    EXPLORATION = "exploration"
+    SPEC = "spec"
+    RUN = "run"
+    RULING = "ruling"
+    INTAKE = "intake"
+    REVIEW = "review"
+    BRIEF = "brief"
+    STAGE = "stage"
+
+
 @app.command("draft")
 def draft_object(
-    kind: Annotated[ObjectKind, typer.Argument(help="Object type.")],
+    kind: Annotated[DraftKind, typer.Argument(help="Object, Run or proposal type.")],
     project: Annotated[str, typer.Argument(help="Project name.")],
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     name: Annotated[
@@ -202,16 +220,94 @@ def draft_object(
     ] = None,
     claims: Annotated[
         list[str] | None,
-        typer.Option("--claim", help="With --role: give only these Claims; may be repeated."),
+        typer.Option(
+            "--claim",
+            help="Run with --role: give only these Claims. review: the Claims to review. "
+            "May be repeated or comma-separated.",
+        ),
+    ] = None,
+    objects: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--object",
+            help="ruling: the object to rule; several (repeated or comma-separated) give one "
+            "ruling for all of them.",
+        ),
+    ] = None,
+    status: Annotated[
+        str | None, typer.Option("--status", help="ruling: the proposed status.")
+    ] = None,
+    decision: Annotated[
+        str | None,
+        typer.Option(
+            "--decision", help="ruling, stage: D-NNN or the decision-…md proposal beside it."
+        ),
+    ] = None,
+    run: Annotated[
+        str | None,
+        typer.Option("--run", help="intake: the review Run (R-NNN) or its output path."),
+    ] = None,
+    sections: Annotated[
+        list[str] | None,
+        typer.Option("--section", help="brief: a brief.md section to change; may be repeated."),
+    ] = None,
+    personas: Annotated[
+        list[str] | None, typer.Option("--persona", help="review: personas (default: config).")
+    ] = None,
+    models: Annotated[
+        list[str] | None, typer.Option("--model", help="review: models (default: config).")
+    ] = None,
+    to: Annotated[
+        str | None, typer.Option("--to", help="stage: the stage to enter (default: the next).")
     ] = None,
 ) -> None:
-    """Write a fillable draft skeleton under the project's runs/drafts/."""
+    """Write a fillable draft skeleton under the project's runs/drafts/.
+
+    Proposal kinds (ruling, intake, review, brief, stage) are prefilled from the files: current
+    statuses, undecided review draft labels, the brief's digest and sections, the stage.
+    """
     try:
         validate_project_name(project)
     except ValueError as error:
         raise typer.BadParameter(str(error), param_hint="project") from error
+    proposal = kind.value not in {item.value for item in ObjectKind}
     try:
-        path = write_draft(root, project, kind, name, confirmer(None), role=role, claims=claims)
+        if proposal:
+            if role is not None:
+                raise ValueError(f"{kind.value}: role: only a Run draft takes a role's inputs")
+            options = ProposalOptions(
+                objects=tuple(_comma_list(objects) or ()),
+                status=status,
+                decision=decision,
+                run=run,
+                sections=tuple(sections or ()),
+                personas=tuple(_comma_list(personas) or ()),
+                models=tuple(_comma_list(models) or ()),
+                claims=tuple(_comma_list(claims) or ()),
+                stage=to,
+            )
+            path = write_proposal_draft(root, project, kind.value, options, name)
+        else:
+            extra = [
+                flag
+                for flag, value in (
+                    ("--object", objects), ("--status", status), ("--decision", decision),
+                    ("--run", run), ("--section", sections), ("--persona", personas),
+                    ("--model", models), ("--to", to),
+                )
+                if value
+            ]  # fmt: skip
+            if extra:
+                raise ValueError(f"{kind.value}: {extra[0]}: only for proposal drafts")
+            path = write_draft(
+                root,
+                project,
+                ObjectKind(kind.value),
+                name,
+                confirmer(None),
+                role=role,
+                claims=_comma_list(claims),
+            )
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
@@ -219,8 +315,14 @@ def draft_object(
     typer.echo(relative)
     location = "" if root == Path(".") else f" --root {root}"
     new = f"toulmin new {kind.value} {project}{location} --input {relative} --confirm"
-    if kind == ObjectKind.RUN:
+    if kind == DraftKind.RUN:
         typer.echo(f"Fill every <fill: ...> value, then: {new}", err=True)
+    elif proposal:
+        typer.echo(
+            "Fill every <fill: ...> value (delete unused optional lines), then move it (name "
+            f"unchanged) to projects/{project}/runs/proposals/ for `toulmin decide`.",
+            err=True,
+        )
     else:
         typer.echo(
             "Fill every <fill: ...> value, then move it (name unchanged) to "

@@ -118,17 +118,17 @@ def apply_ruling(
     given = dict(texts or {})
     texts = {}
     for name, content in given.items():
-        if name not in _ALLOWED[target.kind]:
+        if name not in SECTIONS_BY_KIND[target.kind]:
             raise FormatError(
-                f"{object_id}: body.{name}: rule may add to {sorted(_ALLOWED[target.kind])}"
+                f"{object_id}: body.{name}: rule may add to {sorted(SECTIONS_BY_KIND[target.kind])}"
             )
         if PLACEHOLDER in content:
             raise FormatError(f"{object_id}: body.{name}: unfilled <fill: ...> placeholder")
         texts[name] = content
     for name, source in (sections or {}).items():
-        if name not in _ALLOWED[target.kind]:
+        if name not in SECTIONS_BY_KIND[target.kind]:
             raise FormatError(
-                f"{object_id}: body.{name}: rule may add to {sorted(_ALLOWED[target.kind])}"
+                f"{object_id}: body.{name}: rule may add to {sorted(SECTIONS_BY_KIND[target.kind])}"
             )
         path = repository.path(repository.relative(source), "file")
         content = path.read_text(encoding="utf-8")
@@ -224,7 +224,7 @@ def apply_ruling(
 
 # Sections a ruling may add to: responses and rulings, plus the reason sections that
 # formats.md requires for invalidated Evidence and dropped Explorations.
-_ALLOWED: dict[ObjectKind, frozenset[str]] = {
+SECTIONS_BY_KIND: dict[ObjectKind, frozenset[str]] = {
     ObjectKind.CLAIM: frozenset(),
     ObjectKind.EVIDENCE: frozenset({"Invalidation"}),
     ObjectKind.OBJECTION: frozenset({"Response", "Ruling"}),

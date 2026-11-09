@@ -209,9 +209,10 @@ def move_facts(
                 if output in outputs:
                     covered.add(outputs[output])
             else:
-                reference = ObjectRef.parse(validate_ruling_proposal(document).object)
-                if reference.project in {None, project}:
-                    answered.add(str(reference.object_id))
+                for target in validate_ruling_proposal(document).targets:
+                    reference = ObjectRef.parse(target)
+                    if reference.project in {None, project}:
+                        answered.add(str(reference.object_id))
         except (OSError, ValueError):
             continue  # decide shows the problem when it offers the proposal
     objections = sorted(

@@ -375,6 +375,13 @@ uv run --locked toulmin new claim tail-latency --root /path/to/research \
 ```
 
 The skeleton lists required fields with their allowed values, so formats.md is only needed for details.
+Project agents draft the proposals `toulmin decide` offers the same way, prefilled from the files:
+`draft ruling NAME --object O-001 [--object O-002] [--status S]` (one ruling may cover several
+objects of one kind), `draft intake NAME --run R-NNN` (every undecided review draft label),
+`draft review NAME`, `draft brief NAME --section "Kill criteria"` (with brief.md's digest and the
+section's current text) and `draft stage NAME [--to STAGE]`. Decide refuses a proposal that still
+contains a `<fill: ...>` value. Project session contexts carry a compact `guide.md` describing
+the loop and these commands.
 Intake rejects any value or body section that still contains `<fill: ...>`. `--input` may also be an absolute path inside the workbench.
 `--confirm` is always required; `--confirmed-by` overrides `TOULMIN_ACTOR`, and one of them must be present.
 
