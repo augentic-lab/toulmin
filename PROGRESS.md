@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-09 — R3/R4 live simulation of the decide notice
+
+- Decision: the researcher asked to verify the notice with a simulation ("按你的建议，用模拟测试验证一下通知"). Agent-run live trial on the R-sim fixture workspace (profile `toulmin-sim-r`, Codex GPT-6.1-Sol high), every approval an operator fixture approval; `toulmin decide` ran for real in a pseudo-terminal. Ledger: `~/notes/toulmin/r-sim-2026-11-09/ledger.md` ("Notice run"), evidence in `notice/`.
+- Verified: decide's closing next moves and notice prompt; three notices delivered to the live session; the agent refreshed with `toulmin map`, applied nothing and proposed the next items; after the stage ruling (critique → brief-final) decide printed the handoff and fresh-session commands, the notice made the agent generate a handoff draft, applying it cleared the handoff row and updated next_step, and the printed archive + `toulmin open rdma --new-session` gave a fresh session that knew the stage and next step at 3 % context (old session ended at 80 k tokens of context). `open` on an already trusted folder delivered context on the first try (R7 wait).
+- Observation: before the stage notice the agent did not act on the handoff row by itself (the fixture's row came from its setup); no change made.
+- No code change. Test-harness bug (driver stopped decide after its last answer) fixed in the driver only.
+- Session ID: unavailable.
+
 ## 2026-11-09 — R3 decide closes the loop; R4 session hygiene after a stage ruling
 
 - Decision: the researcher authorized R3 and R4 ("按你的建议，继续做 R3 + R4"), from the trial review `~/notes/toulmin/rdma-trial-review.md` (§5 ping-pong; D3 no handoff and one 325k-token session).
