@@ -628,3 +628,33 @@ from the agent's suggestions.
 - Follow-up (2026-11-09, after a simulated run): decide shows beside each label where completed
   syntheses placed it (`synthesis_groups`, L2 read-only: group, kind, the other drafts, note),
   and counts a recommendation with labels still undecided as "Partly recorded", not Applied.
+
+### H5 Brief and stage proposals in decide (L1 additive, L2, L3; first `stage` writer)
+
+Design: `~/notes/toulmin/project-research-loop-design.md` (H-A items 5 and 6, H-D; D4 = b,
+D5). Before H5 the Brief was edited by hand (model Brief proposals existed only in the
+Textual/native interfaces) and no command wrote PROJECT.md `stage`.
+- Brief proposal `brief-YYYYMMDDTHHMMSSZ[-name].md` in runs/proposals/: header
+  `schema_version: 1`, `kind: brief-proposal`, `base_sha256` (quoted sha256 of brief.md when
+  drafted); body `## Why` (required, never written) then one `## <brief section>` per section
+  to replace, with its complete new text (nonempty; the section must exist once). Decide
+  shows a unified diff and refuses the proposal once brief.md differs from `base_sha256`;
+  `[[reference]]` errors in the result are problems. Apply writes brief.md exactly as
+  previewed under the project writer lock and rechecks the digest first.
+- Stage proposal `stage-YYYYMMDDTHHMMSSZ[-name].md`: header `schema_version: 1`,
+  `kind: stage-proposal`, `from`, `to` (stages of formats.md, different), `decision` (D-NNN or
+  a decision draft's filename in the same folder, resolved through its applied outcome);
+  body `## Why`. It is refused unless PROJECT.md is at `from`, the Decision is active, and no
+  handoff application is unfinished. Apply sets `stage` and appends the Decision to
+  `recent_decisions`, exactly as the previewed PROJECT.md diff shows.
+- L0/L2 discussion (D4 = b, accepted 2026-11-05): AGENTS.md forbids condition checks from
+  changing stage on the researcher's behalf. A stage proposal is not a check: nothing changes
+  until the researcher's apply, the backing Decision records the ruling and its reasons, and
+  G1/G2 readiness is shown as advice only (a ruling may go ahead with conditions unmet, or
+  move backwards). Agents still never write `stage`.
+- Interrupted application: the `applying` marker precedes the write; the next preview treats
+  a brief whose proposed sections are already in place, or a PROJECT.md already at `to` with
+  the Decision recorded, as done and only records it.
+- Inventory order: intake, object drafts, rulings, Brief, stage, review requests. A project
+  handoff drafted before a stage ruling in the same run is reported as made stale by it.
+- Compatibility: additive; PROJECT.md and brief.md formats unchanged; no migration.

@@ -134,3 +134,7 @@
   (`intake-…`) under runs/proposals/ are decided in `toulmin decide`: a round starts only on
   the researcher's apply and is followed by synthesis; intake is chosen label by label.
   Existing files and commands unchanged; no migration.
+- H5 (L1 additive, L2, L3): Brief proposals (`brief-…`, section replacements against a
+  recorded brief.md digest) and stage proposals (`stage-…`, backed by an active Decision) are
+  decided in `toulmin decide`. A stage proposal is the first path that writes PROJECT.md
+  `stage`, only on the researcher's apply. Formats unchanged; no migration.

@@ -3,7 +3,8 @@
 An agent puts each item it considers ready under ``projects/NAME/runs/proposals/``: an object
 draft (``claim-…``, ``evidence-…`` and so on, in the ordinary draft format), a ruling
 proposal (``ruling-…``), and since H4 an intake recommendation (``intake-…``) or a review-round
-request (``review-…``). The researcher's decision is recorded beside it as an outcome
+request (``review-…``), and since H5 a Brief proposal (``brief-…``) or a stage proposal
+(``stage-…``). The researcher's decision is recorded beside it as an outcome
 record (``<stem>.outcome.md``); proposals are never edited, moved or deleted. Pure models and
 validation only: no file access here.
 """
@@ -14,6 +15,7 @@ from typing import Any
 
 from toulmin.core.documents import Document, sections, validate_values
 from toulmin.core.identifiers import ObjectKind
+from toulmin.core.project import STAGES
 from toulmin.core.render import header
 from toulmin.core.schema import SEVERITIES, mapping, text, timestamp
 
@@ -33,8 +35,10 @@ OBJECT_KINDS = {
 RULING = "ruling"
 INTAKE = "intake"  # H4
 REVIEW = "review"  # H4
+BRIEF = "brief"  # H5
+STAGE = "stage"  # H5
 FILENAME = re.compile(
-    rf"({'|'.join([*OBJECT_KINDS, RULING, INTAKE, REVIEW])})-[0-9]{{8}}T[0-9]{{6}}Z"
+    rf"({'|'.join([*OBJECT_KINDS, RULING, INTAKE, REVIEW, BRIEF, STAGE])})-[0-9]{{8}}T[0-9]{{6}}Z"
     r"(?:-[A-Za-z0-9][A-Za-z0-9_-]{0,63})?\.md"
 )
 RULING_FIELDS = {"schema_version", "kind", "object", "status", "decision", "links"}
@@ -265,3 +269,57 @@ def validate_intake_recommendation(document: Document) -> IntakeRecommendation:
             document.fail(f"{field}.label", f"{label} recommended twice")
         items.append(Recommendation(label, outcome, severity, reason, target))
     return IntakeRecommendation(output, tuple(items))
+
+
+@dataclass(frozen=True)
+class BriefProposal:
+    """Replacement text for named brief.md sections, drafted against one brief version."""
+
+    base_sha256: str  # sha256 of brief.md when the proposal was drafted
+    sections: dict[str, str]  # brief section name -> replacement text, in proposal order
+    why: str  # "## Why", shown to the researcher, never written to the brief
+
+
+def validate_brief_proposal(document: Document) -> BriefProposal:
+    validate_values(document)
+    h = mapping(document, document.header, "", {"schema_version", "kind", "base_sha256"})
+    _version(document, h, "brief-proposal")
+    if not isinstance(h["base_sha256"], str) or not SHA256.fullmatch(h["base_sha256"]):
+        document.fail("base_sha256", "expected the quoted sha256 of brief.md when drafted (64 hex)")
+    body = sections(document)
+    why = body.pop("Why", "").strip()
+    if not why:
+        document.fail("body.Why", "explain the change for the researcher")
+    replacements = {name: text for name, text in body.items() if text.strip()}
+    if not replacements:
+        document.fail("body", "give at least one brief section after ## Why")
+    empty = sorted(set(body) - set(replacements))
+    if empty:
+        document.fail(f"body.{empty[0]}", "empty replacement; a proposal never empties a section")
+    return BriefProposal(h["base_sha256"], replacements, why)
+
+
+@dataclass(frozen=True)
+class StageProposal:
+    """A stage change for the researcher's ruling, backed by a Decision (D4)."""
+
+    current: str  # the stage the proposal was drafted at ("from")
+    stage: str  # the proposed stage ("to")
+    decision: str  # D-NNN, or a decision proposal in the same directory
+    why: str
+
+
+def validate_stage_proposal(document: Document) -> StageProposal:
+    validate_values(document)
+    h = mapping(document, document.header, "", {"schema_version", "kind", "from", "to", "decision"})
+    _version(document, h, "stage-proposal")
+    for field in ("from", "to"):
+        if h[field] not in STAGES:
+            document.fail(field, f"expected one of {', '.join(STAGES)}")
+    if h["from"] == h["to"]:
+        document.fail("to", "expected a stage other than from")
+    decision = text(document, h["decision"], "decision")
+    why = sections(document).get("Why", "").strip()
+    if not why:
+        document.fail("body.Why", "explain the stage change for the researcher")
+    return StageProposal(h["from"], h["to"], decision, why)

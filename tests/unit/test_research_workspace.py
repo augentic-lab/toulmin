@@ -261,7 +261,7 @@ def test_card_shows_gates_and_the_loop_suggestion_for_the_stage(populated):
         core(populated, number, kind)
     card = render_state(research_state(populated, "demo"))
     assert "G1 -> critique: met\n" in card
-    assert "G1 conditions hold; the researcher may rule the stage change to critique." in card
+    assert "G1 conditions hold; the researcher may rule the stage change to critique" in card
     edit(populated, "PROJECT.md", stage="critique")
     card = render_state(research_state(populated, "demo"))
     assert "Work toward G2: " in card and "G1 conditions hold" not in card

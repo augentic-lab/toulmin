@@ -62,8 +62,9 @@ which conditions of G1 (enter critique) and G2 (enter brief-final) hold.
    or review your own work. Answer open Objections with Responses, Evidence, superseding
    Claims or validation plans.
 4. Propose brief.md sections that cite objects, including Kill criteria and the minimal
-   validation experiment.
-5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so; never edit
+   validation experiment, as a `brief-…` proposal drafted against the current brief.md.
+5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so and put a
+   Decision draft plus a `stage-…` proposal in proposals/ for `toulmin decide`; never edit
    PROJECT.md stage or status fields.
 
 ## Research rules

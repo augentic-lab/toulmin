@@ -469,7 +469,8 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     assert "kind: review-request" in context and "kind: intake-recommendation" in context  # H4
     assert "runs/proposals/" in context and "`toulmin decide`" in context  # H3
     assert "kind: ruling-proposal" in context and "Never create objects" in context
-    assert "never edit PROJECT.md stage or status fields yourself" in context
+    assert "Never edit PROJECT.md stage or status fields yourself" in context
+    assert "kind: brief-proposal" in context and "kind: stage-proposal" in context  # H5
     state = (root / stored(root, "scheduling")["context"] / "state.md").read_text()
     assert "GATES" in state and "G1 -> critique: not met" in state
     template = (root / "AGENTS.md").read_text()

@@ -16,33 +16,55 @@ label of its output has an outcome. A review request is started by the researche
 only (D3); the sessions run in L3, which brackets them with ``begin_review`` and
 ``finish_review``. An interrupted round is never started again: the next apply records the
 Runs it archived.
+
+H5 (reason in docs/protocols.md, H5): a Brief proposal replaces named brief.md sections and is
+refused once brief.md changed since drafting; a stage proposal is the first path that writes
+PROJECT.md ``stage``. It is the researcher's ruling, applied only by their apply, with an
+active Decision appended to recent_decisions; gate readiness is shown, never enforced.
 """
 
+import difflib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from toulmin.core.atomic import digest, write_atomic
-from toulmin.core.codec import decode
-from toulmin.core.documents import DIRECTORIES, FormatError, sections
-from toulmin.core.identifiers import ObjectId, ObjectKind
+from toulmin.core.atomic import digest, handoff_mutex, write_atomic
+from toulmin.core.codec import decode, patch_header
+from toulmin.core.documents import (
+    DIRECTORIES,
+    Document,
+    FormatError,
+    replace_section,
+    sections,
+)
+from toulmin.core.handoff_transaction import PENDING
+from toulmin.core.handoffs import append_decisions
+from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
+from toulmin.core.inspection import brief_text_errors
+from toulmin.core.project import validate_project
 from toulmin.core.project_proposals import (
+    BRIEF,
     INTAKE,
     OBJECT_KINDS,
     OUTCOME_SUFFIX,
     PROPOSALS,
     REVIEW,
     RULING,
+    STAGE,
+    BriefProposal,
     IntakeRecommendation,
     Outcome,
     ReviewRequest,
     RulingProposal,
+    StageProposal,
     proposal_kind,
     render_outcome,
+    validate_brief_proposal,
     validate_intake_recommendation,
     validate_outcome,
     validate_review_request,
     validate_ruling_proposal,
+    validate_stage_proposal,
 )
 from toulmin.core.repository import Repository
 from toulmin.core.review import INTAKE_FILE
@@ -50,6 +72,7 @@ from toulmin.core.schema import utc_text
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import IntakeResult, OutputState, intake_review, output_state
 from toulmin.protocols.ruling import RulingResult, apply_ruling
+from toulmin.protocols.status import GateReadiness, project_status
 
 
 @dataclass(frozen=True)
@@ -82,6 +105,12 @@ class Preview:
     intake: "IntakePreview | None" = None
     review: ReviewRequest | None = None
     runs: tuple[str, ...] = ()  # Runs an interrupted review round archived
+    brief: BriefProposal | None = None
+    stage: StageProposal | None = None
+    diff: tuple[str, ...] = ()  # unified diff of the file the proposal writes (H5)
+    before_sha256: str | None = None  # that file as previewed
+    after: bytes | None = None  # that file exactly as apply writes it
+    gate: GateReadiness | None = None  # readiness of the gate the stage change enters
 
 
 @dataclass(frozen=True)
@@ -116,7 +145,14 @@ def inventory(root: Path, project: str) -> Inventory:
     if not folder.exists() and not folder.is_symlink():
         return Inventory((), (), ())
     repository.path(_folder(project), "directory")
-    groups: dict[str, list[Pending]] = {INTAKE: [], "object": [], RULING: [], REVIEW: []}
+    groups: dict[str, list[Pending]] = {
+        INTAKE: [],
+        "object": [],
+        RULING: [],
+        BRIEF: [],
+        STAGE: [],
+        REVIEW: [],
+    }
     unrecognized: list[str] = []
     errors: list[str] = []
     for entry in sorted(folder.iterdir()):
@@ -138,8 +174,9 @@ def inventory(root: Path, project: str) -> Inventory:
             continue
         item = Pending(relative, kind, outcome is not None)
         groups[kind if kind in groups else "object"].append(item)
-    # Loop order: intake creates Objections, objects and rulings answer them, and a new review
-    # round comes last, after the revisions it should see.
+    # Loop order: intake creates Objections, objects and rulings answer them, the Brief and a
+    # stage ruling follow (a stage Decision draft is an object decided earlier), and a new
+    # review round comes last, after the revisions it should see.
     ordered = tuple(item for group in groups.values() for item in group)
     return Inventory(ordered, tuple(unrecognized), tuple(errors))
 
@@ -215,6 +252,10 @@ def preview(root: Path, project: str, relative: str) -> Preview:
     interrupted = outcome is not None
     if kind == INTAKE:
         return _intake_preview(root, project, relative, sha, text, raw, interrupted)
+    if kind == BRIEF:
+        return _brief_preview(repository, project, relative, sha, text, raw, outcome is not None)
+    if kind == STAGE:
+        return _stage_preview(repository, project, relative, sha, text, raw, outcome is not None)
     if kind == REVIEW:
         runs = _runs_since(repository, project, outcome.at) if outcome is not None else ()
         try:
@@ -301,6 +342,140 @@ def preview(root: Path, project: str, relative: str) -> Preview:
         interrupted,
         recovered,
     )
+
+
+def _diff(before: str, after: str, name: str) -> tuple[str, ...]:
+    lines = difflib.unified_diff(
+        before.splitlines(), after.splitlines(), f"{name} (now)", f"{name} (after)", lineterm=""
+    )
+    return tuple(lines)
+
+
+def _brief_preview(
+    repository: Repository,
+    project: str,
+    relative: str,
+    sha: str,
+    text: str,
+    raw: bytes,
+    interrupted: bool,
+) -> Preview:
+    def fail(problem: str, proposal: BriefProposal | None = None) -> Preview:
+        return Preview(relative, BRIEF, sha, text, (problem,), None, interrupted=interrupted,
+                       brief=proposal)  # fmt: skip
+
+    try:
+        proposal = validate_brief_proposal(decode(raw, relative))
+    except (OSError, ValueError) as error:
+        return fail(str(error))
+    path = f"projects/{project}/brief.md"
+    current = repository.path(path, "file").read_bytes()
+    now = current.decode("utf-8")
+    if interrupted and all(
+        sections_of(now).get(name, "").strip("\n") == content.strip("\n")
+        for name, content in proposal.sections.items()
+    ):
+        return Preview(relative, BRIEF, sha, text, (), path, interrupted=True, recovered=path,
+                       brief=proposal)  # fmt: skip
+    if digest(current) != proposal.base_sha256:
+        return fail(
+            "brief.md changed since this proposal was drafted (base_sha256 differs); ask the "
+            "agent to draft it again against the current brief",
+            proposal,
+        )
+    after = now
+    try:
+        for name, content in proposal.sections.items():
+            after = replace_section(after, name, content)
+    except ValueError as error:
+        return fail(f"brief.md: {error}", proposal)
+    errors = brief_text_errors(repository, project, after)
+    if errors:
+        return fail("\n".join(errors), proposal)
+    return Preview(relative, BRIEF, sha, text, (), path, interrupted=interrupted, brief=proposal,
+                   diff=_diff(now, after, "brief.md"), before_sha256=digest(current),
+                   after=after.encode())  # fmt: skip
+
+
+def sections_of(text: str) -> dict[str, str]:
+    """Level-two sections of a header-less Markdown file such as brief.md."""
+    return sections(Document({}, text, "brief.md"))
+
+
+def _active_decision(repository: Repository, project: str, value: str) -> None:
+    try:
+        reference = ObjectRef.parse(value)
+    except ValueError as error:
+        raise FormatError(f"{value}: decision: {error}") from error
+    if reference.object_id.kind != ObjectKind.DECISION or reference.project not in {None, project}:
+        raise FormatError(f"{value}: decision: expected a Decision of project {project}")
+    decision, _ = repository.resolve(project, value)
+    if decision.header["status"] != "active":
+        raise FormatError(f"{value}: decision: only an active Decision can back a stage ruling")
+
+
+def _stage_preview(
+    repository: Repository,
+    project: str,
+    relative: str,
+    sha: str,
+    text: str,
+    raw: bytes,
+    interrupted: bool,
+) -> Preview:
+    def fail(problem: str, proposal: StageProposal | None = None) -> Preview:
+        return Preview(relative, STAGE, sha, text, (problem,), None, interrupted=interrupted,
+                       stage=proposal)  # fmt: skip
+
+    try:
+        proposal = validate_stage_proposal(decode(raw, relative))
+    except (OSError, ValueError) as error:
+        return fail(str(error))
+    path = f"projects/{project}/PROJECT.md"
+    before = repository.path(path, "file").read_bytes()
+    charter = decode(before, path)
+    validate_project(charter, project)
+    gate = next(
+        (item for item in project_status(repository.root, project).gates
+         if item.enters == proposal.stage),
+        None,
+    )  # fmt: skip
+    if not interrupted and charter.header["stage"] != proposal.current:
+        return fail(
+            f"PROJECT.md stage is {charter.header['stage']}, not {proposal.current} as drafted",
+            proposal,
+        )
+    try:
+        decision = _resolve_decision(repository, project, proposal.decision)
+        assert decision is not None
+        _active_decision(repository, project, decision)
+    except (OSError, ValueError) as error:
+        return fail(str(error), proposal)
+    if (
+        interrupted
+        and charter.header["stage"] == proposal.stage
+        and (decision in charter.header["recent_decisions"])
+    ):
+        return Preview(relative, STAGE, sha, text, (), path, interrupted=True, recovered=path,
+                       stage=proposal, decision=decision, gate=gate)  # fmt: skip
+    if charter.header["stage"] != proposal.current:
+        return fail(
+            f"PROJECT.md stage is {charter.header['stage']}, not {proposal.current} as drafted",
+            proposal,
+        )
+    if repository.path(f"projects/{project}/{PENDING}").exists():
+        return fail("a handoff application is unfinished; finish it before a stage ruling")
+    after = patch_header(
+        before,
+        {
+            "stage": proposal.stage,
+            "recent_decisions": append_decisions(charter.header["recent_decisions"], [decision]),
+        },
+    )
+    validate_project(decode(after, path), project)
+    return Preview(relative, STAGE, sha, text, (), path, interrupted=interrupted, stage=proposal,
+                   decision=decision, diff=_diff(before.decode(), after.decode(), "PROJECT.md"),
+                   before_sha256=digest(before), after=after, gate=gate)  # fmt: skip
 
 
 def _intake_preview(
@@ -467,7 +642,16 @@ def apply(
     # this point leaves evidence that the next preview checks before applying again.
     _write_outcome(repository, relative, marker, replace=current.interrupted)
     result = current.recovered
-    if result is None and current.kind != RULING:
+    if current.kind in {BRIEF, STAGE}:
+        if result is None:
+            assert current.target is not None and current.after is not None
+            _write_checked(repository, project, current.target, current.before_sha256,
+                           current.after)  # fmt: skip
+        if current.stage is not None:
+            result = f"stage {current.stage.stage} ({current.decision})"
+        else:
+            result = current.target
+    elif result is None and current.kind != RULING:
         created = create_object(root, project, OBJECT_KINDS[current.kind], relative, actor, True)
         result = created.stem
     elif result is None:
@@ -488,6 +672,17 @@ def apply(
     done = Outcome(relative, sha256, "applied", actor, now, approval_text, None, result)
     _write_outcome(repository, relative, done, replace=True)
     return done
+
+
+def _write_checked(
+    repository: Repository, project: str, relative: str, before: str | None, after: bytes
+) -> None:
+    """Write brief.md or PROJECT.md exactly as previewed, under the project's writer lock."""
+    with handoff_mutex(repository.project(project)):
+        destination = repository.path(relative, "file")
+        if digest(destination.read_bytes()) != before:
+            raise FormatError(f"{relative}: changed since the preview; nothing written")
+        write_atomic(destination, after, replace=True)
 
 
 def reject(

@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-09 — H5: Brief and stage proposals in decide
+
+- Decision: the researcher authorized H5 ("可以开始 H5") under accepted D4 = b (stage proposals applied through decide with a Decision) and D5 (Brief proposals with apply).
+- L1 (additive): kinds `brief` and `stage`; `brief-proposal` (quoted `base_sha256`, `## Why`, one `## <section>` per replaced brief section) and `stage-proposal` (`from`, `to`, `decision`, `## Why`); `documents.replace_section` (replaces one existing section's text, keeps every other byte).
+- L2 (reason and the L0 discussion in docs/protocols.md "H5"): Brief previews are a unified diff, refused once brief.md differs from `base_sha256` or the result has `[[reference]]` errors; stage previews check `from`, an active Decision (D-NNN or a decided decision draft), no unfinished handoff, show G1/G2 readiness as advice and the PROJECT.md diff (`stage`, `recent_decisions` + Decision). Apply writes exactly the previewed bytes under the handoff writer lock after an `applying` marker; interrupted applications are recognized and only recorded. First path that writes `stage`, only on the researcher's apply.
+- L3: decide shows both kinds (diff, stage line, readiness checklist), reports a project handoff made stale by a stage ruling in the same run; project context step 8 and the stage paragraph, workspace AGENTS.md steps 4–5 and the state card's "G1 conditions hold" line point to the proposals; released.json regenerated (AGENTS.md 17 digests). README, packaged protocols.md and framework CHANGELOG updated. Compatibility: formats unchanged; no migration.
+- Found while testing: a stage Decision needs a nonempty `related` (guidance now says to relate the Claims the gate rests on); YAML reads an all-digit or digits-plus-`e` hash as a number, so guidance and the error ask for a quoted `base_sha256`.
+- Tests: `tests/cli/test_brief_stage_proposals.py` (10: Brief diff/apply touches only named sections and G2 Kill criteria then holds; stale/bad reference/unknown section refused with nothing written; interrupted Brief recorded; Decision draft then stage ruling with readiness advice, PROJECT.md diff and stale handoff report; five invalid stage proposals; undecided and superseded Decisions refused); guidance assertions in `test_aoe_scopes`/`test_research_workspace`.
+- Checks: `uv run --locked pytest -q` 1313 passed (7m37s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Pending: researcher use (tests are not acceptance). Blockers: none. Next step: C5 (calibration report and stage trial), on authorization.
+- Session ID: unavailable.
+
 ## 2026-11-09 — H4 follow-up: synthesis groups beside labels; partial count
 
 - Decision: after a simulated H4 run on the temporary workspace (fake claude/codex by absolute path, temporary CODEX_HOME; review request skipped then applied: 2 reviews plus synthesis; two intake recommendations decided label by label, one label skipped then taken with a changed severity; every outcome as designed), the researcher approved fixing the two issues found ("按你的建议，先修这两处小问题").

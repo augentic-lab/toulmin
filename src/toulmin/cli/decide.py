@@ -40,6 +40,8 @@ LABEL = {
     "ruling": "Ruling proposal",
     "intake": "Intake recommendation",
     "review": "Review round request",
+    "brief": "Brief proposal",
+    "stage": "Stage proposal",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
@@ -97,7 +99,7 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
         except (OSError, ValueError) as error:
             ignored.append(str(error))
             continue
-        kinds = {"ruling": "ruling", "intake": "intake", "review": "review"}
+        kinds = {k: k for k in ("ruling", "intake", "review", "brief", "stage")}
         items += [Item(kinds.get(item.kind, "object"), item.path, name) for item in found.items]
         ignored += [
             f"{path}: not named KIND-YYYYMMDDTHHMMSSZ[-name].md" for path in found.unrecognized
@@ -201,6 +203,7 @@ class Run:
     charter_changed: bool = False
     handoff_applied: bool = False
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
+    staged: set[str] = field(default_factory=set)  # projects whose stage was ruled (H5)
 
     def decide(self, item: Item) -> bool:
         """Show and decide one item; False means quit."""
@@ -212,6 +215,8 @@ class Run:
             "ruling": self._proposal,
             "intake": self._intake,
             "review": self._review,
+            "brief": self._proposal,
+            "stage": self._proposal,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -334,10 +339,12 @@ class Run:
             done = project_proposals.apply(
                 self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
             )
-            verb = "Ruled" if item.kind == "ruling" else "Created"
-            typer.echo(f"{verb}: {done.result}")
+            verb = {"ruling": "Ruled", "brief": "Updated", "stage": "Stage ruled"}
+            typer.echo(f"{verb.get(item.kind, 'Created')}: {done.result}")
             typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
             self.applied += 1
+            if item.kind == "stage":
+                self.staged.add(item.project)
         elif choice == "r":
             reason = _reason()
             project_proposals.reject(
@@ -530,6 +537,9 @@ class Run:
             reason = (
                 "superseded by the handoff of this project applied in this run"
                 if item.project in self.touched
+                else "PROJECT.md changed by the stage ruling in this run; ask the agent to "
+                "draft again"
+                if item.project in self.staged
                 else "PROJECT.md changed since drafting; ask the agent to draft again"
             )
             typer.echo(f"Stale: {reason}; skipped.")
@@ -567,7 +577,11 @@ def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
             )
         else:
             typer.echo("Nothing it would have produced was found; apply runs it now.")
-    if shown.kind != "ruling" and shown.target is not None and shown.recovered is None:
+    if (
+        shown.kind not in {"ruling", "brief", "stage"}
+        and shown.target is not None
+        and shown.recovered is None
+    ):
         typer.echo(f"Would create: {shown.target} (the ID is assigned when applied)")
     change = shown.change
     if change is not None:
@@ -584,10 +598,27 @@ def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
     typer.echo("")
     typer.echo(shown.text.rstrip("\n"))
     typer.echo("")
+    stage = shown.stage
+    if stage is not None and not shown.problems and shown.recovered is None:
+        typer.echo(f"Stage: {stage.current} -> {stage.stage}, backed by {shown.decision}")
+        gate = shown.gate
+        if gate is not None:
+            state = {True: "met", False: "not met", None: "unknown"}[gate.met]
+            typer.echo(f"{gate.gate} readiness (advice; the ruling is yours): {state}")
+            for entry in gate.items:
+                detail = f": {entry.detail}" if entry.detail else ""
+                typer.echo(f"  [{'x' if entry.met else ' '}] {entry.label}{detail}")
+        else:
+            typer.echo(f"No gate is defined for entering {stage.stage}.")
+    if shown.diff and shown.recovered is None:
+        typer.echo("Change:")
+        for line in shown.diff:
+            typer.echo(f"  {line}")
+        typer.echo("")
     for problem in shown.problems:
         typer.echo(f"Problem: {problem}")
-    if shown.kind == "ruling":
-        typer.echo("The Why section is shown to you only; it is not written to the object.")
+    if shown.kind in {"ruling", "brief", "stage"}:
+        typer.echo("The Why section is shown to you only; it is not written to the target.")
 
 
 def decide_command(

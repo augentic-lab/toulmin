@@ -353,7 +353,7 @@ def _loop_actions(state: ResearchState) -> list[str]:
     if gate.met:
         return [
             f"{gate.gate} conditions hold; the researcher may rule the stage change to "
-            f"{gate.enters}."
+            f"{gate.enters} (propose it as a stage proposal)."
         ]
     if gate.gate == "G1":
         return [f"Draft the missing core Claims for researcher confirmation: {_missing(gate)}."]

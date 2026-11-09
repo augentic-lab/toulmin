@@ -490,10 +490,18 @@ class AoEWorkspace:
             "filename), optional links; body ## Why (for the researcher, never stored) plus any "
             "Response, Ruling, Invalidation or Rationale text to add. `toulmin decide` offers "
             "drafts before rulings.\n"
-            "8. Brief: propose brief.md sections that cite objects as [[C-001]], including Kill "
-            "criteria and the minimal validation experiment; the researcher edits brief.md.\n"
+            f"8. Brief: propose sections in {self.runs}/proposals/brief-YYYYMMDDTHHMMSSZ-NAME.md: "
+            "header schema_version: 1, kind: brief-proposal, base_sha256 (the quoted sha256 of "
+            "brief.md as you read it); body ## Why, then one ## section per brief section to "
+            "replace with its complete new text, citing objects as [[C-001]] (Kill criteria and "
+            "the minimal validation experiment included). It is refused once brief.md changes; "
+            "redraft then.\n"
             "Stage changes are the researcher's ruling: when a gate's conditions hold, say so and "
-            "stop; never edit PROJECT.md stage or status fields yourself.\n\n"
+            f"propose it in {self.runs}/proposals/: a Decision draft (related: the Claims the gate "
+            "rests on) plus "
+            "stage-YYYYMMDDTHHMMSSZ-NAME.md (schema_version: 1, kind: stage-proposal, from, to, "
+            "decision: D-NNN or the decision draft's filename; body ## Why) for `toulmin decide`. "
+            "Never edit PROJECT.md stage or status fields yourself.\n\n"
         )
 
     def _workspace_instructions(self, state: ResearchState | WorkspaceState, command: str) -> str:

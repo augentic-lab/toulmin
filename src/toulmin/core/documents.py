@@ -153,3 +153,24 @@ def put_section(body: str, name: str, content: str) -> str:
         lines[start - 1] += "\n"
     block = (kept + "\n" if kept.strip() else "") + addition + trailing
     return "".join(lines[:start]) + block + "".join(lines[end:])
+
+
+def replace_section(body: str, name: str, content: str) -> str:
+    """Return body with the text of existing section ``name`` replaced (H5 Brief proposals).
+
+    The heading line and every other byte stay as they are; the section must exist once.
+    """
+    if not content.strip() or headings(content.splitlines(keepends=True)):
+        raise ValueError(f"{name}: expected nonempty content without level-two headings")
+    lines = body.splitlines(keepends=True)
+    found = headings(lines)
+    positions = [index for index, heading in found if heading == name]
+    if len(positions) != 1:
+        raise ValueError(f"{name}: expected exactly one such section in the brief")
+    start = positions[0] + 1
+    later = [index for index, _ in found if index > positions[0]]
+    end = later[0] if later else len(lines)
+    if lines and not lines[start - 1].endswith("\n"):
+        lines[start - 1] += "\n"
+    block = content.strip("\n") + "\n" + ("\n" if end < len(lines) else "")
+    return "".join(lines[:start]) + block + "".join(lines[end:])

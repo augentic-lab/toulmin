@@ -121,8 +121,9 @@ toulmin decide        # in your own terminal, at the end of a session
 ```
 
 `toulmin decide` shows every pending workspace change, child creation, project proposal (an
-object draft, ruling proposal, intake recommendation or review-round request an agent put
-under `projects/NAME/runs/proposals/`, H3–H4; a review round starts only when you apply it) and
+object draft, ruling, intake recommendation, review-round request, Brief or stage proposal
+an agent put under `projects/NAME/runs/proposals/`, H3–H5; a review round starts, and the
+stage changes, only when you apply it) and
 handoff draft (workspace and project) with the same preview its own command prints, one at a
 time, and asks
 `[a]pply / [r]eject / [s]kip / [q]uit` (default skip; handoff drafts have no reject). Applying
