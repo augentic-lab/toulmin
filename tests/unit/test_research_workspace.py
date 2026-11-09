@@ -264,7 +264,9 @@ def test_card_shows_gates_and_the_loop_suggestion_for_the_stage(populated):
     assert "G1 conditions hold; the researcher may rule the stage change to critique" in card
     edit(populated, "PROJECT.md", stage="critique")
     card = render_state(research_state(populated, "demo"))
-    assert "Work toward G2: " in card and "G1 conditions hold" not in card
+    # V2: the shared rule table names the G2 work item by item (Kill criteria here).
+    assert "- Agent: Propose Kill criteria for brief.md." in card
+    assert "G1 conditions hold" not in card
     stored = decode((populated / "projects/demo/PROJECT.md").read_bytes()).header["stage"]
     assert stored == "critique"  # the card suggests; it never changes the stage
 

@@ -53,6 +53,7 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 | End of a session | ask the agent to end it, then `toulmin decide` |
 | Fresh conversation (context full, next day) | `toulmin open --new-session` |
 | Where things stand | `toulmin status` |
+| What can happen next, live beside the agent | `toulmin map --watch` in a second terminal or tmux pane (`toulmin map` for one view) |
 | How often each model's review findings were adopted | `toulmin calibration` (`--write` saves it under global/calibration/) |
 | A concrete direction becomes a project | ask the agent to propose a child project, `toulmin decide`, then `cd projects/NAME && toulmin open` |
 
@@ -197,8 +198,8 @@ toulmin aoe refresh tail-latency --root /path/to/research
 ```
 
 The English card derives recorded object statuses, draft files, G1/G2 readiness (GATES) and
-available actions from files; for a project at explore or critique, ACTIONS suggests the next
-loop step (draft missing core Claims, or note that a gate's conditions hold for your ruling).
+available actions from files; ACTIONS lists up to three suggested next moves from the same rule
+table as `toulmin map` (who acts: the agent or you).
 `RECORDED NEXT STEP` is historical guidance, not inferred current work. `--offline` needs no AoE;
 `--json` exposes the same structured view. This is an on-demand card, not a persistent sidebar.
 Existing TUI/native proposal trees are not included in its bounded draft inventory.

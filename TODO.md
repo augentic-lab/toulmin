@@ -289,8 +289,8 @@ Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/
 Design: `/home/tianchi/notes/toulmin/research-map-design.md`. A read-only, file-derived view of the stage track, the next gate, what waits on the researcher, suggested next moves (who acts) and the Claim → Evidence/Objection → Decision tree, refreshed live beside AoE. Boundaries: no enforced order, no stored state, no rulings, no L1 change.
 
 - [x] V1 — Design draft (2026-11-09, documentation only): `toulmin map [NAME] [--watch]`, rule table shared with the state card, manual pane beside AoE first; decisions D1–D6 for the researcher.
-- [ ] V1 researcher review (D1–D6).
-- [ ] V2 — Implement `toulmin map` (L2 `research_map`, shared `next_moves`, L3 rendering and `--watch`). Requires separate authorization.
+- [x] V1 researcher review — 2026-11-09: D1–D6 accepted as recommended (`toulmin map`; one rule table shared with the state card; current Claims with superseded collapsed; manual pane first; minimal workspace lines; implement V2 now, during the C5 trial).
+- [x] V2 — `toulmin map` (2026-11-09: L2 `research_map` and shared `next_moves`; L3 rendering at any width, ASCII fallback, `--claim`, workspace scope, `--watch` polling file metadata; state card ACTIONS use the same table; automated tests, a pseudo-terminal watch smoke on a copy of the trial workspace). Researcher use in the C5 trial pending; whether a tmux split works inside an attached AoE session is unchecked.
 - [ ] V3 — AoE placement beyond a manual pane (automatic pane or AoE sidebar). Separate design and authorization.
 
 ## UI0 — Python/Textual TUI proposal

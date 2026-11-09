@@ -144,3 +144,6 @@
 - C5 (L2 read-only, L3): `toulmin calibration` derives adoption of review drafts per model,
   role and operation from Runs, intake.md and Objections; `--write` regenerates
   global/calibration/calibration.md. Formats unchanged.
+- V2 (L2 read-only, L3): `toulmin map [--watch]` shows stage, next gate, pending decisions,
+  suggested moves and the argument tree from files; one rule table (`next_moves`) now also
+  writes the state card's suggested ACTIONS. Formats unchanged.

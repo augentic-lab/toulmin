@@ -16,6 +16,7 @@ from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
 from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols import project_proposals
+from toulmin.protocols.research_map import AGENT, EITHER, Move, move_facts, next_moves
 from toulmin.protocols.session import entry_files
 from toulmin.protocols.status import GateReadiness, project_status
 
@@ -38,6 +39,8 @@ class ResearchState:
     gates: tuple[GateReadiness, ...] = ()
     # Undecided H3 proposals under runs/proposals/, awaiting `toulmin decide`.
     proposals: tuple[str, ...] = ()
+    # Suggested next moves from the rule table shared with `toulmin map` (V2).
+    moves: tuple[Move, ...] = ()
 
 
 def _file_digest(repository: Repository, relative: str) -> str:
@@ -75,6 +78,7 @@ def research_state(root: Path, project: str) -> ResearchState:
     pending: tuple[str, ...] = ()
     gates: tuple[GateReadiness, ...] = ()
     proposals: tuple[str, ...] = ()
+    moves: tuple[Move, ...] = ()
 
     def remember(repository: Repository, relative: str) -> bool:
         try:
@@ -167,6 +171,7 @@ def research_state(root: Path, project: str) -> ResearchState:
             for path in found.unrecognized
         )
         gates = project_status(repository.root, project).gates
+        moves = next_moves(move_facts(repository.root, project, snapshot, gates, found.items))
     except (OSError, ValueError) as error:
         errors.append(str(error))
 
@@ -196,6 +201,7 @@ def research_state(root: Path, project: str) -> ResearchState:
         tuple(context),
         gates,
         proposals,
+        moves,
     )
 
 
@@ -305,22 +311,12 @@ def render_state(state: ResearchState) -> str:
             lines.append("Inspect draft files; confirm any formal application separately.")
         if state.pending_review:
             lines.append("Inspect pending review drafts and choose intake outcomes.")
-        if state.proposals:
-            lines.append(
-                f"Ask the researcher to run `toulmin decide` for {len(state.proposals)} "
-                "pending proposal(s)."
-            )
-        opened = [object_id for object_id, status in state.objects if status == "open"]
-        if opened:
-            lines.append(
-                f"Inspect open objections and choose responses/rulings: {', '.join(opened)}."
-            )
-        lines.extend(_loop_actions(state))
-        if any(
-            object_id.startswith("C-") and status != "superseded"
-            for object_id, status in state.objects
-        ):
-            lines.append("Request a fresh independent review of selected current Claims.")
+        suggested = [move for move in state.moves if move.actor != EITHER]
+        if suggested:
+            lines.append("Suggested next (the same rules as `toulmin map`; the researcher rules):")
+        for move in suggested:
+            who = "Agent" if move.actor == AGENT else "Researcher"
+            lines.append(f"- {who}: {move.text}")
         lines.append("Prepare a handoff draft for researcher confirmation.")
     if state.notices:
         lines.extend(("", "NOTICES", *state.notices))
@@ -341,20 +337,3 @@ def _readiness(gate: GateReadiness) -> str:
     if gate.met is None:
         return "unknown (data invalid)"
     return "met" if gate.met else f"not met; missing: {_missing(gate)}"
-
-
-def _loop_actions(state: ResearchState) -> list[str]:
-    """The project loop's next suggestion for the current stage (H6); never a ruling."""
-    gates = {gate.gate: gate for gate in state.gates}
-    step = {"explore": "G1", "critique": "G2"}.get(state.stage)
-    gate = gates.get(step) if step else None
-    if gate is None or gate.met is None:
-        return []
-    if gate.met:
-        return [
-            f"{gate.gate} conditions hold; the researcher may rule the stage change to "
-            f"{gate.enters} (propose it as a stage proposal)."
-        ]
-    if gate.gate == "G1":
-        return [f"Draft the missing core Claims for researcher confirmation: {_missing(gate)}."]
-    return [f"Work toward G2: {_missing(gate)}."]

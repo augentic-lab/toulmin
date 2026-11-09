@@ -674,3 +674,31 @@ identical report; `--write` (re)writes `global/calibration/calibration.md` (or
 `calibration-NAME.md`) and hand edits there do not survive regeneration. The command never
 changes research files and makes no recommendation about role assignment; reading the rates
 is the researcher's call. No format change.
+
+### V2 research map and shared next moves (L2 read-only, L3)
+
+Design: `~/notes/toulmin/research-map-design.md` (V1, decisions D1–D6 accepted 2026-11-09).
+The loop is not enforced, so the researcher needs one view of where a project is and what can
+happen next. `toulmin map [NAME] [--watch] [--claim C-NNN] [--ascii]` shows, from files only:
+the stage track, the gate that leaves the current stage with its items (others as counts),
+what waits on the researcher (the `toulmin decide` items of that project, review drafts
+without an intake outcome), up to three suggested moves naming who would act, and the
+argument tree (current Claims, core first, with their Evidence, Objections and their
+Decisions, Specs and validation plans; superseded Claims collapsed to their chains; Decisions
+attached to nothing listed apart). Without NAME it follows the current `projects/NAME`
+directory, else shows the workspace: pending workspace decisions and one stage line, decide
+count and first move per project. `--watch` polls file metadata (Run archives only at their
+top level), recomputes only on change and writes nothing.
+- L2 reason: `protocols/research_map.py` holds `next_moves`, the one rule table behind the map
+  and the state card ACTIONS, so the researcher and the agent read the same suggestions. Rows,
+  in order: invalid data (resolve errors, nothing else); pending proposals (`toulmin decide`);
+  review outputs with undecided labels and no pending intake recommendation (recommend
+  intake); open Objections without a pending ruling proposal, fatal/major first (respond);
+  explore: missing core Claims, or G1 holds; critique: a review round when no completed review
+  Run is newer than the newest current Claim, Kill criteria, remaining G2 items, or G2 holds;
+  otherwise continue the discussion. A gate that holds is not offered for a stage ruling while
+  any review draft is undecided, because those drafts may still become blocking Objections.
+- The card's stage-aware ACTIONS line (H6) and its proposal, open-objection and review lines
+  are replaced by "Suggested next" lines from the same table; the other ACTIONS lines and the
+  fingerprint are unchanged (the moves derive from files already fingerprinted).
+- Suggestions are advice: nothing changes stage, status or objects. No format change.

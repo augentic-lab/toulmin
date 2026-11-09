@@ -91,7 +91,10 @@ def test_an_object_draft_is_created_only_when_applied(populated):
     state = research_state(populated, "demo")
     assert state.proposals == (relative,) and state.errors == ()
     card = render_state(state)
-    assert "PROPOSALS\n" in card and "run `toulmin decide` for 1 pending proposal(s)" in card
+    assert (
+        "PROPOSALS\n" in card
+        and "- Researcher: Run `toulmin decide` for 1 pending proposal(s)." in card
+    )
     assert relative not in state.draft_files
     result = run(populated, "s\n")
     assert "Object draft: " + relative in result.stdout

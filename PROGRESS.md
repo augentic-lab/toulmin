@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-09 — V2: research map
+
+- Decision: the researcher accepted V1 D1–D6 as recommended and authorized V2 ("按你的建议，全部接受，开始 V2").
+- L2 (read-only; reason in docs/protocols.md "V2"): `protocols/research_map.py`: `research_map(root, project)` (stage, gates, pending proposals, review drafts without an intake outcome, suggested moves, argument tree, superseded chains, loose Decisions, objects aimed elsewhere, errors) and `next_moves`, the one rule table now also behind the state card's "Suggested next" ACTIONS lines (replacing the H6 loop line and the proposal/open-objection/review lines).
+- L3: `toulmin map [NAME] [--watch] [--interval] [--claim] [--ascii]` in `cli/research_map.py`: project from the argument or the current `projects/NAME` directory, else the workspace view; widths down to ~48 columns; `--watch` polls file metadata and redraws only on change. README daily-use row, packaged protocols.md, framework CHANGELOG. No format change.
+- Found on the trial workspace (read-only runs): a G2 that looked met was offered for a stage ruling while four intake recommendations were undecided; stage suggestions now wait until every review draft has an intake outcome. Undecided drafts are read from each completed review output (outputs without intake.md were missed by the snapshot's list).
+- Tests: `tests/cli/test_research_map.py` (11: empty project, tree links, intake coverage, rule table rows, card = map moves, narrow/ASCII, `--claim`, invalid data, current-directory project, workspace scope, watch redraws and signature); card/proposal tests updated for the shared wording. Pseudo-terminal smoke of `--watch` on a copy of the trial workspace: one draw at start, one redraw after a proposal moved, none while idle.
+- Checks: `uv run --locked pytest -q` 1332 passed (7m42s); ruff check, ruff format --check, mypy and `git diff --check` clean; packaged protocols.md byte-matches docs.
+- Pending: the researcher's use during the C5 trial; whether a tmux split works inside an attached AoE session (P1) is unchecked. V3 needs authorization. Blockers: none.
+- Session ID: unavailable.
+
 ## 2026-11-09 — V1: research map design
 
 - Decision: during the C5 trial setup the researcher noted that the unenforced loop needs a better view of where the project is and what can happen next (a tree or graph, live, viewable under AoE), and authorized the design ("可以，我授权你先写设计文档"). Documentation only.

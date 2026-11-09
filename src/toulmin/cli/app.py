@@ -1,11 +1,13 @@
 """Installed CLI entry point."""
 
 import re
+import sys
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from toulmin.cli import decide
 from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
@@ -692,6 +694,83 @@ def calibration_report(
     typer.echo(text, nl=False)
     if write:
         typer.echo(f"\nWritten: {relative} (regenerable; derived from files only)")
+
+
+@app.command("map")
+def show_map(
+    project: Annotated[
+        str | None,
+        typer.Argument(
+            help="Child project; omitted: the project of the current directory, else the workspace."
+        ),
+    ] = None,
+    root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
+    watch: Annotated[
+        bool, typer.Option("--watch", help="Redraw whenever project files change; Ctrl-C stops.")
+    ] = False,
+    interval: Annotated[
+        float, typer.Option("--interval", min=0.2, help="Seconds between checks with --watch.")
+    ] = 2.0,
+    claim: Annotated[
+        str | None, typer.Option("--claim", help="Show only this Claim's subtree.")
+    ] = None,
+    ascii_only: Annotated[
+        bool,
+        typer.Option("--ascii", help="ASCII marks only (default when the terminal is not UTF-8)."),
+    ] = False,
+) -> None:
+    """Show where the project is and what can happen next, from files only (V2)."""
+    import time
+
+    from toulmin.cli import research_map as view
+    from toulmin.cli.entry import _child
+    from toulmin.protocols.research_map import research_map
+
+    if project is None:
+        try:
+            project = _child(Path.cwd().resolve(), root.resolve())
+        except OSError:
+            project = None
+    if project is not None:
+        try:
+            validate_project_name(project)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="project") from error
+    try:
+        chosen = view.validate_claim(claim)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="--claim") from error
+    glyphs = view.Glyphs(ascii_only or view.ascii_default())
+
+    def draw(refreshed: str | None = None) -> tuple[str, bool]:
+        width = view.terminal_width()
+        try:
+            if project is None:
+                return view.render_workspace(root, width, glyphs, refreshed), True
+            report = research_map(root, project)
+            waiting = [item for item in decide.inventory(root).items if item.project == project]
+            text = view.render_project(report, waiting, width, glyphs, refreshed, chosen)
+            return text, not report.errors
+        except (OSError, ValueError) as error:
+            return f"Error: {error}\n", False
+
+    if not watch:
+        text, healthy = draw()
+        typer.echo(text, nl=False)
+        if not healthy:
+            raise typer.Exit(1)
+        return
+    folder = root if project is None else root / "projects" / project
+    try:
+        view.watch(
+            lambda: draw(time.strftime("%H:%M:%S"))[0],
+            lambda: view.signature(folder),
+            interval,
+            lambda text: typer.echo(text, nl=False),
+            clear=sys.stdout.isatty(),
+        )
+    except KeyboardInterrupt:
+        typer.echo("")
 
 
 @app.command("status")
