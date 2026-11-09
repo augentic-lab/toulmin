@@ -116,3 +116,14 @@ def test_process_and_codex_do_not_normalize_raw_output_newlines(tmp_path):
     outcome = Codex().run(Session("question", "test", 5, str(script)))
     assert outcome.failure is None
     assert outcome.text == "brief\r\nbody\r\n"
+
+
+def test_a_prompt_larger_than_the_pipe_buffer_reaches_a_slow_starting_tool(tmp_path):
+    # W11: R-005 and R-006 (105 KB synthesis prompts) hung until the timeout because only
+    # the first communicate() call wrote stdin; real tools start slowly before reading.
+    reader = "import sys, time; time.sleep(0.5); print(len(sys.stdin.read()))"
+    prompt = "x" * 300_000
+    finished = run_process([sys.executable, "-c", reader], prompt, 20, tmp_path)
+    assert finished.exit_status == 0, finished.stderr
+    assert finished.stdout.strip() == str(len(prompt))
+    assert finished.duration_seconds < 10

@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-09 — W11 fix: large prompts reach slow-starting tools
+
+- Decision: R-006 (the Codex rerun of round 1's synthesis) also timed out at 900 s with empty stdout and stderr, which ruled out model speed (Codex would have printed `thread.started`). The researcher authorized the fix ("按你的建议，立即修复 W11").
+- Cause (verified): `adapters/base.run_process` called `communicate(prompt, timeout=0.1)` and retried with `communicate(None, ...)`. CPython 3.12 registers stdin for writing only when the call passes input, so after the first 0.1 s nothing more was written and stdin was never closed. Review prompts (61 KB) fit the 64 KiB pipe buffer; the synthesis prompt (105 KB) did not, so `claude`/`codex`, which start slowly before reading stdin, waited for the rest until killed. Reproduced locally without a model: a reader that starts after 0.5 s got 60 KB in 0.5 s and hung on 105 KB until the timeout. The earlier explanation ("synthesis reasoning is heavy") was wrong; W10's "cause undetermined" is now resolved.
+- Fix (L3 adapter only): one `communicate(prompt)` call runs in a helper thread; the caller polls for timeout and cancellation, kills the process group and waits up to 10 s for the pipes. Partial output on timeout and cancellation is still kept. No format change. Affects every session that receives its prompt on stdin (reviews, synthesis, crossval, exploration), which would also have hit this as projects grow.
+- Test: `test_a_prompt_larger_than_the_pipe_buffer_reaches_a_slow_starting_tool` (300 KB prompt; fails before the fix by hanging until its 20 s timeout, passes after).
+- Checks: `uv run --locked pytest -q` 1334 passed (7m43s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Live evidence (researcher's rerun on the uncommitted fix, observed read-only): R-007 (Claude, rotation) completed in 71.8 s with a 108 KB prompt: 11 groups (1 disagreement, 6 agreement, 4 singleton) covering all 21 items; the Run recorded `claude-opus-5-5`, which also confirms W10's stream-json parsing with the real CLI on the success path. The disagreement (C-001: consequential problem versus diagnostic regime, Codex/Claude skeptics major against Claude why-not-x minor) is substantive; with the hang fixed, synthesis speed no longer motivates the slimming idea (its pursuit remains the researcher's call).
+- Next: C5 rounds 2 and 3. Blockers: none.
+- Session ID: unavailable.
+
 ## 2026-11-09 — W10 fix: diagnosable Claude timeouts
 
 - Decision: in the C5 trial, R-005 (round 1 synthesis, `claude-code default`) timed out after 900 s with empty stdout and stderr. Investigation (read-only): the prompt (105 KB, 21 items) is comparable to the review inputs, the four reviews took 41–108 s, and no other Claude session logged API, rate-limit or overload errors between 14:38 and 15:00 UTC; the cause is undetermined (likely the heavier synthesis reasoning exceeding the shared 900 s timeout: a guess). The researcher chose to rerun the synthesis with Codex in their terminal and authorized this fix ("按你的建议，两者都做").

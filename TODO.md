@@ -285,6 +285,7 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 
 - [x] W10 fix — 2026-11-09 (C5 trial, R-005): a Claude synthesis timed out after 900 s with an empty tool.log, because independent sessions printed one JSON result at the end. Independent Claude sessions now stream (`stream-json --verbose --include-partial-messages`); on failure tool.log summarizes the stream (answer started, characters per thinking/text block, last events) and the partial answer is kept in output.md; the Run records the streamed model. Cause of R-005 itself remains undetermined.
+- [x] W11 fix — 2026-11-09 (C5 trial, R-005 and R-006): both round 1 syntheses (Claude, then Codex) timed out at 900 s with no output. Cause: `run_process` retried `communicate(None, timeout)`, and CPython sends stdin only on a call that passes input, so a prompt larger than the 64 KiB pipe buffer (synthesis: 105 KB; reviews: 61 KB) was never fully delivered to a tool that starts slowly. One `communicate(prompt)` now runs in a helper thread while the caller enforces timeout and cancellation. Regression test with a 300 KB prompt and a slow-starting reader. This corrects W10's "cause undetermined".
 
 ### V — Research map (requested during the C5 trial setup, 2026-11-09)
 

@@ -16,6 +16,7 @@ from toulmin.core.atomic import write_atomic
 from toulmin.protocols.review import ReviewOutcome
 
 LOG_LIMIT = 20_000
+_REAP_SECONDS = 10.0  # wait for the pipes to close after the group is killed
 _ACTIVE: set[int] = set()
 _ACTIVE_LOCK = threading.Lock()
 
@@ -115,31 +116,47 @@ def run_process(
     with _ACTIVE_LOCK:
         _ACTIVE.add(process.pid)
     cancelled = False
+    # One communicate() call in a helper thread writes the whole prompt and reads both pipes.
+    # Retrying communicate(None, timeout) instead stops sending stdin after the first call
+    # (CPython registers stdin only when input is passed), so a prompt larger than the pipe
+    # buffer was never delivered and the session waited until the timeout (W11).
+    output: dict[str, tuple[bytes, bytes]] = {}
+    failure: list[BaseException] = []
+
+    def talk() -> None:
+        try:
+            output["pipes"] = process.communicate(prompt.encode("utf-8"))
+        except BaseException as error:  # re-raised in the calling thread
+            failure.append(error)
+
+    worker = threading.Thread(target=talk, name=f"session-{process.pid}", daemon=True)
+    worker.start()
     try:
-        pending_input: bytes | None = prompt.encode("utf-8")
         while True:
             cancelled = cancel is not None and cancel.is_set()
             remaining = timeout - (time.monotonic() - started)
             if cancelled or remaining <= 0:
                 # Helpers share the group, so stopping the parent alone is insufficient.
                 _kill(process.pid)
-                stdout, stderr = process.communicate()
+                worker.join(_REAP_SECONDS)
                 status: int | None = None
                 break
-            try:
-                stdout, stderr = process.communicate(pending_input, timeout=min(0.1, remaining))
+            worker.join(min(0.1, remaining))
+            if not worker.is_alive():
                 status = process.returncode
                 break
-            except subprocess.TimeoutExpired:
-                # communicate retains partial output and finishes sending stdin on retry.
-                pending_input = None
     except BaseException:
         _kill(process.pid)
-        process.communicate()
+        worker.join(_REAP_SECONDS)
         raise
     finally:
         with _ACTIVE_LOCK:
             _ACTIVE.discard(process.pid)
+    if failure:
+        raise failure[0]
+    # A process outside the killed group that still holds a pipe leaves the reader running;
+    # its output is then lost rather than waited for.
+    stdout, stderr = output.get("pipes", (b"", b""))
     return Finished(
         status,
         stdout.decode("utf-8", errors="replace"),

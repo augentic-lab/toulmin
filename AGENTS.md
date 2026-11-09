@@ -66,6 +66,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-09: During the C5 trial setup the researcher asked for a live view of project state and possible next steps, and authorized V1 only ("可以，我授权你先写设计文档"): a research map design (documentation only, `~/notes/toulmin/research-map-design.md`). V2 implementation and V3 AoE placement require separate authorization; the C5 trial continues.
 2026-11-09: The researcher accepted D1–D6 and authorized V2 ("按你的建议，全部接受，开始 V2"). V2 is implemented: `toulmin map [--watch]` and the shared `next_moves` rule table behind the state card ACTIONS. V3 requires separate authorization.
 2026-11-09: R-005 (round 1 synthesis, Claude) timed out with no diagnostics. The researcher reruns it with Codex and authorized W10 ("按你的建议，两者都做"): independent Claude sessions stream their events so a timed-out session keeps its partial answer and progress. W10 is implemented.
+2026-11-09: R-006 (Codex rerun) timed out the same way; the cause was a stdin delivery bug for prompts over 64 KiB, not model speed. The researcher authorized W11 ("按你的建议，立即修复 W11"); it is implemented.
 
 ## Project goals and scope
 
