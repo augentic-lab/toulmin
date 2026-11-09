@@ -129,7 +129,8 @@ def test_review_still_starts_empty_and_removes_working_directory(tmp_path, fake,
     args = record["args"]
     if isinstance(adapter, ClaudeCode):
         assert args[args.index("--tools") + 1] == ""
-        assert args[args.index("--output-format") + 1] == "json"
+        assert args[args.index("--output-format") + 1] == "stream-json"
+        assert "--include-partial-messages" in args
         assert "--restricted" not in args
     else:
         assert args[args.index("--sandbox") + 1] == "read-only"

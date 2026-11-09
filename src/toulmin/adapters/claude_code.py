@@ -1,13 +1,17 @@
 """Claude Code: isolated review or sandboxed exploration in an explicit workspace.
 
 --tools "" removes every tool, so the session can read nothing beyond the inlined
-prompt. --safe-mode skips CLAUDE.md files, skills, plugins, hooks and MCP servers while
+prompt. Independent sessions stream their events (stream-json with partial messages) so a
+session that times out still shows whether the model answered and how far it got.
+--safe-mode skips CLAUDE.md files, skills, plugins, hooks and MCP servers while
 keeping normal authentication. Only persistent exploration saves native sessions;
 independent tasks stay fresh and out of the operator's resume list.
 """
 
 import json
 import threading
+from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 from toulmin.adapters.base import (
@@ -39,7 +43,8 @@ class ClaudeCode:
         self._validate_extra_args(session)
         arguments = [session.command, "-p", "--output-format"]
         if session.workspace is None:
-            arguments += ["json", "--tools", ""]
+            # Streamed, so a killed session leaves its partial answer and progress (W10).
+            arguments += ["stream-json", "--verbose", "--include-partial-messages", "--tools", ""]
         else:
             # Only Bash writes files, and every Bash call must stay sandboxed.
             # WebFetch(domain:*) also pre-allows HTTP(S) shell downloads through
@@ -85,6 +90,8 @@ class ClaudeCode:
             "-p",
             "--print",
             "--output-format",
+            "--verbose",
+            "--include-partial-messages",
             "--tools",
             "--allowedTools",
             "--allowed-tools",
@@ -144,23 +151,22 @@ class ClaudeCode:
     def interpret(self, session: Session, finished: Finished) -> ReviewOutcome:
         failure = failure_of(finished, session.timeout_seconds)
         text, session_id, reported = "", None, None
+        progress: Progress | None = None
         if finished.stdout:
             try:
-                if session.workspace is None:
-                    result = json.loads(finished.stdout)
-                else:
-                    # Native exploration emits JSONL; also accept a single result
-                    # object from compatible wrappers and older CLI versions.
-                    events = [json.loads(line) for line in finished.stdout.splitlines() if line]
-                    results = [
-                        event
-                        for event in events
-                        if isinstance(event, dict)
-                        and (event.get("type") == "result" or "result" in event)
-                    ]
-                    if not results:
-                        raise ValueError("expected a final result event")
-                    result = results[-1]
+                # JSONL events; a single result object from compatible wrappers and older
+                # CLI versions is one line of the same form.
+                events = [json.loads(line) for line in finished.stdout.splitlines() if line]
+                progress = Progress(events)
+                results = [
+                    event
+                    for event in events
+                    if isinstance(event, dict)
+                    and (event.get("type") == "result" or "result" in event)
+                ]
+                if not results:
+                    raise ValueError("expected a final result event")
+                result = results[-1]
                 if not isinstance(result, dict):
                     raise ValueError("expected a JSON object")
                 text = result.get("result") or ""
@@ -173,19 +179,98 @@ class ClaudeCode:
                     raise ValueError("result: expected a string")
             except ValueError as error:
                 failure = failure or f"unreadable JSON output: {error}"
-                # A cancelled CLI may leave incomplete JSON. Retain these exact bytes
-                # as incomplete output rather than dropping them into a truncated log.
-                text = finished.stdout
+                # A killed or cancelled CLI leaves no result: keep the answer it had
+                # streamed so far, or, for output that is not an event stream, the exact
+                # bytes, as incomplete output rather than dropping them.
+                text = progress.text if progress is not None else finished.stdout
+                reported = reported or (progress.model if progress is not None else None)
         elif failure is None:
             failure = "unreadable JSON output: expected a JSON object"
         model = session.model or reported or f"{self.name} default (not reported)"
         native_id = session_id if isinstance(session_id, str) else None
         failure = failure or persistence_failure(session, native_id)
+        log = ""
+        if failure is not None:
+            shown = finished if progress is None else replace(finished, stdout=progress.summary())
+            log = diagnostics(shown)
         return ReviewOutcome(
             text=text,
             model=model,
             session_id=native_id,
             duration_seconds=finished.duration_seconds,
             failure=failure,
-            log="" if failure is None else diagnostics(finished),
+            log=log,
         )
+
+
+class Progress:
+    """How far a streamed session got: blocks, characters received, the last events."""
+
+    def __init__(self, events: list[object]) -> None:
+        self.events = [event for event in events if isinstance(event, dict)]
+        self.kinds: Counter[str] = Counter()
+        self.blocks: list[tuple[str, int]] = []  # (block type, characters received)
+        self.answer: list[str] = []
+        self.model: str | None = None
+        self.started = False
+        for event in self.events:
+            kind = str(event.get("type"))
+            inner = event.get("event") if kind == "stream_event" else None
+            if isinstance(inner, dict):
+                kind = f"stream_event/{inner.get('type')}"
+                self._stream(inner)
+            elif kind == "assistant" and not self.blocks:
+                # Without partial messages, the whole answer arrives in one message.
+                self._message(event.get("message"))
+            self.kinds[kind] += 1
+
+    def _stream(self, inner: dict[str, object]) -> None:
+        kind = inner.get("type")
+        if kind == "message_start":
+            self.started = True
+            message = inner.get("message")
+            if isinstance(message, dict) and isinstance(message.get("model"), str):
+                self.model = message["model"]
+        elif kind == "content_block_start":
+            block = inner.get("content_block")
+            name = block.get("type") if isinstance(block, dict) else None
+            self.blocks.append((str(name), 0))
+        elif kind == "content_block_delta" and self.blocks:
+            delta = inner.get("delta")
+            if isinstance(delta, dict):
+                piece = next(
+                    (delta[key] for key in ("text", "thinking", "partial_json") if key in delta),
+                    "",
+                )
+                if isinstance(piece, str):
+                    name, size = self.blocks[-1]
+                    self.blocks[-1] = (name, size + len(piece))
+                    if delta.get("type") == "text_delta":
+                        self.answer.append(piece)
+
+    def _message(self, message: object) -> None:
+        if not isinstance(message, dict):
+            return
+        if isinstance(message.get("model"), str):
+            self.model = message["model"]
+        for block in message.get("content") or []:
+            if isinstance(block, dict) and block.get("type") == "text":
+                self.answer.append(str(block.get("text", "")))
+
+    @property
+    def text(self) -> str:
+        return "".join(self.answer)
+
+    def summary(self) -> str:
+        blocks = ", ".join(f"{name} {size} chars" for name, size in self.blocks) or "none"
+        kinds = ", ".join(f"{kind} x{count}" for kind, count in sorted(self.kinds.items()))
+        last = [json.dumps(event, ensure_ascii=False)[:400] for event in self.events[-5:]]
+        lines = [
+            f"events: {len(self.events)} ({kinds or 'none'})",
+            f"model answer started: {'yes' if self.started or self.blocks else 'no'}",
+            f"content blocks: {blocks}",
+            f"partial answer kept: {len(self.text)} chars",
+            "last events:",
+            *last,
+        ]
+        return "\n".join(lines) + "\n"

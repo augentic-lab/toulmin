@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-09 — W10 fix: diagnosable Claude timeouts
+
+- Decision: in the C5 trial, R-005 (round 1 synthesis, `claude-code default`) timed out after 900 s with empty stdout and stderr. Investigation (read-only): the prompt (105 KB, 21 items) is comparable to the review inputs, the four reviews took 41–108 s, and no other Claude session logged API, rate-limit or overload errors between 14:38 and 15:00 UTC; the cause is undetermined (likely the heavier synthesis reasoning exceeding the shared 900 s timeout: a guess). The researcher chose to rerun the synthesis with Codex in their terminal and authorized this fix ("按你的建议，两者都做").
+- Fix (L3 adapter only): independent Claude sessions use `--output-format stream-json --verbose --include-partial-messages` and the same JSONL parser as exploration (a one-line result object still parses). On failure, tool.log carries a stream summary (events by type, whether the answer started, characters per thinking/text block, partial answer length, the last five events) instead of the raw tail; the streamed partial answer is kept in output.md and the Run records the streamed model. `--verbose` and `--include-partial-messages` are now controlled options. No format change.
+- Tests: `test_a_stalled_session_keeps_its_partial_answer_and_progress` (fake Claude streams a thinking and a text delta, then hangs); argument assertions updated in test_review and test_exploration_adapters.
+- Not verified with the real Claude CLI (that needs a real session and quota): the event shapes follow the stream-json format the exploration path already parses for its final result; the partial-message event names are inferred from the CLI's documented format.
+- Checks: `uv run --locked pytest -q` 1333 passed (7m47s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Blockers: none. Next: the researcher's Codex rerun of round 1's synthesis; C5 rounds 2 and 3.
+- Session ID: unavailable.
+
 ## 2026-11-09 — V2: research map
 
 - Decision: the researcher accepted V1 D1–D6 as recommended and authorized V2 ("按你的建议，全部接受，开始 V2").

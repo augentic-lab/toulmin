@@ -284,6 +284,8 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 
+- [x] W10 fix — 2026-11-09 (C5 trial, R-005): a Claude synthesis timed out after 900 s with an empty tool.log, because independent sessions printed one JSON result at the end. Independent Claude sessions now stream (`stream-json --verbose --include-partial-messages`); on failure tool.log summarizes the stream (answer started, characters per thinking/text block, last events) and the partial answer is kept in output.md; the Run records the streamed model. Cause of R-005 itself remains undetermined.
+
 ### V — Research map (requested during the C5 trial setup, 2026-11-09)
 
 Design: `/home/tianchi/notes/toulmin/research-map-design.md`. A read-only, file-derived view of the stage track, the next gate, what waits on the researcher, suggested next moves (who acts) and the Claim → Evidence/Objection → Decision tree, refreshed live beside AoE. Boundaries: no enforced order, no stored state, no rulings, no L1 change.

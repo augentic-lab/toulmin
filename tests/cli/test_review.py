@@ -26,6 +26,24 @@ prompt = sys.stdin.read()
 log = pathlib.Path(os.environ["FAKE_LOG"])
 record = {"argv": sys.argv, "cwd": os.getcwd(), "files": os.listdir("."), "prompt": prompt}
 (log / f"claude-{uuid.uuid4().hex}.json").write_text(json.dumps(record))
+if mode == "stall":  # answers partly, then hangs: the R-005 case (W10)
+    for event in (
+        {"type": "system", "subtype": "init"},
+        {"type": "stream_event", "event": {"type": "message_start",
+                                           "message": {"model": "fake-claude-model"}}},
+        {"type": "stream_event", "event": {"type": "content_block_start",
+                                           "content_block": {"type": "thinking"}}},
+        {"type": "stream_event", "event": {"type": "content_block_delta",
+                                           "delta": {"type": "thinking_delta",
+                                                     "thinking": "Compare R-001 and R-002."}}},
+        {"type": "stream_event", "event": {"type": "content_block_start",
+                                           "content_block": {"type": "text"}}},
+        {"type": "stream_event", "event": {"type": "content_block_delta",
+                                           "delta": {"type": "text_delta",
+                                                     "text": "1. Disagreements: "}}},
+    ):
+        print(json.dumps(event), flush=True)
+    time.sleep(60)
 if mode == "timeout":
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     (log / "child.pid").write_text(str(child.pid))
@@ -190,7 +208,16 @@ def test_sessions_are_isolated_read_only_and_tool_free(bench, fakes):
     (claude,) = calls(fakes, "claude")
     (codex,) = calls(fakes, "codex")
     argv = claude["argv"][1:]
-    assert argv[:6] == ["-p", "--output-format", "json", "--tools", "", "--safe-mode"]
+    assert argv[:8] == [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--tools",
+        "",
+        "--safe-mode",
+    ]
     assert "--no-session-persistence" in argv and "--model" not in argv
     assert codex["argv"][1:5] == ["exec", "--sandbox", "read-only", "--ephemeral"]
     assert codex["argv"][codex["argv"].index("--model") + 1] == "codex-test-model"
@@ -244,6 +271,24 @@ def test_timeout_kills_the_session_and_its_children(bench, fakes, monkeypatch):
         time.sleep(0.1)
     else:
         pytest.fail("the timed-out session's child process survived")
+
+
+def test_a_stalled_session_keeps_its_partial_answer_and_progress(bench, monkeypatch):
+    # W10: R-005 timed out with an empty tool.log; a streamed session now shows how far it got.
+    configure(bench, timeout=2)
+    monkeypatch.setenv("FAKE_CLAUDE", "stall")
+    result = review(bench, "--personas", "reviewer-skeptic", "--models", "claude")
+    assert result.exit_code == 1
+    (run,) = runs(bench).values()
+    assert run.header["status"] == "failed" and "timed out after 2 s" in run.body
+    assert run.header["model"] == "fake-claude-model"
+    archive = bench / run.header["output"]
+    assert (archive / "output.md").read_text() == "1. Disagreements: "
+    log = (archive / "tool.log").read_text()
+    assert "model answer started: yes" in log
+    assert "content blocks: thinking 24 chars, text 18 chars" in log
+    assert "partial answer kept: 18 chars" in log
+    assert '"text_delta"' in log  # the last raw events, for anything the summary misses
 
 
 def test_output_without_a_draft_block_is_completed_but_flagged(bench, monkeypatch):
