@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-09 — C5 trial fix: repeated --personas/--models
+
+- Decision: during the researcher's C5 trial setup, a preflight (`toulmin review rdma-vs-tcp --personas reviewer-skeptic --personas reviewer-why-not-x --dry-run`) planned only the last persona; the researcher asked for the fix ("顺手把 --personas 重复只保留最后一个的问题修了").
+- Fix (L3 only): `review --personas/--models` and `crossval --models` accept repeated and comma-separated values, joined in order (`_comma_list`); help text names both forms (Rich had swallowed `[models]`). Duplicates are still refused by the planner. Formats and protocols unchanged.
+- Test: `test_repeated_and_comma_separated_lists_plan_the_same_sessions` (fails before the fix, passes after).
+- Checks: `uv run --locked pytest -q` 1321 passed (7m37s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- The trial preflight on the researcher's workspace (dry-run, no sessions, no files written) planned 4 sessions with both tools passing their login preflight.
+- Session ID: unavailable.
+
 ## 2026-11-09 — C5: stage trial instructions
 
 - Decision: the researcher asked for the trial instructions before the stage trial ("按你的建议，先写试用说明"). Documentation outside the repository only; no code change.

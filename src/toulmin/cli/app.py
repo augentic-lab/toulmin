@@ -365,17 +365,30 @@ def intake_drafts(
         typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
 
 
+def _comma_list(values: list[str] | None) -> list[str] | None:
+    """Join repeated and comma-separated option values in order (repeats once kept the last)."""
+    if values is None:
+        return None
+    return [item.strip() for value in values for item in value.split(",") if item.strip()]
+
+
 @app.command("review")
 def review_project(
     project: Annotated[str, typer.Argument(help="Project name.")],
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     personas: Annotated[
-        str | None,
-        typer.Option("--personas", help="Comma list of critique roles; default from models.toml."),
+        list[str] | None,
+        typer.Option(
+            "--personas",
+            help="Critique roles, comma-separated or repeated; default from models.toml.",
+        ),
     ] = None,
     models: Annotated[
-        str | None,
-        typer.Option("--models", help="Comma list of [models] names; default from models.toml."),
+        list[str] | None,
+        typer.Option(
+            "--models",
+            help="Model names from models.toml, comma-separated or repeated; default from it.",
+        ),
     ] = None,
     claims: Annotated[
         list[str] | None,
@@ -406,17 +419,12 @@ def review_project(
     if actor is None and not dry_run:
         raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
 
-    def split(value: str | None) -> list[str] | None:
-        return (
-            None if value is None else [item.strip() for item in value.split(",") if item.strip()]
-        )
-
     try:
         failed = run_round(
             root,
             project,
-            split(personas),
-            split(models),
+            _comma_list(personas),
+            _comma_list(models),
             claims,
             actor or "",
             dry_run=dry_run,
@@ -478,8 +486,11 @@ def crossval_question(
     ],
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     models: Annotated[
-        str | None,
-        typer.Option("--models", help="Comma list of [models] names; default from models.toml."),
+        list[str] | None,
+        typer.Option(
+            "--models",
+            help="Model names from models.toml, comma-separated or repeated; default from it.",
+        ),
     ] = None,
     model: Annotated[
         str | None,
@@ -506,7 +517,7 @@ def crossval_question(
     from toulmin.adapters.review import run_crossval
 
     actor = _round_actor(project, actor, dry_run)
-    chosen = None if models is None else [m.strip() for m in models.split(",") if m.strip()]
+    chosen = _comma_list(models)
     try:
         failed = run_crossval(
             root,

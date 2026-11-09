@@ -355,6 +355,25 @@ def test_dry_run_and_missing_confirmation_start_nothing(bench, fakes):
     assert files(bench) == before and not list(fakes.iterdir())
 
 
+def test_repeated_and_comma_separated_lists_plan_the_same_sessions(bench, fakes):
+    # Found in the C5 trial: a repeated --personas used to keep only its last value.
+    def plan(*arguments):
+        result = CliRunner().invoke(app, ["review", "demo", "--root", str(bench), "--dry-run",
+                                          *arguments])  # fmt: skip
+        assert result.exit_code == 0, result.output
+        return [line.split(" -> ")[0] for line in result.stdout.splitlines() if " -> " in line]
+
+    repeated = plan("--personas", "reviewer-skeptic", "--personas", "reviewer-why-not-x",
+                    "--models", "claude", "--models", "codex")  # fmt: skip
+    assert repeated == plan("--personas", "reviewer-skeptic,reviewer-why-not-x")
+    assert len(repeated) == 4 and "  reviewer-why-not-x x codex" in repeated
+    duplicate = CliRunner().invoke(
+        app, ["review", "demo", "--root", str(bench), "--dry-run", "--models", "codex",
+              "--models", "codex"],
+    )  # fmt: skip
+    assert duplicate.exit_code == 1 and "duplicate" in duplicate.output
+
+
 def test_init_template_configures_both_adapters_within_the_cap(workbench):
     config = load_config(workbench)
     assert set(config.available) == {"claude", "codex"}
