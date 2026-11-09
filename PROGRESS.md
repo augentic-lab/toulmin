@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-09 — C5: stage trial instructions
+
+- Decision: the researcher asked for the trial instructions before the stage trial ("按你的建议，先写试用说明"). Documentation outside the repository only; no code change.
+- Written: `~/notes/toulmin/c5-stage-trial.md` (cost per round and a 2-persona option, one-time setup and `toulmin review NAME --dry-run` preflight, the decide walk A–I, the five-step Objection trace, proposed acceptance criteria C5-1–C5-6) and the ledger template `~/notes/toulmin/c5-trial/ledger.md` (rounds with quota before/after, one trace row per finding, stage rulings, calibration spot checks, friction, ruling).
+- Checked: the cited commands and flags exist (`config show`, `review --dry-run` runs the tool/login preflight without sessions, `status -v`, `calibration --project --write`, default personas). Quota display commands are a guess; Toulmin records no tokens.
+- Pending: the trial itself (real model sessions on a real project) and the researcher's ruling. Blockers: none.
+- Session ID: unavailable.
+
 ## 2026-11-09 — C5: calibration report
 
 - Decision: the researcher authorized C5 ("按你的建议，开始 C5"). Implemented: the report. Not started: the stage trial (real model sessions on a real research project need separate authorization; acceptance is the researcher's ruling).
