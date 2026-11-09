@@ -302,12 +302,23 @@ class AoEClient:
     def _not_prompt(tool: str, screen: str, typed: str | None = None) -> str | None:
         """``typed`` is ``screen`` with dim (hint) text blanked; defaults to ``screen``."""
         # Limit heuristics to the current screen's bottom region so an old
-        # permission explanation in scrollback does not always block delivery.
-        lines = screen.splitlines()[-18:]
+        # permission explanation in scrollback does not always block delivery. Trailing
+        # blank rows are not part of it: Codex's folder-trust menu sits above about 18
+        # blank rows, which once read as an empty capture (WI8 W6, R7).
+        rows = screen.splitlines()
+        kept = len(rows)
+        while kept and not rows[kept - 1].strip():
+            kept -= 1
+        lines = rows[:kept][-18:]
         tail = "\n".join(lines)
         if not tail.strip():
             return "Native capture is empty"
         if re.search(r"(?im)^\s*[›❯>]\s*(?:\d+[.)]|(?:yes|no)(?:\s|$))", tail):
+            if re.search(r"(?i)trust (?:this|the) (?:folder|directory)", tail):
+                return (
+                    "Native screen contains a selection menu: the folder-trust prompt; "
+                    "accept it in AoE, then refresh"
+                )
             return "Native screen contains a selection menu; resolve it in AoE"
         marker = r"^\s*›[^\S\n]*(.*)$" if tool == "codex" else r"^\s*[>❯][^\S\n]*(.*)$"
         prompts = [i for i, line in enumerate(lines) if re.match(marker, line)]
@@ -327,7 +338,7 @@ class AoEClient:
         # A quiet occupied composer remains unsafe: AoE send would append to and
         # submit the researcher's unfinished input. Only the last prompt counts;
         # earlier prompt lines can be already-submitted messages in scrollback.
-        typed_lines = (screen if typed is None else typed).splitlines()[-18:]
+        typed_lines = (screen if typed is None else typed).splitlines()[:kept][-18:]
         match = re.match(marker, typed_lines[index])
         if match is None:  # The prompt glyph itself was dim: treat as unrecognizable.
             return "Native input prompt is not recognizable"

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from toulmin.adapters import aoe
-from toulmin.adapters.aoe import AoEClient, AoEError
+from toulmin.adapters.aoe import AoEClient, AoEError, settling
 
 SID = "0123456789abcdef"
 OTHER = "fedcba9876543210"
@@ -270,6 +270,24 @@ def test_ready_requires_live_idle_status_even_if_prompt_could_be_visible(calls, 
     assert not ready
     assert reason
     assert len(calls[0]) == 1
+
+
+def test_ready_names_a_trust_menu_above_blank_rows(calls):
+    # The Codex folder-trust menu as captured live (R-sim): the menu, then 18 blank rows.
+    screen = (
+        "  Folder access\n  /tmp/ws\n  Trust this folder? Codex can read, edit, and run files.\n"
+        "› 1. Trust and continue\n  2. Back to Agent Command Center\n  enter continue\n" + "\n" * 18
+    )
+    calls[1].extend([json.dumps(row()), screen])
+    ready, reason = client().ready(SID)
+    assert not ready and "folder-trust prompt" in reason
+    assert not settling(reason)  # only the researcher can accept it: no startup wait
+
+
+def test_ready_still_accepts_a_prompt_above_blank_rows(calls):
+    screen = "OpenAI Codex\n› \n? for shortcuts\n" + "\n" * 30
+    calls[1].extend([json.dumps(row()), screen, json.dumps(row()), screen])
+    assert client().ready(SID)[0] is True
 
 
 @pytest.mark.parametrize(
