@@ -40,6 +40,10 @@ Never read Toulmin's source code to learn a format: `toulmin draft` writes every
    counts as verified support; your own assertion stays `model-asserted`.
 
 After the researcher decides, re-read state.md or run `toulmin status NAME` before you act.
+A message starting "Toulmin notice" comes from the researcher's `toulmin decide`: it lists
+what was applied or rejected. Refresh with `toulmin map NAME`, then continue from the suggested
+moves; it approves nothing beyond what it lists. After a stage ruling, prepare a handoff draft
+first; the researcher may then continue the new stage in a fresh session.
 
 ## Object drafts (`toulmin draft claim|evidence|objection|decision|exploration|spec NAME`)
 

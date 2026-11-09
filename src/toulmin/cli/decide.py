@@ -13,6 +13,7 @@ from typing import Annotated
 
 import typer
 
+from toulmin.application.aoe import AoEWorkspace, agent_command
 from toulmin.cli import project as project_cli
 from toulmin.cli import workspace as workspace_cli
 from toulmin.cli.aoe import handoff_preview, handoff_result
@@ -29,6 +30,7 @@ from toulmin.core.workspace import CHARTER_FILE
 from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff
+from toulmin.protocols.research_map import AGENT, YOU, research_map
 from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
 
@@ -45,6 +47,8 @@ LABEL = {
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
+YES_NO = {"y": "yes", "n": "no"}
+NOTICE_ITEMS = 8  # a notice is one line; longer lists end with "and N more"
 # Per draft label of an intake recommendation (H4).
 LABEL_WORDS = {
     "a": "as recommended",
@@ -159,10 +163,10 @@ def _interactive() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def _ask(choices: str, words: dict[str, str] = WORDS) -> str:
+def _ask(choices: str, words: dict[str, str] = WORDS, default: str = "s") -> str:
     text = " / ".join(f"[{letter}]{words[letter][1:]}" for letter in choices)
     while True:
-        answer = str(typer.prompt(text, default="s")).strip().lower()
+        answer = str(typer.prompt(text, default=default)).strip().lower()
         letter = answer[:1]
         if letter in choices and answer in {letter, words[letter]}:
             return letter
@@ -204,6 +208,10 @@ class Run:
     handoff_applied: bool = False
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
     staged: set[str] = field(default_factory=set)  # projects whose stage was ruled (H5)
+    notes: dict[str, list[str]] = field(default_factory=dict)  # per project, in order (R3)
+
+    def _note(self, project: str, text: str) -> None:
+        self.notes.setdefault(project, []).append(text)
 
     def decide(self, item: Item) -> bool:
         """Show and decide one item; False means quit."""
@@ -343,8 +351,11 @@ class Run:
             typer.echo(f"{verb.get(item.kind, 'Created')}: {done.result}")
             typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
             self.applied += 1
+            self._note(item.project, f"applied {_name(item.path)} ({done.result})")
             if item.kind == "stage":
                 self.staged.add(item.project)
+                assert shown.stage is not None
+                _hygiene(self.root, item.project, shown.stage.stage)
         elif choice == "r":
             reason = _reason()
             project_proposals.reject(
@@ -352,6 +363,7 @@ class Run:
             )
             typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
             self.rejected += 1
+            self._note(item.project, f"rejected {_name(item.path)}")
         return choice != "q"
 
     def _reject_proposal(self, item: Item, shown: project_proposals.Preview) -> None:
@@ -362,6 +374,7 @@ class Run:
         )
         typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
         self.rejected += 1
+        self._note(item.project, f"rejected {_name(item.path)}")
 
     def _intake(self, item: Item) -> bool:
         assert item.project is not None
@@ -457,6 +470,11 @@ class Run:
             for line in result.lines:
                 target = f" as {line.object_id}" if line.object_id else ""
                 typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
+            outcomes = ", ".join(
+                f"{line.label} {line.outcome}" + (f" {line.object_id}" if line.object_id else "")
+                for line in result.lines
+            )
+            self._note(item.project, f"intake {result.run}: {outcomes}")
             record = result.record.relative_to(Repository(self.root).root).as_posix()
             typer.echo(f"Record: {record}")
         if done is not None:
@@ -518,6 +536,7 @@ class Run:
             result = execute_round(planned, self.actor, typer.echo)
             project_proposals.finish_review(self.root, item.project, marker, result.summary())
             typer.echo(f"Round: {result.summary()}")
+            self._note(item.project, f"review round run ({result.summary()})")
             typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
             self.applied += 1
         elif choice == "r":
@@ -563,7 +582,90 @@ class Run:
             typer.echo(f"Record: {record.relative_to(repository.root).as_posix()}")
             self.applied += 1
             self.touched.add(item.project)
+            self._note(item.project, "applied the handoff")
         return choice != "q"
+
+
+def _name(path: str) -> str:
+    return path.rsplit("/", 1)[-1]
+
+
+def _hygiene(root: Path, project: str, stage: str) -> None:
+    """After a stage ruling: a handoff, then a fresh session for the new stage (R4)."""
+    typer.echo(f"Stage is now {stage}. Suggested before the next stage's work:")
+    typer.echo(
+        "  1. Ask the project agent for a handoff draft and apply it with `toulmin decide`; "
+        "it brings PROJECT.md's next step up to date."
+    )
+    try:
+        binding = AoEWorkspace(root, project).bound_session()
+    except (OSError, ValueError):
+        binding = None
+    archive = (
+        f"aoe -p {binding.profile} session archive {binding.session_id}, then "
+        if binding is not None
+        else ""
+    )
+    typer.echo(
+        f"  2. Continue in a fresh session: {archive}toulmin open {project} --new-session. "
+        "The files and the handoff carry the state; the long conversation is not needed."
+    )
+
+
+def notice(root: Path, project: str, notes: list[str], stage: str | None) -> str:
+    """The one-line message a bound project session receives after decide (R3)."""
+    shown = notes[:NOTICE_ITEMS]
+    if len(notes) > NOTICE_ITEMS:
+        shown.append(f"and {len(notes) - NOTICE_ITEMS} more")
+    where = str(root.absolute())
+    text = (
+        f"Toulmin notice for project {project}: the researcher decided in `toulmin decide`: "
+        + "; ".join(shown)
+        + ". Reasons are in the .outcome.md files beside each proposal. Before acting, "
+        f"refresh your view with `{agent_command('map', project, '--root', where)}`; propose, "
+        "never apply."
+    )
+    if stage is not None:
+        handoff = agent_command("aoe", "handoff", project, "--root", where, "--input", "FILE")
+        text += (
+            f" The stage is now {stage}: prepare a handoff draft now (summary under "
+            f"runs/drafts/, then `{handoff}`) so PROJECT.md's next step is current."
+        )
+    return text
+
+
+def _wrap_up(run: Run, notify: bool | None) -> None:
+    """Close the loop: next moves per decided project, then an optional session notice."""
+    for project, notes in run.notes.items():
+        typer.echo(f"\nNext for {project} (advice; you rule):")
+        try:
+            moves = research_map(run.root, project).moves
+        except (OSError, ValueError) as error:
+            typer.echo(f"  unavailable: {error}")
+            moves = ()
+        for move in moves:
+            who = {YOU: "you", AGENT: "agent"}.get(move.actor, "either")
+            typer.echo(f"  {who}: {move.text}")
+        try:
+            bound = AoEWorkspace(run.root, project).bound_session() is not None
+        except (OSError, ValueError):
+            bound = False
+        if not bound or notify is False:
+            continue
+        if notify is None:
+            typer.echo(
+                f"Tell the {project} session what you decided (one line; it may start work)?"
+            )
+            if _ask("yn", YES_NO, default="n") != "y":
+                continue
+        stage = None
+        if project in run.staged:
+            stage = research_map(run.root, project).stage
+        message = notice(run.root, project, notes, stage)
+        sent, why = AoEWorkspace(run.root, project).notify(message)
+        typer.echo(
+            f"Notice {why}." if sent else f"Notice not sent: {why}. Tell the agent yourself."
+        )
 
 
 def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
@@ -634,6 +736,14 @@ def decide_command(
             "--confirmed-by", help="Deciding researcher; defaults to $TOULMIN_ACTOR, then config."
         ),
     ] = None,
+    notify: Annotated[
+        bool | None,
+        typer.Option(
+            "--notify/--no-notify",
+            help="Tell each bound project session what you decided (default: ask per project).",
+            show_default=False,
+        ),
+    ] = None,
 ) -> None:
     """Decide everything awaiting you, one item at a time, in your own terminal.
 
@@ -685,5 +795,6 @@ def decide_command(
     )
     if run.skipped or run.failed or run.partial or remaining:
         typer.echo("Undecided items stay pending; run `toulmin decide` again to continue.")
+    _wrap_up(run, notify)
     if run.failed:
         raise typer.Exit(1)

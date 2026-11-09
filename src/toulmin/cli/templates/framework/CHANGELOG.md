@@ -155,3 +155,7 @@
   Formats unchanged.
 - R2 follow-up (template text): the workspace AGENTS.md opening sends agents to the session
   context (guide.md, `toulmin draft`) before the framework files. Formats unchanged.
+- R3/R4 (L2 rule row, L3): decide ends with each decided project's next moves and may send its
+  bound session a one-line notice; after a stage ruling it suggests a handoff and a fresh
+  session, and the rule table asks for a handoff while the stage is newer than the last one.
+  Formats unchanged.

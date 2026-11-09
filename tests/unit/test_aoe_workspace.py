@@ -381,3 +381,19 @@ def test_edited_binding_identity_cannot_reuse_another_conversations_receipt(work
         fake.sessions[first.binding.session_id], agent_session_id="native-b"
     )
     assert app.status().context_status == "invalid context"
+
+
+def test_a_notice_is_sent_only_to_a_ready_bound_session_and_changes_no_binding(workbench, fake):
+    app = workspace(workbench, fake)
+    assert app.notify("Toulmin notice.") == (False, "no bound session")
+    app.open()
+    before = stored(workbench)
+    sent, why = app.notify("Toulmin notice: applied claim-x.md (C-002).")
+    assert sent and why.endswith(fake.sent[-1][0]) and len(fake.sent) == 2
+    assert fake.sent[-1][1] == "Toulmin notice: applied claim-x.md (C-002)."
+    assert stored(workbench) == before  # a notice is not context delivery
+    fake.is_ready = False
+    assert app.notify("Toulmin notice.") == (False, "starting; open AoE and refresh")
+    assert len(fake.sent) == 2
+    with pytest.raises(FormatError, match="one nonempty line"):
+        app.notify("two\nlines")

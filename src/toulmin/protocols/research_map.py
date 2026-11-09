@@ -18,8 +18,12 @@ from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef, validate_p
 from toulmin.core.inspection import ProjectSnapshot, current_claim, inspect_project
 from toulmin.core.project_proposals import (
     INTAKE,
+    OUTCOME_SUFFIX,
+    PROPOSALS,
     RULING,
+    STAGE,
     validate_intake_recommendation,
+    validate_outcome,
     validate_ruling_proposal,
 )
 from toulmin.core.repository import Repository
@@ -57,6 +61,7 @@ class Facts:
     objections: tuple[tuple[str, str], ...]  # open, without a pending ruling: (id, severity)
     current_claims: bool
     reviewed: bool  # a completed review Run is newer than every current Claim
+    handoff_due: str | None = None  # R4: the stage ruled after the last applied handoff
 
 
 @dataclass(frozen=True)
@@ -110,6 +115,16 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                 YOU,
                 f"Run `toulmin decide` for {facts.proposals} pending proposal(s).",
                 "toulmin decide",
+            )
+        )
+    if facts.handoff_due:
+        moves.append(
+            Move(
+                AGENT,
+                f"Prepare a handoff draft: the stage changed to {facts.handoff_due} after the "
+                "last applied handoff, so the recorded next step is stale; the researcher may "
+                "then continue in a fresh session.",
+                "toulmin aoe handoff",
             )
         )
     if facts.uncovered:
@@ -251,8 +266,10 @@ def move_facts(
     reviewed = (
         newest_review is not None and newest_claim is not None and newest_review > newest_claim
     )
+    stage = snapshot.charter.header["stage"] if snapshot.charter is not None else None
+    handoff = snapshot.charter.header["last_handoff"] if snapshot.charter is not None else None
     return Facts(
-        stage=snapshot.charter.header["stage"] if snapshot.charter is not None else None,
+        stage=stage,
         invalid=bool(snapshot.errors),
         gates=gates,
         proposals=len(pending),
@@ -261,7 +278,31 @@ def move_facts(
         objections=tuple((str(doc.object_id), doc.header["severity"]) for doc in objections),
         current_claims=bool(claims),
         reviewed=reviewed,
+        handoff_due=stage if _stage_after_handoff(repository, project, handoff) else None,
     )
+
+
+def _stage_after_handoff(repository: Repository, project: str, handoff: object) -> bool:
+    """Whether an applied stage proposal is newer than the last applied handoff (R4).
+
+    Session records are named by their UTC application time, so the names compare as text
+    with the outcome's ``at`` in the same compact form. A stage edited by hand has no outcome
+    and raises nothing here.
+    """
+    folder = repository.root / f"projects/{project}/{PROPOSALS}"
+    newest = ""
+    for path in folder.glob(f"{STAGE}-*{OUTCOME_SUFFIX}") if folder.is_dir() else ():
+        try:
+            outcome = validate_outcome(decode(path.read_bytes(), str(path)))
+        except (OSError, ValueError):
+            continue
+        if outcome.disposition == "applied":
+            newest = max(newest, outcome.at.replace("-", "").replace(":", ""))
+    if not newest:
+        return False
+    if not isinstance(handoff, str):
+        return True
+    return newest > handoff[: len("YYYYMMDDTHHMMSSZ")]
 
 
 def _key(value: datetime | None) -> float:

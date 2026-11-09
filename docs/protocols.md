@@ -755,3 +755,26 @@ it did need were spread over the H3–H5 sections.
   so earlier copies are still recognized).
 - This file keeps the rules and their change history unchanged; framework/protocols.md remains
   its byte copy. No format change.
+
+### R3/R4 decide closes the loop; session hygiene after a stage ruling (L2 rule row, L3)
+
+Review: `~/notes/toulmin/rdma-trial-review.md` (R3, R4). In the trial the researcher returned to
+the agent after every `toulmin decide` to ask "what next?", no handoff was ever applied, and
+the one project session grew to 325k tokens of context across all stages.
+- L3 (R3): `toulmin decide` ends with "Next for NAME" for every project it decided something
+  in: the suggested moves of the shared rule table. For each such project with a bound
+  session it asks whether to tell that session what was decided (`--notify`/`--no-notify`
+  answer in advance). The notice is one line: what was applied or rejected (at most eight
+  items), where the reasons are, the interpreter-qualified `map` command to refresh with, and
+  "propose, never apply". `AoEWorkspace.notify` sends it only when the session is live and
+  passes the readiness check (never into a busy session or over unfinished input); the
+  binding, context and receipt are unchanged, and a refusal is reported with its reason.
+- L3 (R4): applying a stage proposal in decide prints two suggestions: a handoff draft
+  applied through decide (it updates PROJECT.md's next step), then a fresh session (`aoe -p
+  PROFILE session archive ID`, then `toulmin open NAME --new-session`). A notice after a stage
+  ruling asks the agent for that handoff draft. guide.md says what a notice means.
+- L2 reason: `next_moves` gains a row after pending proposals: when an applied stage proposal
+  (its outcome's `at`) is newer than the last applied handoff (the session record's UTC name),
+  the agent prepares a handoff because the recorded next step is stale. A stage edited by
+  hand has no outcome and adds no row. The map, the state card and decide's closing moves
+  read the same row. No format change.

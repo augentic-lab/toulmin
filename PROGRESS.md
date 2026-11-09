@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-09 — R3 decide closes the loop; R4 session hygiene after a stage ruling
+
+- Decision: the researcher authorized R3 and R4 ("按你的建议，继续做 R3 + R4"), from the trial review `~/notes/toulmin/rdma-trial-review.md` (§5 ping-pong; D3 no handoff and one 325k-token session).
+- R3 (L3): `decide` notes what it applied or rejected per project (proposals, intake outcomes, review rounds, handoffs) and ends with "Next for NAME" from the shared rule table. For a project with a bound session it asks whether to send a one-line notice (`--notify`/`--no-notify` answer in advance; default answer no). `AoEWorkspace.notify` sends it only to a live session that passes the readiness check; binding, context and receipt stay unchanged; a refusal is printed with its reason. The notice lists at most eight items, says where reasons are, gives the interpreter-qualified `map` command and "propose, never apply". `agent_command` exposes the W7 command form to L3.
+- R4: applying a stage proposal prints a handoff suggestion and the fresh-session commands (`aoe -p PROFILE session archive ID`, then `toulmin open NAME --new-session`); a notice after a stage ruling asks the agent for a handoff draft. L2 (reason in docs/protocols.md "R3/R4"): `next_moves` adds a handoff row while the newest applied stage outcome is newer than the last applied handoff's session record. guide.md explains notices (6.3 KB).
+- Choice: the notice is the researcher's per-project choice, not automatic, because it makes the agent start work and use quota.
+- Tests: `tests/cli/test_decide_loop.py` (9: closing moves without a session, four notice choices, busy session refused, stage hygiene with archive command and handoff row, row cleared by a real applied handoff, long notice one line); `test_a_notice_is_sent_only_to_a_ready_bound_session_and_changes_no_binding`.
+- Checks: `uv run --locked pytest -q` 1364 passed (7m57s); ruff check, ruff format --check, mypy and `git diff --check` clean.
+- Not verified: a live notice into a real Codex/Claude session (fake sessions only); whether the researcher prefers the default answer no.
+- Session ID: unavailable.
+
 ## 2026-11-09 — R2 follow-up: workspace AGENTS.md points to the session context first
 
 - Decision: the researcher approved tightening the template's opening line ("按你的建议，改 AGENTS.md 那句") after R-sim showed the agent still read framework/formats.md and protocols.md once, probably prompted by "Read framework/… when the task needs their details".

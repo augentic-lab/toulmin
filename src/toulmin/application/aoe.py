@@ -100,6 +100,9 @@ def _command(*args: str) -> str:
     return shlex.join([sys.executable, "-m", "toulmin", *args])
 
 
+agent_command = _command  # the same form for text other L3 modules send to an agent (R3)
+
+
 def _prefix_note() -> str:
     return (
         "Run every toulmin command you execute yourself as `"
@@ -867,6 +870,36 @@ class AoEWorkspace:
             binding = self._context(binding, self._state())
         self._dispatch(client, expected_token=binding.token, resend=resend)
         return self.status()
+
+    def bound_session(self) -> Binding | None:
+        """The saved binding when it names a session; read-only, no AoE call."""
+        with self._lock():
+            binding = self._read()
+        return binding if binding and binding.session_id else None
+
+    def notify(self, message: str) -> tuple[bool, str]:
+        """Send one line to the bound native session when it is ready (R3); else say why.
+
+        A notice is not context delivery: the binding, its context and receipt are unchanged,
+        and nothing is sent into a busy session or over the researcher's unfinished input.
+        """
+        if "\n" in message or not message.strip():
+            raise FormatError("A session notice is one nonempty line")
+        binding = self.bound_session()
+        if binding is None:
+            return False, "no bound session"
+        assert binding.session_id is not None
+        try:
+            client = self._client(binding)
+            session = client.show(binding.session_id)
+            self._check_session(session, binding)
+            ready, reason = client.ready(binding.session_id)
+            if not ready:
+                return False, reason
+            client.send(binding.session_id, message)
+        except (AoEError, FormatError, OSError) as error:
+            return False, str(error)
+        return True, f"sent to {binding.agent} session {binding.session_id}"
 
     def acknowledge(self, token: str) -> WorkspaceView:
         with self._lock():
