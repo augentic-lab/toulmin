@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 design: Chief bridge (documentation only)
+
+- Decision: the researcher judged hand-carrying Specs to implementers too costly and asked for a Chief bridge design without implementation ("如果让你直接设计，一个chief的桥接，你会怎么设计？先设计，不开发").
+- Output: `~/notes/toulmin/chief-bridge-design.md` (outside the repository). Read Chief's README, rules/handoff.md, docs (guide, architecture, configuration, research design), `chief new --help` and one task.json to fix the interface: contract JSON, `chief new --from --id`, `tasks/<id>/task.json` and review.md.
+- Design: a `build-request` proposal applied in decide writes the contract and starts `chief new`; Chief state is read (never written) into map/card/decide rows; import archives the delivered commits and review and proposes implementer Evidence + awaiting-acceptance (G4); verify re-runs the frozen checks in a fresh clone at the imported commit, records a `verifier` Run and proposes verified Evidence + passed (G5). D1–D8 for the researcher; slices B2–B6.
+- Checks: documentation only; no code changed, no tests run.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R5 follow-up: suggest supported rulings
 
 - Decision: the researcher accepted the simulation's recommendation ("按你的建议，补上 supported 裁定的建议规则"), finding 3 of `~/notes/toulmin/r56-sim-2026-11-10/ledger.md`.

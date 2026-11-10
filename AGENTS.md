@@ -73,6 +73,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-09: The researcher authorized R3 and R4 ("按你的建议，继续做 R3 + R4"). Both are implemented with fake sessions: decide ends with next moves and an optional one-line notice to the bound project session; a stage ruling leads to handoff and fresh-session suggestions and a handoff row in the rule table. R5, R6, R8 and R9 require separate authorization.
 2026-11-10: The researcher judged the version not yet usable on real projects and authorized R5 and R6 ("直接开发R5&R6。"). R5 (G3–G5 readiness, deferred-Objection advice at G2, stage-past-gate warnings) and R6 (usage.json per independent session, round and calibration totals, native session tokens in `aoe status`) are implemented with fake CLIs and a copy of the trial workspace. R8 and R9 require separate authorization.
 2026-11-10: After the R5/R6 simulation the researcher kept the verifier role out and authorized a rule row suggesting supported rulings ("按你的建议，补上 supported 裁定的建议规则"); it is implemented. A Spec revision path remains an open candidate.
+2026-11-10: The researcher found hand-carrying Specs to implementers too costly and asked for a Chief bridge design (R8, documentation only, "先设计，不开发"): `~/notes/toulmin/chief-bridge-design.md`, decisions D1–D8 pending review. Slices B2–B6 require separate authorization.
 
 ## Project goals and scope
 
