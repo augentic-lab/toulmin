@@ -6,16 +6,25 @@ before implementation, with checks compared against the Spec, without changing i
 
 import json
 import re
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from toulmin.core.codec import decode
+from toulmin.core.atomic import digest
+from toulmin.core.build import BuildImport, BuildTask, parse_import
+from toulmin.core.codec import decode, encode
 from toulmin.core.documents import Document, FormatError, sections
 from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
 from toulmin.core.inspection import current_claim, inspect_project
 from toulmin.core.project import validate_project
-from toulmin.core.project_proposals import BuildRequest, validate_build_request
+from toulmin.core.project_proposals import (
+    OUTCOME_SUFFIX,
+    BuildRequest,
+    validate_build_request,
+    validate_outcome,
+)
 from toulmin.core.repository import Repository
 from toulmin.protocols.status import GateItem, project_status
 
@@ -186,3 +195,185 @@ def preview_build(root: Path, project: str, raw: bytes, relative: str) -> BuildP
     return BuildPlan(
         request, task_id, contract, commands, gate, tuple(problems), expected_output_note(criteria)
     )
+
+
+@dataclass(frozen=True)
+class BuildFact:
+    spec: str
+    request: str | None = None
+    task_id: str | None = None
+    at: str | None = None
+    sha256: str | None = None
+    pending: bool = False
+    imported: bool = False
+    archive: str | None = None
+    task: BuildTask | None = None
+
+
+def import_records(repository: Repository, project: str) -> tuple[tuple[str, BuildImport], ...]:
+    """Workspace journals only; never follow a path into an external integration home."""
+    found = []
+    runs = repository.path(f"projects/{project}/runs", "directory")
+    for path in sorted(runs.glob("*-build-*-result/import.json")):
+        relative = path.relative_to(repository.root).as_posix()
+        record = parse_import(repository.path(relative, "file").read_bytes(), relative)
+        archive = relative.rsplit("/", 1)[0]
+        if not path.parent.name.endswith(f"-build-{record.spec}-result"):
+            raise FormatError(f"{relative}: import Spec differs from its archive name")
+        if record.disposition == "applied":
+            run = repository.load(project, ObjectId.parse(record.run or ""))
+            expected = "completed" if record.state == "done" else "failed"
+            if (
+                run.header["output"] != archive
+                or run.header["role"] != "implementer"
+                or run.header["status"] != expected
+            ):
+                raise FormatError(f"{relative}: import receipt does not match its Run")
+        found.append((archive, record))
+    return tuple(found)
+
+
+def build_facts(
+    root: Path, project: str, chief: Mapping[str, BuildTask] | None = None
+) -> tuple[BuildFact, ...]:
+    """Latest applied request per Spec; external snapshots must be injected by L3."""
+    repository = Repository(root)
+    repository.project(project)
+    facts = {
+        path.stem: BuildFact(path.stem)
+        for path in repository.path(f"projects/{project}/specs", "directory").glob("S-*.md")
+    }
+    records = import_records(repository, project)
+    folder = repository.path(f"projects/{project}/runs/proposals")
+    if not folder.exists():
+        return tuple(facts[key] for key in sorted(facts))
+    for path in sorted(folder.glob("build-*.md")):
+        if path.name.endswith(OUTCOME_SUFFIX):
+            continue
+        relative = path.relative_to(repository.root).as_posix()
+        raw = repository.path(relative, "file").read_bytes()
+        target = decode(raw, relative).header.get("spec")
+        if not isinstance(target, str) or target not in facts:
+            continue
+        receipt = repository.path(relative.removesuffix(".md") + OUTCOME_SUFFIX)
+        if not receipt.exists():
+            facts[target] = replace(facts[target], pending=True)
+            continue
+        outcome = validate_outcome(decode(receipt.read_bytes(), str(receipt)))
+        if outcome.disposition == "applying":
+            facts[target] = replace(facts[target], pending=True)
+            continue
+        if outcome.disposition != "applied":
+            continue
+        request = validate_build_request(decode(raw, relative))
+        if outcome.proposal != relative or outcome.proposal_sha256 != digest(raw):
+            raise FormatError(f"{relative}: applied build request changed")
+        previous = facts[target]
+        if previous.at is not None and (
+            datetime.fromisoformat(previous.at.replace("Z", "+00:00")),
+            previous.request or "",
+        ) > (datetime.fromisoformat(outcome.at.replace("Z", "+00:00")), relative):
+            continue
+        task_id = request.task_id or f"{project}-{request.spec.replace('-', '').lower()}"
+        if outcome.result != f"chief task {task_id}":
+            raise FormatError(f"{relative}: applied result differs from the request task ID")
+        matching = [
+            (archive, record)
+            for archive, record in records
+            if record.spec == target
+            and record.task_id == task_id
+            and record.request == relative
+            and record.request_sha256 == outcome.proposal_sha256
+        ]
+        if len(matching) > 1:
+            raise FormatError(f"{task_id}: multiple import records; resolve the conflict")
+        archive, imported = matching[0] if matching else (None, None)
+        facts[target] = BuildFact(
+            target,
+            relative,
+            task_id,
+            outcome.at,
+            outcome.proposal_sha256,
+            previous.pending,
+            imported is not None and imported.disposition == "applied",
+            archive,
+            chief.get(task_id) if chief is not None else None,
+        )
+    return tuple(facts[key] for key in sorted(facts))
+
+
+def build_line(fact: BuildFact) -> str:
+    if fact.task_id is None:
+        return f"{fact.spec}: no applied build request"
+    task = fact.task
+    if task is None or task.error is not None:
+        state = "Chief state not read" + (f": {task.error}" if task is not None else "")
+    else:
+        state = f"{task.state or 'not reported'}; review {task.review.verdict or 'not reported'}"
+    return f"{fact.spec} -> Chief task {fact.task_id}: {state}" + (
+        "; imported" if fact.imported else ""
+    )
+
+
+def import_proposals(record: BuildImport, archive: str) -> dict[str, bytes]:
+    """Pure drafts from the frozen import, with no automatic Evidence/ruling intake."""
+    if record.state == "abandoned":
+        return {}
+    if record.run is None:
+        raise FormatError("import: a Run is required before drafting proposals")
+    stamp = (
+        datetime.fromisoformat(record.at.replace("Z", "+00:00"))
+        .astimezone(UTC)
+        .strftime("%Y%m%dT%H%M%SZ")
+    )
+    suffix = f"{stamp}-build-{record.spec}.md"
+    decision, evidence, ruling = (f"{kind}-{suffix}" for kind in ("decision", "evidence", "ruling"))
+    source = {"kind": "run", "ref": record.run, "path": f"{archive}/task.md"}
+    reason = (
+        f"Chief task {record.task_id} reports completion at {record.head or 'not reported'}; "
+        f"cross review {record.verdict or 'not reported'} by {record.reviewer or 'not reported'}."
+    )
+    drafts = {
+        decision: Document(
+            {"schema_version": 1, "source": source, "related": [record.spec]},
+            f"## Context\n{reason}\n\n## Choice\nMove {record.spec} to awaiting-acceptance "
+            "with the imported test Evidence.\n\n## Rejected alternatives\n"
+            "Do not mark the Spec passed: independent verification remains separate.\n\n"
+            "## Rationale\nRecord the implementer's completion report; "
+            "the researcher rules on this proposal.\n",
+        ),
+        evidence: Document(
+            {
+                "schema_version": 1,
+                "source": source,
+                "target": record.claim,
+                "direction": "supports",
+                "kind": "computation",
+                "grade": "model-asserted",
+                "provenance": [
+                    {
+                        "description": "Chief task facts and pinned head",
+                        "path": f"{archive}/task.md",
+                    },
+                    {
+                        "description": "Chief cross review (or explicit missing-review note)",
+                        "path": f"{archive}/review.md",
+                    },
+                ],
+            },
+            f"## Material\nChecks passed under Chief at {record.head or 'not reported'}. {reason}\n"
+            "This is the implementer's report, not independent acceptance.\n",
+        ),
+        ruling: Document(
+            {
+                "schema_version": 1,
+                "kind": "ruling-proposal",
+                "object": record.spec,
+                "status": "awaiting-acceptance",
+                "decision": decision,
+                "links": {"evidence": [evidence]},
+            },
+            f"## Why\n{reason} The linked Evidence and Decision must be applied first.\n",
+        ),
+    }
+    return {name: encode(document) for name, document in drafts.items()}

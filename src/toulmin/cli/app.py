@@ -10,6 +10,7 @@ import typer
 
 from toulmin.cli import decide
 from toulmin.cli.aoe import app as aoe_app
+from toulmin.cli.build import app as build_app
 from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
@@ -39,6 +40,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(aoe_app, name="aoe")
+app.add_typer(build_app, name="build")
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
 app.add_typer(config_app, name="config")
@@ -844,9 +846,9 @@ def show_map(
     """Show where the project is and what can happen next, from files only (V2)."""
     import time
 
+    from toulmin.application.build import project_map
     from toulmin.cli import research_map as view
     from toulmin.cli.entry import _child
-    from toulmin.protocols.research_map import research_map
 
     if project is None:
         try:
@@ -869,7 +871,7 @@ def show_map(
         try:
             if project is None:
                 return view.render_workspace(root, width, glyphs, refreshed), True
-            report = research_map(root, project)
+            report = project_map(root, project)
             waiting = [item for item in decide.inventory(root).items if item.project == project]
             text = view.render_project(report, waiting, width, glyphs, refreshed, chosen)
             return text, not report.errors
@@ -886,7 +888,7 @@ def show_map(
     try:
         view.watch(
             lambda: draw(time.strftime("%H:%M:%S"))[0],
-            lambda: view.signature(folder),
+            lambda: (view.signature(folder), view.chief_signature(root, project)),
             interval,
             lambda text: typer.echo(text, nl=False),
             clear=sys.stdout.isatty(),

@@ -175,3 +175,9 @@
   contract/check/G3 preview and researcher-confirmed `chief new` through decide. Freeze checks
   and archive startup/output with interrupted recovery; no Spec status change. Existing
   objects unchanged; no migration. Chief import/verify and map integration remain deferred.
+
+- R8 B3 (L1 additive, L2, L3): read-only Chief facts in map/cards and shared next moves;
+  confirmed done/abandoned imports archive results and record implementer Runs. Recoverable
+  imports draft a Decision, model-asserted Evidence and a ruling; decide rescans and resolves
+  applied Evidence filenames in links. No automatic Spec/stage change or independent acceptance.
+  Existing object v1 unchanged; no migration. Verification remains B4.

@@ -21,6 +21,7 @@ from toulmin.adapters.provider_logs import (
     reported_model,
     reported_usage,
 )
+from toulmin.application.build import external_states
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
@@ -89,7 +90,11 @@ DELIVERY_STATES = {"none", "prepared", "sending", "submitted", "uncertain", "ack
 
 
 def scope_state(root: Path, project: str | None) -> ResearchState | WorkspaceState:
-    return workspace_research(root) if project is None else research_state(root, project)
+    return (
+        workspace_research(root)
+        if project is None
+        else research_state(root, project, chief=external_states(root, project))
+    )
 
 
 def render_scope(state: ResearchState | WorkspaceState) -> str:

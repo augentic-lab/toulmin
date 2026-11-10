@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from toulmin.adapters.base import Finished, run_process
+from toulmin.core.build import BuildReview, BuildTask
 from toulmin.core.documents import FormatError
 from toulmin.core.repository import Repository
 
@@ -101,6 +102,39 @@ class ChiefClient:
         if not isinstance(raw, dict):
             raise FormatError(f"{path}: Chief state not read: expected an object")
         return raw
+
+    def read_task(self, task_id: str) -> BuildTask:
+        """Read the documented fields only; never infer missing values or task state."""
+        try:
+            raw = self.task(task_id)
+        except (OSError, ValueError) as error:
+            raise FormatError(f"Chief state not read: {error}") from error
+        if raw is None:
+            raise FormatError(
+                f"Chief state not read: {self.config.home}/tasks/{task_id}/task.json missing"
+            )
+
+        def value(data: dict[str, Any], name: str) -> str | None:
+            item = data.get(name)
+            if item is not None and (not isinstance(item, str) or not item.strip()):
+                raise FormatError(f"{task_id}: Chief state not read: {name} must be text or null")
+            return item
+
+        review = raw.get("review")
+        if review is None:
+            review = {}
+        if not isinstance(review, dict):
+            raise FormatError(f"{task_id}: Chief state not read: review must be an object or null")
+        return BuildTask(
+            state=value(raw, "state"),
+            review=BuildReview(
+                *(value(review, key) for key in ("verdict", "summary", "head", "by"))
+            ),
+            **{
+                key: value(raw, key)
+                for key in ("branch", "base", "worktree", "session_id", "tool", "repo", "closed_at")
+            },
+        )
 
     def check_repository(self, repo: str, base_branch: str | None) -> None:
         path = Path(repo)

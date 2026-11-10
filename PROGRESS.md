@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B3: Chief state and import (Codex-implemented, supervised)
+
+- Same authorization as B2. Codex resumed session; brief `codex-b2/b3.md`.
+- Change: L1 `core/build.py` (BuildTask/BuildReview snapshots, `import.json` journal); L2 `protocols/build_import.py`, build facts and rule rows in `research_map` (Chief states injected by L3 callers; "Chief state not read" otherwise), ruling proposals may cite an Evidence draft by filename (refused until applied); L3 Chief state reader, `application/build_import.py`, `toulmin build import`, decide item with a rescan so Decision → Evidence → ruling follow in the same pass; tests isolate `AOE_CHIEF_HOME`; docs (protocols "R8 B3", formats, CHANGELOG, guide, README).
+- Supervisor verification: smoke on the B2 smoke workspace with a fake Chief home (task done, review pass) and a real git branch: map listed "Chief result ready" and "Import the result of wordfreq-s001"; decide imported it as R-005 with an archive (task.md with head commit, commits.txt, diffstat.txt, review.md, progress.md, import.json), then applied D-007, E-003 and the ruling S-001 → awaiting-acceptance; G4 met.
+- Checks (supervisor-run): ruff, format, mypy clean; `uv run --locked pytest -q` 1500 passed (9m20s).
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B2: build request → `chief new` (Codex-implemented, supervised)
 
 - Decision: the researcher asked for Codex (GPT-6.1 Sol, xhigh) to develop with Claude supervising in correction rounds until the goal is reached; taken as authorizing the R8 slices with D1–D8 of `~/notes/toulmin/chief-bridge-design.md` as recommended.

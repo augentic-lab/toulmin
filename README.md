@@ -52,6 +52,7 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 | Something awaits your review | `toulmin decide` (in your own terminal); it ends with each project's next moves and offers to tell the project session what you decided (`--notify`/`--no-notify` skip the question) |
 | After a stage ruling | ask the agent for a handoff, `toulmin decide`, then archive the old session and `toulmin open NAME --new-session` (decide prints both commands) |
 | Hand a ready Spec to Chief | agent: `toulmin draft build NAME --spec S-NNN [--repo PATH]`; researcher: apply in `toulmin decide`, keep `chief watch` running and approve tests in `chief inbox` |
+| Bring a Chief result back | `toulmin decide` offers done/abandoned tasks; or preview `toulmin build import NAME S-NNN` and apply with `--confirm`. Done drafts Decision → Evidence → ruling; each is decided separately. `map` shows reported Chief state. |
 | End of a session | ask the agent to end it, then `toulmin decide` |
 | Fresh conversation (context full, next day) | `toulmin open --new-session` |
 | Where things stand | `toulmin status` |

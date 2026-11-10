@@ -24,7 +24,7 @@ active Decision appended to recent_decisions; gate readiness is shown, never enf
 """
 
 import difflib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -188,21 +188,30 @@ def inventory(root: Path, project: str) -> Inventory:
     return Inventory(ordered, tuple(unrecognized), tuple(errors))
 
 
-def _resolve_decision(repository: Repository, project: str, value: str | None) -> str | None:
-    """A Decision reference as given, or the D-NNN an applied decision proposal created."""
-    if value is None or proposal_kind(value) != "decision":
+def _resolve_draft(
+    repository: Repository, project: str, value: str | None, kind: str
+) -> str | None:
+    if value is None or proposal_kind(value) != kind:
         return value
     relative = f"{_folder(project)}/{value}"
     repository.path(relative, "file")
     outcome = _outcome(repository, relative)
     if outcome is None or outcome.disposition == "applying":
         raise FormatError(
-            f"decision: proposal {value} is not decided yet; decide it first (decide offers "
+            f"{kind}: proposal {value} is not decided yet; decide it first (decide offers "
             "object drafts before rulings)"
         )
-    if outcome.disposition == "rejected":
-        raise FormatError(f"decision: proposal {value} was rejected ({outcome.reason})")
-    return outcome.result
+    if outcome.disposition != "applied":
+        raise FormatError(f"{kind}: proposal {value} was {outcome.disposition} ({outcome.reason})")
+    identifier = ObjectId.parse(outcome.result or "")
+    if identifier.kind != OBJECT_KINDS[kind]:
+        raise FormatError(f"{value}: outcome does not name a {kind}")
+    repository.load(project, identifier)
+    return str(identifier)
+
+
+def _resolve_decision(repository: Repository, project: str, value: str | None) -> str | None:
+    return _resolve_draft(repository, project, value, "decision")
 
 
 def _load(repository: Repository, project: str, relative: str) -> tuple[str, bytes]:
@@ -245,6 +254,8 @@ def _ruled(
     if proposal.status is not None and document.header["status"] != proposal.status:
         return False
     if decision is not None and decision not in document.header.get("decisions", []):
+        return False
+    if any(document.header.get(name) != value for name, value in proposal.links.items()):
         return False
     body = sections(document)
     return all(text.strip() in body.get(name, "") for name, text in proposal.texts.items())
@@ -327,6 +338,19 @@ def preview(root: Path, project: str, relative: str) -> Preview:
         )
     try:
         decision = _resolve_decision(repository, project, proposal.decision)
+        if "evidence" in proposal.links:
+            values = proposal.links["evidence"]
+            if isinstance(values, list):
+                proposal = replace(
+                    proposal,
+                    links={
+                        **proposal.links,
+                        "evidence": [
+                            _resolve_draft(repository, project, value, "evidence") or value
+                            for value in values
+                        ],
+                    },
+                )
         # An interrupted batch may have ruled some objects already; those are only recorded.
         done = tuple(
             target

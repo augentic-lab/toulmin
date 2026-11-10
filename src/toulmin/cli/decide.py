@@ -15,6 +15,7 @@ from typing import Annotated
 import typer
 
 from toulmin.application.aoe import AoEWorkspace, agent_command
+from toulmin.application.build import external_states, project_map
 from toulmin.cli import project as project_cli
 from toulmin.cli import workspace as workspace_cli
 from toulmin.cli.aoe import handoff_preview, handoff_result
@@ -30,8 +31,10 @@ from toulmin.core.schema import SEVERITIES
 from toulmin.core.workspace import CHARTER_FILE
 from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
+from toulmin.protocols.build import build_facts
+from toulmin.protocols.build_import import read_record
 from toulmin.protocols.handoff import apply_handoff
-from toulmin.protocols.research_map import AGENT, YOU, research_map
+from toulmin.protocols.research_map import AGENT, YOU
 from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
 
@@ -46,6 +49,7 @@ LABEL = {
     "brief": "Brief proposal",
     "stage": "Stage proposal",
     "build": "Build request",
+    "build-import": "Chief result ready",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
@@ -67,6 +71,7 @@ class Item:
     kind: str  # a LABEL key
     path: str
     project: str | None = None
+    spec: str | None = None  # build import
 
 
 @dataclass(frozen=True)
@@ -111,6 +116,27 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
             f"{path}: not named KIND-YYYYMMDDTHHMMSSZ[-name].md" for path in found.unrecognized
         ]
         ignored += list(found.errors)
+        try:
+            builds = build_facts(repository.root, name, external_states(repository.root, name))
+        except (OSError, ValueError) as error:
+            ignored.append(f"Chief builds for {name}: {error}")
+            continue
+        for fact in builds:
+            if fact.task_id is None or fact.imported:
+                continue
+            task = fact.task
+            if fact.archive is None and (
+                task is None or task.error is not None or task.state not in {"done", "abandoned"}
+            ):
+                continue
+            if fact.archive is not None:
+                saved = read_record(repository, fact.archive)
+                state, verdict = saved.state, saved.verdict
+            else:
+                assert task is not None and task.state is not None
+                state, verdict = task.state, task.review.verdict
+            label = f"{fact.spec} ({fact.task_id}, {state}, review {verdict or 'not reported'})"
+            items.append(Item("build-import", label, name, fact.spec))
     return items, ignored
 
 
@@ -206,6 +232,7 @@ class Run:
     skipped: int = 0
     failed: int = 0
     partial: int = 0  # intake recommendations with labels still undecided (H4)
+    rescan: bool = False
     charter_changed: bool = False
     handoff_applied: bool = False
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
@@ -228,6 +255,7 @@ class Run:
             "brief": self._proposal,
             "stage": self._proposal,
             "build": self._build,
+            "build-import": self._build_import,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -489,6 +517,25 @@ class Run:
             typer.echo("Labels you skipped stay undecided; the recommendation stays pending.")
             self.partial += 1
 
+    def _build_import(self, item: Item) -> bool:
+        from toulmin.application.build_import import apply_import, prepare_import
+        from toulmin.cli.build import show_import
+
+        assert item.project is not None and item.spec is not None
+        shown = prepare_import(self.root, item.project, item.spec)
+        show_import(shown)
+        choice = self._choose("asq")
+        if choice == "a":
+            done = apply_import(self.root, item.project, shown, self.actor)
+            typer.echo(
+                f"Imported Chief task {done.task_id} as {done.run}; "
+                f"{len(done.proposals)} follow-up proposal(s)."
+            )
+            self.applied += 1
+            self.rescan = True
+            self._note(item.project, f"imported Chief task {done.task_id} ({done.run})")
+        return choice != "q"
+
     def _build(self, item: Item) -> bool:
         from toulmin.application.build import apply_build, prepare_build
 
@@ -722,7 +769,7 @@ def _wrap_up(run: Run, notify: bool | None) -> None:
     for project, notes in run.notes.items():
         typer.echo(f"\nNext for {project} (advice; you rule):")
         try:
-            moves = research_map(run.root, project).moves
+            moves = project_map(run.root, project).moves
         except (OSError, ValueError) as error:
             typer.echo(f"  unavailable: {error}")
             moves = ()
@@ -743,7 +790,7 @@ def _wrap_up(run: Run, notify: bool | None) -> None:
                 continue
         stage = None
         if project in run.staged:
-            stage = research_map(run.root, project).stage
+            stage = project_map(run.root, project).stage
         message = notice(run.root, project, notes, stage)
         sent, why = AoEWorkspace(run.root, project).notify(message)
         typer.echo(
@@ -860,16 +907,30 @@ def decide_command(
     typer.echo(f"Deciding as: {who}. Skip leaves an item pending.")
     run = Run(root, who)
     remaining = 0
-    for index, item in enumerate(found.items, 1):
-        typer.echo(f"\n[{index}/{len(found.items)}] {LABEL[item.kind]}: {item.path}")
+    queue = list(found.items)
+    offered: set[tuple[str, str, str | None]] = set()
+    index = 0
+    while queue:
+        item = queue.pop(0)
+        index += 1
+        offered.add((item.kind, item.spec or item.path, item.project))
+        typer.echo(f"\n[{index}/{index + len(queue)}] {LABEL[item.kind]}: {item.path}")
         try:
             if not run.decide(item):
-                remaining = len(found.items) - index
+                remaining = len(queue)
                 break
         except (OSError, ValueError) as error:
             typer.echo(f"Error: {error}", err=True)
             typer.echo("This item is unchanged and stays pending.")
             run.failed += 1
+        if run.rescan:
+            refreshed = inventory(root)
+            queue = [
+                item
+                for item in refreshed.items
+                if (item.kind, item.spec or item.path, item.project) not in offered
+            ]
+            run.rescan = False
     typer.echo(
         f"\nApplied: {run.applied} | Rejected: {run.rejected} | Skipped: {run.skipped} | "
         f"Failed: {run.failed}"

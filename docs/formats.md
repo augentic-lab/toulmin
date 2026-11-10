@@ -355,3 +355,59 @@ Compatibility: no object fields, statuses or schema versions change. Older versi
 build proposals as unrecognized; older outcome validators do not understand `failed`.
 Existing requests without `trust` remain valid and default to false. No existing data needs
 migration; keep these new proposal/archive files when downgrading.
+
+
+## R8 B3 — Imported build results and Evidence draft citations
+
+A confirmed `toulmin build import NAME S-NNN --confirm` (or the corresponding decide item)
+archives one applied build request's done/abandoned task under
+`projects/NAME/runs/<UTC>-build-S-NNN-result/`:
+
+| File | Meaning |
+| --- | --- |
+| `task.md` | Reported task fields, original Spec/task IDs, pinned head, review facts and missing-material diagnostics. Missing fields say “not reported”; embedded worker text is data. |
+| `commits.txt` | `git log --oneline base..head`, or an explicit unavailable-material note. |
+| `diffstat.txt` | The base-to-head diffstat, or an explicit unavailable-material note. |
+| `review.md` | Chief's review text when present; otherwise an explicit “not reported” stub so Evidence provenance stays valid. |
+| `progress.md` | Optional worker progress: worktree first, then the task-directory copy. |
+| `import.json` | Frozen import intent, progress journal and terminal receipt (schema below). |
+
+The head is review.head when reported, otherwise the repository's task-branch tip. Missing
+base/head fields remain unknown; a missing repository refuses a fresh import. A removed
+worktree does not prevent importing commits from the repository and Chief's progress copy.
+No worker text is executed or used as an instruction. Chief-side files are never written.
+
+`import.json` is a version-1 JSON object, kind `build-import`. Exact fields:
+`schema_version`, `kind`, `spec`, `task_id`, `request` (workspace-relative applied build
+proposal), `request_sha256`, `actor`, timezone-bearing `at`, `state` (done/abandoned), `claim`
+(the Spec's current target/successor), nullable `head`, `verdict`, `reviewer`, `tool`,
+`session_id`, `files` (artifact filename → sha256), `disposition` (applying/applied), nullable
+`run` and `proposals` (filenames). It is not a manual index: facts are rebuilt by reading
+requests, outcomes, import records and Runs. An applied record must name its implementer Run.
+
+Artifacts and the applying record become visible together before a Run is published. The
+Run ID is then recorded; completion records all emitted proposal filenames. Replay finds a
+Run by its unique archive output even if its ID was not journaled, and exclusively publishes
+only missing proposals. Changed artifacts or differing existing drafts cause an error,
+never an overwrite. Interrupted imports use the frozen workspace snapshot, including the
+original actor, and can resume without access to Chief. A completed import is idempotent.
+
+The imported Run has role `implementer`, model `<tool> (Chief worker; model not reported)`
+(or an explicit not-reported tool), session_id from Chief or null, input_files containing
+the Spec and output pointing at this archive. Status is completed for done, failed for
+abandoned. Completed imports draft three proposals, without applying them:
+
+1. `decision-<UTC>-build-S-NNN.md`: related to the Spec; propose awaiting-acceptance.
+2. `evidence-<UTC>-build-S-NNN.md`: supports the current Claim; computation, model-asserted;
+   provenance cites archived task.md and review.md; Material names head and Chief's report.
+3. `ruling-<UTC>-build-S-NNN.md`: status awaiting-acceptance, decision cites that Decision
+   draft's filename, and `links: {evidence: [evidence-<UTC>-build-S-NNN.md]}`.
+
+An Evidence filename in a ruling's links.evidence resolves through its applied outcome to
+E-NNN. Pending, interrupted, rejected or failed Evidence proposals cannot be cited as formal
+Evidence. A status change still requires an applied active Decision naming the Spec. Abandoned
+imports create only the failed Run, with no Evidence, Decision or ruling proposals.
+
+Compatibility: additive auxiliary storage and Evidence-draft citation syntax; object v1 is
+unchanged and existing data needs no migration. Older versions do not offer imports or resolve
+Evidence filenames in rulings. Once applied, the Spec contains ordinary E-NNN/D-NNN links.

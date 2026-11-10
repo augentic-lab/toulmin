@@ -8,10 +8,12 @@ rule table behind both ``toulmin map`` and the ACTIONS of the agent's state card
 researcher and the agent read the same suggestions.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 
+from toulmin.core.build import BuildTask
 from toulmin.core.codec import decode
 from toulmin.core.documents import Document, sections
 from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef, validate_project_name
@@ -28,6 +30,7 @@ from toulmin.core.project_proposals import (
 )
 from toulmin.core.repository import Repository
 from toulmin.protocols import project_proposals
+from toulmin.protocols.build import BuildFact, build_facts, build_line
 from toulmin.protocols.calibration import REVIEW, operation
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
@@ -68,6 +71,7 @@ class Facts:
     current_claims: bool
     reviewed: bool  # a completed review Run is newer than every current Claim
     handoff_due: str | None = None  # R4: the stage ruled after the last applied handoff
+    builds: tuple[BuildFact, ...] = ()
     supportable: tuple[str, ...] = ()  # Claims meeting supported conditions, no ruling pending
 
 
@@ -92,6 +96,7 @@ class ResearchMap:
     decisions: tuple[Node, ...]  # Decisions not shown under any Claim
     elsewhere: tuple[str, ...]  # objects aimed at another project's Claims
     errors: tuple[str, ...]
+    builds: tuple[BuildFact, ...] = ()
 
 
 # R5: the rows toward G3-G5; {missing} is filled with the gate's unmet items.
@@ -170,6 +175,56 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                 "toulmin status NAME; a stage proposal if you return it",
             )
         )
+    g3 = next((gate for gate in facts.gates if gate.gate == "G3"), None)
+    for build in facts.builds:
+        task = build.task
+        if build.task_id is None:
+            met = (
+                g3 is not None
+                and g3.met is not None
+                and any(item.label.startswith(build.spec + " ") and item.met for item in g3.items)
+            )
+            if facts.stage == "build" and met and not build.pending:
+                moves.append(
+                    Move(
+                        AGENT,
+                        f"Draft a build request for {build.spec} (`toulmin draft build`).",
+                        "toulmin draft build NAME --spec " + build.spec,
+                    )
+                )
+        elif task is not None and task.error is None and not build.imported:
+            if task.state == "needs-you":
+                moves.append(
+                    Move(
+                        YOU, f"Chief task {build.task_id} needs you: `chief inbox`.", "chief inbox"
+                    )
+                )
+            elif task.state == "review":
+                moves.append(
+                    Move(
+                        YOU,
+                        f"Accept or return Chief task {build.task_id}: "
+                        "`chief close` / `chief nudge`.",
+                        "chief close / chief nudge",
+                    )
+                )
+            elif task.state == "done":
+                moves.append(
+                    Move(
+                        YOU,
+                        f"Import the result of {build.task_id} in `toulmin decide`.",
+                        "toulmin decide",
+                    )
+                )
+            elif task.state == "abandoned":
+                moves.append(
+                    Move(
+                        YOU,
+                        f"Chief task {build.task_id} was abandoned: "
+                        "import it as failed or re-request.",
+                        "toulmin decide / toulmin draft build",
+                    )
+                )
     if facts.handoff_due:
         moves.append(
             Move(
@@ -394,7 +449,9 @@ def _decision(document: Document) -> Node:
     return Node(str(document.object_id), (document.header["status"],), _text(document, "Choice"))
 
 
-def research_map(root: Path, project: str) -> ResearchMap:
+def research_map(
+    root: Path, project: str, *, chief: Mapping[str, BuildTask] | None = None
+) -> ResearchMap:
     """The map of one project, from files only; a partial view when data is invalid."""
     validate_project_name(project)
     repository = Repository(root)
@@ -409,9 +466,15 @@ def research_map(root: Path, project: str) -> ResearchMap:
         pending = ()
         errors.append(str(error))
     facts = move_facts(root, project, snapshot, gates, pending)
+    try:
+        builds = build_facts(root, project, chief)
+    except (OSError, ValueError) as error:
+        builds = ()
+        errors.append(str(error))
+    facts = replace(facts, builds=builds)
     if errors and not facts.invalid:
         facts = replace(facts, invalid=True)
-    claims, superseded, decisions, elsewhere = _tree(snapshot, project)
+    claims, superseded, decisions, elsewhere = _tree(snapshot, project, builds)
     return ResearchMap(
         project,
         facts.stage,
@@ -424,11 +487,12 @@ def research_map(root: Path, project: str) -> ResearchMap:
         decisions,
         elsewhere,
         tuple(sorted(set(errors))),
+        builds,
     )
 
 
 def _tree(
-    snapshot: ProjectSnapshot, project: str
+    snapshot: ProjectSnapshot, project: str, builds: tuple[BuildFact, ...] = ()
 ) -> tuple[tuple[Node, ...], tuple[tuple[str, ...], ...], tuple[Node, ...], tuple[str, ...]]:
     objects = snapshot.objects
     by_id = {doc.object_id: doc for doc in objects}
@@ -492,8 +556,16 @@ def _tree(
             node = Node(str(doc.object_id), facts + moved, _text(doc, "Content"), decisions_of(doc))
             rank = 1 + (0 if h["status"] == "open" else 3) + SEVERITY_ORDER.get(h["severity"], 3)
         else:
+            task_nodes = tuple(
+                Node("Chief task " + (build.task_id or ""), (), build_line(build).split(": ", 1)[1])
+                for build in builds
+                if build.spec == str(doc.object_id) and build.task_id is not None
+            )
             node = Node(
-                str(doc.object_id), ("spec", h["status"]) + moved, _text(doc, "Requirements")
+                str(doc.object_id),
+                ("spec", h["status"]) + moved,
+                _text(doc, "Requirements"),
+                task_nodes,
             )
             rank = 10
         children[owner].append((rank, node))

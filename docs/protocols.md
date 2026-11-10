@@ -914,3 +914,51 @@ guide directs agents to draft requests and never run Chief themselves. Import, v
 Chief map/card/rule-table integration and live trials remain separate slices.
 
 Compatibility is additive as documented in formats.md; no migration or existing object edit.
+
+
+### R8 B3 — Chief state, research moves and confirmed result import (L1 additive, L2, L3)
+
+L2 reason: the researcher needs to see an implementation task's state beside its Spec and
+bring its report into the research network without hand-carrying files. `build_facts`
+rebuilds the latest applied build request/task and import disposition per Spec from workspace
+files only. `BuildTask`/`BuildReview` are tool-independent snapshots; L3 reads Chief's task.json
+and injects them into map, decide and AoE card refresh. L2 never reads an external Chief home
+or invokes git/Chief. Without an injected snapshot, it reports “Chief state not read”. Missing
+fields stay null/not reported; malformed or unreadable state is explained, never guessed.
+
+The shared next_moves table adds rows after pending proposals and stage warnings, preserving
+existing rows' wording and MOVE_LIMIT. A build-stage Spec with its G3 item met and no pending
+request/applied task suggests drafting a build request. Needs-you names chief inbox; review
+names chief close / chief nudge; done names import in decide; abandoned names failed import
+or re-request. Running tasks appear below their Specs, not as moves. Map watch also observes
+external state changes. Read failures are diagnostics, not claims that research data is invalid.
+
+Only the researcher starts an import: the “Chief result ready” decide item or
+`toulmin build import NAME S-NNN --confirm --confirmed-by ACTOR` (without --confirm: preview,
+no writes). Fresh imports require done/abandoned state and a matching applied build request.
+The adapter reads task facts, checks the frozen repository, pins review.head or the task's
+branch tip, reads git history/diffstat, and collects review/progress text. Missing optional
+material is recorded explicitly; moved repositories or mismatching task repositories refuse.
+The task's current state is read again on apply; changed preview inputs refuse before mutation.
+
+L2 publishes the frozen archive and import.json applying record, then an implementer Run,
+then the follow-up drafts, then marks the import applied. The workspace journal retains the
+first actor and exact artifact hashes. Replay reuses a Run naming the archive and byte-matching
+drafts, including after a crash between publication and journal update. A differing artifact,
+Run or draft is reported without repair/overwrite. A completed receipt names an existing Run;
+imports never create a second Run or second set of drafts for that task/request.
+
+Done produces model-asserted computation Evidence on the Spec's current Claim, a Decision
+draft related to the Spec, and a ruling proposal to awaiting-acceptance. The ruling names both
+other drafts by filename; each resolves only after the researcher's apply created its formal
+object. Abandoned produces a failed Run and no follow-ups. Import does not change the Spec,
+Claim, stage or Evidence grade. Chief's report/cross review is not independent acceptance.
+
+Decide rescans after applying an import, offering new Decision → Evidence → ruling proposals
+in that same pass. Each still has its own apply/reject/skip/quit choice. Existing skipped
+items remain skipped during that pass. Applying the ruling with its active Decision and test
+Evidence can satisfy G4; G5 remains separate. Decide's existing optional project-session
+notice includes imported task/Run IDs. Import never closes, nudges or answers a Chief task,
+never runs checks, and never pushes or merges. Verification remains the later B4 slice.
+
+Formats and compatibility are documented in formats.md; no existing-object migration is needed.

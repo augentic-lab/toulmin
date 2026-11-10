@@ -28,6 +28,8 @@ def isolated_user_config(tmp_path_factory):
         # Native CLI homes too: model reports must never read real session logs (WX3).
         patch.setenv("CODEX_HOME", str(tmp_path_factory.mktemp("codex-home")))
         patch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path_factory.mktemp("claude-home")))
+        # Read-only Chief integrations must never inspect the researcher's real task state.
+        patch.setenv("AOE_CHIEF_HOME", str(tmp_path_factory.mktemp("chief-home")))
         yield
 
 

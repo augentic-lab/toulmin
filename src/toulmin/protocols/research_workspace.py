@@ -7,15 +7,18 @@ infers that a historical next-step suggestion has been completed.
 import hashlib
 import os
 import stat
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from pathlib import Path
 
+from toulmin.core.build import BuildTask
 from toulmin.core.documents import DIRECTORIES, sections
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.inspection import inspect_project
 from toulmin.core.repository import Repository
 from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols import project_proposals
+from toulmin.protocols.build import BuildFact, build_facts, build_line
 from toulmin.protocols.research_map import AGENT, EITHER, Move, move_facts, next_moves
 from toulmin.protocols.session import entry_files
 from toulmin.protocols.status import GateReadiness, project_status, stage_warnings, upcoming
@@ -41,6 +44,7 @@ class ResearchState:
     proposals: tuple[str, ...] = ()
     # Suggested next moves from the rule table shared with `toulmin map` (V2).
     moves: tuple[Move, ...] = ()
+    builds: tuple[BuildFact, ...] = ()
 
 
 def _file_digest(repository: Repository, relative: str) -> str:
@@ -59,7 +63,9 @@ def _file_digest(repository: Repository, relative: str) -> str:
         os.close(descriptor)
 
 
-def research_state(root: Path, project: str) -> ResearchState:
+def research_state(
+    root: Path, project: str, *, chief: Mapping[str, BuildTask] | None = None
+) -> ResearchState:
     """Load current file-derived state without creating caches, locks or records.
 
     Draft files inventory runs/drafts and explicit archive-side draft.md files,
@@ -79,6 +85,7 @@ def research_state(root: Path, project: str) -> ResearchState:
     gates: tuple[GateReadiness, ...] = ()
     proposals: tuple[str, ...] = ()
     moves: tuple[Move, ...] = ()
+    builds: tuple[BuildFact, ...] = ()
 
     def remember(repository: Repository, relative: str) -> bool:
         try:
@@ -171,7 +178,12 @@ def research_state(root: Path, project: str) -> ResearchState:
             for path in found.unrecognized
         )
         gates = project_status(repository.root, project).gates
-        moves = next_moves(move_facts(repository.root, project, snapshot, gates, found.items))
+        builds = build_facts(repository.root, project, chief)
+        moves = next_moves(
+            replace(
+                move_facts(repository.root, project, snapshot, gates, found.items), builds=builds
+            )
+        )
     except (OSError, ValueError) as error:
         errors.append(str(error))
 
@@ -179,7 +191,15 @@ def research_state(root: Path, project: str) -> ResearchState:
     fingerprint = hashlib.sha256()
     # Length-prefixed values prevent ambiguous path/content boundaries. Diagnostics
     # participate so an incomplete scan never has the same fingerprint as clean data.
-    values = [project, stage, goal, next_step, *pending, *errors_tuple]
+    values = [
+        project,
+        stage,
+        goal,
+        next_step,
+        *pending,
+        *errors_tuple,
+        *(build_line(build) for build in builds if build.task_id is not None),
+    ]
     for relative, checksum in sorted(digests.items()):
         values.extend((relative, checksum))
     for value in values:
@@ -202,6 +222,7 @@ def research_state(root: Path, project: str) -> ResearchState:
         gates,
         proposals,
         moves,
+        builds,
     )
 
 
@@ -322,6 +343,14 @@ def render_state(state: ResearchState) -> str:
             who = "Agent" if move.actor == AGENT else "Researcher"
             lines.append(f"- {who}: {move.text}")
         lines.append("Prepare a handoff draft for researcher confirmation.")
+    if any(build.task_id is not None for build in state.builds):
+        lines.extend(
+            (
+                "",
+                "BUILDS",
+                *(build_line(build) for build in state.builds if build.task_id is not None),
+            )
+        )
     if state.notices:
         lines.extend(("", "NOTICES", *state.notices))
     if state.errors:

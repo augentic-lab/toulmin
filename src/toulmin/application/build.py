@@ -8,12 +8,14 @@ from pathlib import Path
 
 from toulmin.adapters.chief import ChiefClient, ChiefConfig, load_config
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
+from toulmin.core.build import BuildTask
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
 from toulmin.core.project_proposals import Outcome, validate_build_request, validate_outcome
 from toulmin.core.repository import Repository
 from toulmin.protocols import project_proposals
-from toulmin.protocols.build import contract_bytes
+from toulmin.protocols.build import build_facts, contract_bytes
+from toulmin.protocols.research_map import ResearchMap
 
 
 @dataclass(frozen=True)
@@ -224,3 +226,28 @@ def apply_build(
         if note is not None and report is not None:
             report(note)
         return done
+
+
+def external_states(root: Path, project: str) -> dict[str, BuildTask]:
+    """Inject read-only Chief facts at L3 boundaries; offline state remains explicit."""
+    facts = build_facts(root, project)
+    tasks = [fact.task_id for fact in facts if fact.task_id is not None]
+    if not tasks:
+        return {}
+    try:
+        client = ChiefClient(Repository(root).root, load_config(root))
+    except (OSError, ValueError) as error:
+        return {task_id: BuildTask(error=str(error)) for task_id in tasks}
+    result = {}
+    for task_id in tasks:
+        try:
+            result[task_id] = client.read_task(task_id)
+        except (OSError, ValueError) as error:
+            result[task_id] = BuildTask(error=str(error))
+    return result
+
+
+def project_map(root: Path, project: str) -> ResearchMap:
+    from toulmin.protocols.research_map import research_map
+
+    return research_map(root, project, chief=external_states(root, project))

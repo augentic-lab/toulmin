@@ -13,11 +13,13 @@ import unicodedata
 from collections.abc import Callable
 from pathlib import Path
 
+from toulmin.application.build import external_states, project_map
 from toulmin.cli import decide
 from toulmin.cli.initialize import workspace_setup
 from toulmin.core.identifiers import ObjectId
 from toulmin.core.project import STAGES
-from toulmin.protocols.research_map import AGENT, YOU, Node, ResearchMap, research_map
+from toulmin.core.repository import Repository
+from toulmin.protocols.research_map import AGENT, YOU, Node, ResearchMap
 from toulmin.protocols.status import GateReadiness, unheld
 from toulmin.protocols.workspace_state import RootState, workspace_status
 
@@ -194,6 +196,13 @@ def render_project(
         lines += ["", "Errors"]
         for message in report.errors:
             lines += wrap(f"  {message}", width, "    ")
+    for build in report.builds:
+        if build.task is not None and build.task.error is not None:
+            lines += wrap(
+                f"Chief state not read for {build.spec}/{build.task_id}: {build.task.error}",
+                width,
+                "  ",
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -221,7 +230,7 @@ def render_workspace(root: Path, width: int, glyphs: Glyphs, refreshed: str | No
             lines.append(fit(f"  {child.name}: {child.error}", width))
             continue
         try:
-            child_map = research_map(base, child.name)
+            child_map = project_map(base, child.name)
         except (OSError, ValueError) as error:
             lines.append(fit(f"  {child.name}: {error}", width))
             continue
@@ -300,3 +309,10 @@ def validate_claim(value: str | None) -> str | None:
     if value is None:
         return None
     return str(ObjectId.parse(value))
+
+
+def chief_signature(root: Path, project: str | None) -> object:
+    """Watch injected task state too; this never starts Chief or a model."""
+    repository = Repository(root)
+    names = [project] if project is not None else decide._projects(repository)
+    return tuple((name, external_states(root, name)) for name in names)
