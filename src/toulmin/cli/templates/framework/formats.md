@@ -411,3 +411,64 @@ imports create only the failed Run, with no Evidence, Decision or ruling proposa
 Compatibility: additive auxiliary storage and Evidence-draft citation syntax; object v1 is
 unchanged and existing data needs no migration. Older versions do not offer imports or resolve
 Evidence filenames in rulings. Once applied, the Spec contains ordinary E-NNN/D-NNN links.
+
+
+## R8 B4 — Deterministic verification archives
+
+`toulmin build verify NAME S-NNN` previews the frozen checks and execution conditions;
+`--confirm` (or applying its decide item) executes them. An eligible Spec is
+awaiting-acceptance, its latest completed import names a head commit, and no passing
+verification of that head has been recorded. An interrupted journal can be finished even
+if its follow-up ruling was already applied. Completed passing verification is idempotent.
+
+`projects/NAME/runs/<UTC>-verify-S-NNN/` contains:
+
+| File | Meaning |
+| --- | --- |
+| `output.md` | Each frozen command, exit status or “timed out”, elapsed seconds, stdout and stderr. Each stream is capped at 64 KiB and marked when truncated. |
+| `environment.txt` | OS, Python and git versions, source repository, pinned head, and the local-user/no-network-isolation execution boundary. |
+| `verify.json` | Version-1 `build-verification` intent, checkpoints and terminal receipt, described below. |
+| `checkpoints/<sha256>/` | Immutable output/environment snapshots published before the journal switches to them, including partial/interrupted results. |
+
+Collisions within a UTC second receive `-2`, `-3`, etc.; proposal filenames use that same
+archive basename. The clone itself is outside the workspace and source repository and is
+deleted after the attempt. Source refs, worktrees and files are not changed by verification.
+The checks themselves are executed with the researcher's full local permissions, without
+network isolation; they can have effects outside the clone.
+
+The exact verify.json fields are `schema_version`, `kind`, `spec`, `task_id`,
+`import_archive`, `contract` (workspace-relative archived contract.json), `contract_sha256`,
+`spec_sha256`, `repo`, pinned `head`, current `claim`, `checks`, `timeout_seconds`, `actor`,
+timezone-bearing `at`, `results`, nullable `files`, nullable `snapshot`,
+`execution_completed`, `disposition` (applying/applied), nullable `run`, `proposals` and
+`previous`. Check results contain `command`, nullable integer `exit_status` (null means
+timed out), nonnegative finite `duration_seconds`, bounded `stdout`/`stderr`, and Boolean
+`stdout_truncated`/`stderr_truncated`. Results must match the frozen commands in order.
+`files` maps output.md/environment.txt to sha256 digests; `snapshot` names their immutable
+checkpoint. `previous` retains checkpoint paths from earlier interrupted attempts.
+
+Intent is published before execution. Checkpoints are published completely before verify.json
+references them, so interruption cannot leave a journal pointing at partially rewritten logs.
+After a mid-execution interruption, the next apply retains its snapshots and starts all checks
+again in a new clone; earlier setup/check effects are not assumed to survive. Once completed
+results are durable, replay only finishes the Run/proposals and never reruns checks. Run
+recovery uses its unique archive output; proposal publication is exclusive and byte-checked.
+Changed checkpoints, public artifacts, contracts or existing drafts are refused, not repaired.
+
+The Run has role `verifier`, model `none (deterministic re-run by toulmin)`, human source
+attributed to the confirming researcher, null session_id, input_files [the Spec, archived
+contract.json], and output pointing at this archive. Its status is completed for passing,
+failing and timed-out checks: completion records the execution, not scientific acceptance.
+An attempt that cannot prepare its clone remains a recoverable applying journal.
+
+All checks exiting 0 produce Decision, Evidence and ruling drafts named
+`KIND-<UTC>-verify-S-NNN[-counter].md`. Evidence supports the Spec's current Claim, is
+computation/verified, and its verification method is “re-ran the frozen S-NNN checks in a fresh
+clone at <head>”, with the result and artifacts output.md/environment.txt. Provenance cites
+both files. The Decision is related to the Spec; the ruling proposes passed and cites both
+the Decision and Evidence filenames. Each still requires the researcher's apply. Any failed
+or timed-out check produces no proposals. Records and failed outputs remain available.
+
+Compatibility: additive archives/journals only; object v1 and prior build/import records are
+unchanged. No existing-data migration is needed. Older versions can read the ordinary verifier
+Run/Evidence once applied, but do not offer verification items or interpret verify.json.

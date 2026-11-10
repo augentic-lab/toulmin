@@ -156,7 +156,8 @@ def render_project(
         )
         name = entry.path.rsplit("/", 1)[-1]
         note = " (interrupted application)" if interrupted else ""
-        lines.append(fit(f"  {label}: {name}{note}", width))
+        line = entry.description if entry.kind == "build-verify" else f"{label}: {name}{note}"
+        lines.append(fit(f"  {line}", width))
     if len(waiting) > WAITING_SHOWN:
         lines.append(f"  ... {len(waiting) - WAITING_SHOWN} more")
     for run, labels in report.undecided:

@@ -901,7 +901,7 @@ home = "" # empty: $AOE_CHIEF_HOME, otherwise ~/.local/state/aoe-chief
 tool = "codex"
 trust = false # optionally confirm the worker's folder-trust prompt, never edits/commands
 budget = {rounds = 15, hours = 4}
-verify_timeout_seconds = 600 # reserved for the later verification slice
+verify_timeout_seconds = 600 # per independent check; positive finite seconds
 [repos]
 example = "/absolute/path/to/code-repository"
 ```
@@ -962,3 +962,55 @@ notice includes imported task/Run IDs. Import never closes, nudges or answers a 
 never runs checks, and never pushes or merges. Verification remains the later B4 slice.
 
 Formats and compatibility are documented in formats.md; no existing-object migration is needed.
+
+
+### R8 B4 — Independent execution of frozen checks (L1 additive, L2, L3)
+
+L2 reason: a Chief completion report/cross review establishes the implementer's report (G4),
+while G5 needs an independently launched reproduction of the checks. File-derived verification
+facts offer “Verify S-NNN in toulmin decide” when the Spec is awaiting-acceptance, its latest
+applied import names a head, and that head has no passing verification. An interrupted journal
+is offered for recovery. Failure adds the advice to return the task with chief nudge or draft
+a new build request. These rows retain existing ordering and MOVE_LIMIT; no gate changes occur.
+
+L3 prepares a preview from the applied request's archived contract.json, never from the
+current Spec's Acceptance criteria. It lists repository, imported commit, exact checks and
+per-check timeout, and says: “runs code written by an AI worker on this machine, as you,
+without network isolation”. `tools/chief.toml verify_timeout_seconds` defaults to 600 and must
+be positive and finite. Fresh previews pin the Spec/contract digests and current target Claim;
+changed inputs refuse before execution. The checks and execution settings are then frozen
+in verify.json. No Chief invocation or Chief state write is needed.
+
+Only the researcher's apply (`toulmin decide` or `toulmin build verify NAME S-NNN --confirm`)
+starts execution. The adapter clones locally using `git clone --quiet --no-hardlinks`, outside
+the workspace/source repository, checks out the imported commit with `--quiet --detach`, and
+runs every command with sh -c in its own process group. It kills/reaps the group on timeout
+or interruption. Output capture is file-backed; archived stdout and stderr are each limited
+to 64 KiB. The clone is removed on success, failure or interruption. A failure does not prevent
+the remaining checks from being recorded; any nonzero exit/timeout prevents passing proposals.
+
+L2 journals and publishes only workspace records. Immutable output/environment checkpoints
+precede the journal pointer update. A partial attempt is retained and rerun from scratch only
+on another researcher apply; a completed execution is finalized without repeating checks.
+Run publication is recovered by archive output, and matching existing drafts are reused,
+never overwritten. The original confirming actor is preserved. A completed failed/timed-out
+execution is a completed verifier Run with no proposals; clone/setup failure leaves an
+applying journal that can be retried. Failed attempts never satisfy passing-head readiness.
+
+Passing execution proposes Decision → verified Evidence → passed ruling. Decide rescans and
+offers all three, one at a time. Evidence targets the current Claim; its method names the
+frozen Spec checks, fresh clone and full head, and its artifacts/provenance cite the output
+and environment. The ruling resolves the applied Evidence filename as in B3 and preserves
+existing evidence links. An active Decision naming the Spec is still required. Applying that
+ruling can satisfy its G5 item; verification itself changes no Spec status, Claim or stage.
+
+**Independence and limits:** these are the checks frozen for the researcher's apply, executed
+by Toulmin rather than the AI worker/Chief, in a fresh clone at a pinned imported commit.
+This reproduces them independently of the worker's worktree and narrative. It does not prove
+that weak checks establish the Claim, that results carry to other environments, or that the
+code is safe. Execution uses the same machine/user and has no network isolation; a fresh clone
+is not a sandbox. The researcher judges check adequacy and applies the formal ruling. Agent-run
+implementation tests demonstrate this behavior, not researcher acceptance or independent review
+of Toulmin's own implementation.
+
+Formats/compatibility are in formats.md; no object migration or new model invocation is involved.

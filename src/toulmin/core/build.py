@@ -1,6 +1,12 @@
 """Tool-independent snapshots injected by integration readers; missing facts stay unknown."""
 
-from dataclasses import dataclass, field
+import json
+import re
+from dataclasses import asdict, dataclass, field, fields
+from datetime import datetime
+
+from toulmin.core.documents import FormatError
+from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
 
 
 @dataclass(frozen=True)
@@ -49,9 +55,6 @@ class BuildImport:
 
 
 def render_import(record: BuildImport) -> bytes:
-    import json
-    from dataclasses import asdict
-
     return (
         json.dumps(
             {"schema_version": 1, "kind": "build-import", **asdict(record)},
@@ -63,14 +66,6 @@ def render_import(record: BuildImport) -> bytes:
 
 
 def parse_import(data: bytes, location: str) -> BuildImport:
-    import json
-    import re
-    from dataclasses import fields
-    from datetime import datetime
-
-    from toulmin.core.documents import FormatError
-    from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
-
     try:
         raw = json.loads(data)
         names = {item.name for item in fields(BuildImport)}

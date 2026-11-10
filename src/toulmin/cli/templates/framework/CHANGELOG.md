@@ -181,3 +181,9 @@
   imports draft a Decision, model-asserted Evidence and a ruling; decide rescans and resolves
   applied Evidence filenames in links. No automatic Spec/stage change or independent acceptance.
   Existing object v1 unchanged; no migration. Verification remains B4.
+
+- R8 B4 (L1 additive, L2, L3): researcher-confirmed deterministic verification in disposable
+  clones at imported heads, using archived frozen checks and per-check process-group timeouts.
+  Journal immutable checkpoints, verifier Runs and proposed Decision → verified Evidence → passed
+  rulings; decide rescans. Failed/timed-out checks produce no proposals and suggest return or
+  re-request. No automatic gate/status changes; existing object v1 unchanged, no migration.

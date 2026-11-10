@@ -19,6 +19,7 @@ from toulmin.core.documents import FormatError
 from toulmin.core.repository import Repository
 
 NEW_TIMEOUT = 120.0
+DEFAULT_VERIFY_TIMEOUT_SECONDS = 600.0
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class ChiefConfig:
     budget: dict[str, int | float]
     repos: dict[str, str]
     trust: bool = False
+    verify_timeout_seconds: float = DEFAULT_VERIFY_TIMEOUT_SECONDS
 
 
 def load_config(root: Path) -> ChiefConfig:
@@ -70,13 +72,16 @@ def load_config(root: Path) -> ChiefConfig:
         raise FormatError(f"{path}: budget.rounds: expected a positive integer")
     if type(budget["hours"]) not in {int, float} or not 0 < budget["hours"] < float("inf"):
         raise FormatError(f"{path}: budget.hours: expected a positive finite number")
+    timeout = raw.get("verify_timeout_seconds", DEFAULT_VERIFY_TIMEOUT_SECONDS)
+    if type(timeout) not in {int, float} or not 0 < timeout < float("inf"):
+        raise FormatError(f"{path}: verify_timeout_seconds: expected a positive finite number")
     repos = raw.get("repos", {})
     if not isinstance(repos, dict) or any(
         not isinstance(value, str) or not Path(value).is_absolute() or "\x00" in value
         for value in repos.values()
     ):
         raise FormatError(f"{path}: repos: expected project names mapped to absolute paths")
-    return ChiefConfig(argv, home_path, tool, dict(budget), dict(repos), trust)
+    return ChiefConfig(argv, home_path, tool, dict(budget), dict(repos), trust, float(timeout))
 
 
 class ChiefClient:

@@ -225,6 +225,22 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                         "toulmin decide / toulmin draft build",
                     )
                 )
+    for build in facts.builds:
+        verification = build.verification
+        if verification is None:
+            continue
+        if verification.failed:
+            moves.append(
+                Move(
+                    YOU,
+                    f"{build.spec} failed verification at {(verification.head or '')[:12]}: "
+                    f"return it with `chief nudge {verification.task_id} …` "
+                    "or draft a new build request",
+                    "chief nudge / toulmin draft build",
+                )
+            )
+        if verification.available:
+            moves.append(Move(YOU, f"Verify {build.spec} in `toulmin decide`", "toulmin decide"))
     if facts.handoff_due:
         moves.append(
             Move(

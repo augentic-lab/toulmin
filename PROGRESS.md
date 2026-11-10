@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B4: verify (Codex-implemented, supervised)
+
+- Same authorization as B2/B3. Codex resumed session; brief `codex-b2/b4.md` (also moved function-local imports in core/build.py to module level).
+- Change: L1 `core/verification.py` (check results, journal); L2 `protocols/build_verify.py`, verify rows; L3 `adapters/verify.py` (clone outside workspace and repository, `sh -c` per check in its own process group, timeout, bounded capture, environment), `application/build_verify.py`, `toulmin build verify`, decide item with rescan; docs (protocols "R8 B4", formats, CHANGELOG, guide, README); `tests/cli/test_build_verify.py` (21 tests).
+- Supervisor verification: smoke on the B3 smoke workspace: map offered "Verify S-001 at 44d66b09286f: 2 check(s) in a fresh clone" with the execution warning; decide ran both frozen checks (wordfreq printed the expected three lines), recorded R-006 (role verifier), applied D-008, E-004 (verified) and S-001 → passed; G5 met; the code repository's status, refs and worktrees were unchanged and no clone was left in /tmp.
+- Checks (supervisor-run): ruff, format, mypy clean; `uv run --locked pytest -q` 1533 passed (10m20s).
+- Next: B5 live trial with a real Chief task (needs an isolated Chief home/AoE profile), then the researcher trial.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B3: Chief state and import (Codex-implemented, supervised)
 
 - Same authorization as B2. Codex resumed session; brief `codex-b2/b3.md`.

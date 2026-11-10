@@ -31,7 +31,7 @@ from toulmin.core.schema import SEVERITIES
 from toulmin.core.workspace import CHARTER_FILE
 from toulmin.protocols import project_creation, project_proposals, workspace_change
 from toulmin.protocols import workspace_handoff as workspace_handoffs
-from toulmin.protocols.build import build_facts
+from toulmin.protocols.build import build_facts, import_records, verification_facts
 from toulmin.protocols.build_import import read_record
 from toulmin.protocols.handoff import apply_handoff
 from toulmin.protocols.research_map import AGENT, YOU
@@ -50,6 +50,7 @@ LABEL = {
     "stage": "Stage proposal",
     "build": "Build request",
     "build-import": "Chief result ready",
+    "build-verify": "Verify",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
@@ -71,7 +72,15 @@ class Item:
     kind: str  # a LABEL key
     path: str
     project: str | None = None
-    spec: str | None = None  # build import
+    spec: str | None = None  # build import or verification
+
+    @property
+    def description(self) -> str:
+        return (
+            f"Verify {self.path}"
+            if self.kind == "build-verify"
+            else f"{LABEL[self.kind]}: {self.path}"
+        )
 
 
 @dataclass(frozen=True)
@@ -137,6 +146,17 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
                 state, verdict = task.state, task.review.verdict
             label = f"{fact.spec} ({fact.task_id}, {state}, review {verdict or 'not reported'})"
             items.append(Item("build-import", label, name, fact.spec))
+        try:
+            verifies = verification_facts(repository, name, import_records(repository, name))
+            for spec, verification in verifies.items():
+                if not verification.available:
+                    continue
+                from toulmin.application.build_verify import prepare_verification
+
+                shown = prepare_verification(repository.root, name, spec)
+                items.append(Item("build-verify", shown.label, name, spec))
+        except (OSError, ValueError) as error:
+            ignored.append(f"Verification for {name}: {error}")
     return items, ignored
 
 
@@ -256,6 +276,7 @@ class Run:
             "stage": self._proposal,
             "build": self._build,
             "build-import": self._build_import,
+            "build-verify": self._build_verify,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -516,6 +537,29 @@ class Run:
         else:
             typer.echo("Labels you skipped stay undecided; the recommendation stays pending.")
             self.partial += 1
+
+    def _build_verify(self, item: Item) -> bool:
+        from toulmin.application.build_verify import apply_verification, prepare_verification
+        from toulmin.cli.build import show_verification
+
+        assert item.project is not None and item.spec is not None
+        shown = prepare_verification(self.root, item.project, item.spec)
+        show_verification(shown)
+        choice = self._choose("asq")
+        if choice == "a":
+            done = apply_verification(self.root, item.project, shown, self.actor)
+            typer.echo(
+                f"Verification {'passed' if done.passed else 'failed'}: {done.run}; "
+                f"{len(done.proposals)} follow-up proposal(s)."
+            )
+            self.applied += 1  # a failed check is still a completed, archived verification Run
+            self.rescan = True
+            self._note(
+                item.project,
+                f"verified {done.spec} at {done.head[:12]}: "
+                f"{'passed' if done.passed else 'failed'} ({done.run})",
+            )
+        return choice != "q"
 
     def _build_import(self, item: Item) -> bool:
         from toulmin.application.build_import import apply_import, prepare_import
@@ -898,7 +942,7 @@ def decide_command(
     typer.echo(f"Awaiting your decision: {len(found.items)} item(s).")
     if not _interactive():
         for item in found.items:
-            typer.echo(f"  {LABEL[item.kind]}: {item.path}")
+            typer.echo(f"  {item.description}")
         typer.echo("Run `toulmin decide` in your own terminal to decide them; nothing changed.")
         return
     who = resolve_actor(actor)
@@ -914,7 +958,7 @@ def decide_command(
         item = queue.pop(0)
         index += 1
         offered.add((item.kind, item.spec or item.path, item.project))
-        typer.echo(f"\n[{index}/{index + len(queue)}] {LABEL[item.kind]}: {item.path}")
+        typer.echo(f"\n[{index}/{index + len(queue)}] {item.description}")
         try:
             if not run.decide(item):
                 remaining = len(queue)

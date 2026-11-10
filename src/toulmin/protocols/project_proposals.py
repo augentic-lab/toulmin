@@ -255,8 +255,13 @@ def _ruled(
         return False
     if decision is not None and decision not in document.header.get("decisions", []):
         return False
-    if any(document.header.get(name) != value for name, value in proposal.links.items()):
-        return False
+    for name, value in proposal.links.items():
+        current = document.header.get(name)
+        if isinstance(value, list):
+            if not isinstance(current, list) or not set(value) <= set(current):
+                return False
+        elif current != value:
+            return False
     body = sections(document)
     return all(text.strip() in body.get(name, "") for name, text in proposal.texts.items())
 
