@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B6 delegated round (agent-run on the researcher's delegation)
+
+- Decision: the researcher delegated one small B6 round ("这样，我授权你来代替我进行一轮小的B6测试"; "继续，跑完后告诉我结果"). Approvals are labelled operator approvals on delegation, not the researcher's; the B6 ruling stays with the researcher.
+- Run (ledger `~/notes/toulmin/b6-delegated-2026-11-10/`): job-tmp workspace and repository with saved ib_write_bw/iperf3 logs; native Codex project session (profile toulmin-sim-r) drafted the Spec (one factual slip returned and fixed before apply), Decision, stage proposal and build request; the researcher's normal Chief ran the task (AoE `main`, their `chief watch --every 300`); tests approved, cross review pass, close, import (progress from `.chief/progress.md`), G4, verify under the default PATH (`python3` 3.7.5), G5. About 41 min wall time; project session 1.39 M input / 16.7 k output, worker 760 k / 19.8 k.
+- Findings (open, not fixed): (1) with trust off a new task needs `chief kickoff ID` after the trust menu; the watch did not send it in 7 min 50 s, so Toulmin's apply/notice text and the needs-you map row point the wrong way; (2) an applied Spec cannot be revised, so agent slips must be caught before apply; (3) verify does not record what `python3` resolves to; a version-probe check in the Spec covers it (guide hint).
+- Cleanup: Chief task done (session archived, branch kept), project session archived, the four job-tmp workspaces forgotten from the workspace list.
+- Checks: no code changed; nothing run beyond the trial.
+- Next: the researcher's B6 ruling; a correction round for finding 1 (and the guide hint for 3) if authorized.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B6 trial instructions (documentation only)
 
 - Decision: the researcher asked for the B6 instructions before the trial ("按你的建议，先写 B6 试用说明").
