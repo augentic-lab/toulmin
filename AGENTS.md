@@ -76,6 +76,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-10: The researcher found hand-carrying Specs to implementers too costly and asked for a Chief bridge design (R8, documentation only, "先设计，不开发"): `~/notes/toulmin/chief-bridge-design.md`, decisions D1–D8 pending review. Slices B2–B6 require separate authorization.
 2026-11-10: The researcher asked for development by Codex (GPT-6.1 Sol, xhigh) with Claude supervising and correcting it in rounds "until our goal is reached" ("我想让你指导codex用6.1 sol xhigh 进行开发，你负责监工即可"; "如此循环，直到实现我们的目标"). Taken as authorizing the R8 bridge slices with D1–D8 as recommended (the researcher may revise them). B2 (build request → `chief new`) B3 (Chief state in map/card/decide, import with G4 proposals) and B4 (verify: frozen checks re-run in a fresh clone, verifier Run, G5 proposals) are implemented.
 2026-11-10: Under the same instruction, B5 ran a real Chief task on temporary fixtures (isolated Chief home, AoE profile `toulmin-sim-r`; agent-run evidence, not acceptance); its five findings are fixed. B6, the researcher's own trial, remains.
+2026-11-10: The researcher asked for the B6 trial instructions first ("按你的建议，先写 B6 试用说明"): `~/notes/toulmin/b6-researcher-trial.md` (documentation only, NOT RUN). The trial and its ruling remain pending.
 
 ## Project goals and scope
 

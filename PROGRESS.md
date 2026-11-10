@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B6 trial instructions (documentation only)
+
+- Decision: the researcher asked for the B6 instructions before the trial ("按你的建议，先写 B6 试用说明").
+- Output: `~/notes/toulmin/b6-researcher-trial.md` (outside the repository): Spec selection criteria, `tools/chief.toml` setup with the normal Chief home and trust off, journey C01–C11 from Spec to G5 and merge, observations to record, known limits, ruling form. Status NOT RUN.
+- Checks: commands cited were checked against the CLI (`toulmin open/aoe status/draft build/decide`, `chief nudge/close/clean`) and the B5 run; no code changed, so no tests were run.
+- Next: the researcher runs B6 and rules; findings become a correction round.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B5: live Chief trial and corrections (agent-run, supervised)
 
 - Same authorization as B2–B4 ("loop until our goal is reached"). Agent-run technical evidence, not acceptance; every apply and Chief answer was an operator fixture approval.
