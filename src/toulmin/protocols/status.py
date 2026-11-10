@@ -294,7 +294,7 @@ def _gates(
     detail = ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in blocking)
     if deferred:
         listed = ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in deferred)
-        advice = f"advice: deferred {listed} still stand; revisit them before build"
+        advice = f"advice: deferred, not resolved: {listed}; revisit before build"
         detail = f"{detail}; {advice}" if detail else advice
     g2 = [GateItem(NO_BLOCKING, not blocking, detail)]
     if not claims:

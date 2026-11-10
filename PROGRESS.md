@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-10 — R5/R6 simulation: one small project from brief-final to done
+
+- Decision: the researcher kept the verifier role out for now and asked for a lightweight simulation of the R5/R6 process ("按你的建议，先不做 verifier 角色。你帮我跑一个轻量级的任务模拟一下上述过程"). Agent-run on a fresh job-tmp workspace (project `wordfreq`), every approval an operator fixture approval; one real two-session review round for R6. Ledger and evidence: `~/notes/toulmin/r56-sim-2026-11-10/`.
+- Verified: G3 caught a prose-only acceptance criterion in decide's closing moves and held after the commands were backticked; stage previews showed G3/G4/G5 readiness; implementer Run + test Evidence + awaiting-acceptance met G4 (the implementer's first test run failed on Python 3.7 and was kept); a deliberately premature `done` produced the warning in status, map (first move, for the researcher), AoE card and decide, and the stage was left as recorded; a hand-archived `verifier` Run with verified Evidence and the passed ruling met G5 and cleared the warning. Live review (Claude + Codex, 38 s): usage.json in both archives, per-session and round totals printed (26.3k input, 12.9k cached, 4.4k output), calibration token table filled.
+- Fix: G2 advice wording ("deferred, not resolved: O-001 (major); revisit before build"; was "… still stand"); docs/protocols.md R5 text and its packaged copy updated; `tests/cli/test_gates.py` 12 passed.
+- Findings for the researcher (not implemented): no proposal path revises an applied Spec (hand edit only); no rule row suggests ruling Claims that meet supported conditions (status notices it; the trial ended with every Claim proposed); Codex review Runs still record `codex default (not reported)`.
+- Checks: `uv run --locked pytest -q` 1377 passed (8m08s); ruff check, ruff format --check, mypy, `git diff --check` clean; packaged protocols.md identical.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R5 honest gates (G3–G5, deferred advice, stage warnings); R6 token usage
 
 - Decision: the researcher judged the current version not yet usable on a real project and authorized R5 and R6 directly ("我觉得暂时的版本不完善，没有办法在真实项目上使用，直接开发R5&R6。"), from the trial review `~/notes/toulmin/rdma-trial-review.md` (D1, D2, §4).

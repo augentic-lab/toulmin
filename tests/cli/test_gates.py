@@ -217,7 +217,7 @@ def test_g5_needs_verified_evidence_from_a_verifier_run(populated):
 def test_deferred_majors_stay_visible_at_g2(populated):
     objection(populated, "major", "deferred")
     met, detail = items(gates(populated)["G2"])[NO_BLOCKING]
-    assert met and detail == "advice: deferred O-001 (major) still stand; revisit them before build"
+    assert met and detail == "advice: deferred, not resolved: O-001 (major); revisit before build"
 
 
 def test_a_stage_past_unheld_gates_is_warned_everywhere_and_never_changed(populated):

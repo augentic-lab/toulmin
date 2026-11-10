@@ -798,7 +798,7 @@ G2 green without a trace in the gate.
     `verifier`. Toulmin has no verifier role file; a researcher or session that ran the checks
     independently is archived by hand as such a Run.
 - G2's "no open fatal or major Objection" item stays met when such Objections are deferred,
-  but its detail names them as advice ("deferred … still stand; revisit them before build").
+  but its detail names them as advice ("deferred, not resolved: …; revisit before build").
 - `stage_warnings`: for each gate the recorded stage has passed that does not hold, a warning
   in status, the state card and the map, and a rule-table row for the researcher ("rule
   whether to keep the stage or return the project"). The stage is never changed: design
