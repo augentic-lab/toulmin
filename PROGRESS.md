@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B2: build request → `chief new` (Codex-implemented, supervised)
+
+- Decision: the researcher asked for Codex (GPT-6.1 Sol, xhigh) to develop with Claude supervising in correction rounds until the goal is reached; taken as authorizing the R8 slices with D1–D8 of `~/notes/toulmin/chief-bridge-design.md` as recommended.
+- Implementer: Codex 0.167 `exec` (sandbox workspace-write), brief and review rounds in job tmp `codex-b2/`. Round 1: 6.5 M input (98 % cached), 41 k output. Round 2 (resumed session): fixes for (1) a slow or failing `chief new` that had already created the task (now reconciled with task.json instead of a dead-end failure), (2) checks that pass on exit status while the Spec shows expected output (skeleton comment with a generated comparing check, preview note), (3) superseded Spec targets (contract uses the current successor's Statement), (4) an optional `trust` field passed as `--trust`.
+- Change: L1 `build-request` proposal kind; L2 `protocols/build.py` (contract derivation, command extraction from inline code and sh/bash/shell/console fences, preview); L3 `adapters/chief.py` (`tools/chief.toml`, `chief new`, read-only task lookup), `application/build.py` (prepare/apply with interrupted recovery), `toulmin draft build`, decide item; docs (formats, protocols "R8 B2", CHANGELOG, guide Build section, README); `tests/cli/test_build_proposals.py`.
+- Supervisor verification: code review of the L2/L3 files; smoke on a copy of the R5/R6 simulation workspace with a temporary git repository: draft prefill, decide preview and apply, archive; `chief new` forwarded to real Chief with `--dry-run` (accepted the contract, printed worktree/branch/kickoff; no Chief state written).
+- Checks (supervisor-run): ruff check, ruff format --check, mypy clean; `uv run --locked pytest -q` 1462 passed (9m06s).
+- Not verified: a real (non-dry-run) Chief task; import/verify (B3/B4).
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 design: Chief bridge (documentation only)
 
 - Decision: the researcher judged hand-carrying Specs to implementers too costly and asked for a Chief bridge design without implementation ("如果让你直接设计，一个chief的桥接，你会怎么设计？先设计，不开发").

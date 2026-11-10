@@ -17,7 +17,7 @@ from toulmin.core.documents import Document, sections, validate_values
 from toulmin.core.identifiers import ObjectKind
 from toulmin.core.project import STAGES
 from toulmin.core.render import header
-from toulmin.core.schema import SEVERITIES, mapping, text, timestamp
+from toulmin.core.schema import SEVERITIES, mapping, reference, strings, text, timestamp
 
 PROPOSALS = "runs/proposals"
 OUTCOME_SUFFIX = ".outcome.md"
@@ -37,8 +37,10 @@ INTAKE = "intake"  # H4
 REVIEW = "review"  # H4
 BRIEF = "brief"  # H5
 STAGE = "stage"  # H5
+BUILD = "build"  # R8 B2
+_PREFIXES = "|".join([*OBJECT_KINDS, RULING, INTAKE, REVIEW, BRIEF, STAGE, BUILD])
 FILENAME = re.compile(
-    rf"({'|'.join([*OBJECT_KINDS, RULING, INTAKE, REVIEW, BRIEF, STAGE])})-[0-9]{{8}}T[0-9]{{6}}Z"
+    rf"({_PREFIXES})-[0-9]{{8}}T[0-9]{{6}}Z"
     r"(?:-[A-Za-z0-9][A-Za-z0-9_-]{0,63})?\.md"
 )
 RULING_FIELDS = {"schema_version", "kind", "object", "objects", "status", "decision", "links"}
@@ -58,7 +60,7 @@ OUTCOME_ORDER = (
     "reason",
     "result",
 )
-DISPOSITIONS = ("applying", "applied", "rejected")
+DISPOSITIONS = ("applying", "applied", "rejected", "failed")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 OUTCOME_BODY = (
     "## Meaning\n"
@@ -187,10 +189,10 @@ def validate_outcome(document: Document) -> Outcome:
     if approval is not None:
         text(document, approval, "approval_text")
     reason = h["reason"]
-    if h["disposition"] == "rejected":
+    if h["disposition"] in {"rejected", "failed"}:
         text(document, reason, "reason")
     elif reason is not None:
-        document.fail("reason", "only a rejection has a reason")
+        document.fail("reason", "only a rejection or failure has a reason")
     result = h["result"]
     if h["disposition"] == "applied":
         text(document, result, "result")
@@ -344,3 +346,89 @@ def validate_stage_proposal(document: Document) -> StageProposal:
     if not why:
         document.fail("body.Why", "explain the stage change for the researcher")
     return StageProposal(h["from"], h["to"], decision, why)
+
+
+@dataclass(frozen=True)
+class BuildRequest:
+    """An explicit implementation request; tool names are ordinary provenance data."""
+
+    spec: str
+    repo: str
+    base_branch: str | None
+    task_id: str | None
+    tool: str
+    checks: tuple[str, ...]
+    protected: tuple[str, ...]
+    test_first: bool
+    budget: dict[str, int | float]
+    why: str
+    context: str
+    trust: bool = False
+
+
+def validate_build_request(document: Document) -> BuildRequest:
+    validate_values(document)
+    required = {"schema_version", "kind", "spec", "repo", "tool", "checks", "test_first", "budget"}
+    h = mapping(
+        document, document.header, "", required, {"base_branch", "task_id", "protected", "trust"}
+    )
+    _version(document, h, "build-request")
+    spec = reference(document, h["spec"], "spec", ObjectKind.SPEC)
+    if spec.project is not None:
+        document.fail("spec", "expected a local Spec ID")
+    repo = text(document, h["repo"], "repo")
+    if not repo.startswith("/") or any(ord(c) < 32 for c in repo):
+        document.fail("repo", "expected an absolute repository path")
+    checks = strings(document, h["checks"], "checks", nonempty=True)
+    if any("<fill:" in check for check in checks):
+        document.fail("checks", "unfilled <fill: ...> placeholder")
+    protected = strings(document, h.get("protected", []), "protected")
+    for value in protected:
+        if (
+            value.startswith("/")
+            or "\\" in value
+            or any(p in {"", ".", ".."} for p in value.split("/"))
+        ):
+            document.fail("protected", "expected repository-relative paths without traversal")
+    base = h.get("base_branch")
+    if base is not None:
+        text(document, base, "base_branch")
+        if base.startswith("-") or any(ord(c) < 32 for c in base):
+            document.fail("base_branch", "expected a branch name, not a flag or control character")
+    task = h.get("task_id")
+    if task is not None:
+        text(document, task, "task_id")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", task):
+            document.fail("task_id", "expected a safe task identifier (max 128 characters)")
+    tool = text(document, h["tool"], "tool")
+    if type(h["test_first"]) is not bool:
+        document.fail("test_first", "expected true or false")
+    trust = h.get("trust", False)
+    if type(trust) is not bool:
+        document.fail("trust", "expected true or false")
+    budget = mapping(document, h["budget"], "budget", {"rounds", "hours"})
+    if type(budget["rounds"]) is not int or budget["rounds"] <= 0:
+        document.fail("budget.rounds", "expected a positive integer")
+    if type(budget["hours"]) not in {int, float} or not 0 < budget["hours"] < float("inf"):
+        document.fail("budget.hours", "expected a positive finite number")
+    body = sections(document)
+    unknown = set(body) - {"Why", "Context for the implementer"}
+    if unknown:
+        document.fail("body", f"unknown section: {sorted(unknown)[0]}")
+    why = body.get("Why", "").strip()
+    if not why:
+        document.fail("body.Why", "explain why this build is needed")
+    return BuildRequest(
+        str(spec.object_id),
+        repo,
+        base,
+        task,
+        tool,
+        tuple(checks),
+        tuple(protected),
+        h["test_first"],
+        dict(budget),
+        why,
+        body.get("Context for the implementer", ""),
+        trust,
+    )

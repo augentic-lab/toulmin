@@ -44,6 +44,7 @@ from toulmin.core.inspection import brief_text_errors
 from toulmin.core.project import validate_project
 from toulmin.core.project_proposals import (
     BRIEF,
+    BUILD,
     INTAKE,
     OBJECT_KINDS,
     OUTCOME_SUFFIX,
@@ -70,6 +71,7 @@ from toulmin.core.repository import Repository
 from toulmin.core.review import INTAKE_FILE
 from toulmin.core.schema import utc_text
 from toulmin.core.skeletons import PLACEHOLDER
+from toulmin.protocols.build import BuildPlan, preview_build
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import IntakeResult, OutputState, intake_review, output_state
 from toulmin.protocols.ruling import RulingResult, apply_ruling
@@ -113,6 +115,7 @@ class Preview:
     after: bytes | None = None  # that file exactly as apply writes it
     gate: GateReadiness | None = None  # readiness of the gate the stage change enters
     changes: tuple[RulingResult, ...] = ()  # every object a ruling still changes (R1 batch)
+    build: BuildPlan | None = None
     done: tuple[str, ...] = ()  # batch objects an interrupted application already ruled
 
 
@@ -154,6 +157,7 @@ def inventory(root: Path, project: str) -> Inventory:
         RULING: [],
         BRIEF: [],
         STAGE: [],
+        BUILD: [],
         REVIEW: [],
     }
     unrecognized: list[str] = []
@@ -257,10 +261,23 @@ def preview(root: Path, project: str, relative: str) -> Preview:
     if outcome is not None and outcome.disposition != "applying":
         return Preview(relative, kind, sha, text, (f"already {outcome.disposition}",), None)
     interrupted = outcome is not None
-    if kind in {RULING, INTAKE, REVIEW, BRIEF, STAGE} and PLACEHOLDER in text:
+    if kind in {RULING, INTAKE, REVIEW, BRIEF, STAGE, BUILD} and PLACEHOLDER in text:
         # R1 skeletons mark every open choice; none may reach a brief, a status or an intake.
         problem = "unfilled <fill: ...> placeholder; ask the agent to finish the draft"
         return Preview(relative, kind, sha, text, (problem,), None, interrupted=interrupted)
+    if kind == BUILD:
+        try:
+            plan = preview_build(root, project, raw, relative)
+            problems = plan.problems
+            if outcome is not None and outcome.proposal_sha256 != sha:
+                problems += (
+                    "proposal changed after application started; restore the frozen request",
+                )
+            return Preview(
+                relative, kind, sha, text, problems, None, interrupted=interrupted, build=plan
+            )
+        except (OSError, ValueError) as error:
+            return Preview(relative, kind, sha, text, (str(error),), None, interrupted=interrupted)
     if kind == INTAKE:
         return _intake_preview(root, project, relative, sha, text, raw, interrupted)
     if kind == BRIEF:
@@ -654,7 +671,7 @@ def apply(
         raise FormatError(f"{relative}: changed since the preview; nothing written")
     if current.problems:
         raise FormatError(f"{relative}: {current.problems[0]}")
-    if current.kind in {INTAKE, REVIEW}:
+    if current.kind in {INTAKE, REVIEW, BUILD}:
         raise FormatError(f"{relative}: {current.kind} proposals use their own apply steps")
     now = utc_text(datetime.now(UTC))
     marker = Outcome(relative, sha256, "applying", actor, now, approval_text, None, None)
@@ -735,3 +752,53 @@ def reject(
     )
     _write_outcome(repository, relative, outcome, replace=False)
     return outcome
+
+
+def begin_build(
+    root: Path,
+    project: str,
+    relative: str,
+    actor: str,
+    sha256: str,
+    approval_text: str,
+    *,
+    now: datetime | None = None,
+) -> Outcome:
+    """Claim this request exclusively before L3 archives the contract and invokes Chief."""
+    if not actor.strip():
+        raise FormatError("actor: expected nonempty string")
+    current = preview(root, project, relative)
+    if current.sha256 != sha256:
+        raise FormatError(f"{relative}: changed since the preview; nothing started")
+    if current.problems or current.build is None:
+        raise FormatError(f"{relative}: {(current.problems or ('not a build request',))[0]}")
+    if current.interrupted:
+        return interrupted_marker(root, project, relative)
+    marker = Outcome(
+        relative,
+        sha256,
+        "applying",
+        actor,
+        utc_text(now or datetime.now(UTC)),
+        approval_text,
+        None,
+        None,
+    )
+    _write_outcome(Repository(root), relative, marker, replace=False)
+    return marker
+
+
+def finish_build(root: Path, marker: Outcome, task_id: str, failure: str | None = None) -> Outcome:
+    """Record Chief's result; failed requests stay archived and need a new request to retry."""
+    done = Outcome(
+        marker.proposal,
+        marker.proposal_sha256,
+        "failed" if failure else "applied",
+        marker.actor,
+        marker.at,
+        marker.approval_text,
+        failure,
+        None if failure else f"chief task {task_id}",
+    )
+    _write_outcome(Repository(root), marker.proposal, done, replace=True)
+    return done

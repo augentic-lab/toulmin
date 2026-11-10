@@ -12,17 +12,19 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from toulmin.core.atomic import digest
 from toulmin.core.codec import decode
-from toulmin.core.documents import STATUSES, FormatError
+from toulmin.core.documents import STATUSES, FormatError, sections
 from toulmin.core.identifiers import ObjectId, ObjectKind
 from toulmin.core.project import STAGES, validate_project
-from toulmin.core.project_proposals import BRIEF, INTAKE, REVIEW, RULING, STAGE
+from toulmin.core.project_proposals import BRIEF, BUILD, INTAKE, REVIEW, RULING, STAGE
 from toulmin.core.proposal_skeletons import (
     DraftLine,
     RulingTarget,
     brief_skeleton,
+    build_skeleton,
     intake_skeleton,
     review_skeleton,
     ruling_skeleton,
@@ -30,12 +32,13 @@ from toulmin.core.proposal_skeletons import (
 )
 from toulmin.core.repository import Repository
 from toulmin.core.skeletons import skeleton
+from toulmin.protocols.build import expected_output_note, load_spec, spec_commands
 from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
 from toulmin.protocols.ruling import LINKS, SECTIONS_BY_KIND
 
-PROPOSAL_KINDS = (RULING, INTAKE, REVIEW, BRIEF, STAGE)
+PROPOSAL_KINDS = (RULING, INTAKE, REVIEW, BRIEF, STAGE, BUILD)
 
 DRAFTS = "runs/drafts"
 _ATTEMPTS = 100
@@ -121,6 +124,9 @@ class ProposalOptions:
     models: tuple[str, ...] = ()  # review
     claims: tuple[str, ...] = ()  # review
     stage: str | None = None  # stage: the stage to enter; default the next one
+    spec: str | None = None  # build
+    repo: str | None = None  # build
+    build_defaults: dict[str, Any] | None = None  # L3 supplies workspace configuration
 
 
 _OPTION_KINDS = {
@@ -133,6 +139,9 @@ _OPTION_KINDS = {
     "models": (REVIEW,),
     "claims": (REVIEW,),
     "stage": (STAGE,),
+    "spec": (BUILD,),
+    "repo": (BUILD,),
+    "build_defaults": (BUILD,),
 }
 
 
@@ -258,10 +267,31 @@ def _stage(repository: Repository, project: str, options: ProposalOptions) -> Re
     return lambda relative: stage_skeleton(project, relative, current, target, options.decision)
 
 
+def _build(repository: Repository, project: str, options: ProposalOptions) -> Render:
+    if options.spec is None:
+        raise FormatError("build: spec: name the Spec with --spec S-NNN")
+    spec = load_spec(repository, project, options.spec)
+    defaults = options.build_defaults or {}
+    criteria = sections(spec).get("Acceptance criteria", "")
+    checks = spec_commands(criteria)
+    return lambda relative: build_skeleton(
+        project,
+        relative,
+        options.spec or "",
+        options.repo,
+        checks,
+        defaults.get("tool", "codex"),
+        defaults.get("budget"),
+        defaults.get("trust", False),
+        expected_output_note(criteria),
+    )
+
+
 _RENDERERS: dict[str, Callable[[Repository, str, ProposalOptions], Render]] = {
     RULING: _ruling,
     INTAKE: _intake,
     REVIEW: _review,
     BRIEF: _brief,
     STAGE: _stage,
+    BUILD: _build,
 }

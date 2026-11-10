@@ -846,3 +846,71 @@ trial project reached `done` with every Claim `proposed`.
   rulings for those Claims, each with a Decision naming it; a Claim already named by a pending
   ruling proposal is left out. The map, the state card and decide's closing moves read it.
   Advice only: nothing changes a Claim's status but the researcher's ruling. No format change.
+
+
+### R8 B2 — Build request to Chief (L1 additive, L2, L3)
+
+Reason for the L2 addition: handing Specs and acceptance commands to implementers by hand
+loses the reviewed boundary and the exact checks. `protocols/build.py` derives a contract
+from files, compares the explicit request checks with the Spec's commands, and assesses that
+Spec's G3 item before the researcher starts implementation. It never executes commands,
+reads Chief state, changes a Spec status or makes a ruling.
+
+- The agent drafts `toulmin draft build NAME --spec S-NNN [--repo PATH]`, fills Why and
+  optional Context, and moves the draft to runs/proposals/. Repository defaults come from
+  workspace `tools/chief.toml [repos]`; tool, budget and optional `trust` also come from that file. The request
+  carries every choice explicitly. Missing repo/checks remain placeholders, never guesses.
+- Check prefill extracts inline code spans and complete fences whose info string is sh,
+  bash, shell or console. A shell fence is one script/check (preserving multiline semantics).
+  Console prompts are removed and unprompted output is ignored when prompts exist. Untyped
+  and other fences are expected output, never checks. The request list is frozen at apply;
+  differences in order or content are prominently shown for the researcher's review, not
+  silently replaced or refused. When expected-output fences are present, a comment above
+  the draft checks and an advisory Note in decide explain that checks pass on exit status
+  only and show an explicit output comparison example. They do not rewrite the checks.
+- Contract derivation follows the target Claim's revision chain and uses the current
+  successor's Statement, retaining the original target and current ID in the section title.
+- `toulmin decide` shows the full contract, check comparison, task ID, Spec's G3 item and
+  a reminder that `chief watch` must run. It also shows whether Chief may confirm the worker's
+  folder-trust prompt (`trust: false` by default). Refuse missing/non-todo/non-in-progress Specs,
+  unmet/unknown G3 items, invalid repositories/base branches, empty/placeholder checks,
+  occupied task IDs and prior live/unknown tasks for this Spec. Refusals and skip write nothing.
+- L3 `application/build.py` coordinates the protocol and `adapters/chief.py`. Apply rechecks
+  the preview and serializes startup with the project writer lock. It records applying,
+  archives contract.json and request.json, calls `<command> new --from FILE --id ID
+  [--base-branch B] [--trust]` from the workspace, archives stdout/stderr, and records applied
+  or failed. `--trust` is passed only for an explicit true request value; configuration only
+  prefills new drafts. After a non-zero exit, timeout or OSError, recheck the task ID. If a
+  task exists with the same repository, record applied and report that Chief returned an
+  error but the task exists, keeping its message in chief-new.txt. If no task exists, record
+  failed and say the task ID is free. Unknown or mismatching state is reported without a
+  free-ID claim. A failed request keeps its archive and message; a new request may retry. Spec status stays
+  unchanged. No model/effort fields are sent to Chief.
+- An interrupted retry checks the archive's request identity, frozen contract and Chief
+  configuration. A task.json with the same task ID and repository is recorded rather than
+  started again. A changed request/configuration/contract or unreadable state is refused;
+  restore the frozen inputs before recovery. A missing task can resume startup. An archive
+  that was only partly written is reported, never silently repaired.
+
+`tools/chief.toml` is optional, workspace-owned integration configuration, never read from
+the researcher's personal config or Chief config:
+
+```toml
+command = "python3 ~/aoe-chief/chief.py"
+home = "" # empty: $AOE_CHIEF_HOME, otherwise ~/.local/state/aoe-chief
+tool = "codex"
+trust = false # optionally confirm the worker's folder-trust prompt, never edits/commands
+budget = {rounds = 15, hours = 4}
+verify_timeout_seconds = 600 # reserved for the later verification slice
+[repos]
+example = "/absolute/path/to/code-repository"
+```
+
+Command words are parsed without a shell; home-directory prefixes are expanded. The resolved
+home is passed as AOE_CHIEF_HOME to Chief so collision/recovery reads and CLI startup agree.
+Chief startup has a 120-second process-group timeout. Toulmin never directly writes Chief
+state; only the researcher's apply invokes Chief's documented creation command. The project
+guide directs agents to draft requests and never run Chief themselves. Import, verification,
+Chief map/card/rule-table integration and live trials remain separate slices.
+
+Compatibility is additive as documented in formats.md; no migration or existing object edit.

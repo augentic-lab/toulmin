@@ -170,3 +170,8 @@
   fields unchanged; older archives need no migration.
 - R5 follow-up (L2 rule row): the suggested moves ask the agent to propose supported rulings
   for Claims that meet the supported conditions and have no pending ruling. Formats unchanged.
+
+- R8 B2 (L1 additive, L2, L3): build-request proposals, prefilled `draft build`, full
+  contract/check/G3 preview and researcher-confirmed `chief new` through decide. Freeze checks
+  and archive startup/output with interrupted recovery; no Spec status change. Existing
+  objects unchanged; no migration. Chief import/verify and map integration remain deferred.

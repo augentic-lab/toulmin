@@ -90,6 +90,15 @@ the reviewer's), `reject` (the reason is recorded), `partly` (name `object: O-NN
 Objection you drafted by hand from the draft). Use the raw review output, never a synthesis,
 as `output`. The synthesis groups agreements and disagreements to inform your reasons.
 
+## Build (`toulmin draft build NAME --spec S-NNN [--repo PATH]`)
+
+For a ready Spec, draft a build request, fill Why and optional Context, check the explicit
+checks/repository, then move it to runs/proposals/. The researcher reviews the full contract
+and starts Chief by applying it in `toulmin decide`; **never run chief yourself**, even when
+global handoff guidance says to. Chief needs `chief watch` running and test approval in
+`chief inbox`. Applying a request does not change the Spec's status. Result import and
+independent verification are separate work; never claim Chief's checks alone are acceptance.
+
 ## Ending the session
 
 Only when the researcher asks to end it: write a summary under runs/drafts/ (roles/scribe.md)

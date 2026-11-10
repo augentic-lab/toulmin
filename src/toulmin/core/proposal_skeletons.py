@@ -164,3 +164,47 @@ def stage_skeleton(
     lines.append(f"decision: {_q(decision) if decision else _fill(DECISION_HINT)}")
     lines.append("---")
     return "\n".join(lines) + "\n" + _section("Why", "which gate conditions hold, and why now")
+
+
+def build_skeleton(
+    project: str,
+    path: str,
+    spec: str,
+    repo: str | None,
+    checks: Sequence[str],
+    tool: str = "codex",
+    budget: dict[str, int | float] | None = None,
+    trust: bool = False,
+    note: str | None = None,
+) -> str:
+    lines = _head(
+        "Build request",
+        project,
+        path,
+        [
+            "# The researcher's apply freezes checks and starts Chief; never run chief yourself.",
+        ],
+    )
+    lines += [
+        "kind: build-request",
+        f"spec: {spec}",
+        f"repo: {_q(repo) if repo else _fill('absolute path to the code git repository')}",
+        f"task_id: {project}-{spec.replace('-', '').lower()}",
+        f"tool: {_q(tool)}",
+        f"trust: {'true' if trust else 'false'}",
+        *([f"# {line}" for line in note.splitlines()] if note is not None else []),
+        "checks: "
+        + json.dumps(
+            list(checks) or [f"{PLACEHOLDER} executable acceptance command>"], ensure_ascii=False
+        ),
+        "protected: [tests]",
+        "test_first: true",
+        "budget: " + json.dumps(budget or {"rounds": 15, "hours": 4}),
+        "---",
+    ]
+    return (
+        "\n".join(lines)
+        + "\n"
+        + _section("Why", "why this Spec is ready to build now")
+        + "\n## Context for the implementer\n"
+    )

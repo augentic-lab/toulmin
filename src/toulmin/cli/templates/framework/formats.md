@@ -285,3 +285,73 @@ but cannot be applied as a Brief. Links, nonregular files and invalid UTF-8 are 
 
 This is additive auxiliary storage; seven-object schemas are unchanged. Existing data
 needs no migration. Older readers understand the normal Runs but not native session controls.
+
+
+## R8 B2 — Build requests and frozen contracts (additive)
+
+`projects/NAME/runs/proposals/build-YYYYMMDDTHHMMSSZ[-name].md` is a proposal,
+not a formal object. `toulmin draft build NAME --spec S-NNN [--repo PATH]` writes its
+prefilled skeleton under runs/drafts/; the agent fills it and moves it unchanged in name
+to runs/proposals/ for the researcher.
+
+```yaml
+---
+schema_version: 1
+kind: build-request
+spec: S-001
+repo: /absolute/path/to/code-repository
+base_branch: main                       # optional existing commit/branch
+task_id: example-s001                  # optional; default NAME-s001
+tool: codex
+trust: false                           # optional; confirm worker folder trust only
+checks: ["python3 check.py"]
+protected: [tests]                      # optional; omission means no protected paths
+test_first: true
+budget: {rounds: 15, hours: 4}
+---
+## Why
+The Spec is ready to build.
+
+## Context for the implementer
+Optional implementation context.
+```
+
+The fields above are exhaustive. `spec` is a local Spec ID. `repo` is an absolute path to
+an existing git work tree. `task_id` is 1–128 ASCII letters, digits, underscores, dots or
+hyphens, starting with a letter or digit. `tool` is a string; the Chief adapter checks its
+supported launchers (codex, claude, antigravity), keeping vendor control out of L1.
+`checks` is a nonempty list of nonempty strings without `<fill:` markers; `protected` is
+a list of repository-relative paths without traversal. `test_first` and optional `trust`
+are Booleans. `trust` defaults to false; the draft prefills it from workspace
+`tools/chief.toml trust`. When true, apply adds `--trust` to Chief's CLI invocation, confirming
+only the worker's folder-trust prompt, never file edits or commands. It is not a contract JSON
+field. The preview shows this choice explicitly. `budget`
+has positive integer `rounds` and positive finite numeric `hours`. `Why` is required and
+shown only to the researcher; the optional Context section is included in the contract.
+Unfilled placeholders anywhere in a proposal prevent application.
+
+On apply, `projects/NAME/runs/<UTC>-build-S-NNN/` contains:
+
+- `contract.json`: the frozen Chief JSON contract, with repo, name, goal, checks, protected,
+  test_first, tool, budget and optional base_branch. The goal includes the Spec's Requirements
+  and Acceptance criteria verbatim, its target Claim's current successor Statement (if revised),
+  titled `Target Claim C-001 (current: C-002): Statement`, PROJECT.md Constraints,
+  optional request Context, and the fixed instruction to preserve criteria/checks and deliver
+  on chief/<task_id>. No handoff, discussion, Brief or unrelated object text is included.
+- `request.json`: recovery provenance: proposal path and sha256, task ID, Chief home and
+  command. It binds this archive to this request, without a separate index.
+- `chief-new.txt`: exit status and Chief's stdout/stderr, or a recovery/startup-failure note.
+
+The existing `<stem>.outcome.md` records `applying` before startup, `applied` with
+`result: chief task <id>` on success, or the additive `failed` disposition with Chief's
+message in `reason` and null `result`. After any launch error or timeout, a matching
+task.json makes the outcome applied instead: chief-new.txt keeps the error and decide reports
+that the task exists. If no task exists, the failure says the task ID is free; a new request
+can retry. An unreadable or mismatching task is reported without claiming the ID is free.
+A failed request is terminal. Rejecting records the existing `rejected` disposition. Interrupted retries use the
+original actor/time/approval and archive; a matching task is recorded without another startup.
+
+Compatibility: no object fields, statuses or schema versions change. Older versions list
+build proposals as unrecognized; older outcome validators do not understand `failed`.
+Existing requests without `trust` remain valid and default to false. No existing data needs
+migration; keep these new proposal/archive files when downgrading.

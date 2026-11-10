@@ -6,6 +6,7 @@ functions with the researcher's actor; nothing is decided in bulk. Like every ot
 confirming command, this relies on being run by the researcher, not by an agent.
 """
 
+import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,6 +45,7 @@ LABEL = {
     "review": "Review round request",
     "brief": "Brief proposal",
     "stage": "Stage proposal",
+    "build": "Build request",
     "project-handoff": "Project handoff",
 }
 WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
@@ -103,7 +105,7 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
         except (OSError, ValueError) as error:
             ignored.append(str(error))
             continue
-        kinds = {k: k for k in ("ruling", "intake", "review", "brief", "stage")}
+        kinds = {k: k for k in ("ruling", "intake", "review", "brief", "stage", "build")}
         items += [Item(kinds.get(item.kind, "object"), item.path, name) for item in found.items]
         ignored += [
             f"{path}: not named KIND-YYYYMMDDTHHMMSSZ[-name].md" for path in found.unrecognized
@@ -225,6 +227,7 @@ class Run:
             "review": self._review,
             "brief": self._proposal,
             "stage": self._proposal,
+            "build": self._build,
             "project-handoff": self._project_handoff,
         }[item.kind]
         return handler(item)
@@ -485,6 +488,86 @@ class Run:
         else:
             typer.echo("Labels you skipped stay undecided; the recommendation stays pending.")
             self.partial += 1
+
+    def _build(self, item: Item) -> bool:
+        from toulmin.application.build import apply_build, prepare_build
+
+        assert item.project is not None
+        prepared = prepare_build(self.root, item.project, item.path)
+        shown = prepared.preview
+        if shown.problems and shown.problems[0].startswith("already "):
+            typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
+            return True
+        typer.echo(f"Project: {item.project}")
+        typer.echo(shown.text.rstrip("\n"))
+        plan = shown.build
+        if plan is not None:
+            typer.echo(f"Chief task: {plan.task_id}")
+            typer.echo(
+                "Chief confirms the worker's folder-trust prompt: "
+                + ("yes" if plan.request.trust else "no")
+            )
+            typer.echo("Full frozen Chief contract:")
+            typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
+            if plan.note is not None:
+                typer.echo(f"Note: {plan.note}")
+            if plan.checks_match:
+                typer.echo("Checks match the Spec's commands.")
+            else:
+                typer.echo("Check mismatch: request checks differ from the Spec's commands.")
+                typer.echo("  Spec commands: " + json.dumps(plan.spec_commands, ensure_ascii=False))
+                typer.echo(
+                    "  Request checks (frozen on apply): "
+                    + json.dumps(plan.request.checks, ensure_ascii=False)
+                )
+            if plan.gate is not None:
+                typer.echo(
+                    f"G3 item [{'x' if plan.gate.met else ' '}]: "
+                    f"{plan.gate.label}: {plan.gate.detail}"
+                )
+            if prepared.recovered:
+                typer.echo(
+                    "Interrupted apply: existing task matches the frozen request and repository; "
+                    "apply only records it."
+                )
+            elif shown.interrupted:
+                typer.echo("Interrupted apply: no task found; apply starts the frozen request.")
+            if not prepared.recovered:
+                typer.echo("Apply starts Chief now.")
+            typer.echo("Spec status stays unchanged. chief watch must be running.")
+        for problem in prepared.problems:
+            typer.echo(f"Problem: {problem}")
+        choices = (
+            ("sq" if prepared.problems else "asq")
+            if shown.interrupted
+            else ("rsq" if prepared.problems else "arsq")
+        )
+        choice = self._choose(choices)
+        if choice == "a":
+            done = apply_build(
+                self.root,
+                item.project,
+                prepared,
+                self.actor,
+                "toulmin decide: a",
+                report=typer.echo,
+            )
+            typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
+            if done.disposition == "failed":
+                typer.echo(
+                    f"Chief failed: {done.reason}; archive kept. Draft a new request to retry."
+                )
+                self.failed += 1
+            else:
+                typer.echo(
+                    f"Started/recorded: {done.result}. Keep chief watch running; "
+                    "approve tests in chief inbox."
+                )
+                self.applied += 1
+                self._note(item.project, f"applied {_name(item.path)} ({done.result})")
+        elif choice == "r":
+            self._reject_proposal(item, shown)
+        return choice != "q"
 
     def _review(self, item: Item) -> bool:
         from toulmin.adapters.review import execute_round, prepare_round

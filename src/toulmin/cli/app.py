@@ -204,6 +204,7 @@ class DraftKind(StrEnum):
     REVIEW = "review"
     BRIEF = "brief"
     STAGE = "stage"
+    BUILD = "build"
 
 
 @app.command("draft")
@@ -257,6 +258,10 @@ def draft_object(
     models: Annotated[
         list[str] | None, typer.Option("--model", help="review: models (default: config).")
     ] = None,
+    spec: Annotated[str | None, typer.Option("--spec", help="build: Spec ID (S-NNN).")] = None,
+    repo: Annotated[
+        Path | None, typer.Option("--repo", help="build: absolute code repository path.")
+    ] = None,
     to: Annotated[
         str | None, typer.Option("--to", help="stage: the stage to enter (default: the next).")
     ] = None,
@@ -275,6 +280,18 @@ def draft_object(
         if proposal:
             if role is not None:
                 raise ValueError(f"{kind.value}: role: only a Run draft takes a role's inputs")
+            build_defaults = None
+            build_repo = str(repo) if repo is not None else None
+            if kind == DraftKind.BUILD:
+                from toulmin.adapters.chief import load_config
+
+                config = load_config(root)
+                build_repo = build_repo or config.repos.get(project)
+                build_defaults = {
+                    "tool": config.tool,
+                    "budget": config.budget,
+                    "trust": config.trust,
+                }
             options = ProposalOptions(
                 objects=tuple(_comma_list(objects) or ()),
                 status=status,
@@ -285,6 +302,9 @@ def draft_object(
                 models=tuple(_comma_list(models) or ()),
                 claims=tuple(_comma_list(claims) or ()),
                 stage=to,
+                spec=spec,
+                repo=build_repo,
+                build_defaults=build_defaults,
             )
             path = write_proposal_draft(root, project, kind.value, options, name)
         else:
@@ -293,7 +313,7 @@ def draft_object(
                 for flag, value in (
                     ("--object", objects), ("--status", status), ("--decision", decision),
                     ("--run", run), ("--section", sections), ("--persona", personas),
-                    ("--model", models), ("--to", to),
+                    ("--model", models), ("--to", to), ("--spec", spec), ("--repo", repo),
                 )
                 if value
             ]  # fmt: skip

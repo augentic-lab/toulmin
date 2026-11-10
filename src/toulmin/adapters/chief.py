@@ -1,0 +1,142 @@
+"""R8 B2: Chief configuration, bounded CLI calls and read-only recovery lookup.
+
+No import of Chief's code. Only tools/chief.toml is read for configuration; Chief's own
+configuration and authentication files are never opened.
+"""
+
+import json
+import os
+import re
+import shlex
+import tomllib
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from toulmin.adapters.base import Finished, run_process
+from toulmin.core.documents import FormatError
+from toulmin.core.repository import Repository
+
+NEW_TIMEOUT = 120.0
+
+
+@dataclass(frozen=True)
+class ChiefConfig:
+    command: tuple[str, ...]
+    home: Path
+    tool: str
+    budget: dict[str, int | float]
+    repos: dict[str, str]
+    trust: bool = False
+
+
+def load_config(root: Path) -> ChiefConfig:
+    path = Repository(root).path("tools/chief.toml")
+    try:
+        with path.open("rb") as stream:
+            raw = tomllib.load(stream)
+    except FileNotFoundError:
+        raw = {}
+    except (OSError, ValueError) as error:
+        raise FormatError(f"{path}: Chief configuration: {error}") from error
+    command = raw.get("command", "python3 ~/aoe-chief/chief.py")
+    if not isinstance(command, str) or not command.strip() or "\x00" in command:
+        raise FormatError(f"{path}: command: expected a command string")
+    try:
+        argv = tuple(os.path.expanduser(part) for part in shlex.split(command))
+    except ValueError as error:
+        raise FormatError(f"{path}: command: {error}") from error
+    if not argv:
+        raise FormatError(f"{path}: command: expected an executable")
+    home = raw.get("home", "")
+    if not isinstance(home, str) or "\x00" in home:
+        raise FormatError(f"{path}: home: expected an absolute path or empty string")
+    home_path = Path(
+        home or os.environ.get("AOE_CHIEF_HOME") or "~/.local/state/aoe-chief"
+    ).expanduser()
+    if not home_path.is_absolute():
+        raise FormatError(f"{path}: home: expected an absolute path")
+    tool = raw.get("tool", "codex")
+    if tool not in ("codex", "claude", "antigravity"):
+        raise FormatError(f"{path}: tool: Chief supports codex, claude or antigravity")
+    trust = raw.get("trust", False)
+    if type(trust) is not bool:
+        raise FormatError(f"{path}: trust: expected true or false")
+    budget = raw.get("budget", {"rounds": 15, "hours": 4})
+    if not isinstance(budget, dict) or set(budget) != {"rounds", "hours"}:
+        raise FormatError(f"{path}: budget: expected rounds and hours")
+    if type(budget["rounds"]) is not int or budget["rounds"] <= 0:
+        raise FormatError(f"{path}: budget.rounds: expected a positive integer")
+    if type(budget["hours"]) not in {int, float} or not 0 < budget["hours"] < float("inf"):
+        raise FormatError(f"{path}: budget.hours: expected a positive finite number")
+    repos = raw.get("repos", {})
+    if not isinstance(repos, dict) or any(
+        not isinstance(value, str) or not Path(value).is_absolute() or "\x00" in value
+        for value in repos.values()
+    ):
+        raise FormatError(f"{path}: repos: expected project names mapped to absolute paths")
+    return ChiefConfig(argv, home_path, tool, dict(budget), dict(repos), trust)
+
+
+class ChiefClient:
+    def __init__(self, root: Path, config: ChiefConfig) -> None:
+        self.root = root
+        self.config = config
+
+    def task(self, task_id: str) -> dict[str, Any] | None:
+        """Only the exact task.json used for collision checks and interrupted recovery."""
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", task_id):
+            raise FormatError("task_id: expected a safe Chief task identifier")
+        path = self.config.home / "tasks" / task_id / "task.json"
+        try:
+            raw = json.loads(path.read_bytes())
+        except FileNotFoundError:
+            if path.parent.exists():
+                raise FormatError(
+                    f"{path}: Chief task directory exists without task.json"
+                ) from None
+            return None
+        except (OSError, ValueError) as error:
+            raise FormatError(f"{path}: Chief state not read: {error}") from error
+        if not isinstance(raw, dict):
+            raise FormatError(f"{path}: Chief state not read: expected an object")
+        return raw
+
+    def check_repository(self, repo: str, base_branch: str | None) -> None:
+        path = Path(repo)
+        if not path.is_absolute() or not path.is_dir():
+            raise FormatError(f"{repo}: repository: expected an existing absolute git work tree")
+        result = run_process(
+            ["git", "-C", repo, "rev-parse", "--is-inside-work-tree"], "", 15, self.root
+        )
+        if result.exit_status != 0 or result.stdout.strip() != "true":
+            raise FormatError(f"{repo}: repository: expected a git work tree")
+        if base_branch is not None:
+            result = run_process(
+                [
+                    "git",
+                    "-C",
+                    repo,
+                    "rev-parse",
+                    "--verify",
+                    "--end-of-options",
+                    f"{base_branch}^{{commit}}",
+                ],
+                "",
+                15,
+                self.root,
+            )
+            if result.exit_status != 0:
+                raise FormatError(f"{repo}: base_branch: {base_branch} is not an existing commit")
+
+    def new(
+        self, contract: Path, task_id: str, base_branch: str | None, *, trust: bool = False
+    ) -> Finished:
+        argv = [*self.config.command, "new", "--from", str(contract), "--id", task_id]
+        if base_branch is not None:
+            argv += ["--base-branch", base_branch]
+        if trust:
+            argv.append("--trust")
+        return run_process(
+            argv, "", NEW_TIMEOUT, self.root, env=(("AOE_CHIEF_HOME", str(self.config.home)),)
+        )

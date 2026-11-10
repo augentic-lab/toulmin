@@ -310,7 +310,8 @@ Review: `/home/tianchi/notes/toulmin/rdma-trial-review.md` (agent-run analysis, 
 - [x] R6 — Usage recording (2026-11-10): `usage.json` beside each independent session's output when the tool reported usage (Run format unchanged); per-session and round totals printed; calibration token table; `aoe status` Tokens line for the native session from its own log (verified on the trial's real Codex log). Live capture verified in the R5/R6 simulation (2026-11-10, `~/notes/toulmin/r56-sim-2026-11-10/`): a Claude + Codex round wrote both usage.json files and totals.
 - [x] R5 follow-up — Supported rulings suggested (2026-11-10, from the R5/R6 simulation): Claims meeting the supported conditions without a pending ruling get an agent row in the shared rule table. Researcher use pending.
 - [x] R8 design (B1, 2026-11-10, documentation only): Chief bridge `~/notes/toulmin/chief-bridge-design.md` — build request proposal → `chief new`, Chief state in map/decide, import (implementer Run + G4 proposals), deterministic verify in a fresh clone (verifier Run + G5 proposals). D1–D8 await the researcher.
-- [ ] R8 B2–B6 — implementation slices and trials; separate authorization each.
+- [x] R8 B2 — Build request → `chief new` (2026-11-10, Codex-implemented, supervisor-reviewed): `build-request` proposal kind, `toulmin draft build` (prefilled repo, checks, trust, budget; warns when checks pass on exit status while the Spec shows expected output), decide preview of the full frozen contract and check comparison, apply archives contract.json/request.json/chief-new.txt and runs `chief new`; a failing or slow launch is reconciled with Chief's task.json; current successor Statement used for superseded targets. Real Chief accepted the contract in `--dry-run`.
+- [ ] R8 B3–B6 — import, verify, live trial, researcher trial.
 
 ## UI0 — Python/Textual TUI proposal
 
