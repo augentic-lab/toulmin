@@ -35,9 +35,13 @@ Never read Toulmin's source code to learn a format: `toulmin draft` writes every
    --section). The skeleton carries brief.md's digest and the sections' current text. Edit
    the text; each section you keep replaces the whole section. A brief change after drafting
    makes the proposal stale; draft again then.
-5. **brief-final, build, accept, done**: Specs (`toulmin draft spec`) carry Requirements and
-   executable Acceptance criteria for a Claim. Evidence from a verifier's independent run
-   counts as verified support; your own assertion stays `model-asserted`.
+5. **brief-final → G3 (build)**: every Spec (`toulmin draft spec`) targets a current Claim
+   and its Acceptance criteria name runnable checks, each command in backticks.
+   **G4 (accept)**: each Spec is `awaiting-acceptance` and lists the implementer's test
+   report as supporting Evidence. **G5 (done)**: each Spec is `passed` and lists verified
+   Evidence from a Run with role `verifier` (an independent check; never your own run). Your
+   own assertion stays `model-asserted`. A WARNING that the stage is past a gate is for the
+   researcher to rule on; never treat a stage as earned because it is recorded.
 
 After the researcher decides, re-read state.md or run `toulmin status NAME` before you act.
 A message starting "Toulmin notice" comes from the researcher's `toulmin decide`: it lists

@@ -11,7 +11,7 @@ from typing import Annotated
 import typer
 
 from toulmin.adapters.aoe import AoEClient, AoEError
-from toulmin.adapters.provider_logs import ModelReport
+from toulmin.adapters.provider_logs import ModelReport, SessionUsage
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
 from toulmin.cli.settings import (
     ACTOR_HINT,
@@ -112,6 +112,25 @@ def _model_line(model: ModelReport | None, agent: str) -> str:
     return f"Model: {model.model}{effort} (reported by the {agent} session log)"
 
 
+def _usage_line(usage: SessionUsage) -> str:
+    """The native conversation's tokens so far (R6); a long one is worth a handoff."""
+    requests = f"{usage.requests} requests, " if usage.requests is not None else ""
+    context = ""
+    if usage.context_tokens is not None:
+        context = f"; context now {_size(usage.context_tokens)}"
+        if usage.context_window:
+            context += f" of {_size(usage.context_window)}"
+    return (
+        f"Tokens: {requests}input {_size(usage.input_tokens)} (cached "
+        f"{_size(usage.cached_input_tokens)}), output {_size(usage.output_tokens)}{context} "
+        "(from the session log)"
+    )
+
+
+def _size(value: int) -> str:
+    return f"{value / 1e6:.2f}M" if value >= 1e6 else f"{value / 1e3:.1f}k"
+
+
 def _present(
     view: WorkspaceView,
     root: Path,
@@ -135,6 +154,8 @@ def _present(
         if binding.title:
             typer.echo(f"Title: {binding.title} | binding version {binding.version}")
         typer.echo(_model_line(view.model, binding.agent))
+        if view.usage is not None:
+            typer.echo(_usage_line(view.usage))
         if view.session is not None:
             typer.echo(
                 f"Session state: {view.session.state} | status: {view.session.status or 'unknown'}"

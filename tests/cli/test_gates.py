@@ -1,12 +1,20 @@
-"""H2: G1/G2 readiness in ``status``; read-only, temporary workbenches only."""
+"""H2: G1/G2 readiness in ``status``; R5: G3-G5, deferred advice and stage warnings.
 
+Read-only, temporary workbenches only.
+"""
+
+from dataclasses import replace
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from toulmin.cli.app import app
 from toulmin.core.codec import decode, encode
-from toulmin.protocols.status import project_status
+from toulmin.core.inspection import inspect_project
+from toulmin.core.repository import Repository
+from toulmin.protocols.research_map import move_facts, next_moves, research_map
+from toulmin.protocols.research_workspace import render_state, research_state
+from toulmin.protocols.status import NO_BLOCKING, project_status
 
 BRIEF = "projects/demo/brief.md"
 
@@ -128,3 +136,127 @@ def test_invalid_data_makes_readiness_unknown(populated):
     assert result.exit_code == 1
     assert "G1 -> critique: unknown (data invalid)" in result.stdout
     assert all(gate.met is None for gate in project_status(populated, "demo").gates)
+
+
+# R5
+
+G3_S1 = "S-001 maps to a Claim with executable acceptance"
+G4_S1 = "S-001 completion reported with test Evidence"
+G5_S1 = "S-001 passed on a verifier's independent run"
+
+
+def edit(root, relative, **fields):
+    path = root / relative
+    document = decode(path.read_bytes())
+    document.header.update(fields)
+    path.write_bytes(encode(document))
+    return document
+
+
+def spec(root, **fields):
+    return edit(root, "projects/demo/specs/S-001.md", **fields)
+
+
+def stage(root, value):
+    edit(root, "projects/demo/PROJECT.md", stage=value)
+
+
+def test_without_specs_g3_to_g5_need_one(workbench):
+    result = gates(workbench)
+    for name, enters in (("G3", "build"), ("G4", "accept"), ("G5", "done")):
+        assert result[name].enters == enters and result[name].met is False
+        assert items(result[name]) == {"at least one Spec": (False, "no Specs")}
+
+
+def test_g3_needs_a_current_claim_and_a_runnable_check(populated):
+    assert items(gates(populated)["G3"])[G3_S1] == (True, "C-001")  # backticked command
+    path = populated / "projects/demo/specs/S-001.md"
+    document = decode(path.read_bytes())
+    document.body = document.body.replace("`python replay.py --seed 7 --trace drift.json`", "it")
+    path.write_bytes(encode(document))
+    met, detail = items(gates(populated)["G3"])[G3_S1]
+    assert not met and "name no command" in detail
+    path.write_text(
+        path.read_text().replace(
+            "Acceptance criteria\n", "Acceptance criteria\n```sh\nmake check\n```\n"
+        )
+    )
+    claim(populated, 1, "problem", status="refuted", decisions=["D-001"])
+    assert items(gates(populated)["G3"])[G3_S1] == (
+        False,
+        "targets C-001, which is no longer current",
+    )
+    claim(populated, 1, "problem")
+    claim(populated, 2, "problem")
+    claim(populated, 1, "problem", status="superseded", superseded_by="C-002", decisions=["D-001"])
+    assert items(gates(populated)["G3"])[G3_S1] == (True, "C-001 via its successor C-002")
+
+
+def test_g4_needs_reported_completion_with_test_evidence(populated):
+    assert items(gates(populated)["G4"])[G4_S1] == (False, "status todo")
+    spec(populated, status="awaiting-acceptance")
+    assert items(gates(populated)["G4"])[G4_S1] == (
+        False,
+        "status awaiting-acceptance; no valid supporting Evidence listed",
+    )
+    spec(populated, evidence=["E-001"])  # model-asserted test report is enough for G4
+    assert gates(populated)["G4"].met is True
+
+
+def test_g5_needs_verified_evidence_from_a_verifier_run(populated):
+    verified(populated)
+    spec(populated, status="passed", evidence=["E-001"])
+    met, detail = items(gates(populated)["G5"])[G5_S1]
+    assert not met and "from a Run with role verifier" in detail  # R-001 is a reviewer Run
+    edit(populated, "projects/demo/runs/R-001.md", role="verifier")
+    assert items(gates(populated)["G5"])[G5_S1] == (True, "E-001")
+    edit(populated, "projects/demo/evidence/E-001.md", grade="model-asserted")
+    assert gates(populated)["G5"].met is False
+
+
+def test_deferred_majors_stay_visible_at_g2(populated):
+    objection(populated, "major", "deferred")
+    met, detail = items(gates(populated)["G2"])[NO_BLOCKING]
+    assert met and detail == "advice: deferred O-001 (major) still stand; revisit them before build"
+
+
+def test_a_stage_past_unheld_gates_is_warned_everywhere_and_never_changed(populated):
+    stage(populated, "done")
+    before = {path: path.read_bytes() for path in Path(populated).rglob("*") if path.is_file()}
+    report = project_status(populated, "demo")
+    assert [warning.split(" (", 1)[0] for warning in report.stage_warnings] == [
+        f"Stage done is past G{number}"
+        for number in (1, 2, 4, 5)  # S-001 meets G3
+    ]
+    result = CliRunner().invoke(app, ["status", "demo", "--root", str(populated)])
+    assert "Warning: Stage done is past G5 (enters done), which does not hold" in result.stdout
+    assert "the researcher rules whether to keep it or return the project" in result.stdout
+    moves = research_map(populated, "demo").moves
+    assert moves[0].actor == "you" and moves[0].text.startswith("The stage done is past G1")
+    card = render_state(research_state(populated, "demo"))
+    assert "WARNING: Stage done is past G4 (enters accept)" in card
+    shown = CliRunner().invoke(app, ["map", "demo", "--root", str(populated)])
+    assert "G5 -> done  0/1  (behind the stage, NOT held)" in shown.stdout
+    after = {path: path.read_bytes() for path in Path(populated).rglob("*") if path.is_file()}
+    assert after == before
+
+
+def test_moves_follow_the_build_stages(populated):
+    stage(populated, "build")
+    found = project_status(populated, "demo").gates
+    facts = replace(
+        move_facts(populated, "demo", inspect_project(Repository(populated), "demo"), found, ()),
+        gates=tuple(gate for gate in found if gate.gate == "G4"),  # G1/G2 rows aside
+        objections=(),
+    )
+    assert next_moves(facts)[0].text.startswith("Work toward G4: the implementer finishes")
+    spec(populated, status="awaiting-acceptance", evidence=["E-001"])
+    found = project_status(populated, "demo").gates
+    held = replace(facts, gates=tuple(gate for gate in found if gate.gate == "G4"))
+    assert next_moves(held)[0].text.startswith("G4 conditions hold")
+    stage(populated, "explore")
+    result = CliRunner().invoke(app, ["status", "demo", "--root", str(populated)])
+    assert "  G3 -> build: met (later)\n" in result.stdout  # folded while far ahead
+    assert G3_S1 not in result.stdout
+    verbose = CliRunner().invoke(app, ["status", "demo", "--root", str(populated), "--verbose"])
+    assert G3_S1 in verbose.stdout

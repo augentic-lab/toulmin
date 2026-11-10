@@ -159,3 +159,12 @@
   bound session a one-line notice; after a stage ruling it suggests a handoff and a fresh
   session, and the rule table asks for a handoff while the stage is newer than the last one.
   Formats unchanged.
+- R5 (L2 read-only, L3): gate readiness covers G3–G5 (Spec→current Claim and runnable
+  acceptance criteria; implementer test Evidence; verified Evidence from a `verifier` Run on
+  passed Specs); G2 names deferred fatal/major Objections as advice; status, card and map warn
+  when the stage is past a gate that does not hold. Formats unchanged; the Spec skeleton and
+  example put acceptance commands in backticks.
+- R6 (L1 additive archive file, L2, L3): independent sessions that report token usage leave
+  `usage.json` beside output.md; rounds print per-session and total tokens; calibration adds a
+  token table; `aoe status` shows the native session's token totals from its own log. Run
+  fields unchanged; older archives need no migration.

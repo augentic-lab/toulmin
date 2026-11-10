@@ -21,6 +21,7 @@ from toulmin.adapters.base import (
     persistence_failure,
     run_process,
 )
+from toulmin.core.usage import codex_usage
 from toulmin.protocols.review import ReviewOutcome
 
 LAST_MESSAGE = ".toulmin-last-message.txt"
@@ -190,11 +191,14 @@ class Codex:
     def interpret(self, session: Session, finished: Finished, text: str) -> ReviewOutcome:
         failure = failure_of(finished, session.timeout_seconds)
         session_id = None
+        events = []
         for line in finished.stdout.splitlines():
             try:
                 event = json.loads(line)
             except ValueError:
                 continue
+            if isinstance(event, dict):
+                events.append(event)
             if isinstance(event, dict) and event.get("type") == "thread.started":
                 thread = event.get("thread_id")
                 session_id = thread if isinstance(thread, str) and thread else None
@@ -207,4 +211,5 @@ class Codex:
             duration_seconds=finished.duration_seconds,
             failure=failure,
             log="" if failure is None and text.strip() else diagnostics(finished),
+            usage=codex_usage(events),
         )

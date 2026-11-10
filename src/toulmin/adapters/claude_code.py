@@ -24,6 +24,7 @@ from toulmin.adapters.base import (
     persistence_failure,
     run_process,
 )
+from toulmin.core.usage import Usage, claude_usage
 from toulmin.protocols.review import ReviewOutcome
 
 
@@ -151,6 +152,7 @@ class ClaudeCode:
     def interpret(self, session: Session, finished: Finished) -> ReviewOutcome:
         failure = failure_of(finished, session.timeout_seconds)
         text, session_id, reported = "", None, None
+        tokens: Usage | None = None
         progress: Progress | None = None
         if finished.stdout:
             try:
@@ -173,6 +175,7 @@ class ClaudeCode:
                 session_id = result.get("session_id") or None
                 usage = result.get("modelUsage")
                 reported = next(iter(usage), None) if isinstance(usage, dict) else None
+                tokens = claude_usage(result)
                 if result.get("is_error") and failure is None:
                     failure = f"the tool reported an error: {str(text)[:300]}"
                 if not isinstance(text, str):
@@ -200,6 +203,7 @@ class ClaudeCode:
             duration_seconds=finished.duration_seconds,
             failure=failure,
             log=log,
+            usage=tokens,
         )
 
 

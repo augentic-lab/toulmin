@@ -31,14 +31,19 @@ from toulmin.protocols import project_proposals
 from toulmin.protocols.calibration import REVIEW, operation
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
-from toulmin.protocols.status import GateReadiness, project_status, summary
+from toulmin.protocols.status import (
+    NO_BLOCKING,
+    GateReadiness,
+    project_status,
+    summary,
+    unheld,
+)
 
 YOU, AGENT, EITHER = "you", "agent", "either"
 MOVE_LIMIT = 3
 TYPE_ORDER = ("problem", "magnitude", "mechanism", "novelty", "assumption", "deployability")
 SEVERITY_ORDER = {"fatal": 0, "major": 1, "minor": 2}
 KILL = "Kill criteria written in brief.md"
-NO_BLOCKING = "no open fatal or major Objection"
 
 
 @dataclass(frozen=True)
@@ -87,6 +92,43 @@ class ResearchMap:
     errors: tuple[str, ...]
 
 
+# R5: the rows toward G3-G5; {missing} is filled with the gate's unmet items.
+BUILD_WORK = (
+    (
+        "brief-final",
+        "G3",
+        Move(
+            AGENT,
+            "Work toward G3: draft Specs whose target is a current Claim and whose Acceptance "
+            "criteria name runnable checks: {missing}.",
+            "toulmin draft spec -> runs/proposals/",
+        ),
+    ),
+    (
+        "build",
+        "G4",
+        Move(
+            EITHER,
+            "Work toward G4: the implementer finishes each Spec and its test report is taken as "
+            "supporting Evidence listed on the Spec, then the Spec is ruled "
+            "awaiting-acceptance: {missing}.",
+            "test report in runs/ -> Evidence + ruling proposals",
+        ),
+    ),
+    (
+        "accept",
+        "G5",
+        Move(
+            YOU,
+            "Work toward G5: run each Spec's acceptance checks independently (yourself or a "
+            "verifier session), archive that as a Run with role verifier, take its verified "
+            "Evidence, then rule the Spec passed: {missing}.",
+            "Run (role verifier) -> Evidence -> ruling proposals",
+        ),
+    ),
+)
+
+
 def _hold(gate: GateReadiness) -> Move:
     return Move(
         AGENT,
@@ -115,6 +157,15 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                 YOU,
                 f"Run `toulmin decide` for {facts.proposals} pending proposal(s).",
                 "toulmin decide",
+            )
+        )
+    for behind in unheld(facts.stage, facts.gates):
+        moves.append(
+            Move(
+                YOU,
+                f"The stage {facts.stage} is past {behind.gate}, which does not hold: "
+                f"{_missing(behind)}. Rule whether to keep the stage or return the project.",
+                "toulmin status NAME; a stage proposal if you return it",
             )
         )
     if facts.handoff_due:
@@ -183,6 +234,14 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             rest = _missing(gate, (KILL, NO_BLOCKING))
             if rest:
                 moves.append(Move(AGENT, f"Work toward G2: {rest}.", "proposals"))
+    for stage, name, move in BUILD_WORK:
+        if facts.stage != stage or not (gate := gates.get(name)) or gate.met is None:
+            continue
+        if gate.met:
+            if settled:
+                moves.append(_hold(gate))
+        else:
+            moves.append(Move(move.actor, move.text.format(missing=_missing(gate)), move.how))
     if not moves:
         moves.append(
             Move(

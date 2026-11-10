@@ -18,6 +18,7 @@ from toulmin.core.identifiers import ObjectKind
 from toulmin.core.repository import Repository
 from toulmin.core.review import parse_review
 from toulmin.core.synthesis import GROUP_KINDS, parse_points, parse_synthesis
+from toulmin.core.usage import USAGE_FILE, Usage, encode_usage
 from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.intake import publish_locked
 
@@ -49,6 +50,7 @@ class ReviewOutcome:
     duration_seconds: float | None
     failure: str | None  # None means the session completed
     log: str = ""  # tool diagnostics kept beside a failed output
+    usage: Usage | None = None  # R6: as the tool reported it; None when it reported nothing
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,7 @@ class ArchivedReview:
     archive: str
     drafts: int | None  # parsed draft count; None when the block is missing or invalid
     note: str
+    usage: Usage | None = None
 
 
 def plan_review(
@@ -162,6 +165,8 @@ def archive_review(
         write_atomic(directory / OUTPUT_FILE, outcome.text.encode("utf-8"))
     if failure is not None and outcome.log:
         write_atomic(directory / LOG_FILE, outcome.log.encode("utf-8"))
+    if outcome.usage is not None:
+        write_atomic(directory / USAGE_FILE, encode_usage(outcome.usage))
 
     drafts: int | None = None
     note = ""
@@ -176,6 +181,7 @@ def archive_review(
         f"Automated read-only {task.kind} by `toulmin {COMMANDS[task.kind]}`: role "
         f"{task.persona}, model {task.model}. The exact prompt is in {PROMPT_FILE}"
         + (f"; the raw answer is in {OUTPUT_FILE}." if outcome.text else ".")
+        + (f" Token usage as reported is in {USAGE_FILE}." if outcome.usage else "")
         + (f" {task.note}" if task.note else "")
         + (f" {note}." if note else "")
     )
@@ -197,4 +203,4 @@ def archive_review(
         path = publish_locked(
             repository, project, ObjectKind.RUN, header, Document({}, body, task.archive), actor
         )
-    return ArchivedReview(path.stem, status, task.archive, drafts, failure or note)
+    return ArchivedReview(path.stem, status, task.archive, drafts, failure or note, outcome.usage)

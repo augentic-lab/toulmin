@@ -18,7 +18,7 @@ from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols import project_proposals
 from toulmin.protocols.research_map import AGENT, EITHER, Move, move_facts, next_moves
 from toulmin.protocols.session import entry_files
-from toulmin.protocols.status import GateReadiness, project_status
+from toulmin.protocols.status import GateReadiness, project_status, stage_warnings, upcoming
 
 
 @dataclass(frozen=True)
@@ -292,7 +292,11 @@ def render_state(state: ResearchState) -> str:
             )
         )
     for gate in state.gates:
-        lines.append(f"{gate.gate} -> {gate.enters}: {_readiness(gate)}")
+        if upcoming(state.stage, gate):
+            lines.append(f"{gate.gate} -> {gate.enters}: {_readiness(gate)}")
+        else:
+            lines.append(f"{gate.gate} -> {gate.enters}: later")
+    lines.extend(f"WARNING: {warning}" for warning in stage_warnings(state.stage, state.gates))
     lines.extend(
         (
             "",

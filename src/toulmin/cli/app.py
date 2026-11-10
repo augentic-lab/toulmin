@@ -25,7 +25,7 @@ from toulmin.protocols.inputs import resolve_inputs
 from toulmin.protocols.intake import create_object
 from toulmin.protocols.review_intake import intake_review
 from toulmin.protocols.ruling import apply_ruling
-from toulmin.protocols.status import project_status
+from toulmin.protocols.status import project_status, upcoming
 from toulmin.protocols.workspace_state import (
     CREATION_INCOMPLETE,
     RootState,
@@ -953,10 +953,13 @@ def show_status(
         typer.echo("Gates (readiness from files; the stage changes only by your ruling):")
     for gate in report.gates:
         state = "unknown (data invalid)" if gate.met is None else "met" if gate.met else "not met"
-        typer.echo(f"  {gate.gate} -> {gate.enters}: {state}")
-        for item in gate.items:
+        later = not verbose and not upcoming(report.stage, gate)
+        typer.echo(f"  {gate.gate} -> {gate.enters}: {state}" + (" (later)" if later else ""))
+        for item in () if later else gate.items:
             detail = f": {item.detail}" if item.detail else ""
             typer.echo(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
+    for warning in report.stage_warnings:
+        typer.echo(f"Warning: {warning}")
     for notice in report.notices:
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

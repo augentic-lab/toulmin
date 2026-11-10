@@ -55,7 +55,7 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 | Fresh conversation (context full, next day) | `toulmin open --new-session` |
 | Where things stand | `toulmin status` |
 | What can happen next, live beside the agent | `toulmin map --watch` in a second terminal or tmux pane (`toulmin map` for one view) |
-| How often each model's review findings were adopted | `toulmin calibration` (`--write` saves it under global/calibration/) |
+| How often each model's review findings were adopted, and the tokens each spent | `toulmin calibration` (`--write` saves it under global/calibration/); review rounds also print per-session and total tokens (`usage.json` beside each output) |
 | A concrete direction becomes a project | ask the agent to propose a child project, `toulmin decide`, then `cd projects/NAME && toulmin open` |
 
 ## Concepts
@@ -162,7 +162,9 @@ use. `aoe status` and `open` show it under BINDING as the native session log rep
 `Model: gpt-6-luna, effort medium (reported by the codex session log)`, or `not yet reported`
 before the first turn. Only the model name and effort are read from `$CODEX_HOME/sessions/`
 or `$CLAUDE_CONFIG_DIR/projects/` (defaults `~/.codex`, `~/.claude`); change the model in the
-CLI's own configuration.
+CLI's own configuration. A Tokens line shows the same log's totals for the bound session (input,
+cached input, output and, when logged, the current context): a session near its context window is a
+good moment for a handoff and `--new-session`.
 
 ## Research sessions in AoE (lower-level commands)
 
@@ -198,7 +200,8 @@ toulmin aoe status tail-latency --root /path/to/research --offline
 toulmin aoe refresh tail-latency --root /path/to/research
 ```
 
-The English card derives recorded object statuses, draft files, G1/G2 readiness (GATES) and
+The English card derives recorded object statuses, draft files, G1–G5 readiness (GATES, with a WARNING
+when the stage is past a gate that does not hold) and
 available actions from files; ACTIONS lists up to three suggested next moves from the same rule
 table as `toulmin map` (who acts: the agent or you).
 `RECORDED NEXT STEP` is historical guidance, not inferred current work. `--offline` needs no AoE;
@@ -504,8 +507,15 @@ Gaining or losing eligibility produces a manual-review notice. Stored statuses a
 A Gates block reports G1 (entering critique) and G2 (entering brief-final) readiness item by item:
 G1 needs a current core Claim of each type problem, magnitude, mechanism and novelty; G2 needs no open
 fatal or major Objection, verified supporting Evidence or a `validation_plan` for every current core
-Claim (a refuted one never qualifies), and written Kill criteria in brief.md. Readiness is unknown while
-data is invalid. It is a report, never a stage change: the stage moves only by your ruling.
+Claim (a refuted one never qualifies), and written Kill criteria in brief.md; deferred fatal or major
+Objections are named there as advice. G3 (entering build) needs every Spec to target a current Claim and
+name runnable acceptance checks (commands in backticks or a code block); G4 (entering accept) needs every
+Spec `awaiting-acceptance` or `passed` with supporting test Evidence listed; G5 (entering done) needs every
+Spec `passed` with verified Evidence on its Claim from a Run whose role is `verifier` (an independent
+check, archived by hand). G3–G5 are folded to one line while more than a stage ahead (`--verbose` shows
+them). A gate the recorded stage has passed but that does not hold prints a Warning, here, on the card
+and in the map. Readiness is unknown while data is invalid. It is a report, never a stage change: the
+stage moves only by your ruling.
 
 Checks cover the selected project's seven object types, PROJECT, explicit brief references and direct cross-project references.
 They do not scan other projects for incoming evidence/objections or infer semantic consistency between brief prose and evidence.

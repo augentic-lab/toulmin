@@ -15,7 +15,12 @@ from pathlib import Path
 from uuid import uuid4
 
 from toulmin.adapters.aoe import AoEClient, AoEError, AoESession, settling
-from toulmin.adapters.provider_logs import ModelReport, reported_model
+from toulmin.adapters.provider_logs import (
+    ModelReport,
+    SessionUsage,
+    reported_model,
+    reported_usage,
+)
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
@@ -77,6 +82,7 @@ class WorkspaceView:
     diagnostics: tuple[str, ...] = ()
     context_path: Path | None = None
     model: ModelReport | None = None  # WX3: as reported by the native session log
+    usage: SessionUsage | None = None  # R6: token totals from the same log
 
 
 DELIVERY_STATES = {"none", "prepared", "sending", "submitted", "uncertain", "acknowledged"}
@@ -696,6 +702,7 @@ class AoEWorkspace:
             tuple(diagnostics),
             self.root / binding.context / "context.md" if binding.context else None,
             reported_model(binding.agent, native or binding.provider_session_id),
+            reported_usage(binding.agent, native or binding.provider_session_id),
         )
 
     def bind(

@@ -18,11 +18,11 @@ from toulmin.cli.initialize import workspace_setup
 from toulmin.core.identifiers import ObjectId
 from toulmin.core.project import STAGES
 from toulmin.protocols.research_map import AGENT, YOU, Node, ResearchMap, research_map
-from toulmin.protocols.status import GateReadiness
+from toulmin.protocols.status import GateReadiness, unheld
 from toulmin.protocols.workspace_state import RootState, workspace_status
 
 CLEAR = "\x1b[H\x1b[2J"
-NEXT_GATE = {"explore": "G1", "critique": "G2"}
+NEXT_GATE = {stage: f"G{index + 1}" for index, stage in enumerate(STAGES[:-1])}
 WAITING_SHOWN = 8
 
 
@@ -127,8 +127,16 @@ def render_project(
     lines = [head, track(report.stage, width, glyphs), ""]
 
     following = NEXT_GATE.get(report.stage or "")
+    behind = {gate.gate for gate in unheld(report.stage, report.gates)}
     for gate in report.gates:
         title = f"{gate.gate} -> {gate.enters}  {_count(gate)}"
+        if gate.gate in behind:
+            lines.append(fit(title + "  (behind the stage, NOT held)", width))
+            for item in gate.items:
+                if not item.met:
+                    detail = f": {item.detail}" if item.detail else ""
+                    lines.append(fit(f"  [ ] {item.label}{detail}", width))
+            continue
         if gate.gate != following:
             lines.append(fit(title, width))
             continue

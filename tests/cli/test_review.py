@@ -11,6 +11,7 @@ from typer.testing import CliRunner
 from toulmin.adapters.config import load_config
 from toulmin.cli.app import app
 from toulmin.core.codec import decode
+from toulmin.core.usage import decode_usage
 from toulmin.protocols.inputs import resolve_inputs
 
 RUNS = "projects/demo/runs"
@@ -56,7 +57,10 @@ if mode == "badjson":
     sys.exit(0)
 result = {"empty": "", "error": "Rate limited", "prose": "Prose only."}.get(mode, REVIEW)
 print(json.dumps({"type": "result", "is_error": mode == "error", "result": result,
-                  "session_id": "sess-claude", "modelUsage": {"fake-claude-model": {}}}))
+                  "session_id": "sess-claude", "modelUsage": {"fake-claude-model": {}},
+                  "usage": {"input_tokens": 10, "cache_read_input_tokens": 2000,
+                            "cache_creation_input_tokens": 300, "output_tokens": 400},
+                  "total_cost_usd": 0.05}))
 """
 
 FAKE_CODEX = """
@@ -77,6 +81,9 @@ if mode == "fail":
     sys.exit(1)
 if mode != "silent":
     pathlib.Path(sys.argv[sys.argv.index("-o") + 1]).write_text(REVIEW)
+    print(json.dumps({"type": "turn.completed", "usage": {
+        "input_tokens": 5000, "cached_input_tokens": 4000, "output_tokens": 600,
+        "reasoning_output_tokens": 100}}))
 """
 
 CONFIG = """
@@ -185,6 +192,15 @@ def test_round_records_one_completed_run_per_pair_with_manifest_inputs(bench, fa
         for path in header["input_files"]:
             assert f"<<<FILE {path}>>>" in prompt
         assert "DISCUSSION-HISTORY" not in prompt and "<<<FILE projects/demo/sessions" not in prompt
+        usage = decode_usage((archive / "usage.json").read_bytes())  # R6
+        expected = (2310, 2000, 400) if model == "claude" else (5000, 4000, 600)
+        assert (usage.input_tokens, usage.cached_input_tokens, usage.output_tokens) == expected
+        assert "Token usage as reported is in usage.json." in run.body
+    assert (
+        "Usage: 4 of 4 sessions reported tokens; together input 14.6k (cached 12.0k), "
+        "output 2.0k (per session in usage.json)." in result.stdout
+    )
+    assert "tokens: input 2.3k (cached 2.0k), output 0.4k, reported cost $0.05" in result.stdout
     assert not list((bench / "projects/demo/objections").glob("O-002.md"))  # review never intakes
     assert CliRunner().invoke(app, ["status", "demo", "--root", str(bench)]).exit_code == 0
 

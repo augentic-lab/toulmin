@@ -15,6 +15,7 @@ from pathlib import Path
 from toulmin.core.documents import DIRECTORIES
 from toulmin.core.identifiers import ObjectId, ObjectKind, validate_project_name
 from toulmin.core.repository import Repository
+from toulmin.core.usage import COUNTS, USAGE_FILE, Usage, decode_usage
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
 
@@ -42,6 +43,10 @@ class Tally:
     partly: int = 0
     rejected: int = 0
     objections: Counter[str] = field(default_factory=Counter)  # current status of taken ones
+    # R6: summed from usage.json; a count some reporting session left unknown is not summed
+    reported: int = 0  # Runs with a usage.json
+    tokens: Counter[str] = field(default_factory=Counter)
+    unknown: set[str] = field(default_factory=set)  # counts at least one session did not report
 
     @property
     def decided(self) -> int:
@@ -52,9 +57,21 @@ class Tally:
         return self.drafts - self.decided
 
     def add(self, other: "Tally") -> None:
-        for name in ("runs", "completed", "failed", "drafts", "taken", "partly", "rejected"):
+        names = ("runs", "completed", "failed", "drafts", "taken", "partly", "rejected", "reported")
+        for name in names:
             setattr(self, name, getattr(self, name) + getattr(other, name))
         self.objections.update(other.objections)
+        self.tokens.update(other.tokens)
+        self.unknown |= other.unknown
+
+    def count(self, usage: Usage) -> None:
+        self.reported += 1
+        for name in COUNTS[:3]:
+            value = getattr(usage, name)
+            if value is None:
+                self.unknown.add(name)
+            else:
+                self.tokens[name] += value
 
 
 @dataclass(frozen=True)
@@ -108,6 +125,13 @@ def calibration(root: Path, project: str | None = None) -> Calibration:
             key = (operation(role), str(header["model"]), role)
             tally = groups.setdefault(key, Tally())
             tally.runs += 1
+            relative = f"{header['output']}/{USAGE_FILE}"
+            usage = repository.root / relative  # the Run's output is checked on load
+            if usage.is_file() and not usage.is_symlink():
+                try:
+                    tally.count(decode_usage(usage.read_bytes(), relative))
+                except (OSError, ValueError) as error:
+                    skipped.append(f"{name}/{path.stem}: usage not counted: {error}")
             if header["status"] == "completed":
                 tally.completed += 1
             else:
@@ -224,6 +248,26 @@ def render(report: Calibration, project: str | None) -> str:
         if tally.objections:
             counts = " | ".join(str(tally.objections[status]) for status in OBJECTION_STATUSES)
             lines.append(f"| {_cell(model)} | {_cell(role)} | {counts} |")
+    lines += [
+        "",
+        "## Token usage by operation",
+        "",
+        "From usage.json beside each output: what the tool reported, never estimates. Input",
+        "includes cached input. `?` marks a total missing a count some session did not report;",
+        "`-` means no session of the group reported usage.",
+        "",
+        "| Operation | Model | Role | Runs | With usage | Input | Cached input | Output |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for (kind, model, role), tally in sorted(report.groups.items()):
+        counts = " | ".join(
+            "-" if not tally.reported else "?" if name in tally.unknown else str(tally.tokens[name])
+            for name in COUNTS[:3]
+        )
+        lines.append(
+            f"| {kind} | {_cell(model)} | {_cell(role)} | {tally.runs} | {tally.reported} | "
+            f"{counts} |"
+        )
     lines += ["", "## Not counted", ""]
     lines += [f"- {item}" for item in report.skipped] or ["Nothing; every file was readable."]
     return "\n".join(lines) + "\n"

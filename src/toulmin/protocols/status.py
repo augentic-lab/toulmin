@@ -7,6 +7,7 @@ from pathlib import Path
 from toulmin.core.documents import Document, sections
 from toulmin.core.identifiers import ObjectId, ObjectKind, ObjectRef
 from toulmin.core.inspection import ProjectSnapshot, current_claim, inspect_project, local_target
+from toulmin.core.project import STAGES
 from toulmin.core.repository import Repository
 
 
@@ -74,6 +75,7 @@ class StatusReport:
     superseded: tuple[SupersededClaim, ...] = ()
     settled_objections: tuple[SettledObjection, ...] = ()
     gates: tuple[GateReadiness, ...] = ()
+    stage_warnings: tuple[str, ...] = ()  # R5: gates behind the stage that do not hold
 
 
 SUMMARY_LENGTH = 100
@@ -187,6 +189,7 @@ def project_status(root: Path, project: str) -> StatusReport:
         )
     )
     charter = snapshot.charter.header if snapshot.charter is not None else {}
+    gates = _gates(Repository(root), project, snapshot, complete)
     return StatusReport(
         project,
         charter.get("stage"),
@@ -202,7 +205,8 @@ def project_status(root: Path, project: str) -> StatusReport:
         ),
         tuple(superseded),
         settled,
-        _gates(Repository(root), project, snapshot, complete),
+        gates,
+        stage_warnings(charter.get("stage"), gates),
     )
 
 
@@ -214,6 +218,7 @@ G1_LABELS = {
     "novelty": "novelty",
 }
 KILL_CRITERIA = "Kill criteria"
+NO_BLOCKING = "no open fatal or major Objection"
 
 
 def _brief_section(text: str, title: str) -> str:
@@ -245,7 +250,7 @@ def _written(text: str) -> bool:
 def _gates(
     repository: Repository, project: str, snapshot: ProjectSnapshot, complete: bool
 ) -> tuple[GateReadiness, ...]:
-    """G1/G2 conditions of design section 7, computed from files only.
+    """G1-G5 conditions of design section 7, computed from files only.
 
     Superseded Claims are left out (their successors carry the conditions); a refuted core
     Claim still counts as written for G1 but never satisfies G2.
@@ -274,13 +279,24 @@ def _gates(
         ),
         key=lambda doc: doc.object_id.number,
     )
-    g2 = [
-        GateItem(
-            "no open fatal or major Objection",
-            not blocking,
-            ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in blocking),
-        )
-    ]
+    # R5: a deferred fatal or major Objection is not open, so G2 can hold, but it still
+    # matters later; the item says so instead of turning silently green.
+    deferred = sorted(
+        (
+            doc
+            for doc in snapshot.objects
+            if doc.object_id.kind == ObjectKind.OBJECTION
+            and doc.header["status"] == "deferred"
+            and doc.header["severity"] in {"fatal", "major"}
+        ),
+        key=lambda doc: doc.object_id.number,
+    )
+    detail = ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in blocking)
+    if deferred:
+        listed = ", ".join(f"{doc.object_id} ({doc.header['severity']})" for doc in deferred)
+        advice = f"advice: deferred {listed} still stand; revisit them before build"
+        detail = f"{detail}; {advice}" if detail else advice
+    g2 = [GateItem(NO_BLOCKING, not blocking, detail)]
     if not claims:
         g2.append(GateItem("core Claims supported or planned", False, "no core Claims"))
     for claim in claims:
@@ -317,7 +333,154 @@ def _gates(
         met = all(item.met for item in items) if complete else None
         return GateReadiness(gate, enters, met, tuple(items))
 
-    return (readiness("G1", "critique", g1), readiness("G2", "brief-final", g2))
+    g3, g4, g5 = _spec_gates(snapshot, project)
+    return (
+        readiness("G1", "critique", g1),
+        readiness("G2", "brief-final", g2),
+        readiness("G3", "build", g3),
+        readiness("G4", "accept", g4),
+        readiness("G5", "done", g5),
+    )
+
+
+EXECUTABLE = re.compile(r"`[^`\n]+`|^ {0,3}(`{3,}|~{3,})", re.M)
+VERIFIER = "verifier"
+
+
+def _spec_gates(
+    snapshot: ProjectSnapshot, project: str
+) -> tuple[list[GateItem], list[GateItem], list[GateItem]]:
+    """G3-G5 of design section 7 from Specs, their listed Evidence and its Runs (R5).
+
+    G3: every Spec targets a Claim that is current or has a current successor, and its
+    Acceptance criteria name something runnable (heuristic: inline code or a code block).
+    G4: every Spec reports completion (awaiting-acceptance or passed) and lists valid
+    supporting Evidence, the implementer's own test report. G5: every Spec has passed and lists
+    verified supporting Evidence on its Claim whose source Run has the role ``verifier``; a
+    researcher who ran the checks independently archives that Run by hand.
+    """
+    known = {doc.object_id: doc for doc in snapshot.objects}
+    specs = sorted(
+        (doc for doc in snapshot.objects if doc.object_id.kind == ObjectKind.SPEC),
+        key=lambda doc: doc.object_id.number,
+    )
+    if not specs:
+        missing = [GateItem("at least one Spec", False, "no Specs")]
+        return missing, list(missing), list(missing)
+    g3: list[GateItem] = []
+    g4: list[GateItem] = []
+    g5: list[GateItem] = []
+    for spec in specs:
+        name = str(spec.object_id)
+        target = local_target(spec, project)
+        claims: tuple[ObjectId, ...] = ()
+        if target is None:
+            mapped, where = False, f"targets {spec.header['target']} outside this project"
+        elif target not in known:
+            mapped, where = False, f"targets {target}, which does not exist"
+        else:
+            claims = current_claim(snapshot.objects, target)
+            current = known.get(claims[-1])
+            if current is None or current.header["status"] in {"superseded", "refuted"}:
+                mapped, where = False, f"targets {target}, which is no longer current"
+            elif len(claims) > 1:
+                mapped, where = True, f"{target} via its successor {claims[-1]}"
+            else:
+                mapped, where = True, str(target)
+        criteria = sections(spec).get("Acceptance criteria", "")
+        runnable = bool(EXECUTABLE.search(criteria))
+        problems = [] if mapped else [where]
+        if not runnable:
+            problems.append("Acceptance criteria name no command in backticks or a code block")
+        g3.append(
+            GateItem(
+                f"{name} maps to a Claim with executable acceptance",
+                mapped and runnable,
+                "; ".join(problems) if problems else where,
+            )
+        )
+        listed = []
+        for value in spec.header.get("evidence") or []:
+            reference = ObjectRef.parse(value)
+            found = known.get(reference.object_id) if reference.project in {None, project} else None
+            if found is not None and found.object_id.kind == ObjectKind.EVIDENCE:
+                listed.append(found)
+        usable = [
+            doc
+            for doc in listed
+            if doc.header["status"] == "valid" and doc.header["direction"] == "supports"
+        ]
+        status = spec.header["status"]
+        if status not in {"awaiting-acceptance", "passed"}:
+            reported, detail = False, f"status {status}"
+        elif not usable:
+            reported, detail = False, f"status {status}; no valid supporting Evidence listed"
+        else:
+            reported = True
+            detail = f"status {status}; " + ", ".join(str(doc.object_id) for doc in usable)
+        g4.append(GateItem(f"{name} completion reported with test Evidence", reported, detail))
+        verified = [
+            doc
+            for doc in usable
+            if doc.header["grade"] == "verified"
+            and local_target(doc, project) in claims
+            and _verifier_run(doc, known)
+        ]
+        if status != "passed":
+            accepted, detail = False, f"status {status}, not passed"
+        elif not verified:
+            accepted = False
+            detail = (
+                "no verified supporting Evidence on its Claim from a Run with role "
+                f"{VERIFIER}: archive an independent check as such a Run, then take its Evidence"
+            )
+        else:
+            accepted, detail = True, ", ".join(str(doc.object_id) for doc in verified)
+        g5.append(GateItem(f"{name} passed on a verifier's independent run", accepted, detail))
+    return g3, g4, g5
+
+
+def _verifier_run(evidence: Document, known: dict[ObjectId, Document]) -> bool:
+    source = evidence.header["source"]
+    if not isinstance(source, dict) or source.get("kind") != "run":
+        return False
+    run = known.get(ObjectRef.parse(source["ref"]).object_id)
+    return run is not None and str(run.header.get("role", "")) == VERIFIER
+
+
+def upcoming(stage: str | None, gate: GateReadiness) -> bool:
+    """Whether a gate concerns the project now: G1/G2 always (as before R5), a later gate once
+    it is behind the stage or the next one."""
+    if stage not in STAGES or gate.enters not in STAGES:
+        return True
+    reach = max(STAGES.index(stage) + 1, STAGES.index("brief-final"))
+    return STAGES.index(gate.enters) <= reach
+
+
+def unheld(stage: str | None, gates: tuple[GateReadiness, ...]) -> tuple[GateReadiness, ...]:
+    """Gates the recorded stage has passed that do not hold in the files (R5)."""
+    if stage not in STAGES:
+        return ()
+    reached = STAGES.index(stage)
+    return tuple(
+        gate
+        for gate in gates
+        if gate.met is False and gate.enters in STAGES and STAGES.index(gate.enters) <= reached
+    )
+
+
+def stage_warnings(stage: str | None, gates: tuple[GateReadiness, ...]) -> tuple[str, ...]:
+    """One warning per unheld gate; advice only.
+
+    The stage is the researcher's record and never changes here; design section 7 leaves
+    sending a project back to the researcher's ruling.
+    """
+    return tuple(
+        f"Stage {stage} is past {gate.gate} (enters {gate.enters}), which does not hold in the "
+        f"files: {'; '.join(item.label for item in gate.items if not item.met)}. The stage "
+        "stays as recorded; the researcher rules whether to keep it or return the project."
+        for gate in unheld(stage, gates)
+    )
 
 
 def _revision_notices(snapshot: ProjectSnapshot, project: str) -> list[str]:

@@ -94,3 +94,46 @@ def test_only_the_tail_is_scanned_across_block_boundaries(monkeypatch):
     assert reported_model("codex", CODEX_ID) is None  # beyond the scanned tail
     codex_log(turn("gpt-early"), *filler, turn("gpt-6-luna"), *filler[:5])
     assert reported_model("codex", CODEX_ID).model == "gpt-6-luna"
+
+
+# R6: token totals from the same logs
+
+
+def test_codex_usage_is_the_newest_running_total():
+    total = {"input_tokens": 800_000, "cached_input_tokens": 730_000, "output_tokens": 15_300,
+             "reasoning_output_tokens": 2_600, "total_tokens": 815_300}  # fmt: skip
+    path = codex_log(
+        {"type": "event_msg", "payload": {"type": "token_count", "info": None}},
+        {"type": "event_msg", "payload": {"type": "token_count", "info": {
+            "total_token_usage": {"input_tokens": 1}, "last_token_usage": {"input_tokens": 1}}}},
+        {"type": "event_msg", "payload": {"type": "token_count", "info": {
+            "total_token_usage": total, "last_token_usage": {"input_tokens": 59_000},
+            "model_context_window": 475_000}}},
+    )  # fmt: skip
+    usage = provider_logs.reported_usage("codex", CODEX_ID)
+    assert usage == provider_logs.SessionUsage(None, 800_000, 730_000, 15_300, 59_000, 475_000,
+                                               str(path))  # fmt: skip
+
+
+def test_claude_usage_counts_each_request_once():
+    def reply(key, cached, output):
+        usage = {"input_tokens": 5, "cache_read_input_tokens": cached,
+                 "cache_creation_input_tokens": 100, "output_tokens": output}  # fmt: skip
+        return {"type": "assistant", "message": {"id": key, "model": "m", "usage": usage}}
+
+    claude_log(
+        {"type": "user", "message": {"content": "hello"}},
+        reply("msg-1", 1000, 50),
+        reply("msg-1", 1000, 50),  # the same request, another content block
+        reply("msg-2", 3000, 70),
+    )
+    usage = provider_logs.reported_usage("claude", CLAUDE_ID)
+    assert (usage.requests, usage.input_tokens, usage.cached_input_tokens) == (2, 4210, 4000)
+    assert (usage.output_tokens, usage.context_tokens, usage.context_window) == (120, 3105, None)
+
+
+def test_no_usage_records_mean_not_reported():
+    codex_log(turn("gpt-6-luna"))
+    assert provider_logs.reported_usage("codex", CODEX_ID) is None
+    assert provider_logs.reported_usage("claude", CLAUDE_ID) is None  # no log at all
+    assert provider_logs.reported_usage("other", CODEX_ID) is None

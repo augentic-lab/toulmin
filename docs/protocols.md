@@ -778,3 +778,59 @@ the one project session grew to 325k tokens of context across all stages.
   the agent prepares a handoff because the recorded next step is stale. A stage edited by
   hand has no outcome and adds no row. The map, the state card and decide's closing moves
   read the same row. No format change.
+
+### R5 honest gates: G3–G5 readiness and stage warnings (L2 read-only, L3)
+
+Review: `~/notes/toulmin/rdma-trial-review.md` (D1, D2). In the trial the project reached `done`
+with every Claim `proposed`, only model-asserted Evidence and no independent verifier run,
+while the map showed every stage done; four major Objections deferred in one Decision turned
+G2 green without a trace in the gate.
+- L2 reason: `project_status` gates add G3–G5 of design section 7, computed from Specs, the
+  Evidence they list and that Evidence's Runs. With no Spec each says "at least one Spec".
+  - G3 (enters build), per Spec: its target is a Claim of this project that is current or
+    has a current successor (Specs keep their targets, R1 of formats.md), and its Acceptance
+    criteria name something runnable. The check is a heuristic: inline code or a fenced code
+    block. The Spec skeleton and format example now put commands in backticks.
+  - G4 (enters accept), per Spec: status `awaiting-acceptance` or `passed`, and a listed
+    Evidence that is valid and supports (the implementer's own test report).
+  - G5 (enters done), per Spec: `passed`, and a listed Evidence that is valid, supports, is
+    `verified`, targets the Spec's Claim or a successor and comes from a Run whose `role` is
+    `verifier`. Toulmin has no verifier role file; a researcher or session that ran the checks
+    independently is archived by hand as such a Run.
+- G2's "no open fatal or major Objection" item stays met when such Objections are deferred,
+  but its detail names them as advice ("deferred … still stand; revisit them before build").
+- `stage_warnings`: for each gate the recorded stage has passed that does not hold, a warning
+  in status, the state card and the map, and a rule-table row for the researcher ("rule
+  whether to keep the stage or return the project"). The stage is never changed: design
+  section 7 leaves a return to critique to the researcher's ruling.
+- L3: status, the card and the map fold G3–G5 while they are more than one stage ahead (G1 and
+  G2 show as before; `status --verbose` shows all). The map lists the unmet items of a gate
+  behind the stage. Rule-table rows toward G3 (draft Specs), G4 (implementer test Evidence)
+  and G5 (verifier Run, verified Evidence, Spec rulings) follow the stage; a held gate offers
+  the stage proposal as G1/G2 did. Stage proposal previews show G3–G5 readiness too.
+- No object format change; the Spec skeleton hint and format example text changed only.
+
+### R6 token usage of independent and native sessions (L1 additive archive file, L2, L3)
+
+Review: `~/notes/toulmin/rdma-trial-review.md` (section 4, C5-3). The trial's seven review and
+synthesis sessions left no token record, so their cost could only be guessed from prompt size;
+the native project session's 20.8M input tokens were found only by reading Codex's own log.
+- L1 (additive): `usage.json` beside output.md (formats.md, R6) with `core/usage.py` reading
+  Claude Code's final `result` event (`usage`, `modelUsage`, `total_cost_usd`) and Codex's
+  `turn.completed` events (summed over turns). Claude's uncached, cache-read and
+  cache-creation input are summed into `input_tokens`, so both tools count input the same way;
+  the raw records are kept. Nothing is estimated: no record, no file.
+- L2 reason: `ReviewOutcome` and `ArchivedReview` gain an optional `usage`; `archive_review`
+  writes the file (for failed sessions too, when the tool reported usage) and the Run summary
+  names it. Run fields are unchanged. `calibration` adds a "Token usage by operation" table
+  (Runs, Runs with usage, input, cached input, output per operation, model and role; `-` when
+  none reported, `?` when a count is missing).
+- L3: a review, cross-validation or synthesis round prints each session's tokens and the
+  round's total over the sessions that reported. `aoe status` adds a Tokens line for the bound
+  native session from the same CLI log WX3 reads for the model (Codex: the newest
+  `token_count` running total and the latest request's input as the current context; Claude:
+  per-request usage summed once per message ID over the newest 16 MiB of the log). Display
+  only; a missing or unrecognized log prints nothing.
+- Not covered: a session killed before its final event reports no usage (a timed-out Claude
+  session keeps its partial answer but not its tokens); native exploration/Brief sessions of
+  the TUI are unchanged.

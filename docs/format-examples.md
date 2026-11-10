@@ -165,7 +165,7 @@ evidence: []
 Implement a request replayer with a fixed random seed, recording per-request queueing and service times.
 
 ## Acceptance criteria
-An independent session runs python replay.py --seed 7 --trace drift.json; it exits 0 and produces per-request CSV.
+An independent session runs `python replay.py --seed 7 --trace drift.json`; it exits 0 and produces per-request CSV.
 A validation script must check that CSV request counts match the trace and all times are nonnegative, and report p99 and the runtime environment.
 This accepts measurement integrity only. The researcher rules on Claim support from the actual results.
 ````

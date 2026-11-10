@@ -8,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from toulmin.adapters.aoe import AoEError, AoESession
-from toulmin.adapters.provider_logs import ModelReport
+from toulmin.adapters.provider_logs import ModelReport, SessionUsage
 from toulmin.application.aoe import Binding, WorkspaceView
 from toulmin.cli import aoe
 from toulmin.cli.app import app
@@ -347,3 +347,11 @@ def test_binding_shows_the_reported_model_or_the_cli_default(workbench, fake_ser
     )
     result = invoke(workbench, "status", "demo")
     assert "Model: gpt-6-luna, effort medium (reported by the codex session log)" in result.output
+    assert "Tokens:" not in result.output
+    usage = SessionUsage(None, 20_770_000, 20_250_000, 110_000, 325_000, 475_000, "/fixture")
+    fake_service.result = replace(fake_service.result, usage=usage)
+    result = invoke(workbench, "status", "demo")
+    assert (
+        "Tokens: input 20.77M (cached 20.25M), output 110.0k; context now 325.0k of 475.0k "
+        "(from the session log)" in result.output
+    )

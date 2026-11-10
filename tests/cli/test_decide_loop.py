@@ -122,7 +122,8 @@ def test_a_stage_ruling_suggests_a_handoff_and_a_fresh_session(populated, monkey
         in result.stdout
     )
     moves = research_map(populated, "demo").moves
-    assert moves[0].text.startswith("Prepare a handoff draft: the stage changed to critique")
+    assert moves[0].text.startswith("The stage critique is past G1")  # R5: the fixture lacks G1
+    assert moves[1].text.startswith("Prepare a handoff draft: the stage changed to critique")
     message = sessions.sent[0][1]
     assert "The stage is now critique: prepare a handoff draft now" in message
     prefix = shlex.join([sys.executable, "-m", "toulmin"])
@@ -134,7 +135,10 @@ def test_the_handoff_row_clears_once_a_handoff_is_applied_after_the_stage(popula
     put(populated, "decision-20261109T100000Z-critique.md", DECISION)
     put(populated, "stage-20261109T100001Z-critique.md", STAGE)
     run(populated, "a\na\n")
-    assert research_map(populated, "demo").moves[0].text.startswith("Prepare a handoff draft")
+    assert any(
+        move.text.startswith("Prepare a handoff draft")
+        for move in research_map(populated, "demo").moves
+    )
     draft = draft_handoff(populated, "demo").relative_to(populated).as_posix()
     apply_handoff(populated, "demo", draft, "Researcher", True)
     report = research_map(populated, "demo")

@@ -71,6 +71,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-09: The researcher kept framework/protocols.md unsplit and asked for a simulation ("按你的建议，先不拆，你直接进行一次模拟测试吧"). An agent-run live trial on a temporary workspace (`~/notes/toulmin/r-sim-2026-11-09/`) confirmed R1/R2 behavior and corrected R7's cause (the Codex folder-trust menu above blank rows); the readiness check now sees it.
 2026-11-09: The researcher approved the R2 follow-up ("按你的建议，改 AGENTS.md 那句"): the workspace AGENTS.md template now sends agents to the session context and guide.md before the framework files.
 2026-11-09: The researcher authorized R3 and R4 ("按你的建议，继续做 R3 + R4"). Both are implemented with fake sessions: decide ends with next moves and an optional one-line notice to the bound project session; a stage ruling leads to handoff and fresh-session suggestions and a handoff row in the rule table. R5, R6, R8 and R9 require separate authorization.
+2026-11-10: The researcher judged the version not yet usable on real projects and authorized R5 and R6 ("直接开发R5&R6。"). R5 (G3–G5 readiness, deferred-Objection advice at G2, stage-past-gate warnings) and R6 (usage.json per independent session, round and calibration totals, native session tokens in `aoe status`) are implemented with fake CLIs and a copy of the trial workspace. R8 and R9 require separate authorization.
 
 ## Project goals and scope
 

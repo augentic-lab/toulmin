@@ -14,6 +14,7 @@ from pathlib import Path
 from toulmin.adapters.base import Session, stop_all
 from toulmin.adapters.config import ReviewConfig, load_config
 from toulmin.core.documents import FormatError
+from toulmin.core.usage import Usage
 from toulmin.protocols.review import (
     ArchivedReview,
     ReviewOutcome,
@@ -277,10 +278,52 @@ def _execute(
                 archived.append(result)
                 pair = f"{task.persona} x {task.model}"
                 echo(f"{result.run} {result.status} {pair}: {result.note}")
+                if result.usage is not None:
+                    echo(f"  tokens: {usage_line(result.usage)}")
         except BaseException:
             # An interrupt or archive error must not leave sessions spending quota.
             for future in futures:
                 future.cancel()
             stop_all()
             raise
+    echo(round_usage([item.usage for item in archived]))
     return archived
+
+
+def _size(value: int | None) -> str:
+    if value is None:
+        return "?"
+    return f"{value / 1e6:.2f}M" if value >= 1e6 else f"{value / 1e3:.1f}k"
+
+
+def usage_line(usage: Usage) -> str:
+    """One session's reported tokens; ``?`` marks a count the tool did not report."""
+    line = f"input {_size(usage.input_tokens)} (cached {_size(usage.cached_input_tokens)}), "
+    line += f"output {_size(usage.output_tokens)}"
+    if usage.reasoning_output_tokens is not None:
+        line += f" (reasoning {_size(usage.reasoning_output_tokens)})"
+    if usage.cost_usd is not None:
+        line += f", reported cost ${usage.cost_usd:.2f}"
+    return line
+
+
+def round_usage(usages: list[Usage | None]) -> str:
+    """The round's total over the sessions that reported usage (R6)."""
+    known = [usage for usage in usages if usage is not None]
+    head = f"Usage: {len(known)} of {len(usages)} sessions reported tokens"
+    if not known:
+        return head + "."
+
+    def total(name: str) -> int | None:
+        values = [getattr(usage, name) for usage in known]
+        return None if None in values else sum(values)
+
+    summed = Usage(
+        "round",
+        total("input_tokens"),
+        total("cached_input_tokens"),
+        total("output_tokens"),
+        None,
+        None,
+    )
+    return f"{head}; together {usage_line(summed)} (per session in usage.json)."

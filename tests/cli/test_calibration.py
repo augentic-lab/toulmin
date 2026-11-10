@@ -31,6 +31,8 @@ if TOOL == "claude":
 else:
     print(json.dumps({"type": "thread.started", "thread_id": "t"}))
     pathlib.Path(sys.argv[sys.argv.index("-o") + 1]).write_text(text)
+    print(json.dumps({"type": "turn.completed", "usage": {
+        "input_tokens": 5000, "cached_input_tokens": 4000, "output_tokens": 600}}))
 """
 
 CONFIG = """
@@ -135,6 +137,12 @@ def test_report_counts_outcomes_per_model_role_and_operation(decided):
         "| fake-claude-model | reviewer-skeptic | 1 | 0 | 0 | 0 |",
         "| fake-codex-model | reviewer-skeptic | 1 | 0 | 0 | 0 |",
     ]
+    usage = text.split("## Token usage by operation\n", 1)[1].split("\n## ", 1)[0]
+    assert usage.strip().splitlines()[-3:] == [
+        "| review | example-model | reviewer | 1 | 0 | - | - | - |",
+        "| review | fake-claude-model | reviewer-skeptic | 1 | 0 | - | - | - |",
+        "| review | fake-codex-model | reviewer-skeptic | 1 | 1 | 5000 | 4000 | 600 |",
+    ]  # R6: only what a tool reported
     # The example Run's output has no draft block: reported, never guessed.
     assert "demo/R-001: drafts not counted" in text
 

@@ -120,7 +120,7 @@ def skeleton(
         ]
         body = [
             ("Requirements", "what to implement"),
-            ("Acceptance criteria", "which evidence would show it works"),
+            ("Acceptance criteria", "the checks that show it works, each command in backticks"),
         ]
     else:
         fields = [
