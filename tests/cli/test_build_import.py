@@ -162,13 +162,60 @@ def test_chief_reader_reports_all_fields_and_missing_as_none(chief_env):
     root, _, _, state = chief_env
     client = ChiefClient(root, load_config(root))
     task = client.read_task("demo-s001")
-    assert asdict(task) == {**state, "error": None}
+    assert asdict(task) == {**state, "error": None, "kickoff_at": False}
     change_task(chief_env, review=None)
     assert client.read_task("demo-s001").review == BuildReview()
     (chief_env[2] / "task.json").write_text('{"state": "done"}')
     task = client.read_task("demo-s001")
     assert task.state == "done" and task.repo is None and task.session_id is None
     assert task.review.head is None and task.branch is None
+    assert not task.kickoff_at
+
+
+@pytest.mark.parametrize("value", [None, "", 0, "2026-11-10T10:00:00Z"])
+def test_chief_reader_carries_kickoff_key_presence_without_interpreting_its_value(chief_env, value):
+    root, _, task, _ = chief_env
+    change_task(chief_env, kickoff_at=value)
+    before = snapshot(task.parent.parent)
+    reported = ChiefClient(root, load_config(root)).read_task("demo-s001")
+    assert reported.kickoff_at is True
+    assert snapshot(task.parent.parent) == before
+
+
+@pytest.mark.parametrize("kickoff", [False, True])
+def test_needs_you_row_distinguishes_pending_kickoff_from_inbox_attention(chief_env, kickoff):
+    root, _, _, _ = chief_env
+    change_task(chief_env, state="needs-you")
+    if kickoff:
+        change_task(chief_env, kickoff_at="2026-11-10T10:00:00Z")
+    task = ChiefClient(root, load_config(root)).read_task("demo-s001")
+    facts = Facts(
+        "build",
+        False,
+        (),
+        0,
+        (),
+        (),
+        (),
+        True,
+        True,
+        builds=build_facts(root, "demo", {"demo-s001": task}),
+    )
+    (move,) = next_moves(facts)
+    if kickoff:
+        expected = "Chief task demo-s001 needs you: `chief inbox`."
+        assert move.how == "chief inbox"
+    else:
+        expected = (
+            "Chief task demo-s001 has not started: accept the worker's prompt in AoE, "
+            "then `chief kickoff demo-s001`"
+        )
+        assert move.how == "chief kickoff demo-s001"
+    assert move.actor == "you" and move.text == expected
+    before = snapshot(root)
+    result = command(root, "map", "demo")
+    assert result.exit_code == 0, result.output
+    assert expected in " ".join(result.stdout.split()) and snapshot(root) == before
 
 
 @pytest.mark.parametrize(
@@ -197,7 +244,7 @@ def test_chief_missing_file_is_explicit_and_read_only(chief_env):
     "state,needle",
     [
         ("running", "is running for S-001; keep `chief watch` running"),
-        ("needs-you", "chief inbox"),
+        ("needs-you", "chief kickoff demo-s001"),
         ("review", "chief close"),
         ("done", "Import the result"),
         ("abandoned", "import it as failed or re-request"),

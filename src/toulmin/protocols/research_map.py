@@ -203,11 +203,23 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                     )
                 )
             elif task.state == "needs-you":
-                moves.append(
-                    Move(
-                        YOU, f"Chief task {build.task_id} needs you: `chief inbox`.", "chief inbox"
+                if not task.kickoff_at:
+                    moves.append(
+                        Move(
+                            YOU,
+                            f"Chief task {build.task_id} has not started: accept the worker's "
+                            f"prompt in AoE, then `chief kickoff {build.task_id}`",
+                            f"chief kickoff {build.task_id}",
+                        )
                     )
-                )
+                else:
+                    moves.append(
+                        Move(
+                            YOU,
+                            f"Chief task {build.task_id} needs you: `chief inbox`.",
+                            "chief inbox",
+                        )
+                    )
             elif task.state == "review":
                 moves.append(
                     Move(

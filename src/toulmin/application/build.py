@@ -19,14 +19,14 @@ from toulmin.protocols.research_map import ResearchMap
 
 FOLDER_TRUST_NOTICE = (
     "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
-    "in the AoE session (or set trust: true). Until then the task waits."
+    "in the AoE session, then run `chief kickoff {task_id}` (or set trust: true)."
 )
 
 
 def _kickoff_notice(task_id: str) -> str:
     return (
-        "The worker may be waiting at a menu. chief watch sends the kickoff once it is at "
-        f"its input box (`chief kickoff {task_id}` manually)."
+        "If the worker was not kicked off (it may be waiting at a menu), resolve the menu "
+        f"in AoE, then run `chief kickoff {task_id}`."
     )
 
 
@@ -192,7 +192,7 @@ def apply_build(
             )
         output = repository.path(f"{archive}/chief-new.txt")
         if not plan.request.trust and report is not None:
-            report(FOLDER_TRUST_NOTICE)
+            report(FOLDER_TRUST_NOTICE.format(task_id=plan.task_id))
         if current.recovered:
             if not output.exists():
                 write_atomic(

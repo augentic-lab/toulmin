@@ -40,8 +40,12 @@ if (home / "hang").exists():
     time.sleep(60)
 folder = home / "tasks" / tid
 folder.mkdir(parents=True)
-(folder / "task.json").write_text(json.dumps({"repo": str(pathlib.Path(contract["repo"]).resolve()),
-                                           "state": "running", "id": tid}))
+task = {"repo": str(pathlib.Path(contract["repo"]).resolve()), "state": "running", "id": tid}
+if (home / "kickoff-pending").exists():
+    task["state"] = "needs-you"
+else:
+    task["kickoff_at"] = "2026-11-10T10:00:00Z"
+(folder / "task.json").write_text(json.dumps(task))
 print("Created chief task " + tid, flush=True)
 print("Needs you: approve tests in chief inbox", file=sys.stderr, flush=True)
 if (home / "fail-after-create").exists():
@@ -225,7 +229,7 @@ def test_build_preview_shows_full_contract_g3_and_only_approved_context(build_en
     assert "G3 item [x]: S-001" in result.stdout and "chief watch must be running" in result.stdout
     assert (
         "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
-        "in the AoE session (or set trust: true). Until then the task waits."
+        "in the AoE session, then run `chief kickoff demo-s001` (or set trust: true)."
     ) in result.stdout
     plan = prepare_build(root, "demo", relative).preview.build
     assert not prepare_build(root, "demo", relative).problems
@@ -384,6 +388,11 @@ def test_build_recovers_after_chief_new_without_starting_it_twice(build_env, mon
     result = run(root, "a\n")
     assert result.exit_code == 0, result.output
     assert "apply only records it" in result.stdout
+    assert (
+        "If the worker was not kicked off (it may be waiting at a menu), resolve the menu "
+        "in AoE, then run `chief kickoff demo-s001`."
+    ) in result.stdout
+    assert "chief watch sends the kickoff" not in result.stdout
     assert len(calls(home)) == 1 and outcome(root, relative).disposition == "applied"
 
 
@@ -636,10 +645,12 @@ def test_build_reconciles_task_after_launcher_error(build_env, monkeypatch, mode
     text = (archive / "chief-new.txt").read_text()
     if created:
         assert "chief new reported an error, but the task exists" in result.stdout
-        assert "The worker may be waiting at a menu" in result.stdout
-        assert "chief watch sends the kickoff once it is at its input box" in result.stdout
-        assert "`chief kickoff demo-s001` manually" in result.stdout
-        assert "The worker may be waiting at a menu" in text
+        notice = (
+            "If the worker was not kicked off (it may be waiting at a menu), resolve the menu "
+            "in AoE, then run `chief kickoff demo-s001`."
+        )
+        assert notice in result.stdout and notice in text
+        assert "chief watch sends the kickoff" not in result.stdout + text
         assert "Created chief task demo-s001" in text
         assert "task id demo-s001 is free" not in result.stdout
     else:
@@ -782,13 +793,95 @@ def test_build_request_trust_is_previewed_and_reaches_argv_only_when_true(build_
     ) in result.stdout
     notice = (
         "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
-        "in the AoE session (or set trust: true). Until then the task waits."
+        "in the AoE session, then run `chief kickoff demo-s001` (or set trust: true)."
     )
     assert result.stdout.count(notice) == (0 if trust else 2)  # preview, then before startup
     (call,) = calls(home)
     assert ("--trust" in call["argv"]) is trust
     assert "trust" not in call["contract"]  # Chief accepts this as a CLI option, not contract data.
     assert outcome(root, relative).result == "chief task demo-s001"
+
+
+@pytest.mark.parametrize("kickoff", [False, True])
+@pytest.mark.parametrize("trust", [False, True])
+def test_apply_reads_kickoff_once_and_prints_the_matching_guidance(
+    build_env, monkeypatch, kickoff, trust
+):
+    root, _, home = build_env
+    task_id = "separate-worker"
+    relative = request(build_env, task_id=task_id, trust=trust)
+    if not kickoff:
+        (home / "kickoff-pending").touch()
+    original_new, original_task = ChiefClient.new, ChiefClient.task
+    launched = False
+    reads = 0
+
+    def launch(*args, **kwargs):
+        nonlocal launched
+        result = original_new(*args, **kwargs)
+        launched = True
+        return result
+
+    def task(*args, **kwargs):
+        nonlocal reads
+        if launched:
+            reads += 1
+        return original_task(*args, **kwargs)
+
+    monkeypatch.setattr(ChiefClient, "new", launch)
+    monkeypatch.setattr(ChiefClient, "task", task)
+    monkeypatch.setattr(decide, "_wrap_up", lambda *args: None)
+    result = run(root, "a\n")
+    assert result.exit_code == 0, result.output
+    assert outcome(root, relative).disposition == "applied" and reads == 1
+    pending = (
+        f"Not started yet: accept the worker's prompt in AoE, then run `chief kickoff {task_id}`."
+    )
+    if kickoff:
+        assert pending not in result.stdout
+        assert (
+            f"Started/recorded: chief task {task_id}. Keep chief watch running; "
+            "approve tests in chief inbox."
+        ) in result.stdout
+    else:
+        assert pending in result.stdout and "Keep chief watch running;" not in result.stdout
+    notice = (
+        "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
+        f"in the AoE session, then run `chief kickoff {task_id}` (or set trust: true)."
+    )
+    assert result.stdout.count(notice) == (0 if trust else 2)
+    assert "{task_id}" not in result.stdout
+    assert "chief watch sends the kickoff" not in result.stdout
+
+
+@pytest.mark.parametrize("damage", ["missing", "unreadable", "repo"])
+def test_apply_does_not_guess_kickoff_when_the_post_start_read_fails(
+    build_env, monkeypatch, damage
+):
+    root, _, home = build_env
+    relative = request(build_env)
+    original = ChiefClient.new
+
+    def launch(*args, **kwargs):
+        result = original(*args, **kwargs)
+        path = home / "tasks/demo-s001/task.json"
+        if damage == "missing":
+            path.unlink()
+        elif damage == "unreadable":
+            path.write_text("not JSON")
+        else:
+            path.write_text('{"repo": "/different/repository"}')
+        return result
+
+    monkeypatch.setattr(ChiefClient, "new", launch)
+    monkeypatch.setattr(decide, "_wrap_up", lambda *args: None)
+    result = run(root, "a\n")
+    assert result.exit_code == 0, result.output
+    assert outcome(root, relative).disposition == "applied" and len(calls(home)) == 1
+    assert "Chief state not read after apply:" in result.stdout
+    assert (
+        "Not started yet:" not in result.stdout and "Keep chief watch running;" not in result.stdout
+    )
 
 
 @pytest.mark.parametrize(

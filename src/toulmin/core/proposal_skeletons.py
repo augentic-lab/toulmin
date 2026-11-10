@@ -192,6 +192,9 @@ def build_skeleton(
         f"task_id: {project}-{spec.replace('-', '').lower()}",
         f"tool: {_q(tool)}",
         f"trust: {'true' if trust else 'false'}",
+        "# If interpreter/tool versions matter, add a check that asserts them, e.g.:",
+        "# python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'",
+        "# Its output is kept in the verify record.",
         *([f"# {line}" for line in note.splitlines()] if note is not None else []),
         "checks: "
         + json.dumps(

@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-11 — R8 B6 corrections: manual kickoff, version-check hint (Codex-implemented, supervised)
+
+- Decision: the researcher authorized fixing B6 findings 1 and 3 ("按你的建议，修发现1和3").
+- Change (Codex resumed session, brief `codex-b2/b6fix.md`): the folder-trust notice and recovery/timeout messages now say to accept the worker's prompt in AoE and run `chief kickoff <id>` (no claim that chief watch delivers it); after apply, decide reads task.json once and prints "Not started yet: … `chief kickoff <id>`" when `kickoff_at` is absent; the Chief task snapshot carries `kickoff_at` presence and the rule table shows "Chief task <id> has not started: accept the worker's prompt in AoE, then `chief kickoff <id>`" for a needs-you task without it (task.md gains the Boolean fact; additive). The guide and build-request skeleton suggest a version-printing, asserting check; the supervisor changed the example to `python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'` so the version is in the verify record even when it passes. Docs: protocols "R8 B6" (and the corrected B5 item 1), formats, CHANGELOG.
+- Checks (supervisor-run): ruff, format, mypy clean; build tests 195 passed; `uv run --locked pytest -q` 1573 passed in 634.37s (first run: 1 failure, guide.md over its 8000-byte cap after the example change; trimmed a line).
+- Not verified live: the new rows and messages against a real Chief task (unit tests with fake task.json only).
+- Next: the researcher's B6 ruling.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B6 delegated round (agent-run on the researcher's delegation)
 
 - Decision: the researcher delegated one small B6 round ("这样，我授权你来代替我进行一轮小的B6测试"; "继续，跑完后告诉我结果"). Approvals are labelled operator approvals on delegation, not the researcher's; the B6 ruling stays with the researcher.

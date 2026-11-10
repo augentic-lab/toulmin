@@ -192,3 +192,8 @@
   running-task advice and per-Spec G4 suppression. Import bounded, nonsymlink progress from
   Chief's task copy or `.chief/progress.md`, recording the source. Verify distinguishes
   Toulmin Python and records the check shell/PATH. Existing archives and recovery remain valid.
+
+- R8 B6 corrections: manual kickoff guidance after folder trust, interrupted recovery and
+  startup; needs-you distinguishes an absent kickoff_at from inbox attention using key
+  presence only. Add version-asserting check hints to the guide/build skeleton. No automatic
+  kickoff or version probes; existing archives and object schemas remain valid.

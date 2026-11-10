@@ -380,6 +380,9 @@ The head is review.head when reported, otherwise the repository's task-branch ti
 base/head fields remain unknown; a missing repository refuses a fresh import. A removed
 worktree does not prevent importing commits from the repository and Chief's progress copy.
 No worker text is executed or used as an instruction. Chief-side files are never written.
+New task.md facts include Boolean `kickoff_at`, recording only whether Chief's task.json
+contains that key, not its timestamp. A missing key becomes false. This adds no import.json
+field or object-schema change; existing task.md archives/hashes remain valid and need no migration.
 Imported review/progress text is limited to 1,000,000 bytes each, without truncation. Every
 path component is opened without following symlinks; the leaf must be a regular file. A
 reported worktree must be absolute, and its progress file must resolve inside it. Unsafe or

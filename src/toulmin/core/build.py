@@ -29,6 +29,7 @@ class BuildTask:
     repo: str | None = None
     closed_at: str | None = None
     error: str | None = None
+    kickoff_at: bool = False  # presence of the external field, not its timestamp value
 
 
 @dataclass(frozen=True)

@@ -132,6 +132,7 @@ class ChiefClient:
             raise FormatError(f"{task_id}: Chief state not read: review must be an object or null")
         return BuildTask(
             state=value(raw, "state"),
+            kickoff_at="kickoff_at" in raw,
             review=BuildReview(
                 *(value(review, key) for key in ("verdict", "summary", "head", "by"))
             ),

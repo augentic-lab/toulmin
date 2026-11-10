@@ -581,6 +581,7 @@ class Run:
         return choice != "q"
 
     def _build(self, item: Item) -> bool:
+        from toulmin.adapters.chief import ChiefClient
         from toulmin.application.build import FOLDER_TRUST_NOTICE, apply_build, prepare_build
 
         assert item.project is not None
@@ -599,7 +600,7 @@ class Run:
                 + ("yes" if plan.request.trust else "no")
             )
             if not plan.request.trust:
-                typer.echo(FOLDER_TRUST_NOTICE)
+                typer.echo(FOLDER_TRUST_NOTICE.format(task_id=plan.task_id))
             typer.echo("Full frozen Chief contract:")
             typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
             if plan.note is not None:
@@ -652,10 +653,30 @@ class Run:
                 )
                 self.failed += 1
             else:
-                typer.echo(
-                    f"Started/recorded: {done.result}. Keep chief watch running; "
-                    "approve tests in chief inbox."
-                )
+                assert plan is not None
+                started = f"Started/recorded: {done.result}."
+                try:
+                    task = ChiefClient(self.root, prepared.config).task(plan.task_id)
+                    if task is None:
+                        raise ValueError("task.json missing; kickoff not reported")
+                    if task.get("repo") is not None and task["repo"] != str(
+                        Path(plan.request.repo).resolve()
+                    ):
+                        raise ValueError("task repository differs; kickoff not confirmed")
+                except (OSError, ValueError) as error:
+                    typer.echo(started)
+                    typer.echo(f"Chief state not read after apply: {error}")
+                else:
+                    if "kickoff_at" not in task:
+                        typer.echo(started)
+                        typer.echo(
+                            "Not started yet: accept the worker's prompt in AoE, then run "
+                            f"`chief kickoff {plan.task_id}`."
+                        )
+                    else:
+                        typer.echo(
+                            f"{started} Keep chief watch running; approve tests in chief inbox."
+                        )
                 self.applied += 1
                 self._note(item.project, f"applied {_name(item.path)} ({done.result})")
         elif choice == "r":

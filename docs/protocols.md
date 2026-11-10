@@ -1018,9 +1018,10 @@ Formats/compatibility are in formats.md; no object migration or new model invoca
 ### R8 B5 — Corrections from the live bridge trial
 
 1. With `trust: false`, preview and apply explicitly tell the researcher to accept the worker's
-   folder-trust menu in AoE immediately, or set trust true. A recovered/existing task can still
-   be waiting at a menu; chief watch delivers kickoff once its input box is ready, or the
-   researcher can use `chief kickoff <id>`. Existing task/repository recovery is preserved.
+   folder-trust menu in AoE, then run `chief kickoff <id>` (or set trust true). If a recovered
+   or existing worker was not kicked off, resolve its menu in AoE, then run that command.
+   Unconfirmed delivery requires manual inspection and kickoff; do not wait for chief watch
+   to deliver it. Existing task/repository recovery is preserved.
 2. Contract names retain project/Spec IDs with the first Requirements sentence collapsed and
    shortened to 60 characters at a word boundary with “…”; goal retains the full Requirements.
    A matching legacy title remains frozen during interrupted recovery.
@@ -1036,3 +1037,26 @@ Formats/compatibility are in formats.md; no object migration or new model invoca
    and sh's resolved executable path inside the clone, including relative PATH entries. It
    never infers the interpreter of a check. Failure to report PATH is explicit, not guessed.
    Archives remain readable and their existing hashes/recovery records remain unchanged.
+
+### R8 B6 — Manual kickoff and version-sensitive checks
+
+L2 reason: needs-you before kickoff is a delivery problem, distinct from a started task's
+inbox decision. L3 carries only the presence of Chief task.json's `kickoff_at` in the task
+snapshot. A needs-you task without that key gets “Chief task <id> has not started: accept
+the worker's prompt in AoE, then `chief kickoff <id>`” (you; how: `chief kickoff <id>`).
+A task with that key keeps the existing chief inbox row. This relies on Chief's task.json
+`kickoff_at`: absence in older Chief versions/fixtures counts as not started only for
+needs-you; other states and unreadable-state diagnostics are unchanged. Its timestamp value
+is neither interpreted nor validated. Rows retain existing ordering and MOVE_LIMIT.
+
+After an applied build request, decide reads task.json once for kickoff guidance. When the
+key is absent it says “Not started yet: accept the worker's prompt in AoE, then run
+`chief kickoff <id>`.” Read failures are explicit, without guessing or undoing the startup
+outcome. Recovery/error reconciliation gives conditional manual-kickoff advice. The bridge
+never answers menus or invokes kickoff itself, and does not promise chief watch will do so.
+
+The guide and build-request comments advise authors to add an asserting check when an
+interpreter/tool version matters, for example
+`python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'`.
+That check's output is kept in the verify record; no automatic version checks or command
+resolution are added. Formats remain additive; existing archives are preserved.
