@@ -94,7 +94,8 @@ as `output`. The synthesis groups agreements and disagreements to inform your re
 
 For a ready Spec, fill Why/optional Context, check checks/repository, move to runs/proposals/.
 The researcher starts it in `toulmin decide`; **never run chief yourself**, even if global
-handoff guidance says to. They run `chief watch` and approve tests in `chief inbox`.
+handoff guidance says to. Map names running Chief work; the researcher runs `chief watch`
+and uses `chief inbox`.
 Requests preserve Spec status. Researcher only: import done/abandoned results in decide or with
 `toulmin build import NAME S-NNN --confirm`. Done imports propose Decision → model-asserted
 Evidence → awaiting-acceptance ruling. Cite Evidence filenames after intake.

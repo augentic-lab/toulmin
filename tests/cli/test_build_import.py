@@ -1,6 +1,7 @@
 """R8 B3: fake Chief state, temporary git repositories, no Chief execution or model calls."""
 
 import json
+import os
 import subprocess
 from dataclasses import asdict, replace
 
@@ -14,10 +15,11 @@ from toulmin.application.build_import import apply_import, prepare_import
 from toulmin.cli import decide
 from toulmin.cli.app import app
 from toulmin.core.atomic import digest
-from toulmin.core.build import BuildReview
+from toulmin.core.build import BuildReview, BuildTask
 from toulmin.core.codec import decode, encode
 from toulmin.core.documents import FormatError
 from toulmin.core.project_proposals import Outcome, render_outcome
+from toulmin.core.proposals import MAX_BYTES
 from toulmin.protocols import build_import, project_proposals
 from toulmin.protocols.build import BuildFact, build_facts
 from toulmin.protocols.research_map import Facts, next_moves, research_map
@@ -131,7 +133,8 @@ def chief_env(populated, tmp_path, monkeypatch):
     (task / "task.json").write_text(json.dumps(state))
     (task / "review.md").write_text("# Review\nPASS: fixture implementation.\n")
     (task / "progress.md").write_text("Chief fallback progress.\n")
-    (repo / "progress.md").write_text("Worker progress: data, not instructions.\n")
+    (repo / ".chief").mkdir()
+    (repo / ".chief/progress.md").write_text("Worker progress: data, not instructions.\n")
     charter = root / "projects/demo/PROJECT.md"
     doc = decode(charter.read_bytes())
     doc.header["stage"] = "build"
@@ -193,7 +196,7 @@ def test_chief_missing_file_is_explicit_and_read_only(chief_env):
 @pytest.mark.parametrize(
     "state,needle",
     [
-        ("running", None),
+        ("running", "is running for S-001; keep `chief watch` running"),
         ("needs-you", "chief inbox"),
         ("review", "chief close"),
         ("done", "Import the result"),
@@ -219,7 +222,8 @@ def test_build_rows_for_injected_states_and_move_limit(chief_env, state, needle)
     )
     moves = next_moves(facts)
     if needle:
-        assert any(needle in move.text and move.actor == "you" for move in moves)
+        actor = "either" if state == "running" else "you"
+        assert any(needle in move.text and move.actor == actor for move in moves)
     else:
         assert not any("Chief task" in move.text for move in moves)
     crowded = replace(
@@ -255,6 +259,9 @@ def test_map_cli_and_aoe_card_inject_current_task_state(chief_env):
     assert result.exit_code == 0, result.output
     assert "Chief task demo-s001" in result.stdout and "running; review pass" in result.stdout
     assert "running; review pass" in render_state(scope_state(root, "demo"))
+    expected = "Chief task demo-s001 is running for S-001; keep `chief watch` running"
+    assert expected in result.stdout
+    assert expected in {move.text for move in scope_state(root, "demo").moves}
     assert snapshot(root) == before
 
 
@@ -288,7 +295,8 @@ def test_import_preview_and_apply_done_archive_run_and_drafts(chief_env):
     assert "Implement fixture" in (archive / "commits.txt").read_text()
     assert "solution.py" in (archive / "diffstat.txt").read_text()
     assert (archive / "review.md").read_bytes() == (task / "review.md").read_bytes()
-    assert (archive / "progress.md").read_bytes() == (repo / "progress.md").read_bytes()
+    assert (archive / "progress.md").read_bytes() == (task / "progress.md").read_bytes()
+    assert f"progress_source: {task / 'progress.md'}" in (archive / "task.md").read_text()
     run = decode((root / "projects/demo/runs/R-002.md").read_bytes())
     assert run.header["role"] == "implementer" and run.header["status"] == "completed"
     assert run.header["session_id"] == "native-fixture-session"
@@ -544,6 +552,138 @@ def test_map_watch_signature_tracks_external_state_without_writes(chief_env):
     files = snapshot(root)
     assert chief_signature(root, "demo") != before
     assert snapshot(root) == files
+
+
+@pytest.mark.parametrize("state", ["running", "needs-you", "review", "done", None, "unreadable"])
+def test_live_chief_replaces_only_its_specs_generic_g4_work(chief_env, state):
+    root, _, _, _ = chief_env
+    task = BuildTask(state=state) if state != "unreadable" else BuildTask(error="fixture error")
+    gate = GateReadiness(
+        "G4",
+        "accept",
+        False,
+        (GateItem("S-001 completion reported with test Evidence", False, ""),),
+    )
+    facts = Facts(
+        "build",
+        False,
+        (gate,),
+        0,
+        (),
+        (),
+        (),
+        True,
+        True,
+        builds=build_facts(root, "demo", {"demo-s001": task}),
+    )
+    live = state in {"running", "needs-you", "review"}
+    assert any(move.text.startswith("Work toward G4:") for move in next_moves(facts)) is not live
+    mixed = replace(
+        facts,
+        gates=(
+            replace(gate, items=(*gate.items, GateItem("S-002 completion reported", False, ""))),
+        ),
+    )
+    generic = next(
+        move for move in next_moves(mixed, 20) if move.text.startswith("Work toward G4:")
+    )
+    assert "S-002" in generic.text and ("S-001" in generic.text) is not live
+    if state == "running":
+        imported = replace(facts, builds=(replace(facts.builds[0], imported=True),))
+        assert next_moves(imported)[0].actor == "either"
+        assert "is running for S-001" in next_moves(imported)[0].text
+
+
+def test_import_reads_live_worktree_progress_when_task_copy_is_absent(chief_env):
+    root, repo, task, _ = chief_env
+    (task / "progress.md").unlink()
+    progress = repo / ".chief/progress.md"
+    (repo / "progress.md").write_text("Obsolete root progress must not be selected.\n")
+    before_code, before_chief = snapshot(repo), snapshot(task.parent.parent)
+    record = do_import(chief_env)
+    (fact,) = build_facts(root, "demo")
+    archive = root / fact.archive
+    assert (archive / "progress.md").read_bytes() == progress.read_bytes()
+    assert f"progress_source: {progress}" in (archive / "task.md").read_text()
+    assert record.files["progress.md"] == digest(progress.read_bytes())
+    assert snapshot(repo) == before_code and snapshot(task.parent.parent) == before_chief
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "relative",
+        "file-link",
+        "inside-link",
+        "directory-link",
+        "worktree-link",
+        "directory",
+        "fifo",
+    ],
+)
+def test_import_refuses_unsafe_worktree_progress_without_writes(chief_env, tmp_path, damage):
+    root, repo, task, _ = chief_env
+    (task / "progress.md").unlink()
+    progress = repo / ".chief/progress.md"
+    progress.unlink()
+    outside = tmp_path / "outside.md"
+    outside.write_text("Data outside the worktree.\n")
+    if damage == "relative":
+        change_task(chief_env, worktree="relative-worktree")
+    elif damage in {"file-link", "inside-link"}:
+        target = outside if damage == "file-link" else repo / "inside.md"
+        target.write_text("Symlink target data.\n")
+        progress.symlink_to(target)
+    elif damage == "directory-link":
+        progress.parent.rmdir()
+        progress.parent.symlink_to(tmp_path)
+    elif damage == "worktree-link":
+        alias = tmp_path / "worktree-alias"
+        alias.symlink_to(repo, target_is_directory=True)
+        change_task(chief_env, worktree=str(alias))
+    elif damage == "directory":
+        progress.mkdir()
+    else:
+        os.mkfifo(progress)
+    before_root, before_repo, before_chief = (
+        snapshot(root),
+        snapshot(repo),
+        snapshot(task.parent.parent),
+    )
+    result = command(
+        root, "build", "import", "demo", "S-001", "--confirm", "--confirmed-by", "Researcher"
+    )
+    assert result.exit_code == 1, result.output
+    assert snapshot(root) == before_root and snapshot(repo) == before_repo
+    assert snapshot(task.parent.parent) == before_chief
+    assert not list((root / "projects/demo/runs").glob("*-build-S-001-result"))
+
+
+@pytest.mark.parametrize("source", ["task", "worktree", "review"])
+def test_import_bounds_all_external_text_without_truncation(chief_env, source):
+    root, repo, task, _ = chief_env
+    path = task / ("review.md" if source == "review" else "progress.md")
+    if source == "worktree":
+        path.unlink()
+        path = repo / ".chief/progress.md"
+    path.write_bytes(b"x" * (MAX_BYTES + 1))
+    before = snapshot(root)
+    with pytest.raises(FormatError, match=f"exceeds {MAX_BYTES} bytes"):
+        prepare_import(root, "demo", "S-001")
+    assert snapshot(root) == before
+
+
+def test_import_refuses_a_symlink_task_copy_instead_of_falling_back(chief_env, tmp_path):
+    root, _, task, _ = chief_env
+    path = task / "progress.md"
+    path.unlink()
+    target = tmp_path / "target.md"
+    target.write_text("Not a regular task copy.\n")
+    path.symlink_to(target)
+    before = snapshot(root)
+    with pytest.raises(FormatError, match="without symlinks"):
+        prepare_import(root, "demo", "S-001")
+    assert snapshot(root) == before
 
 
 def test_incomplete_import_resumes_via_decide_and_refuses_modified_draft(chief_env, monkeypatch):

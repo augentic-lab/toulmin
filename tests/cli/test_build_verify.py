@@ -1,7 +1,9 @@
 """R8 B4: actual deterministic checks on temporary git repositories, never real Chief."""
 
 import json
+import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -267,7 +269,15 @@ def test_full_decide_verify_pass_proposes_and_applies_g5_without_stage_warnings(
         run.header["output"] + "/environment.txt",
     ]
     assert "Exit status: 0" in (archive / "output.md").read_text()
-    for value in ("OS:", "Python:", "Git:", str(repo), state["review"]["head"]):
+    for value in (
+        "OS:",
+        "Toulmin Python:",
+        "PATH:",
+        "Shell (sh):",
+        "Git:",
+        str(repo),
+        state["review"]["head"],
+    ):
         assert value in (archive / "environment.txt").read_text()
     assert snapshot(repo) == original and git(repo, "show-ref") == refs
     assert git(repo, "worktree", "list", "--porcelain") == worktrees
@@ -645,3 +655,79 @@ def test_invalid_verification_receipts_are_reported_as_format_errors(verify_env)
     raw["execution_completed"] = False
     with pytest.raises(FormatError, match="completed execution"):
         parse_verification(json.dumps(raw).encode(), "fixture")
+
+
+def test_verify_environment_records_check_path_and_shell_without_claiming_check_python(
+    verify_env, tmp_path, monkeypatch
+):
+    root = verify_env[0]
+    tools = tmp_path / "check-tools"
+    tools.mkdir()
+    shell = tools / "sh"
+    shell.symlink_to(shutil.which("sh"))
+    python = tools / "python3"
+    python.write_text("#!/bin/sh\nprintf 'Fixture check interpreter\\n'\n")
+    python.chmod(0o755)
+    path = str(tools) + os.pathsep + os.environ["PATH"]
+    monkeypatch.setenv("PATH", path)
+    checks(verify_env, ['printf "%s\\n" "$PATH"; python3 solution.py'])
+    done = execute(verify_env)
+    assert done.passed and done.results[0].stdout == path + "\nFixture check interpreter\n"
+    text = (root / result_archive(root) / "environment.txt").read_text()
+    assert f"Toulmin Python: {sys.version}" in text and "\nPython:" not in text
+    assert f"PATH: {path}\n" in text and f"Shell (sh): {shell}\n" in text
+    assert "Fixture check interpreter" not in text
+
+
+def test_verify_environment_records_shell_default_path_when_parent_path_is_unset(
+    verify_env, monkeypatch
+):
+    _, repo, _, state = verify_env
+    monkeypatch.delenv("PATH")
+    result = verify.run_check('printf "%s" "$PATH"', repo, 5)
+    assert result.exit_status == 0
+    text = verify.environment(str(repo), state["review"]["head"]).decode()
+    assert f"PATH: {result.stdout}\n" in text
+    assert f"Shell (sh): {shutil.which('sh')}\n" in text
+
+
+def test_verify_resolves_relative_shell_path_in_the_clone(chief_env, monkeypatch):
+    root, repo, _, _ = chief_env
+    tools = repo / "bin"
+    tools.mkdir()
+    shell = tools / "sh"
+    shell.write_text('#!/bin/sh\nexec /bin/sh "$@"\n')
+    shell.chmod(0o755)
+    git(repo, "add", "bin/sh")
+    git(
+        repo,
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-m",
+        "Fixture shell",
+    )
+    path = "bin" + os.pathsep + os.environ["PATH"]
+    monkeypatch.setenv("PATH", path)
+    results, env = verify.run_checks(
+        root,
+        str(repo),
+        git(repo, "rev-parse", "HEAD"),
+        ('printf "%s" "$PATH"',),
+        5,
+        lambda results, env: None,
+    )
+    assert results[0].exit_status == 0 and results[0].stdout == path
+    text = env.decode()
+    resolved = Path(
+        next(
+            line.removeprefix("Shell (sh): ")
+            for line in text.splitlines()
+            if line.startswith("Shell (sh): ")
+        )
+    )
+    assert resolved.name == "sh" and resolved.parent.name == "bin"
+    assert not resolved.is_relative_to(repo) and not resolved.exists()
+    assert f"PATH: {path}\n" in text

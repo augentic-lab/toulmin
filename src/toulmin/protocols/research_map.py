@@ -192,8 +192,17 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                         "toulmin draft build NAME --spec " + build.spec,
                     )
                 )
-        elif task is not None and task.error is None and not build.imported:
-            if task.state == "needs-you":
+        elif task is not None and task.error is None:
+            if task.state == "running":
+                moves.append(
+                    Move(
+                        EITHER,
+                        f"Chief task {build.task_id} is running for {build.spec}; "
+                        "keep `chief watch` running",
+                        "chief watch",
+                    )
+                )
+            elif task.state == "needs-you":
                 moves.append(
                     Move(
                         YOU, f"Chief task {build.task_id} needs you: `chief inbox`.", "chief inbox"
@@ -208,7 +217,7 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                         "chief close / chief nudge",
                     )
                 )
-            elif task.state == "done":
+            elif task.state == "done" and not build.imported:
                 moves.append(
                     Move(
                         YOU,
@@ -216,7 +225,7 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                         "toulmin decide",
                     )
                 )
-            elif task.state == "abandoned":
+            elif task.state == "abandoned" and not build.imported:
                 moves.append(
                     Move(
                         YOU,
@@ -325,7 +334,23 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             if settled:
                 moves.append(_hold(gate))
         else:
-            moves.append(Move(move.actor, move.text.format(missing=_missing(gate)), move.how))
+            live = {
+                build.spec
+                for build in facts.builds
+                if build.request is not None
+                and build.task_id is not None
+                and build.task is not None
+                and build.task.error is None
+                and build.task.state in {"running", "needs-you", "review"}
+            }
+            skip = (
+                tuple(item.label for item in gate.items if item.label.split(" ", 1)[0] in live)
+                if name == "G4"
+                else ()
+            )
+            missing = _missing(gate, skip)
+            if missing or not skip:
+                moves.append(Move(move.actor, move.text.format(missing=missing), move.how))
     if not moves:
         moves.append(
             Move(

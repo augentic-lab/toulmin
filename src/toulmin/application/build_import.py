@@ -1,6 +1,7 @@
 """R8 B3: read Chief results and local git history, then apply a reviewed workspace import."""
 
 import json
+import os
 import stat
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from toulmin.core.atomic import digest, handoff_mutex
 from toulmin.core.build import BuildImport
 from toulmin.core.documents import FormatError
 from toulmin.core.inspection import current_claim, inspect_project
+from toulmin.core.proposals import MAX_BYTES
 from toulmin.core.render import fence
 from toulmin.core.repository import Repository
 from toulmin.core.schema import utc_text
@@ -35,16 +37,33 @@ class ImportPreview:
 
 
 def _read_optional(path: Path) -> bytes | None:
-    for component in (*reversed(path.parents), path):
-        if component.is_symlink():
-            raise FormatError(f"{path}: refusing a symlink in an external artifact path")
+    """Bound external text and open every component without following symlinks."""
+    if not path.is_absolute():
+        raise FormatError(f"{path}: external artifact path must be absolute")
+    directory = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY)
     try:
-        info = path.stat()
+        for component in path.parts[1:-1]:
+            child = os.open(
+                component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory
+            )
+            os.close(directory)
+            directory = child
+        descriptor = os.open(
+            path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory
+        )
+        with os.fdopen(descriptor, "rb") as stream:
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                raise FormatError(f"{path}: expected a regular artifact file")
+            data = stream.read(MAX_BYTES + 1)
     except FileNotFoundError:
         return None
-    if not stat.S_ISREG(info.st_mode):
-        raise FormatError(f"{path}: expected a regular artifact file")
-    return path.read_bytes()
+    except OSError as error:
+        raise FormatError(f"{path}: cannot read artifact without symlinks: {error}") from error
+    finally:
+        os.close(directory)
+    if len(data) > MAX_BYTES:
+        raise FormatError(f"{path}: artifact exceeds {MAX_BYTES} bytes")
+    return data
 
 
 def _git(root: Path, repo: str, *args: str) -> str:
@@ -140,19 +159,30 @@ def prepare_import(root: Path, project: str, spec: str) -> ImportPreview:
     if review is None:
         review = b"Chief review text: not reported.\n"
         notes.append("review.md not reported")
-    progress = None
+    worktree = None
     if task.worktree is not None:
         worktree = Path(task.worktree)
         if not worktree.is_absolute():
             raise FormatError("Chief worktree must be absolute when reported")
-        progress = _read_optional(worktree / "progress.md")
-    if progress is None:
-        progress = _read_optional(directory / "progress.md")
+    progress_path = directory / "progress.md"
+    progress = _read_optional(progress_path)
+    if progress is None and worktree is not None:
+        progress_path = worktree / ".chief" / "progress.md"
+        try:
+            inside = progress_path.resolve().is_relative_to(worktree.resolve())
+        except (OSError, RuntimeError) as error:
+            raise FormatError(
+                f"{progress_path}: cannot resolve progress inside worktree"
+            ) from error
+        if not inside:
+            raise FormatError(f"{progress_path}: progress must resolve inside the Chief worktree")
+        progress = _read_optional(progress_path)
     if progress is None:
         notes.append("progress.md not reported")
     facts = asdict(task)
     facts.pop("error")
     facts["head"] = head
+    facts["progress_source"] = str(progress_path) if progress is not None else None
     human = [
         f"# Chief task {fact.task_id}",
         "",

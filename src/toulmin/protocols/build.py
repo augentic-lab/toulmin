@@ -118,7 +118,11 @@ def derive_contract(
     body = sections(spec)
     task_id = request.task_id or f"{project}-{request.spec.replace('-', '').lower()}"
     requirements = body["Requirements"]
-    first = next((line.strip() for line in requirements.splitlines() if line.strip()), request.spec)
+    first = re.split(r"(?<=[.!?])\s+", " ".join(requirements.split()), maxsplit=1)[0]
+    if len(first) > 60:
+        boundary = first.rfind(" ", 0, 60)
+        # No space to break at: cut inside the word rather than leave only the ellipsis.
+        first = (first[:boundary] if boundary > 0 else first[:59]) + "…"
     target = str(spec.header["target"])
     if claim.object_id != ObjectRef.parse(target).object_id:
         target += f" (current: {claim.object_id})"

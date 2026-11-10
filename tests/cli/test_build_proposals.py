@@ -19,7 +19,7 @@ from toulmin.core.codec import decode, encode
 from toulmin.core.documents import FormatError, sections
 from toulmin.core.project_proposals import validate_build_request, validate_outcome
 from toulmin.protocols import project_proposals
-from toulmin.protocols.build import spec_commands
+from toulmin.protocols.build import contract_bytes, spec_commands
 
 FOLDER = "projects/demo/runs/proposals"
 SPEC = "projects/demo/specs/S-001.md"
@@ -223,6 +223,10 @@ def test_build_preview_shows_full_contract_g3_and_only_approved_context(build_en
     assert "Full frozen Chief contract" in result.stdout
     assert "Checks match the Spec's commands" in result.stdout
     assert "G3 item [x]: S-001" in result.stdout and "chief watch must be running" in result.stdout
+    assert (
+        "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
+        "in the AoE session (or set trust: true). Until then the task waits."
+    ) in result.stdout
     plan = prepare_build(root, "demo", relative).preview.build
     assert not prepare_build(root, "demo", relative).problems
     contract = plan.contract
@@ -328,6 +332,9 @@ def test_build_apply_archives_calls_chief_and_preserves_formal_files(build_env):
     done = outcome(root, relative)
     assert done.disposition == "applied" and done.result == "chief task demo-s001"
     assert done.actor == "Researcher" and done.approval_text == "toulmin decide: a"
+    assert "either: Chief task demo-s001 is running for S-001; keep `chief watch` running" in (
+        result.stdout
+    )
     (call,) = calls(home)
     assert call["cwd"] == str(root)
     assert call["argv"][-2:] == ["--base-branch", "main"]
@@ -629,6 +636,10 @@ def test_build_reconciles_task_after_launcher_error(build_env, monkeypatch, mode
     text = (archive / "chief-new.txt").read_text()
     if created:
         assert "chief new reported an error, but the task exists" in result.stdout
+        assert "The worker may be waiting at a menu" in result.stdout
+        assert "chief watch sends the kickoff once it is at its input box" in result.stdout
+        assert "`chief kickoff demo-s001` manually" in result.stdout
+        assert "The worker may be waiting at a menu" in text
         assert "Created chief task demo-s001" in text
         assert "task id demo-s001 is free" not in result.stdout
     else:
@@ -769,10 +780,72 @@ def test_build_request_trust_is_previewed_and_reaches_argv_only_when_true(build_
     assert (
         "Chief confirms the worker's folder-trust prompt: " + ("yes" if trust else "no")
     ) in result.stdout
+    notice = (
+        "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
+        "in the AoE session (or set trust: true). Until then the task waits."
+    )
+    assert result.stdout.count(notice) == (0 if trust else 2)  # preview, then before startup
     (call,) = calls(home)
     assert ("--trust" in call["argv"]) is trust
     assert "trust" not in call["contract"]  # Chief accepts this as a CLI option, not contract data.
     assert outcome(root, relative).result == "chief task demo-s001"
+
+
+@pytest.mark.parametrize(
+    "requirements,summary",
+    [
+        ("Build  a\n small command. Keep the full second sentence.", "Build a small command."),
+        ("Build a command! Then document it.", "Build a command!"),
+        ("Build" + " readable" * 12 + " output. Keep this too.", "Build" + " readable" * 6 + "…"),
+        ("X" * 60, "X" * 60),
+        ("X" * 61, "X" * 59 + "…"),
+    ],
+)
+def test_build_contract_name_is_a_short_first_sentence_and_goal_retains_full_text(
+    build_env, requirements, summary
+):
+    root, _, _ = build_env
+    relative = request(build_env)
+    path = root / SPEC
+    doc = decode(path.read_bytes())
+    doc.body = f"## Requirements\n{requirements}\n\n## Acceptance criteria\nRun `echo ok`.\n"
+    path.write_bytes(encode(doc))
+    prepared = prepare_build(root, "demo", relative)
+    assert not prepared.problems
+    contract = prepared.preview.build.contract
+    assert contract["name"] == f"demo S-001: {summary}" and len(summary) <= 60
+    assert requirements in contract["goal"]
+
+
+def test_build_recovery_preserves_a_legacy_frozen_title(build_env, monkeypatch):
+    root, _, home = build_env
+    relative = request(build_env)
+    path = root / SPEC
+    path.write_text(
+        path.read_text().replace("Build the fixture.", "Build the fixture. Then test it.")
+    )
+    original = project_proposals.finish_build
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(project_proposals, "finish_build", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        apply_build(root, "demo", prepare_build(root, "demo", relative), "Researcher", "a")
+    monkeypatch.setattr(project_proposals, "finish_build", original)
+    (archive,) = (root / "projects/demo/runs").glob("*-build-S-001")
+    frozen = json.loads((archive / "contract.json").read_bytes())
+    frozen["name"] = "demo S-001: Build the fixture. Then test it."
+    raw = contract_bytes(frozen)
+    (archive / "contract.json").write_bytes(raw)
+    prepared = prepare_build(root, "demo", relative)
+    assert prepared.recovered and not prepared.problems
+    assert prepared.preview.build.contract == frozen
+    notes = []
+    done = apply_build(root, "demo", prepared, "Researcher", "a", report=notes.append)
+    assert done.disposition == "applied" and len(calls(home)) == 1
+    assert (archive / "contract.json").read_bytes() == raw
+    assert any("The task exists" in note and "chief kickoff demo-s001" in note for note in notes)
 
 
 @pytest.mark.parametrize("trust", [False, True])

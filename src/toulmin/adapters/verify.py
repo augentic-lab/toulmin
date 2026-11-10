@@ -2,6 +2,7 @@
 
 import os
 import platform
+import shutil
 import signal
 import subprocess
 import sys
@@ -63,12 +64,30 @@ def run_check(command: str, clone: Path, timeout: float) -> CheckResult:
         return CheckResult(command, status, time.monotonic() - started, out, err, out_cut, err_cut)
 
 
-def environment(repo: str, head: str) -> bytes:
-    result = run_process(["git", "--version"], "", 15, Path(tempfile.gettempdir()))
+def environment(repo: str, head: str, cwd: Path | None = None) -> bytes:
+    context = cwd or Path(tempfile.gettempdir())
+    result = run_process(["git", "--version"], "", 15, context)
     if result.exit_status != 0:
         raise FormatError(f"git version unavailable: {result.stderr}")
+    # exec searches relative PATH entries from the child's cwd, which is the fresh clone.
+    search = os.pathsep.join(
+        str(context / entry) if not Path(entry).is_absolute() else entry
+        for entry in os.get_exec_path()
+    )
+    shell = shutil.which("sh", path=search)
+    path = os.environ.get("PATH", "not set")
+    if shell is not None:
+        # A shell can supply a default PATH when the parent has none. Record what sh sees,
+        # without trying to resolve python or any other command contained in the checks.
+        probe = run_process(["sh", "-c", 'printf "%s" "$PATH"'], "", 15, context)
+        if probe.exit_status == 0:
+            path = probe.stdout
+        else:
+            status = "timed out" if probe.exit_status is None else f"exited {probe.exit_status}"
+            path = f"not reported (sh PATH probe {status})"
     return (
-        f"OS: {platform.platform()}\nPython: {sys.version}\nGit: {result.stdout.strip()}\n"
+        f"OS: {platform.platform()}\nToulmin Python: {sys.version}\nGit: {result.stdout.strip()}\n"
+        f"PATH: {path}\nShell (sh): {shell or 'not found on PATH'}\n"
         f"Repository: {repo}\nHead commit: {head}\n"
         "Execution: local user, without network isolation\n"
     ).encode()
@@ -80,8 +99,8 @@ def run_checks(
     head: str,
     checks: tuple[str, ...],
     timeout: float,
-    report: Callable[[tuple[CheckResult, ...]], None],
-) -> tuple[CheckResult, ...]:
+    report: Callable[[tuple[CheckResult, ...], bytes], None],
+) -> tuple[tuple[CheckResult, ...], bytes]:
     """One clean clone per attempt; a retry after a partial attempt starts clean again."""
     parent = Path(tempfile.gettempdir()).resolve()
     if parent.is_relative_to(workspace.resolve()) or parent.is_relative_to(Path(repo).resolve()):
@@ -95,8 +114,10 @@ def run_checks(
             result = run_process(argv, "", 120, Path(scratch))
             if result.exit_status != 0:
                 raise FormatError(f"fresh verification clone: {result.stderr or result.stdout}")
+        env = environment(repo, head, clone)
+        report((), env)
         results = []
         for command in checks:
             results.append(run_check(command, clone, timeout))
-            report(tuple(results))
-        return tuple(results)
+            report(tuple(results), env)
+        return tuple(results), env

@@ -338,6 +338,10 @@ On apply, `projects/NAME/runs/<UTC>-build-S-NNN/` contains:
   titled `Target Claim C-001 (current: C-002): Statement`, PROJECT.md Constraints,
   optional request Context, and the fixed instruction to preserve criteria/checks and deliver
   on chief/<task_id>. No handoff, discussion, Brief or unrelated object text is included.
+  The name is `NAME S-NNN: <summary>`: the first Requirements sentence, whitespace-collapsed
+  and capped at 60 characters including “…”, cut at a word boundary when one exists.
+  The full text stays in goal.
+  Interrupted applies retain a matching legacy frozen title rather than renaming the task.
 - `request.json`: recovery provenance: proposal path and sha256, task ID, Chief home and
   command. It binds this archive to this request, without a separate index.
 - `chief-new.txt`: exit status and Chief's stdout/stderr, or a recovery/startup-failure note.
@@ -365,17 +369,21 @@ archives one applied build request's done/abandoned task under
 
 | File | Meaning |
 | --- | --- |
-| `task.md` | Reported task fields, original Spec/task IDs, pinned head, review facts and missing-material diagnostics. Missing fields say “not reported”; embedded worker text is data. |
+| `task.md` | Reported task fields, original Spec/task IDs, pinned head, review facts, `progress_source` (selected absolute path or “not reported”) and missing-material diagnostics. Embedded worker text is data. |
 | `commits.txt` | `git log --oneline base..head`, or an explicit unavailable-material note. |
 | `diffstat.txt` | The base-to-head diffstat, or an explicit unavailable-material note. |
 | `review.md` | Chief's review text when present; otherwise an explicit “not reported” stub so Evidence provenance stays valid. |
-| `progress.md` | Optional worker progress: worktree first, then the task-directory copy. |
+| `progress.md` | Optional worker progress: Chief's task-directory copy first, then `<worktree>/.chief/progress.md` if the copy is absent. |
 | `import.json` | Frozen import intent, progress journal and terminal receipt (schema below). |
 
 The head is review.head when reported, otherwise the repository's task-branch tip. Missing
 base/head fields remain unknown; a missing repository refuses a fresh import. A removed
 worktree does not prevent importing commits from the repository and Chief's progress copy.
 No worker text is executed or used as an instruction. Chief-side files are never written.
+Imported review/progress text is limited to 1,000,000 bytes each, without truncation. Every
+path component is opened without following symlinks; the leaf must be a regular file. A
+reported worktree must be absolute, and its progress file must resolve inside it. Unsafe or
+oversized material refuses import; absent optional material is reported explicitly.
 
 `import.json` is a version-1 JSON object, kind `build-import`. Exact fields:
 `schema_version`, `kind`, `spec`, `task_id`, `request` (workspace-relative applied build
@@ -426,7 +434,7 @@ if its follow-up ruling was already applied. Completed passing verification is i
 | File | Meaning |
 | --- | --- |
 | `output.md` | Each frozen command, exit status or “timed out”, elapsed seconds, stdout and stderr. Each stream is capped at 64 KiB and marked when truncated. |
-| `environment.txt` | OS, Python and git versions, source repository, pinned head, and the local-user/no-network-isolation execution boundary. |
+| `environment.txt` | OS, Toulmin Python and git versions, PATH reported by sh in the clone, resolved `sh` path, source repository, pinned head, and execution boundary. A failed PATH probe is explicitly reported; no check interpreter is inferred. |
 | `verify.json` | Version-1 `build-verification` intent, checkpoints and terminal receipt, described below. |
 | `checkpoints/<sha256>/` | Immutable output/environment snapshots published before the journal switches to them, including partial/interrupted results. |
 

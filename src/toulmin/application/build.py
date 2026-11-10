@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -10,12 +10,24 @@ from toulmin.adapters.chief import ChiefClient, ChiefConfig, load_config
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.build import BuildTask
 from toulmin.core.codec import decode
-from toulmin.core.documents import FormatError
+from toulmin.core.documents import FormatError, sections
 from toulmin.core.project_proposals import Outcome, validate_build_request, validate_outcome
 from toulmin.core.repository import Repository
 from toulmin.protocols import project_proposals
-from toulmin.protocols.build import build_facts, contract_bytes
+from toulmin.protocols.build import build_facts, contract_bytes, load_spec
 from toulmin.protocols.research_map import ResearchMap
+
+FOLDER_TRUST_NOTICE = (
+    "Chief will not answer the worker's folder-trust prompt: right after apply, accept it "
+    "in the AoE session (or set trust: true). Until then the task waits."
+)
+
+
+def _kickoff_notice(task_id: str) -> str:
+    return (
+        "The worker may be waiting at a menu. chief watch sends the kickoff once it is at "
+        f"its input box (`chief kickoff {task_id}` manually)."
+    )
 
 
 @dataclass(frozen=True)
@@ -72,6 +84,19 @@ def prepare_build(root: Path, project: str, relative: str) -> PreparedBuild:
             if folder.exists():
                 frozen = repository.path(f"{archive}/contract.json", "file").read_bytes()
                 intent = repository.path(f"{archive}/request.json", "file").read_bytes()
+                # An upgrade must not rename an already frozen Chief task. Accept only the
+                # previous title derivation, with every other contract byte still matching.
+                requirements = sections(load_spec(repository, project, plan.request.spec))[
+                    "Requirements"
+                ]
+                first = next(
+                    (line.strip() for line in requirements.splitlines() if line.strip()),
+                    plan.request.spec,
+                )
+                legacy = {**plan.contract, "name": f"{project} {plan.request.spec}: {first}"}
+                if frozen == contract_bytes(legacy):
+                    plan = replace(plan, contract=legacy)
+                    shown = replace(shown, build=plan)
                 if frozen != contract_bytes(plan.contract) or intent != _intent(shown, config):
                     raise FormatError(
                         "interrupted request differs from its frozen contract/configuration; "
@@ -166,6 +191,8 @@ def apply_build(
                 replace=False,
             )
         output = repository.path(f"{archive}/chief-new.txt")
+        if not plan.request.trust and report is not None:
+            report(FOLDER_TRUST_NOTICE)
         if current.recovered:
             if not output.exists():
                 write_atomic(
@@ -176,6 +203,8 @@ def apply_build(
                     ).encode(),
                     replace=False,
                 )
+            if report is not None:
+                report(f"The task exists. {_kickoff_notice(plan.task_id)}")
             return project_proposals.finish_build(root, marker, plan.task_id)
         client = ChiefClient(repository.root, current.config)
         try:
@@ -213,7 +242,9 @@ def apply_build(
                 if task is None:
                     failure += f"; task id {plan.task_id} is free"
                 elif task.get("repo") == str(Path(plan.request.repo).resolve()):
-                    note = "chief new reported an error, but the task exists"
+                    note = "chief new reported an error, but the task exists. " + _kickoff_notice(
+                        plan.task_id
+                    )
                     failure = None
                 else:
                     failure += f"; task id {plan.task_id} belongs to a different repository"

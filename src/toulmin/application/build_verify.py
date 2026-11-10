@@ -134,15 +134,12 @@ def apply_verification(
                 previous = tuple(dict.fromkeys((*previous, record.snapshot)))
             record = replace(record, previous=previous, results=(), files=None, snapshot=None)
             build_verify.save_verification(repository, archive, record)
-            env = verify.environment(record.repo, record.head)
-            # Retain a checkpoint even if cloning fails before the first command.
-            record = build_verify.checkpoint(repository, archive, record, (), env)
 
-            def report(results: tuple[CheckResult, ...]) -> None:
+            def report(results: tuple[CheckResult, ...], env: bytes) -> None:
                 nonlocal record
                 record = build_verify.checkpoint(repository, archive, record, results, env)
 
-            results = verify.run_checks(
+            results, env = verify.run_checks(
                 repository.root,
                 record.repo,
                 record.head,

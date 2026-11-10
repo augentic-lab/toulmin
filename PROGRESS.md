@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-10 — R8 B5: live Chief trial and corrections (agent-run, supervised)
+
+- Same authorization as B2–B4 ("loop until our goal is reached"). Agent-run technical evidence, not acceptance; every apply and Chief answer was an operator fixture approval.
+- Trial (ledger `~/notes/toulmin/b5-live-2026-11-10/`): isolated `AOE_CHIEF_HOME` with `profile: toulmin-sim-r`, temporary repository and the wordfreq fixture workspace with S-001. decide applied the build request and ran real `chief new`; the Codex worker (GPT-6.1-Sol high) wrote tests (approved with `chief decide --accept`), then the implementation; Chief checks 2/2 and Claude Sonnet cross review passed; `chief close`; decide imported R-001 and applied D-003/E-001/awaiting-acceptance (G4 met); verify re-ran both frozen checks in a fresh clone (R-002, verifier), then D-004/E-002 (verified)/passed (G5 met). Interrupted-apply recovery worked after `chief new` waited at the worker's folder-trust menu. Worker 302 k input (92 % cached), 4.8 k output. Researcher's own Chief watch/console and the main AoE profile untouched; tmux count unchanged.
+- Findings fixed (Codex resumed session, brief `codex-b2/b5fix.md`; supervisor fixed the no-space title cut): (1) folder-trust and kickoff guidance in preview/apply/recovery when trust is false; (2) contract name = first Requirements sentence capped at 60 characters (legacy titles kept in interrupted recovery); (3) map row "Chief task … is running for S-NNN; keep `chief watch` running" and per-Spec suppression of the generic G4 row while a task is live; (4) import reads `<worktree>/.chief/progress.md` when Chief's task copy is absent (no symlinks, bounded, inside the worktree, source recorded); (5) verify environment labels "Toulmin Python" and records PATH as sh sees it and the resolved `sh`.
+- Checks (supervisor-run): ruff, format, mypy clean; affected build tests 182 passed; `uv run --locked pytest -q` 1560 passed (10m22s).
+- Next: B6, the researcher's trial on a real Spec. Open candidates (not authorized): a Spec revision path, R9, Codex model-name reporting.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R8 B4: verify (Codex-implemented, supervised)
 
 - Same authorization as B2/B3. Codex resumed session; brief `codex-b2/b4.md` (also moved function-local imports in core/build.py to module level).

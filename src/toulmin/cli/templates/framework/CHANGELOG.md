@@ -187,3 +187,8 @@
   Journal immutable checkpoints, verifier Runs and proposed Decision → verified Evidence → passed
   rulings; decide rescans. Failed/timed-out checks produce no proposals and suggest return or
   re-request. No automatic gate/status changes; existing object v1 unchanged, no migration.
+
+- R8 B5 trial corrections: explicit folder-trust/kickoff guidance, compact Chief task names,
+  running-task advice and per-Spec G4 suppression. Import bounded, nonsymlink progress from
+  Chief's task copy or `.chief/progress.md`, recording the source. Verify distinguishes
+  Toulmin Python and records the check shell/PATH. Existing archives and recovery remain valid.

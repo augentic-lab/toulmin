@@ -930,7 +930,7 @@ The shared next_moves table adds rows after pending proposals and stage warnings
 existing rows' wording and MOVE_LIMIT. A build-stage Spec with its G3 item met and no pending
 request/applied task suggests drafting a build request. Needs-you names chief inbox; review
 names chief close / chief nudge; done names import in decide; abandoned names failed import
-or re-request. Running tasks appear below their Specs, not as moves. Map watch also observes
+or re-request. Running tasks appear below their Specs (B5 also adds a move). Map watch observes
 external state changes. Read failures are diagnostics, not claims that research data is invalid.
 
 Only the researcher starts an import: the “Chief result ready” decide item or
@@ -1014,3 +1014,25 @@ implementation tests demonstrate this behavior, not researcher acceptance or ind
 of Toulmin's own implementation.
 
 Formats/compatibility are in formats.md; no object migration or new model invocation is involved.
+
+### R8 B5 — Corrections from the live bridge trial
+
+1. With `trust: false`, preview and apply explicitly tell the researcher to accept the worker's
+   folder-trust menu in AoE immediately, or set trust true. A recovered/existing task can still
+   be waiting at a menu; chief watch delivers kickoff once its input box is ready, or the
+   researcher can use `chief kickoff <id>`. Existing task/repository recovery is preserved.
+2. Contract names retain project/Spec IDs with the first Requirements sentence collapsed and
+   shortened to 60 characters at a word boundary with “…”; goal retains the full Requirements.
+   A matching legacy title remains frozen during interrupted recovery.
+3. L2 reason: a live Chief task already owns that Spec's implementation work. Running adds
+   “Chief task <id> is running for S-NNN; keep `chief watch` running”, actor `either` (the
+   existing actors are you/agent/either). Running/needs-you/review suppress only that Spec's
+   generic G4 work; other Specs, ordering, MOVE_LIMIT and unknown-state behavior are unchanged.
+4. Import prefers the task-directory progress copy, otherwise `<worktree>/.chief/progress.md`,
+   recording its source in task.md. Review/progress text shares the 1,000,000-byte source limit.
+   Reads reject symlinks/nonregular files, relative worktrees, escaping paths and oversized text;
+   missing optional files remain “not reported”. Chief files are read only.
+5. Verification labels its own interpreter “Toulmin Python” and records PATH as reported by sh
+   and sh's resolved executable path inside the clone, including relative PATH entries. It
+   never infers the interpreter of a check. Failure to report PATH is explicit, not guessed.
+   Archives remain readable and their existing hashes/recovery records remain unchanged.

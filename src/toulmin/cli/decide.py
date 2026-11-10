@@ -581,7 +581,7 @@ class Run:
         return choice != "q"
 
     def _build(self, item: Item) -> bool:
-        from toulmin.application.build import apply_build, prepare_build
+        from toulmin.application.build import FOLDER_TRUST_NOTICE, apply_build, prepare_build
 
         assert item.project is not None
         prepared = prepare_build(self.root, item.project, item.path)
@@ -598,6 +598,8 @@ class Run:
                 "Chief confirms the worker's folder-trust prompt: "
                 + ("yes" if plan.request.trust else "no")
             )
+            if not plan.request.trust:
+                typer.echo(FOLDER_TRUST_NOTICE)
             typer.echo("Full frozen Chief contract:")
             typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
             if plan.note is not None:
