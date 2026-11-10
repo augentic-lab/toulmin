@@ -119,13 +119,7 @@ def project_status(root: Path, project: str) -> StatusReport:
                 )
             )
             continue
-        supports = sum(
-            local_target(doc, project) == claim.object_id
-            and doc.header["status"] == "valid"
-            and doc.header["grade"] == "verified"
-            and doc.header["direction"] == "supports"
-            for doc in evidence
-        )
+        supports = _verified_support(evidence, project, claim.object_id)
         attacks = [doc for doc in objections if local_target(doc, project) == claim.object_id]
         eligible = supports > 0 and not any(
             doc.header["severity"] in {"fatal", "major"} for doc in attacks
@@ -207,6 +201,40 @@ def project_status(root: Path, project: str) -> StatusReport:
         settled,
         gates,
         stage_warnings(charter.get("stage"), gates),
+    )
+
+
+def _verified_support(evidence: list[Document], project: str, claim: ObjectId) -> int:
+    return sum(
+        local_target(doc, project) == claim
+        and doc.header["status"] == "valid"
+        and doc.header["grade"] == "verified"
+        and doc.header["direction"] == "supports"
+        for doc in evidence
+    )
+
+
+def awaiting_support_ruling(snapshot: ProjectSnapshot, project: str) -> tuple[ObjectId, ...]:
+    """Current Claims that meet the supported conditions but are not ruled supported yet.
+
+    The same rule as the "meets supported conditions" notice: valid verified supporting
+    Evidence and no open fatal or major Objection. Used for advice only (R5 follow-up).
+    """
+    evidence = [doc for doc in snapshot.objects if doc.object_id.kind == ObjectKind.EVIDENCE]
+    blocking = {
+        local_target(doc, project)
+        for doc in snapshot.objects
+        if doc.object_id.kind == ObjectKind.OBJECTION
+        and doc.header["status"] == "open"
+        and doc.header["severity"] in {"fatal", "major"}
+    }
+    return tuple(
+        doc.object_id
+        for doc in sorted(snapshot.objects, key=lambda doc: doc.object_id.number)
+        if doc.object_id.kind == ObjectKind.CLAIM
+        and doc.header["status"] in {"proposed", "challenged"}
+        and doc.object_id not in blocking
+        and _verified_support(evidence, project, doc.object_id) > 0
     )
 
 

@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-10 — R5 follow-up: suggest supported rulings
+
+- Decision: the researcher accepted the simulation's recommendation ("按你的建议，补上 supported 裁定的建议规则"), finding 3 of `~/notes/toulmin/r56-sim-2026-11-10/ledger.md`.
+- L2 (reason in docs/protocols.md "R5 follow-up"): `status.awaiting_support_ruling` (the existing "meets supported conditions" rule, now shared with the notice's evidence count) lists proposed/challenged Claims with valid verified support and no open fatal/major Objection; `next_moves` adds an agent row "Propose supported rulings …" after the Objection row, leaving out Claims named by a pending ruling proposal. guide.md says when to propose it (and never on model-asserted Evidence).
+- Smoke (verified): on the simulation workspace the map now lists "Propose supported rulings … C-003".
+- Tests: `test_claims_meeting_supported_conditions_are_suggested_until_ruled` (blocked by an open major, shown for a minor, on the card, hidden while a ruling proposal waits, gone after `rule --status supported`).
+- Checks: `uv run --locked pytest -q` 1378 passed (8m09s); ruff check, ruff format --check, mypy, `git diff --check` clean; packaged protocols.md identical.
+- Session ID: unavailable.
+
 ## 2026-11-10 — R5/R6 simulation: one small project from brief-final to done
 
 - Decision: the researcher kept the verifier role out for now and asked for a lightweight simulation of the R5/R6 process ("按你的建议，先不做 verifier 角色。你帮我跑一个轻量级的任务模拟一下上述过程"). Agent-run on a fresh job-tmp workspace (project `wordfreq`), every approval an operator fixture approval; one real two-session review round for R6. Ledger and evidence: `~/notes/toulmin/r56-sim-2026-11-10/`.

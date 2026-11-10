@@ -260,3 +260,37 @@ def test_moves_follow_the_build_stages(populated):
     assert G3_S1 not in result.stdout
     verbose = CliRunner().invoke(app, ["status", "demo", "--root", str(populated), "--verbose"])
     assert G3_S1 in verbose.stdout
+
+
+SUPPORT = "Propose supported rulings for Claims that meet the conditions"
+
+
+def support_moves(root):
+    return [move for move in research_map(root, "demo").moves if move.text.startswith(SUPPORT)]
+
+
+def test_claims_meeting_supported_conditions_are_suggested_until_ruled(populated):
+    verified(populated)  # E-001: verified support for C-001, but O-001 (major) is open
+    assert not support_moves(populated)
+    objection(populated, "minor")
+    (move,) = support_moves(populated)
+    assert move.actor == "agent" and "C-001." in move.text
+    assert move.how == "toulmin draft ruling NAME --object C-NNN --status supported"
+    card = render_state(research_state(populated, "demo"))
+    assert SUPPORT in card
+    folder = populated / "projects/demo/runs/proposals"
+    folder.mkdir()
+    pending = folder / "ruling-20261110T100000Z.md"
+    pending.write_text(
+        "---\nschema_version: 1\nkind: ruling-proposal\nobject: C-001\nstatus: supported\n"
+        "decision: D-001\n---\n## Why\nE-001 verifies it.\n"
+    )
+    assert not support_moves(populated)  # a ruling already waits on the researcher
+    pending.unlink()
+    result = CliRunner().invoke(
+        app,
+        ["rule", "demo", "C-001", "--status", "supported", "--decision", "D-001", "--root",
+         str(populated), "--confirmed-by", "Researcher", "--confirm"],
+    )  # fmt: skip
+    assert result.exit_code == 0, result.output
+    assert not support_moves(populated)

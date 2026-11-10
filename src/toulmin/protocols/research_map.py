@@ -34,6 +34,7 @@ from toulmin.protocols.review_intake import output_state
 from toulmin.protocols.status import (
     NO_BLOCKING,
     GateReadiness,
+    awaiting_support_ruling,
     project_status,
     summary,
     unheld,
@@ -67,6 +68,7 @@ class Facts:
     current_claims: bool
     reviewed: bool  # a completed review Run is newer than every current Claim
     handoff_due: str | None = None  # R4: the stage ruled after the last applied handoff
+    supportable: tuple[str, ...] = ()  # Claims meeting supported conditions, no ruling pending
 
 
 @dataclass(frozen=True)
@@ -195,6 +197,17 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                 f"Inspect open objections and draft responses or rulings for the researcher: "
                 f"{listed}.",
                 "runs/proposals/ruling-…",
+            )
+        )
+    if facts.supportable:
+        listed = ", ".join(facts.supportable)
+        moves.append(
+            Move(
+                AGENT,
+                f"Propose supported rulings for Claims that meet the conditions (verified "
+                f"support, no open fatal or major Objection): {listed}. Each needs a Decision "
+                "naming it; the researcher rules.",
+                "toulmin draft ruling NAME --object C-NNN --status supported",
             )
         )
     gates = {gate.gate: gate for gate in facts.gates}
@@ -338,6 +351,11 @@ def move_facts(
         current_claims=bool(claims),
         reviewed=reviewed,
         handoff_due=stage if _stage_after_handoff(repository, project, handoff) else None,
+        supportable=tuple(
+            str(claim)
+            for claim in awaiting_support_ruling(snapshot, project)
+            if str(claim) not in answered
+        ),
     )
 
 

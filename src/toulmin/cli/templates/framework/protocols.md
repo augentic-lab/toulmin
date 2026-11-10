@@ -834,3 +834,15 @@ the native project session's 20.8M input tokens were found only by reading Codex
 - Not covered: a session killed before its final event reports no usage (a timed-out Claude
   session keeps its partial answer but not its tokens); native exploration/Brief sessions of
   the TUI are unchanged.
+
+### R5 follow-up: suggest supported rulings (L2 rule row)
+
+Simulation: `~/notes/toulmin/r56-sim-2026-11-10/` (finding 3). `status` already noted "meets
+supported conditions; researcher decision pending", but no suggested move followed, and the
+trial project reached `done` with every Claim `proposed`.
+- L2 reason: `awaiting_support_ruling` lists current Claims stored `proposed` or `challenged`
+  with valid verified supporting Evidence and no open fatal or major Objection (the notice's
+  rule, now shared). `next_moves` adds an agent row after the Objection row: propose supported
+  rulings for those Claims, each with a Decision naming it; a Claim already named by a pending
+  ruling proposal is left out. The map, the state card and decide's closing moves read it.
+  Advice only: nothing changes a Claim's status but the researcher's ruling. No format change.

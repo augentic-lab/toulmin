@@ -78,6 +78,9 @@ first; the researcher may then continue the new stage in a fresh session.
   challenged, supported, accepted, refuted, superseded. Evidence: valid, invalidated (with
   `## Invalidation`). Exploration: pending, adopted (`adopted_as`), dropped (`## Rationale`).
   Spec: todo, in-progress, awaiting-acceptance, passed (`evidence`), failed.
+- A Claim with verified supporting Evidence and no open fatal or major Objection meets the
+  supported conditions; the map then suggests `--status supported` with a Decision. Never
+  base it on model-asserted Evidence.
 - `## Why` is shown to the researcher and never stored; say what the ruling rests on.
 
 ## Intake (`toulmin draft intake NAME --run R-NNN`)

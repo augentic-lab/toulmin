@@ -168,3 +168,5 @@
   `usage.json` beside output.md; rounds print per-session and total tokens; calibration adds a
   token table; `aoe status` shows the native session's token totals from its own log. Run
   fields unchanged; older archives need no migration.
+- R5 follow-up (L2 rule row): the suggested moves ask the agent to propose supported rulings
+  for Claims that meet the supported conditions and have no pending ruling. Formats unchanged.
