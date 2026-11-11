@@ -89,7 +89,11 @@ def legacy(populated):
     models = root / "tools/models.toml"
     models.write_text(models.read_text() + "\n# researcher's local alias notes\n")
     ignore = root / ".gitignore"
-    lines = [line for line in ignore.read_text().splitlines() if "workspace" not in line]
+    lines = [
+        line
+        for line in ignore.read_text().splitlines()
+        if "workspace" not in line and line not in {".aoe/", "tools/*.local.toml"}
+    ]
     ignore.write_text("\n".join(line for line in lines if "creating" not in line) + "\n")
     drafted = invoke("handoff", "demo", "--root", root)
     assert drafted.exit_code == 0, drafted.output
@@ -143,7 +147,7 @@ def test_preview_is_deterministic_read_only_and_names_every_change(legacy, tmp_p
     assert gitignore.after.startswith(gitignore.before)
     assert gitignore.after[len(gitignore.before) :] == (
         b".workspace-pending/\n.workspace-prepare-*/\n.workspace-completed-*/\n"
-        b"projects/.creating-*/\n"
+        b"projects/.creating-*/\n.aoe/\ntools/*.local.toml\n"
     )
     copy = tmp_path / "copy"
     copy.mkdir()

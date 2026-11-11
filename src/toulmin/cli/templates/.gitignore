@@ -8,3 +8,5 @@
 .workspace-prepare-*/
 .workspace-completed-*/
 projects/.creating-*/
+.aoe/
+tools/*.local.toml

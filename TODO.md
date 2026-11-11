@@ -434,7 +434,7 @@ Design: `/home/tianchi/notes/toulmin/workspace-entry-review-design.md`. Observat
 ### S — Workspace sync and layered repositories
 
 - [x] S1 — Design (2026-11-11, documentation only): `~/notes/toulmin/workspace-sync-design.md`. One research repository per workspace, code repositories per project outside it; machine-local `.aoe/` and `tools/*.local.toml` ignored; Chief config split; verify resolves the repository by commit; one writer at a time with an offline git state line; researcher-invoked `toulmin commit` (never push). Decisions D1–D8 pending the researcher's review.
-- [ ] S2 — Ignore rules, chief.local.toml, migration hints, missing pinned data (requires authorization).
+- [x] S2 — Ignore rules, chief.local.toml, migration hints, missing pinned data (2026-11-11, Codex-implemented, supervisor-reviewed): init and adoption ignore `.aoe/` and `tools/*.local.toml`; `tools/chief.local.toml` overrides chief.toml key by key, `[repos]` merged per project, `~` expanded; offline `status`/`open` notices for missing ignore lines, tracked machine-local files (exact `git rm -r --cached` command) and machine paths in chief.toml when a remote exists; missing pinned resource paths already degrade gracefully (unchanged).
 - [ ] S3 — Verify repository fallback by commit; host in build requests (requires authorization).
 - [ ] S4 — Offline git state line; `toulmin commit` (requires authorization).
 - [ ] S5 — Two-clone trial and researcher ruling (requires authorization).

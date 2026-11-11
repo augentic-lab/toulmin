@@ -197,3 +197,9 @@
   startup; needs-you distinguishes an absent kickoff_at from inbox attention using key
   presence only. Add version-asserting check hints to the guide/build skeleton. No automatic
   kickoff or version probes; existing archives and object schemas remain valid.
+
+- S2: ignore native bindings and tools/*.local.toml; merge chief.local.toml overrides with
+  portable Chief settings and expand repository/home tildes. Status/open add offline,
+  nonblocking migration advice; WI7 plans include machine-local ignore patterns. Missing
+  dataset browsing already degrades gracefully; strict apply/pin checks are unchanged.
+  Existing records/configurations remain compatible; migration steps are printed, never run.

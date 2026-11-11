@@ -110,7 +110,7 @@ def prepare_import(root: Path, project: str, spec: str) -> ImportPreview:
     repo = contract.get("repo")
     if not isinstance(repo, str) or not Path(repo).is_absolute() or not Path(repo).is_dir():
         raise FormatError(
-            f"{repo}: code repository moved or missing; edit tools/chief.toml and re-request"
+            f"{repo}: code repository moved or missing; edit tools/chief.local.toml and re-request"
         )
     if task.repo is not None and Path(task.repo).resolve() != Path(repo).resolve():
         raise FormatError(f"{fact.task_id}: Chief repository differs from the frozen contract")

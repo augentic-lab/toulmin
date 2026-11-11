@@ -1085,8 +1085,9 @@ Rules, in plan order (`creates` and `edits` list the same changes split by kind)
 - `framework/workspace-formats.md`: absent, created from the packaged copy; byte-identical to a
   released copy, replaced by the current one; any other content is a conflict. Other framework
   files, roles, tools and global files are never compared or reinstalled.
-- `.gitignore` gains only the missing journal patterns (`.workspace-pending/`,
-  `.workspace-prepare-*/`, `.workspace-completed-*/`, `projects/.creating-*/`); an absent
+- `.gitignore` gains only the missing journal/machine-local patterns (`.workspace-pending/`,
+  `.workspace-prepare-*/`, `.workspace-completed-*/`, `projects/.creating-*/`, `.aoe/`,
+  `tools/*.local.toml`); an absent
   file is created with them.
 - `runs/`, `sessions/` and `shared/resources/` must be absent or hold only empty `.gitkeep`
   files, otherwise they are conflicts (existing root data is never reclassified); their missing
@@ -1212,3 +1213,25 @@ The contract supplies behavior for every WS3 case; no case is passed by this doc
   unknown version, and can open children as ordinary projects.
 - Every change in this contract is additive auxiliary storage plus L2 rules for new operations.
   The meaning of scientific support, rulings and gates does not change.
+
+## S2 — Machine-local files and existing-workspace migration
+
+The init template ignores `.aoe/` (both root and project session bindings) and
+`tools/*.local.toml`. WI7 adoption appends these exact missing lines alongside its journal
+patterns; they participate in the reviewed plan's bytes/digest. Bindings and machine settings
+do not move with committed research records. `tools/chief.local.toml` is optional machine-local
+configuration; portable settings remain in tools/chief.toml (formats.md specifies precedence).
+
+With a root `.git` directory, status and open offer up to three offline advice lines:
+add missing exact ignore patterns; remove already-tracked machine files from the index with
+the printed `git rm -r --cached -- …` command; move machine keys out of chief.toml when a
+remote section is present in .git/config. These checks never rewrite files/indexes or use
+the network. Failures become one nonblocking skipped-check line. Adding ignore rules does
+not itself untrack previously committed files. Local filenames remain on disk after the
+suggested index-only removal.
+
+Compatibility is additive. Existing workspaces need only the printed steps; no object,
+archive or binding migration occurs. Old Chief configurations keep working. Status/open
+already tolerate missing resource data while validating its description, and that behavior
+is preserved. Apply and pin checks still refuse unavailable or different material; neither
+a missing file nor a changed digest is silently accepted as the pinned data.

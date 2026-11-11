@@ -74,6 +74,8 @@ def test_init_creates_workspace_only_state_without_child_or_model(workspace):
     ).read_bytes()
     assert (root / "CLAUDE.md").readlink() == Path("AGENTS.md")
     assert ".workspace-pending/" in (root / ".gitignore").read_text()
+    assert ".aoe/" in (root / ".gitignore").read_text().splitlines()
+    assert "tools/*.local.toml" in (root / ".gitignore").read_text().splitlines()
     assert not list(root.rglob("PROJECT.md"))
     assert not list(root.rglob("C-*.md"))
     # Local Git only, without commits.

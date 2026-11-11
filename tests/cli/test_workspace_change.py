@@ -4,6 +4,7 @@ Every test uses a temporary workspace; no model, network or real research projec
 """
 
 import os
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -395,6 +396,46 @@ def test_pins_are_frozen_in_full_and_broken_pins_refused(root):
         confirm(root, outcome.loaded.directory)
     with pytest.raises(FormatError, match="material digest"):
         propose(root, write_input(root, FOCUS, pins=PIN, name="again.md"))
+
+
+def test_missing_pinned_data_already_allows_status_open_state_and_decide_inventory(
+    root, monkeypatch
+):
+    import typer
+
+    from toulmin.application.aoe import render_scope, scope_state
+    from toulmin.cli import entry
+    from toulmin.cli.decide import inventory
+    from toulmin.protocols.workspace_state import workspace_status
+
+    registered(root)
+    shown = workspace_status(root, {})
+    assert not shown.errors and shown.resources[0].name == "synthetic-queue-trace"
+    shutil.rmtree(root / TRACE)
+    assert not workspace_status(root, {}).errors
+    assert not scope_state(root, None).errors
+    assert not inventory(root).ignored
+    result = invoke("status", "--root", root)
+    assert result.exit_code == 0, result.output
+    assert "synthetic-queue-trace | active | revision 1" in result.stdout
+
+    def opened(root, project, *args, **kwargs):
+        typer.echo(render_scope(scope_state(root, project)))
+
+    monkeypatch.setattr(entry, "open_scope", opened)
+    result = invoke("open", "--root", root)
+    assert result.exit_code == 0, result.output
+    assert "synthetic-queue-trace | active | revision 1" in result.stdout
+
+
+def test_present_but_different_pinned_data_is_still_refused_at_apply(root):
+    registered(root)
+    shown = propose(root, write_input(root, FOCUS, pins=PIN))
+    (root / TRACE / "trace.csv").write_text("different material\n")
+    before = contents(root)
+    with pytest.raises(FormatError, match="broken pin .* material digest"):
+        confirm(root, shown.loaded.directory)
+    assert contents(root) == before
 
 
 def test_revision_and_withdrawal_keep_history_and_stale_pins(root):

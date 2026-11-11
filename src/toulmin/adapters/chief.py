@@ -1,7 +1,7 @@
 """R8 B2: Chief configuration, bounded CLI calls and read-only recovery lookup.
 
-No import of Chief's code. Only tools/chief.toml is read for configuration; Chief's own
-configuration and authentication files are never opened.
+No import of Chief's code. Workspace chief.toml/chief.local.toml supply configuration;
+Chief's own configuration and authentication files are never opened.
 """
 
 import json
@@ -33,15 +33,22 @@ class ChiefConfig:
     verify_timeout_seconds: float = DEFAULT_VERIFY_TIMEOUT_SECONDS
 
 
-def load_config(root: Path) -> ChiefConfig:
-    path = Repository(root).path("tools/chief.toml")
+def read_config_file(root: Path, name: str) -> dict[str, Any]:
+    """Read an optional workspace file through the same confinement checks as other data."""
     try:
+        path = Repository(root).path(name)
         with path.open("rb") as stream:
             raw = tomllib.load(stream)
     except FileNotFoundError:
         raw = {}
     except (OSError, ValueError) as error:
-        raise FormatError(f"{path}: Chief configuration: {error}") from error
+        raise FormatError(f"{root / name}: Chief configuration: {error}") from error
+    return raw
+
+
+def _parse_config(
+    raw: dict[str, Any], path: Path, *, fallback_home: str | None = None
+) -> ChiefConfig:
     command = raw.get("command", "python3 ~/aoe-chief/chief.py")
     if not isinstance(command, str) or not command.strip() or "\x00" in command:
         raise FormatError(f"{path}: command: expected a command string")
@@ -54,9 +61,12 @@ def load_config(root: Path) -> ChiefConfig:
     home = raw.get("home", "")
     if not isinstance(home, str) or "\x00" in home:
         raise FormatError(f"{path}: home: expected an absolute path or empty string")
-    home_path = Path(
-        home or os.environ.get("AOE_CHIEF_HOME") or "~/.local/state/aoe-chief"
-    ).expanduser()
+    try:
+        home_path = Path(
+            home or fallback_home or os.environ.get("AOE_CHIEF_HOME") or "~/.local/state/aoe-chief"
+        ).expanduser()
+    except RuntimeError as error:
+        raise FormatError(f"{path}: home: {error}") from error
     if not home_path.is_absolute():
         raise FormatError(f"{path}: home: expected an absolute path")
     tool = raw.get("tool", "codex")
@@ -76,12 +86,25 @@ def load_config(root: Path) -> ChiefConfig:
     if type(timeout) not in {int, float} or not 0 < timeout < float("inf"):
         raise FormatError(f"{path}: verify_timeout_seconds: expected a positive finite number")
     repos = raw.get("repos", {})
-    if not isinstance(repos, dict) or any(
-        not isinstance(value, str) or not Path(value).is_absolute() or "\x00" in value
-        for value in repos.values()
-    ):
+    if not isinstance(repos, dict) or any(not isinstance(value, str) for value in repos.values()):
+        raise FormatError(f"{path}: repos: expected project names mapped to absolute paths")
+    repos = {name: os.path.expanduser(value) for name, value in repos.items()}
+    if any(not Path(value).is_absolute() or "\x00" in value for value in repos.values()):
         raise FormatError(f"{path}: repos: expected project names mapped to absolute paths")
     return ChiefConfig(argv, home_path, tool, dict(budget), dict(repos), trust, float(timeout))
+
+
+def load_config(root: Path) -> ChiefConfig:
+    """Validate each source, then overlay local keys; repositories merge by project."""
+    base = read_config_file(root, "tools/chief.toml")
+    local = read_config_file(root, "tools/chief.local.toml")
+    # Check each file's explicit values independently; select environment defaults only
+    # after overlaying, so an overridden default cannot reject a valid machine setting.
+    _parse_config(base, root / "tools/chief.toml", fallback_home="/")
+    _parse_config(local, root / "tools/chief.local.toml", fallback_home="/")
+    merged = {**base, **local, "repos": {**base.get("repos", {}), **local.get("repos", {})}}
+    origin = "tools/chief.local.toml" if "home" in local else "tools/chief.toml"
+    return _parse_config(merged, root / origin)
 
 
 class ChiefClient:

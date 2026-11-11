@@ -81,6 +81,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-11: The researcher authorized fixing B6 findings 1 and 3 ("按你的建议，修发现1和3"): manual-kickoff guidance (apply message and a needs-you row keyed on Chief's `kickoff_at`) and a version-asserting check hint. Both are implemented; the B6 ruling remains pending.
 2026-11-11: The researcher ruled B6 passed ("按你的建议，B6 裁定为通过"); R8 (B1–B6) is complete. A Spec revision path and the handoff row's prominence during build remain open candidates requiring authorization.
 2026-11-11: The researcher asked whether workspaces are under git and can sync to a remote with projects whose code lives in different repositories, and authorized S1 only ("按你的建议，开始 S1 设计"): a sync/layering design (documentation only, `~/notes/toulmin/workspace-sync-design.md`), decisions D1–D8 pending review. S2–S5 require separate authorization.
+2026-11-11: The researcher accepted S1's D1–D8 and authorized S2 ("按你的建议，全部接受，开始 S2"): ignore rules for machine-local files, tools/chief.local.toml, migration hints and missing pinned data. S3–S5 require separate authorization.
 
 ## Project goals and scope
 

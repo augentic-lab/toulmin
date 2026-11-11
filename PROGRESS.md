@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-11 — S2: ignore rules, chief.local.toml, sync hints (Codex-implemented, supervised)
+
+- Decision: the researcher accepted S1's D1–D8 and authorized S2 ("按你的建议，全部接受，开始 S2").
+- Change (Codex resumed session, brief `codex-b2/s2.md`): `.aoe/` and `tools/*.local.toml` in the init `.gitignore` template and the adoption patterns (released.json records the new workspace-formats digest); `adapters/chief.py` reads tools/chief.toml then optional tools/chief.local.toml (each validated, errors name the file), local keys win, `[repos]` merged per project, `~` expanded; new L3 `application/workspace_sync.py` gives at most three offline notices in `status` and `open` when the root has `.git`: missing ignore lines, tracked machine-local files (`git ls-files -z`, exact `git rm -r --cached` command), machine paths in chief.toml when `.git/config` has a remote; a git failure yields one "check skipped" line. D7: missing pinned resource paths already degrade gracefully; unchanged. Docs: workspace-formats, formats, protocols "S2", CHANGELOG, README, guide wording.
+- Supervisor verification: smoke in job tmp: a fresh init ignores both patterns and shows no notices; an old-style workspace (tracked `.aoe/binding.json`, remote, `[repos]` in chief.toml) shows all three notices; following them clears them; chief.local.toml `~/code/demo` overrides chief.toml's path. Read-only `toulmin status` on test-toulmin-rdma shows only the missing-ignore notice.
+- Checks (supervisor-run): ruff, format, mypy clean; docs and packaged copies identical; `uv run --locked pytest -q` 1624 passed (11m03s).
+- Next: S3 (verify by commit, host in build requests) requires authorization.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S1: workspace sync and layered repositories (documentation only)
 
 - Decision: the researcher asked whether a workspace is under git, whether it can sync to a remote, and noted that projects need not share one repository; authorized S1 design only ("按你的建议，开始 S1 设计").

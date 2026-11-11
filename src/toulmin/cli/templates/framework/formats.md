@@ -322,8 +322,9 @@ hyphens, starting with a letter or digit. `tool` is a string; the Chief adapter 
 supported launchers (codex, claude, antigravity), keeping vendor control out of L1.
 `checks` is a nonempty list of nonempty strings without `<fill:` markers; `protected` is
 a list of repository-relative paths without traversal. `test_first` and optional `trust`
-are Booleans. `trust` defaults to false; the draft prefills it from workspace
-`tools/chief.toml trust`. When true, apply adds `--trust` to Chief's CLI invocation, confirming
+are Booleans. `trust` defaults to false; the draft prefills it from
+the merged workspace Chief configuration (`chief.local.toml` overrides `chief.toml`). When true,
+apply adds `--trust` to Chief's CLI invocation, confirming
 only the worker's folder-trust prompt, never file edits or commands. It is not a contract JSON
 field. The preview shows this choice explicitly. `budget`
 has positive integer `rounds` and positive finite numeric `hours`. `Why` is required and
@@ -483,3 +484,34 @@ or timed-out check produces no proposals. Records and failed outputs remain avai
 Compatibility: additive archives/journals only; object v1 and prior build/import records are
 unchanged. No existing-data migration is needed. Older versions can read the ordinary verifier
 Run/Evidence once applied, but do not offer verification items or interpret verify.json.
+
+## S2 — Workspace and machine-local Chief configuration
+
+Both `tools/chief.toml` and optional `tools/chief.local.toml` accept `command` (nonempty
+shell-quoted argv string, executed without a shell), `home` (absolute path or empty), `tool`
+(codex/claude/antigravity), `budget` (positive integer rounds and positive finite hours),
+Boolean `trust`, positive finite `verify_timeout_seconds`, and `[repos]` (project → absolute
+code-repository path). `~` is expanded in home and repository paths before absolute-path
+validation. Config files and their parents use Repository path/symlink confinement rules.
+
+Each file is validated independently; errors name their source file, even if another file
+would override the invalid value. Local explicit keys override portable keys; budget is
+replaced as one complete rounds/hours value. Repositories merge per project, with local
+entries winning. Omitted values retain chief.toml or the existing defaults. An empty home
+still selects AOE_CHIEF_HOME, otherwise ~/.local/state/aoe-chief. Chief's own config/authentication
+files are never read by this loader.
+
+New setups put machine keys (`command`, `home`, `[repos]`) in the ignored chief.local.toml;
+tool/budget/trust/timeout can remain portable. For example:
+
+```toml
+# tools/chief.local.toml
+command = "python3 ~/aoe-chief/chief.py"
+home = "~/chief-state"
+[repos]
+example = "~/code/example"
+```
+
+Draft build uses the merged configuration to prefill repo/tool/budget/trust. Existing
+chief.toml files containing machine keys remain valid unchanged; no automatic relocation or
+rewrite occurs. No research-object schema or existing archive changes.

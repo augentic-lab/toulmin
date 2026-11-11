@@ -174,6 +174,33 @@ def test_build_draft_prefills_config_and_commands_without_writing_a_proposal(bui
     assert not calls(home) and not (root / FOLDER).exists()
 
 
+def test_build_draft_prefills_the_merged_local_repository(build_env):
+    root, repo, _ = build_env
+    local = root / "tools/chief.local.toml"
+    local.write_text(f"trust = true\n[repos]\ndemo = {json.dumps(str(repo))}\n")
+    base = root / "tools/chief.toml"
+    base.write_text(base.read_text().replace(json.dumps(str(repo)), '"/portable/old-path"'))
+    result = CliRunner().invoke(
+        app, ["draft", "build", "demo", "--root", str(root), "--spec", "S-001"]
+    )
+    assert result.exit_code == 0, result.output
+    text = (root / result.stdout.strip()).read_text()
+    doc = decode(text.encode())
+    assert doc.header["repo"] == str(repo) and doc.header["trust"] is True
+    assert "tools/chief.local.toml" in text
+
+
+def test_build_local_config_change_after_preview_refuses_without_writes(build_env):
+    root, _, home = build_env
+    relative = request(build_env)
+    shown = prepare_build(root, "demo", relative)
+    (root / "tools/chief.local.toml").write_text("trust = true\n")
+    before = snapshot(root)
+    with pytest.raises(FormatError, match="changed since the preview"):
+        apply_build(root, "demo", shown, "Researcher", "a")
+    assert snapshot(root) == before and not calls(home)
+
+
 def test_build_draft_repo_override_and_absent_config(build_env):
     root, repo, _ = build_env
     (root / "tools/chief.toml").unlink()

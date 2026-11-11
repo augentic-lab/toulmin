@@ -40,6 +40,8 @@ JOURNAL_PATTERNS = (
     ".workspace-prepare-*/",
     ".workspace-completed-*/",
     "projects/.creating-*/",
+    ".aoe/",
+    "tools/*.local.toml",
 )
 RECORD_LOCATIONS = ("runs/drafts", "sessions", "shared/resources")
 PLAN = "plan.md"

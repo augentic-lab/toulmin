@@ -982,7 +982,9 @@ def show_status(
             typer.echo(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
     for warning in report.stage_warnings:
         typer.echo(f"Warning: {warning}")
-    for notice in report.notices:
+    from toulmin.application.workspace_sync import sync_notices
+
+    for notice in (*report.notices, *sync_notices(root)):
         typer.echo(f"Notice: {notice}")
     for message in report.errors:
         typer.echo(f"Error: {message}", err=True)
@@ -1075,7 +1077,9 @@ def _workspace_status(root: Path, verbose: bool) -> None:
             f"`toulmin workspace adopt {report.root.root}`"
         )
     typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
-    for notice in report.notices:
+    from toulmin.application.workspace_sync import sync_notices
+
+    for notice in (*report.notices, *sync_notices(root)):
         typer.echo(f"Notice: {notice}")
     for message in report.errors:
         typer.echo(f"Error: {message}", err=True)

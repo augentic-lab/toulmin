@@ -858,7 +858,8 @@ reads Chief state, changes a Spec status or makes a ruling.
 
 - The agent drafts `toulmin draft build NAME --spec S-NNN [--repo PATH]`, fills Why and
   optional Context, and moves the draft to runs/proposals/. Repository defaults come from
-  workspace `tools/chief.toml [repos]`; tool, budget and optional `trust` also come from that file. The request
+  merged workspace Chief configuration; new machines put `[repos]` in `tools/chief.local.toml`.
+  Tool, budget and optional `trust` are prefilled from that configuration. The request
   carries every choice explicitly. Missing repo/checks remain placeholders, never guesses.
 - Check prefill extracts inline code spans and complete fences whose info string is sh,
   bash, shell or console. A shell fence is one script/check (preserving multiline semantics).
@@ -1060,3 +1061,30 @@ interpreter/tool version matters, for example
 `python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'`.
 That check's output is kept in the verify record; no automatic version checks or command
 resolution are added. Formats remain additive; existing archives are preserved.
+
+### S2 — Machine-local configuration and offline migration advice
+
+L2 reason: reviewed WI7 adoption must preserve research records while excluding session
+bindings and machine configuration from their shared repository. Its existing additive
+ignore-plan rule now includes `.aoe/` and `tools/*.local.toml`; plan digests cover the added
+bytes. Init uses the same patterns. L2 still invokes no git or external command.
+
+L3 validates both workspace Chief files and overlays chief.local.toml keys, merging repos by
+project and expanding home/repository `~` paths. Existing chief.toml behavior stays valid;
+new-machine guidance names chief.local.toml. Neither file is created or rewritten by loading.
+
+L3 adds up to three advisory lines to workspace/project status and open's NOTICES, only with
+a root .git directory: missing exact ignore lines; tracked machine files; remote-configured
+chief.toml containing repos/home/command. It reads .git/config locally and uses only
+`git -C ROOT ls-files -z -- .aoe 'projects/*/.aoe' 'projects/*/.aoe/*' 'tools/*.local.toml'`.
+The descendant pathspec is necessary because `projects/*/.aoe` alone misses binding files
+inside those directories. NUL separation preserves names. Suggested git rm commands include
+only matching groups, use `--cached --`, and quote glob pathspecs; they leave local files.
+Checks never modify .gitignore/indexes or contact remotes. Any read/git failure yields a
+single skipped-check diagnostic, not a failing status/open. Native/AoE work remains separate.
+
+D7 inspection: workspace status/open and decide inventory already validate descriptions and
+receipts without requiring pinned material on disk, so no rule change is needed. Reading
+research state remains possible on a machine without its dataset. Existing apply/pin checks
+continue refusing absent material and digest mismatches. No material is substituted or
+accepted silently. S3 repository fallback and S4 commit/git-state features remain out of scope.
