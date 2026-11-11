@@ -85,6 +85,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-11: The researcher authorized S3 ("按你的建议，开始 S3"): verify resolves the code repository by commit with a `[repos]` fallback, and build requests record the starting host. S4–S5 require separate authorization.
 2026-11-11: The researcher authorized S4 ("按你的建议，开始 S4"): an offline git state line in open/status (and a behind/diverged warning before decide writes) and a researcher-invoked `toulmin commit` with preview and confirmation that never pushes. S5 requires separate authorization.
 2026-11-11: The researcher authorized S5 ("按你的建议，开始 S5"): an agent-run two-clone sync trial on temporary workspaces (one machine, two paths, a local bare remote, native sessions in profile toulmin-sim-r, repository-local fixture git identities; the researcher's global git config untouched). Agent-run evidence; the S5 ruling stays the researcher's.
+2026-11-11: The researcher ruled S5 passed ("按你的建议，S5 裁定为通过"); S (S1–S5) is complete. Naming the Codex update prompt in readiness messages and a same-ID divergence recovery note remain open candidates requiring authorization.
 
 ## Project goals and scope
 

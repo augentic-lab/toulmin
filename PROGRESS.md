@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-11 — S5 ruling
+
+- Decision: the researcher ruled S5 passed ("按你的建议，S5 裁定为通过") on the agent-run two-clone trial (`~/notes/toulmin/s5-sync-2026-11-11/`). The S plan (S1–S5) is complete.
+- Open candidates (require authorization): name the Codex update prompt in readiness messages; a short recovery note for same-ID divergence.
+- Checks: documentation only; no code changed.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S5: two-clone sync trial (agent-run evidence)
 
 - Decision: the researcher authorized S5 ("按你的建议，开始 S5").
