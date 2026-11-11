@@ -11,6 +11,7 @@ import typer
 from toulmin.cli import decide
 from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.build import app as build_app
+from toulmin.cli.commit import commit_command
 from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
@@ -45,6 +46,7 @@ app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
 app.add_typer(config_app, name="config")
 app.add_typer(workspaces_app, name="workspaces")
+app.command("commit")(commit_command)
 app.command("open")(open_research)
 app.command("decide")(decide_command)
 
@@ -982,8 +984,10 @@ def show_status(
             typer.echo(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
     for warning in report.stage_warnings:
         typer.echo(f"Warning: {warning}")
-    from toulmin.application.workspace_sync import sync_notices
+    from toulmin.application.workspace_sync import git_state, sync_notices
 
+    if git_report := git_state(root):
+        typer.echo(git_report.line())
     for notice in (*report.notices, *sync_notices(root)):
         typer.echo(f"Notice: {notice}")
     for message in report.errors:
@@ -1077,8 +1081,10 @@ def _workspace_status(root: Path, verbose: bool) -> None:
             f"`toulmin workspace adopt {report.root.root}`"
         )
     typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
-    from toulmin.application.workspace_sync import sync_notices
+    from toulmin.application.workspace_sync import git_state, sync_notices
 
+    if git_report := git_state(root):
+        typer.echo(git_report.line())
     for notice in (*report.notices, *sync_notices(root)):
         typer.echo(f"Notice: {notice}")
     for message in report.errors:

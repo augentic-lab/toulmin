@@ -22,7 +22,7 @@ from toulmin.adapters.provider_logs import (
     reported_usage,
 )
 from toulmin.application.build import external_states
-from toulmin.application.workspace_sync import sync_notices
+from toulmin.application.workspace_sync import git_state, sync_notices
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
@@ -96,7 +96,15 @@ def scope_state(root: Path, project: str | None) -> ResearchState | WorkspaceSta
         if project is None
         else research_state(root, project, chief=external_states(root, project))
     )
-    return replace(state, notices=(*state.notices, *sync_notices(root)))
+    git_report = git_state(root)
+    return replace(
+        state,
+        notices=(
+            *state.notices,
+            *sync_notices(root),
+            *((git_report.line(),) if git_report else ()),
+        ),
+    )
 
 
 def render_scope(state: ResearchState | WorkspaceState) -> str:

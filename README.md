@@ -58,6 +58,8 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 | Fresh conversation (context full, next day) | `toulmin open --new-session` |
 | Where things stand | `toulmin status` |
 | Keep machine settings local | Put Chief repository paths in `tools/chief.local.toml`; `status` and `open` show offline ignore/index/config migration advice. Native bindings and local TOML files stay outside the research Git history. |
+| Sync readiness | `status` and `open` show branch, dirty files and ahead/behind from local refs, with the last-fetch age. Behind/diverged warnings also appear before `decide`; Toulmin never fetches. |
+| Preserve reviewed work in Git | Researcher: `toulmin commit` previews paths and a file-derived message; `--message TEXT` replaces its subject; `--confirm` commits. Agents never commit or push. Run `git push` yourself. |
 | What can happen next, live beside the agent | `toulmin map --watch` in a second terminal or tmux pane (`toulmin map` for one view) |
 | How often each model's review findings were adopted, and the tokens each spent | `toulmin calibration` (`--write` saves it under global/calibration/); review rounds also print per-session and total tokens (`usage.json` beside each output) |
 | A concrete direction becomes a project | ask the agent to propose a child project, `toulmin decide`, then `cd projects/NAME && toulmin open` |

@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-11 — S4: offline git line and `toulmin commit` (Codex-implemented, supervised)
+
+- Decision: the researcher authorized S4 ("按你的建议，开始 S4").
+- Change (Codex resumed session, brief `codex-b2/s4.md`): L3 `adapters/git.py` (offline git, optional locks off, no lazy fetch), git state in `application/workspace_sync.py`: one line in `status`/`open` and a decide warning for behind/diverged/in-progress operations; `toulmin commit [--message] [--confirm]` (`application/workspace_commit.py`, L2 summary in `protocols/workspace_commit.py`, `cli/commit.py`): preview grouped by objects, outcomes, sessions and other files with a message citing object IDs; refusals for non-repositories, operations/unmerged paths, nothing to commit, machine-local files, open transactions, staged changes outside the set, edits between computation and staging; commits exactly the computed paths with the researcher's identity and hooks; never pushes. Guide and workspace AGENTS template: agents never commit or push. Docs: protocols "S4", CHANGELOG, README, released.json.
+- Supervisor verification (copy of the B6 workspace and a local bare remote, job tmp): the line read "122 uncommitted files, no upstream (never fetched)"; preview refused until the S2 ignore lines were added, then listed 12 created objects and 10 applied outcomes; with no git email configured, `--confirm` reported git's "unable to auto-detect email address" and committed nothing; with a repository-local identity it committed, `git push` by hand, a second clone at another path showed "0 ahead / 0 behind" with no `.aoe/`, its `--message` commit pushed; the first clone showed "1 behind … pull before writing", then after a local commit "diverged … reconcile before writing", and decide printed the warning.
+- Supervisor corrections: identity is checked with `git var` before staging (the failed identity run above had left the paths staged); dotfiles such as `.gitkeep` no longer appear as session records in the message; test asserts nothing is staged after an identity failure; protocols sentence and released.json digest updated.
+- Checks (supervisor-run): ruff, format, mypy clean; S4 tests 50 passed; `uv run --locked pytest -q` 1702 passed (11m33s).
+- Note: the researcher's global git config has no user.email (this repository has a local one); `toulmin commit` in a workspace needs one (global or `git config user.email` in the workspace).
+- Next: S5 two-clone trial and researcher ruling (requires authorization).
+- Session ID: unavailable.
+
 ## 2026-11-11 — S3: verify by commit, build host provenance (Codex-implemented, supervised)
 
 - Decision: the researcher authorized S3 ("按你的建议，开始 S3").

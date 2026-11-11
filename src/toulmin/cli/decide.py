@@ -948,6 +948,13 @@ def decide_command(
     ruling under projects/NAME/runs/proposals/) and handoff draft with its preview, then asks
     apply / reject / skip / quit. Skipped items stay pending.
     """
+    from toulmin.application.workspace_sync import git_state
+
+    git_report = git_state(root)
+    if git_report and git_report.error:
+        typer.echo(git_report.line())
+    elif git_report and git_report.warning:
+        typer.echo("Warning: " + git_report.warning)
     try:
         found = inventory(root)
     except (OSError, ValueError) as error:

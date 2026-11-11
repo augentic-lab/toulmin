@@ -101,6 +101,6 @@ each skeleton, so never read Toulmin's source to learn a format.
    change input, packet or summary. The researcher applies it with explicit confirmation
    (`toulmin decide` decides every pending item in one pass); writing or closing a session
    is not approval. Pending ideas stay pending.
-4. Push or commit only when the researcher asks; report failures truthfully and keep files.
+4. Agents never run `toulmin commit`, `git commit` or `git push` in this workspace.
 
 Anything not written to a file did not happen.

@@ -1118,3 +1118,45 @@ Host data is injected by L3; L2 invokes no tool and does not discover the machin
 Once the import is synced, independent verify can use this machine's repository containing
 the pinned commit. Chief lifecycle actions remain on the starting host; no network or
 automatic transfer occurs. Formats/compatibility are in formats.md. S4/S5 remain separate.
+
+### S4 — Offline git advice and researcher commits
+
+L2 reason: preserving a reviewed set of research files should name the objects, outcomes and
+session records it contains without inventing research conclusions. A pure summary function
+receives changed paths and parsed records: it groups created/changed object IDs by project,
+proposal outcomes, counted run archives, sessions/handoffs and other workspace files. Its
+compact subject uses changed object IDs or session/file counts; the body lists
+created/changed IDs, applied outcome paths and session paths per project. Worker prose
+is never interpreted. Outcome records identify ruled objects without recording the new
+status, so the summary does not guess it. `--message` replaces only the subject. No persisted
+format changes or migration are needed; existing objects and archives are unchanged.
+
+L3 reads git status (`--porcelain=v1 -z`, including individual untracked files, excluding
+ignored files), branch, upstream and HEAD/upstream counts from local refs only. FETCH_HEAD's
+mtime supplies the last-fetch age; absent FETCH_HEAD says never fetched. Workspace/project
+status and open's NOTICES show this line when the root has .git, including detached HEAD,
+merge/rebase/cherry-pick and unmerged paths. Behind means “pull before writing: git pull
+--ff-only”; divergence means reconcile before writing and never merge histories that both
+created objects. Decide prints only the write warning before its first item and still runs.
+Git read failures are advisory (“git: state not read”); no command fetches or uses the network.
+Counts and warnings describe local refs, not the remote's current state. One writer at a time
+remains the researcher's convention rather than a cross-machine lock.
+
+`toulmin commit [--root PATH] [--message TEXT]` previews all computed paths and the message.
+Only `--confirm` stages and commits. Refusals happen before writes: no git repository, no
+changes, an in-progress git operation/unmerged path, tracked or candidate machine-local
+files (with S2's ignore/index advice), a pending workspace/handoff/object/proposal transaction,
+or staged paths outside the computed set. Persistent idle flock files alone do not refuse;
+active writers do. The command checks paths/content again before staging, stages exactly
+the computed changes, and commits only the listed paths. Already-staged deletions remain
+in that set without being added twice. NUL-delimited literal pathspecs preserve spaces,
+Unicode and filenames that resemble options or git pathspec syntax. Ordinary git identity,
+configuration and hooks are honored. Git's failure output/status is reported without retry;
+identity is checked (git var) before staging, so a missing author leaves the index untouched;
+a failing hook can leave the selected changes staged for the researcher to inspect.
+
+The preview states “Nothing is committed without --confirm. Toulmin never pushes: run git
+push yourself.” Success prints the commit hash and “Push yourself: git push”. No model is
+invoked. Agents never run toulmin commit, git commit or git push in the research workspace;
+this boundary appears in the project guide and workspace AGENTS template. Toulmin never
+pushes, pulls or fetches; S5's two-clone trial and researcher ruling remain separate.

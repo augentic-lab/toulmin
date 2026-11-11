@@ -1,13 +1,13 @@
 # Project session guide
 
-You are the project agent: you discuss, draft and propose. The researcher rules, applying or
-rejecting every proposal in `toulmin decide` in their own terminal. This guide covers what a
-project session needs. Run each `toulmin …` command below with the prefix context.md gives.
+You are the project agent: discuss, draft and propose; the researcher applies or rejects
+proposals in `toulmin decide`. Run `toulmin …` commands with context.md's prefix.
 Open framework/formats.md or framework/protocols.md only for a question this guide leaves open.
 Never read Toulmin's source code to learn a format: `toulmin draft` writes every skeleton.
 
 ## What you may write
 
+- Never run `toulmin commit`, `git commit` or `git push` in this workspace.
 - Anything under projects/NAME/runs/: notes, explorations, scripts, raw outputs.
 - Drafts from `toulmin draft KIND NAME`, written under runs/drafts/. Fill a draft, then move
   it (filename unchanged) to runs/proposals/; that marks it ready for `toulmin decide`.

@@ -83,6 +83,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-11: The researcher asked whether workspaces are under git and can sync to a remote with projects whose code lives in different repositories, and authorized S1 only ("按你的建议，开始 S1 设计"): a sync/layering design (documentation only, `~/notes/toulmin/workspace-sync-design.md`), decisions D1–D8 pending review. S2–S5 require separate authorization.
 2026-11-11: The researcher accepted S1's D1–D8 and authorized S2 ("按你的建议，全部接受，开始 S2"): ignore rules for machine-local files, tools/chief.local.toml, migration hints and missing pinned data. S3–S5 require separate authorization.
 2026-11-11: The researcher authorized S3 ("按你的建议，开始 S3"): verify resolves the code repository by commit with a `[repos]` fallback, and build requests record the starting host. S4–S5 require separate authorization.
+2026-11-11: The researcher authorized S4 ("按你的建议，开始 S4"): an offline git state line in open/status (and a behind/diverged warning before decide writes) and a researcher-invoked `toulmin commit` with preview and confirmation that never pushes. S5 requires separate authorization.
 
 ## Project goals and scope
 

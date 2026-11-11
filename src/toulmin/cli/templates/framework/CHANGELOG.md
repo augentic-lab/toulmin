@@ -1,5 +1,11 @@
 # Framework changes
 
+- S4: status/open show offline git state and decide warns before writing when behind,
+  diverged or in a git operation. Researcher-only `toulmin commit` previews paths and a
+  deterministic message, commits only with --confirm, honors identity/hooks and never
+  pushes. Active transactions and machine-local files refuse before staging. No recorded
+  schema changes; workspace agents never commit or push.
+
 ## v1 — Skeleton
 
 - Data and protocols follow formats.md and protocols.md. No older persisted objects to migrate.
