@@ -1088,3 +1088,33 @@ receipts without requiring pinned material on disk, so no rule change is needed.
 research state remains possible on a machine without its dataset. Existing apply/pin checks
 continue refusing absent material and digest mismatches. No material is substituted or
 accepted silently. S3 repository fallback and S4 commit/git-state features remain out of scope.
+
+### S3 — Verification by commit and build host provenance
+
+L2 reason: a synced research record identifies a pinned commit, while code paths and Chief
+tasks belong to a machine. L3 resolves a new verification's repository in order: the archived
+contract path if it is an existing git worktree containing the head, otherwise a distinct
+current [repos] entry from merged Chief configuration if it contains the head. It reports
+both candidates/reasons on refusal and advises cloning and tools/chief.local.toml setup.
+Preview and the verification journal record the chosen path and repo_reason; environment.txt's
+Repository line repeats them. Checks remain exclusively the frozen contract's. All git runs
+stay in L3 and offline. Pending journals keep their chosen path; invalid paths/commits refuse
+without silently falling back. Old journals lacking repo_reason still parse and resume.
+
+On build apply, L3 records socket.gethostname() as request.json host, outside the Chief
+contract. Interrupted recovery accepts old hostless intents, but a different recorded host
+refuses before checking the old machine's repository/configuration. Request identity and
+all other frozen-contract/configuration checks remain strict; archives are never rewritten.
+
+L3 distinguishes absent task.json from unreadable/malformed state. Only an absent local task
+and a different recorded starting host inject an other_host fact into L2. The map Chief line
+and shared rule table then say “Chief task <id> was started on HOST; continue it there (start,
+approve, close and import on HOST)” (you). This replaces local kickoff/import/re-request
+advice and suppresses that Spec's generic G4 work; ordinary row order and MOVE_LIMIT remain.
+Once the result is imported (on HOST, then synced) the row and that suppression end; the
+Chief line reads “Chief task <id> (started on HOST); imported”.
+Local tasks, same-host/hostless missing tasks, and unreadable-state diagnostics are unchanged.
+Host data is injected by L3; L2 invokes no tool and does not discover the machine's hostname.
+Once the import is synced, independent verify can use this machine's repository containing
+the pinned commit. Chief lifecycle actions remain on the starting host; no network or
+automatic transfer occurs. Formats/compatibility are in formats.md. S4/S5 remain separate.

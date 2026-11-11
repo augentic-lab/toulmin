@@ -46,6 +46,7 @@ class BuildVerification:
     run: str | None = None
     proposals: tuple[str, ...] = ()
     previous: tuple[str, ...] = ()
+    repo_reason: str | None = None
 
     @property
     def passed(self) -> bool:
@@ -72,11 +73,17 @@ def parse_verification(data: bytes, location: str) -> BuildVerification:
     try:
         raw = json.loads(data)
         names = {item.name for item in fields(BuildVerification)}
+        if isinstance(raw, dict):
+            raw.setdefault("repo_reason", None)  # journals written before S3
         if not isinstance(raw, dict) or set(raw) != names | {"schema_version", "kind"}:
             raise ValueError("expected the build-verification fields")
         version = raw.pop("schema_version")
         if type(version) is not int or version != 1 or raw.pop("kind") != "build-verification":
             raise ValueError("expected version 1 and kind build-verification")
+        if raw["repo_reason"] is not None and (
+            not isinstance(raw["repo_reason"], str) or not raw["repo_reason"].strip()
+        ):
+            raise ValueError("repo_reason: expected nonempty text or null")
         for name in (
             "spec",
             "task_id",

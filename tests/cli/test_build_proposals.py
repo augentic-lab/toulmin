@@ -12,6 +12,7 @@ from typer.testing import CliRunner
 
 from toulmin.adapters import chief as chief_adapter
 from toulmin.adapters.chief import ChiefClient, load_config
+from toulmin.application import build as build_application
 from toulmin.application.build import apply_build, prepare_build
 from toulmin.cli import decide
 from toulmin.cli.app import app
@@ -372,6 +373,11 @@ def test_build_apply_archives_calls_chief_and_preserves_formal_files(build_env):
     archives = list((root / "projects/demo/runs").glob("*-build-S-001"))
     (archive,) = archives
     assert json.loads((archive / "contract.json").read_bytes()) == call["contract"]
+    assert (
+        json.loads((archive / "request.json").read_bytes())["host"]
+        == build_application.socket.gethostname()
+    )
+    assert "host" not in call["contract"]
     assert "Created chief task" in (archive / "chief-new.txt").read_text()
     assert "Needs you:" in (archive / "chief-new.txt").read_text()
     for path, raw in before.items():
@@ -421,6 +427,55 @@ def test_build_recovers_after_chief_new_without_starting_it_twice(build_env, mon
     ) in result.stdout
     assert "chief watch sends the kickoff" not in result.stdout
     assert len(calls(home)) == 1 and outcome(root, relative).disposition == "applied"
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_build_host_recovery_refuses_foreign_start_but_accepts_legacy_intent(
+    build_env, monkeypatch, tmp_path, legacy
+):
+    root, repo, home = build_env
+    relative = request(build_env)
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "origin-host")
+    original = project_proposals.finish_build
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(project_proposals, "finish_build", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        apply_build(root, "demo", prepare_build(root, "demo", relative), "Researcher", "a")
+    monkeypatch.setattr(project_proposals, "finish_build", original)
+    (archive,) = (root / "projects/demo/runs").glob("*-build-S-001")
+    intent = archive / "request.json"
+    raw = json.loads(intent.read_bytes())
+    assert raw["host"] == "origin-host"
+    if legacy:
+        raw.pop("host")
+        intent.write_text(json.dumps(raw, indent=2) + "\n")
+    else:
+        # Host guidance takes priority over a missing old-machine repo/config mismatch.
+        repo.rename(tmp_path / "old-machine-code")
+        (root / "tools/chief.local.toml").write_text(
+            f"home = {json.dumps(str(tmp_path / 'peer-chief'))}\n"
+        )
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "peer-host")
+    before = snapshot(root)
+    shown = prepare_build(root, "demo", relative)
+    if legacy:
+        assert shown.recovered and not shown.problems
+        done = apply_build(root, "demo", shown, "Researcher", "a")
+        assert done.disposition == "applied"
+        assert "host" not in json.loads(intent.read_bytes())
+    else:
+        expected = (
+            "this build was started on origin-host; its Chief task lives there; "
+            "continue on origin-host"
+        )
+        assert expected in shown.problems
+        with pytest.raises(FormatError, match="continue on origin-host"):
+            apply_build(root, "demo", shown, "Researcher", "a")
+        assert snapshot(root) == before
+    assert len(calls(home)) == 1
 
 
 def test_build_interruption_before_chief_new_can_finish(build_env, monkeypatch):

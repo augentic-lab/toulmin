@@ -343,8 +343,11 @@ On apply, `projects/NAME/runs/<UTC>-build-S-NNN/` contains:
   and capped at 60 characters including “…”, cut at a word boundary when one exists.
   The full text stays in goal.
   Interrupted applies retain a matching legacy frozen title rather than renaming the task.
-- `request.json`: recovery provenance: proposal path and sha256, task ID, Chief home and
-  command. It binds this archive to this request, without a separate index.
+- `request.json`: recovery provenance: proposal path and sha256, task ID, Chief home,
+  command and optional `host` (starting machine's socket.gethostname(), added in S3 by L3).
+  It binds this archive to this request, without a separate index. Host is never sent in
+  the Chief contract. Old records without host remain valid; a recorded different host
+  refuses interrupted recovery and directs the researcher to continue on that host.
 - `chief-new.txt`: exit status and Chief's stdout/stderr, or a recovery/startup-failure note.
 
 The existing `<stem>.outcome.md` records `applying` before startup, `applied` with
@@ -438,7 +441,7 @@ if its follow-up ruling was already applied. Completed passing verification is i
 | File | Meaning |
 | --- | --- |
 | `output.md` | Each frozen command, exit status or “timed out”, elapsed seconds, stdout and stderr. Each stream is capped at 64 KiB and marked when truncated. |
-| `environment.txt` | OS, Toulmin Python and git versions, PATH reported by sh in the clone, resolved `sh` path, source repository, pinned head, and execution boundary. A failed PATH probe is explicitly reported; no check interpreter is inferred. |
+| `environment.txt` | OS, Toulmin Python and git versions, PATH reported by sh in the clone, resolved `sh` path, source repository, pinned head, and execution boundary. S3's Repository line includes the resolved path and its selection reason when recorded. A failed PATH probe is explicit; no check interpreter is inferred. |
 | `verify.json` | Version-1 `build-verification` intent, checkpoints and terminal receipt, described below. |
 | `checkpoints/<sha256>/` | Immutable output/environment snapshots published before the journal switches to them, including partial/interrupted results. |
 
@@ -453,7 +456,10 @@ The exact verify.json fields are `schema_version`, `kind`, `spec`, `task_id`,
 `spec_sha256`, `repo`, pinned `head`, current `claim`, `checks`, `timeout_seconds`, `actor`,
 timezone-bearing `at`, `results`, nullable `files`, nullable `snapshot`,
 `execution_completed`, `disposition` (applying/applied), nullable `run`, `proposals` and
-`previous`. Check results contain `command`, nullable integer `exit_status` (null means
+`previous`, plus optional nullable `repo_reason` (S3). The `repo` field is the chosen
+execution repository; repo_reason records why that path was chosen. Old journals without
+repo_reason parse as null and keep their recorded path. Check results contain `command`,
+nullable integer `exit_status` (null means
 timed out), nonnegative finite `duration_seconds`, bounded `stdout`/`stderr`, and Boolean
 `stdout_truncated`/`stderr_truncated`. Results must match the frozen commands in order.
 `files` maps output.md/environment.txt to sha256 digests; `snapshot` names their immutable
@@ -466,6 +472,13 @@ again in a new clone; earlier setup/check effects are not assumed to survive. On
 results are durable, replay only finishes the Run/proposals and never reruns checks. Run
 recovery uses its unique archive output; proposal publication is exclusive and byte-checked.
 Changed checkpoints, public artifacts, contracts or existing drafts are refused, not repaired.
+S3 chooses the archived contract repo if it contains the pinned commit, otherwise a distinct
+current [repos] entry for the project containing it. Both failed candidates and reasons are
+reported together. The contract/checks are never rewritten. Interrupted verification keeps
+its chosen repo; a missing/unusable repo or absent pinned commit refuses recovery rather
+than switching. Completed passing records remain idempotent. Older builds reject the new
+journal field; use S3 for its recovery. Existing journals need no migration, and completed
+Run/Evidence objects retain their existing schema.
 
 The Run has role `verifier`, model `none (deterministic re-run by toulmin)`, human source
 attributed to the confirming researcher, null session_id, input_files [the Spec, archived

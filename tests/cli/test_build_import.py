@@ -9,6 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from toulmin.adapters.chief import ChiefClient, load_config
+from toulmin.application import build as build_application
 from toulmin.application.aoe import scope_state
 from toulmin.application.build import project_map
 from toulmin.application.build_import import apply_import, prepare_import
@@ -21,7 +22,7 @@ from toulmin.core.documents import FormatError
 from toulmin.core.project_proposals import Outcome, render_outcome
 from toulmin.core.proposals import MAX_BYTES
 from toulmin.protocols import build_import, project_proposals
-from toulmin.protocols.build import BuildFact, build_facts
+from toulmin.protocols.build import BuildFact, build_facts, build_line
 from toulmin.protocols.research_map import Facts, next_moves, research_map
 from toulmin.protocols.research_workspace import render_state, research_state
 from toulmin.protocols.status import GateItem, GateReadiness, project_status
@@ -162,7 +163,7 @@ def test_chief_reader_reports_all_fields_and_missing_as_none(chief_env):
     root, _, _, state = chief_env
     client = ChiefClient(root, load_config(root))
     task = client.read_task("demo-s001")
-    assert asdict(task) == {**state, "error": None, "kickoff_at": False}
+    assert asdict(task) == {**state, "error": None, "kickoff_at": False, "other_host": None}
     change_task(chief_env, review=None)
     assert client.read_task("demo-s001").review == BuildReview()
     (chief_env[2] / "task.json").write_text('{"state": "done"}')
@@ -296,6 +297,113 @@ def test_build_facts_and_offline_map_never_read_chief(chief_env, monkeypatch):
     spec = next(node for node in report.claims[0].children if node.object_id == "S-001")
     assert "Chief state not read" in spec.children[0].summary
     assert "Chief state not read" in render_state(research_state(root, "demo"))
+
+
+@pytest.mark.parametrize("host", [None, "here", "origin-host"])
+@pytest.mark.parametrize("directory_exists", [False, True])
+def test_missing_task_uses_other_host_advice_only_with_a_recorded_foreign_host(
+    chief_env, monkeypatch, host, directory_exists
+):
+    root, _, task, _ = chief_env
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "here")
+    path = root / ARCHIVE / "request.json"
+    intent = json.loads(path.read_bytes())
+    if host is not None:
+        intent["host"] = host
+        path.write_text(json.dumps(intent))
+    (task / "task.json").unlink()
+    if not directory_exists:
+        for file in task.iterdir():
+            file.unlink()
+        task.rmdir()
+    before = snapshot(root)
+    report = project_map(root, "demo")
+    (fact,) = report.builds
+    if host == "origin-host":
+        expected = (
+            "Chief task demo-s001 was started on origin-host; continue it there "
+            "(start, approve, close and import on origin-host)"
+        )
+        assert fact.task.other_host == host
+        assert expected in build_line(fact)
+        assert any(move.text == expected and move.actor == "you" for move in report.moves)
+        assert not any(
+            "chief kickoff" in move.text or "re-request" in move.text for move in report.moves
+        )
+        result = command(root, "map", "demo")
+        assert expected in " ".join(result.stdout.split())
+        offline = research_map(root, "demo")
+        assert offline.builds[0].task is None  # only L3 reads/injects host provenance
+    else:
+        assert fact.task.other_host is None
+        assert "Chief state not read" in build_line(fact)
+        assert not any("was started on" in move.text for move in report.moves)
+    assert snapshot(root) == before
+
+
+def test_foreign_host_advice_ends_once_the_result_is_imported(chief_env, monkeypatch):
+    # The import was applied on the starting host and synced; nothing remains to do there.
+    root, _, task, _ = chief_env
+    result = command(
+        root, "build", "import", "demo", "S-001", "--confirm", "--confirmed-by", "Researcher"
+    )
+    assert result.exit_code == 0, result.output
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "here")
+    path = root / ARCHIVE / "request.json"
+    intent = json.loads(path.read_bytes())
+    intent["host"] = "origin-host"
+    path.write_text(json.dumps(intent))
+    for file in task.iterdir():
+        file.unlink()
+    task.rmdir()
+    report = project_map(root, "demo")
+    (fact,) = report.builds
+    assert fact.imported and fact.task.other_host == "origin-host"
+    assert "Chief task demo-s001 (started on origin-host); imported" in build_line(fact)
+    assert not any("was started on" in move.text for move in report.moves)
+
+
+@pytest.mark.parametrize("state", ["needs-you", "unreadable"])
+def test_foreign_host_does_not_hide_present_local_task_state(chief_env, monkeypatch, state):
+    root, _, task, _ = chief_env
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "here")
+    path = root / ARCHIVE / "request.json"
+    intent = json.loads(path.read_bytes())
+    intent["host"] = "origin-host"
+    path.write_text(json.dumps(intent))
+    if state == "unreadable":
+        (task / "task.json").write_text("not JSON")
+    else:
+        change_task(chief_env, state=state)
+    report = project_map(root, "demo")
+    assert report.builds[0].task.other_host is None
+    assert not any("was started on" in move.text for move in report.moves)
+    if state == "unreadable":
+        assert "Chief state not read" in build_line(report.builds[0])
+    else:
+        assert any("chief kickoff demo-s001" in move.text for move in report.moves)
+
+
+@pytest.mark.parametrize("damage", ["host", "task-id"])
+def test_other_host_advice_requires_valid_correlated_provenance(chief_env, monkeypatch, damage):
+    root, _, task, _ = chief_env
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "here")
+    (task / "task.json").unlink()
+    path = root / ARCHIVE / "request.json"
+    intent = json.loads(path.read_bytes())
+    intent["host"] = "origin-host" if damage == "task-id" else None
+    if damage == "task-id":
+        intent["task_id"] = "a-different-task"
+    path.write_text(json.dumps(intent))
+    before = snapshot(root)
+    report = project_map(root, "demo")
+    assert report.builds[0].task.other_host is None
+    assert "Chief state not read" in build_line(report.builds[0])
+    assert ("request identity differs" if damage == "task-id" else "host:") in report.builds[
+        0
+    ].task.error
+    assert not any("was started on" in move.text for move in report.moves)
+    assert snapshot(root) == before
 
 
 def test_map_cli_and_aoe_card_inject_current_task_state(chief_env):

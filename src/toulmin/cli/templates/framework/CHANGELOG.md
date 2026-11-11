@@ -203,3 +203,9 @@
   nonblocking migration advice; WI7 plans include machine-local ignore patterns. Missing
   dataset browsing already degrades gracefully; strict apply/pin checks are unchanged.
   Existing records/configurations remain compatible; migration steps are printed, never run.
+
+- S3: resolve verification repositories by the pinned commit, preferring the archived path
+  then the current project mapping; archive/preview the path and reason without rewriting
+  frozen checks. Pending journals retain their chosen path; old journals still resume.
+  Build intents record the starting host; foreign-host recovery refuses, and missing local
+  tasks show where Chief must continue. No remote command, transfer or object-schema change.

@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-11 — S3: verify by commit, build host provenance (Codex-implemented, supervised)
+
+- Decision: the researcher authorized S3 ("按你的建议，开始 S3").
+- Change (Codex resumed session, brief `codex-b2/s3.md`): verify resolves the repository as the archived contract path if it holds the pinned head, else the current `[repos]` entry if it does; the reason is shown in the preview and recorded (verify.json `repo_reason`, environment.txt Repository line); otherwise it refuses naming both candidates and pointing to tools/chief.local.toml; interrupted verifies keep their path or refuse; old journals parse. request.json gains `host`; hostless archives still recover; recovery on another host refuses. A Chief task missing from this machine's home whose request names another host gets the row "Chief task <id> was started on HOST; continue it there …" and suppresses that Spec's generic G4 row. Docs: formats, protocols "S3", CHANGELOG, released.json digests.
+- Supervisor verification and correction: smoke on copies of the B6 workspace with a clone at another path and the original repository moved away: preview "archived path … missing on this machine; using [repos] perfparse = …/clone, which contains ddd5b29…", `--confirm` ran the three frozen checks (R-003) and recorded the reason; with `[repos]` pointing at a non-repository the refusal named both candidates. Found: after the result was imported the map still said to continue (import) on the other host; fixed so the row and G4 suppression end once imported (Chief line "(started on HOST); imported"), with a test and a protocols sentence.
+- Checks (supervisor-run): ruff, format, mypy clean; docs and packaged copies identical; build tests 224 passed before the fix; `uv run --locked pytest -q` 1652 passed (11m15s) after the fix.
+- Next: S4 (offline git line, `toulmin commit`) requires authorization.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S2: ignore rules, chief.local.toml, sync hints (Codex-implemented, supervised)
 
 - Decision: the researcher accepted S1's D1–D8 and authorized S2 ("按你的建议，全部接受，开始 S2").

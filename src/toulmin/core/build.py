@@ -30,6 +30,7 @@ class BuildTask:
     closed_at: str | None = None
     error: str | None = None
     kickoff_at: bool = False  # presence of the external field, not its timestamp value
+    other_host: str | None = None  # task absent locally; L3 reports its recorded starting host
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,10 @@ NEW_TIMEOUT = 120.0
 DEFAULT_VERIFY_TIMEOUT_SECONDS = 600.0
 
 
+class ChiefTaskMissing(FormatError):
+    """A missing task.json, distinguished from unreadable or malformed local state."""
+
+
 @dataclass(frozen=True)
 class ChiefConfig:
     command: tuple[str, ...]
@@ -121,7 +125,7 @@ class ChiefClient:
             raw = json.loads(path.read_bytes())
         except FileNotFoundError:
             if path.parent.exists():
-                raise FormatError(
+                raise ChiefTaskMissing(
                     f"{path}: Chief task directory exists without task.json"
                 ) from None
             return None
@@ -135,10 +139,12 @@ class ChiefClient:
         """Read the documented fields only; never infer missing values or task state."""
         try:
             raw = self.task(task_id)
+        except ChiefTaskMissing as error:
+            raise ChiefTaskMissing(f"Chief state not read: {error}") from error
         except (OSError, ValueError) as error:
             raise FormatError(f"Chief state not read: {error}") from error
         if raw is None:
-            raise FormatError(
+            raise ChiefTaskMissing(
                 f"Chief state not read: {self.config.home}/tasks/{task_id}/task.json missing"
             )
 

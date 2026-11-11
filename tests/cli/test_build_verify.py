@@ -14,6 +14,7 @@ from typer.testing import CliRunner
 
 from toulmin.adapters import chief as chief_adapter
 from toulmin.adapters import verify
+from toulmin.application import build as build_application
 from toulmin.application.build import project_map
 from toulmin.application.build_import import apply_import, prepare_import
 from toulmin.application.build_verify import apply_verification, prepare_verification
@@ -344,6 +345,171 @@ def test_checks_come_from_contract_even_after_spec_text_changes(verify_env):
     assert record.results[0].command == "python3 solution.py"
 
 
+def local_repo(root, repo):
+    (root / "tools/chief.local.toml").write_text(f"[repos]\ndemo = {json.dumps(str(repo))}\n")
+
+
+def empty_repo(repo):
+    repo.mkdir()
+    git(repo, "init", "-b", "main")
+    git(
+        repo,
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "Unrelated fixture",
+    )
+
+
+@pytest.mark.parametrize("archived", ["missing", "commit-absent"])
+def test_verify_falls_back_to_a_local_clone_and_records_why(
+    verify_env, tmp_path, monkeypatch, archived
+):
+    root, repo, task, state = verify_env
+    copy = tmp_path / "code on another machine"
+    git(repo, "clone", "--quiet", "--no-hardlinks", str(repo), str(copy))
+    local_repo(root, copy)
+    # Simulate an imported result synced from the machine that still owns its Chief task.
+    metadata = root / ARCHIVE / "request.json"
+    intent = json.loads(metadata.read_bytes())
+    intent["host"] = "origin-host"
+    metadata.write_text(json.dumps(intent))
+    local = root / "tools/chief.local.toml"
+    local.write_text(f"home = {json.dumps(str(tmp_path / 'peer-chief'))}\n" + local.read_text())
+    monkeypatch.setattr(build_application.socket, "gethostname", lambda: "peer-host")
+    contract = (root / ARCHIVE / "contract.json").read_bytes()
+    repo.rename(tmp_path / "original-code")
+    if archived == "commit-absent":
+        empty_repo(repo)
+    before = snapshot(copy)
+    result = command(root, "build", "verify", "demo", "S-001")
+    assert result.exit_code == 0, result.output
+    assert f"using [repos] demo = {copy}, which contains {state['review']['head']}" in result.stdout
+    assert ("missing on this machine" if archived == "missing" else "commit") in result.stdout
+    assert project_map(root, "demo").builds[0].task.other_host == "origin-host"
+    assert any(item.kind == "build-verify" for item in decide.inventory(root).items)
+    done = execute(verify_env)
+    assert done.passed and done.repo == str(copy)
+    assert (
+        done.repo_reason
+        and str(repo) in done.repo_reason
+        and "using [repos] demo" in done.repo_reason
+    )
+    archive = root / result_archive(root)
+    raw = json.loads((archive / "verify.json").read_bytes())
+    assert raw["repo_reason"] == done.repo_reason
+    assert f"Repository: {copy} ({done.repo_reason})\n" in (archive / "environment.txt").read_text()
+    assert (root / ARCHIVE / "contract.json").read_bytes() == contract
+    assert snapshot(copy) == before
+
+
+def test_verify_prefers_archived_repository_with_the_commit(verify_env, tmp_path):
+    root, repo, _, _ = verify_env
+    local_repo(root, tmp_path / "absent-local-copy")
+    shown = prepare_verification(root, "demo", "S-001")
+    assert shown.record.repo == str(repo)
+    assert shown.record.repo_reason.startswith(f"archived path {repo} contains ")
+
+
+@pytest.mark.parametrize("archived", ["missing", "commit-absent"])
+@pytest.mark.parametrize("mapped", ["missing", "commit-absent", "not-configured", "same"])
+def test_verify_refusal_names_both_candidates_and_reasons(verify_env, tmp_path, archived, mapped):
+    root, repo, _, state = verify_env
+    repo.rename(tmp_path / "original-code")
+    if archived == "commit-absent":
+        empty_repo(repo)
+    copy = tmp_path / "no-pinned-commit"
+    if mapped == "commit-absent":
+        empty_repo(copy)
+    if mapped != "not-configured":
+        local_repo(root, repo if mapped == "same" else copy)
+    before = snapshot(root)
+    with pytest.raises(FormatError) as failure:
+        prepare_verification(root, "demo", "S-001")
+    text = str(failure.value)
+    assert f"archived path {repo}" in text and "[repos] demo" in text
+    assert "clone the repository and set [repos] demo in tools/chief.local.toml" in text
+    assert (
+        "missing directory"
+        if archived == "missing"
+        else "commit " + state["review"]["head"] + " absent"
+    ) in text
+    if mapped in {"missing", "commit-absent"}:
+        assert str(copy) in text
+    elif mapped == "same":
+        assert "same as archived path" in text
+    else:
+        assert "no [repos] entry" in text
+    assert snapshot(root) == before
+
+
+@pytest.mark.parametrize("invalid", [False, "missing", "commit-absent"])
+def test_interrupted_verify_keeps_its_chosen_path_or_refuses(
+    verify_env, tmp_path, monkeypatch, invalid
+):
+    root, repo, _, _ = verify_env
+    copy = tmp_path / "chosen-copy"
+    other = tmp_path / "another-valid-copy"
+    git(repo, "clone", "--quiet", "--no-hardlinks", str(repo), str(copy))
+    git(repo, "clone", "--quiet", "--no-hardlinks", str(repo), str(other))
+    local_repo(root, copy)
+    repo.rename(tmp_path / "original-code")
+    original = verify.run_check
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(verify, "run_check", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        execute(verify_env)
+    monkeypatch.setattr(verify, "run_check", original)
+    local_repo(root, other)
+    if invalid:
+        copy.rename(tmp_path / "lost-chosen-copy")
+        if invalid == "commit-absent":
+            empty_repo(copy)
+        before = snapshot(root)
+        with pytest.raises(FormatError, match="recovery will not switch paths"):
+            prepare_verification(root, "demo", "S-001")
+        assert snapshot(root) == before
+    else:
+        done = execute(verify_env)
+        assert done.passed and done.repo == str(copy)
+        assert str(copy) in done.repo_reason and str(other) not in done.repo_reason
+        assert len(verification_records(Repository(root), "demo")) == 1
+
+
+def test_old_verification_journal_without_repo_reason_resumes(verify_env, monkeypatch):
+    root = verify_env[0]
+    original = build_verify.finish_verification
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(build_verify, "finish_verification", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        execute(verify_env)
+    monkeypatch.setattr(build_verify, "finish_verification", original)
+    archive = result_archive(root)
+    path = root / archive / "verify.json"
+    raw = json.loads(path.read_bytes())
+    raw.pop("repo_reason")
+    path.write_text(json.dumps(raw))
+    assert parse_verification(path.read_bytes(), "legacy").repo_reason is None
+
+    def no_rerun(*args, **kwargs):
+        raise AssertionError("completed legacy results reran")
+
+    monkeypatch.setattr(verify, "run_checks", no_rerun)
+    done = execute(verify_env)
+    assert done.passed and done.repo_reason is None and done.run == "R-003"
+    assert len(verification_records(Repository(root), "demo")) == 1 and len(done.proposals) == 3
+
+
 def test_verification_output_is_bounded_per_stream(verify_env):
     script = "import sys; sys.stdout.write('X'*70000); sys.stderr.write('Y'*70000)"
     checks(verify_env, [f"{shlex.quote(sys.executable)} -c {shlex.quote(script)}"])
@@ -609,7 +775,7 @@ def test_verify_refuses_import_without_head_and_moved_repository(verify_env):
     record_path.write_bytes(original)
     repo.rename(repo.with_name("moved-code"))
     before = snapshot(root)
-    with pytest.raises(FormatError, match="moved or missing"):
+    with pytest.raises(FormatError, match="missing directory"):
         prepare_verification(root, "demo", "S-001")
     assert snapshot(root) == before
 

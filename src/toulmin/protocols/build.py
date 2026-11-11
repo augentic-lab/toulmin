@@ -310,17 +310,30 @@ def build_facts(
     return tuple(replace(facts[key], verification=verified.get(key)) for key in sorted(facts))
 
 
+def other_host_line(task_id: str, host: str) -> str:
+    return (
+        f"Chief task {task_id} was started on {host}; continue it there "
+        f"(start, approve, close and import on {host})"
+    )
+
+
 def build_line(fact: BuildFact) -> str:
     if fact.task_id is None:
         return f"{fact.spec}: no applied build request"
     task = fact.task
-    if task is None or task.error is not None:
-        state = "Chief state not read" + (f": {task.error}" if task is not None else "")
+    if task is not None and task.other_host is not None and fact.imported:
+        line = f"{fact.spec} -> Chief task {fact.task_id} (started on {task.other_host})"
+    elif task is not None and task.other_host is not None:
+        line = f"{fact.spec} -> " + other_host_line(fact.task_id, task.other_host)
     else:
-        state = f"{task.state or 'not reported'}; review {task.review.verdict or 'not reported'}"
-    line = f"{fact.spec} -> Chief task {fact.task_id}: {state}" + (
-        "; imported" if fact.imported else ""
-    )
+        if task is None or task.error is not None:
+            state = "Chief state not read" + (f": {task.error}" if task is not None else "")
+        else:
+            state = (
+                f"{task.state or 'not reported'}; review {task.review.verdict or 'not reported'}"
+            )
+        line = f"{fact.spec} -> Chief task {fact.task_id}: {state}"
+    line += "; imported" if fact.imported else ""
     if fact.verification is not None:
         verified = fact.verification
         if verified.passed:

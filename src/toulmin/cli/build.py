@@ -70,6 +70,8 @@ def show_verification(shown: VerifyPreview) -> None:
         f"Repository: {record.repo}\nCommit: {record.head}\n"
         f"Timeout per check: {record.timeout_seconds:g} seconds"
     )
+    if record.repo_reason is not None:
+        typer.echo("Repository resolution: " + record.repo_reason)
     typer.echo("Frozen checks from: " + record.contract)
     for index, command in enumerate(record.checks, 1):
         typer.echo(f"  {index}. {command}")

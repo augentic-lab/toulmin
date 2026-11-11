@@ -64,7 +64,9 @@ def run_check(command: str, clone: Path, timeout: float) -> CheckResult:
         return CheckResult(command, status, time.monotonic() - started, out, err, out_cut, err_cut)
 
 
-def environment(repo: str, head: str, cwd: Path | None = None) -> bytes:
+def environment(
+    repo: str, head: str, cwd: Path | None = None, *, repo_reason: str | None = None
+) -> bytes:
     context = cwd or Path(tempfile.gettempdir())
     result = run_process(["git", "--version"], "", 15, context)
     if result.exit_status != 0:
@@ -88,7 +90,8 @@ def environment(repo: str, head: str, cwd: Path | None = None) -> bytes:
     return (
         f"OS: {platform.platform()}\nToulmin Python: {sys.version}\nGit: {result.stdout.strip()}\n"
         f"PATH: {path}\nShell (sh): {shell or 'not found on PATH'}\n"
-        f"Repository: {repo}\nHead commit: {head}\n"
+        f"Repository: {repo}" + (f" ({repo_reason})" if repo_reason is not None else "") + "\n"
+        f"Head commit: {head}\n"
         "Execution: local user, without network isolation\n"
     ).encode()
 
@@ -100,6 +103,8 @@ def run_checks(
     checks: tuple[str, ...],
     timeout: float,
     report: Callable[[tuple[CheckResult, ...], bytes], None],
+    *,
+    repo_reason: str | None = None,
 ) -> tuple[tuple[CheckResult, ...], bytes]:
     """One clean clone per attempt; a retry after a partial attempt starts clean again."""
     parent = Path(tempfile.gettempdir()).resolve()
@@ -114,7 +119,7 @@ def run_checks(
             result = run_process(argv, "", 120, Path(scratch))
             if result.exit_status != 0:
                 raise FormatError(f"fresh verification clone: {result.stderr or result.stdout}")
-        env = environment(repo, head, clone)
+        env = environment(repo, head, clone, repo_reason=repo_reason)
         report((), env)
         results = []
         for command in checks:

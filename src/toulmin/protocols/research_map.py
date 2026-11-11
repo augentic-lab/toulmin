@@ -30,7 +30,7 @@ from toulmin.core.project_proposals import (
 )
 from toulmin.core.repository import Repository
 from toulmin.protocols import project_proposals
-from toulmin.protocols.build import BuildFact, build_facts, build_line
+from toulmin.protocols.build import BuildFact, build_facts, build_line, other_host_line
 from toulmin.protocols.calibration import REVIEW, operation
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
@@ -192,6 +192,15 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                         "toulmin draft build NAME --spec " + build.spec,
                     )
                 )
+        elif task is not None and task.other_host is not None and not build.imported:
+            # Once the result is imported (on that host, then synced), nothing remains there.
+            moves.append(
+                Move(
+                    YOU,
+                    other_host_line(build.task_id, task.other_host),
+                    "continue on " + task.other_host,
+                )
+            )
         elif task is not None and task.error is None:
             if task.state == "running":
                 moves.append(
@@ -250,7 +259,7 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
         verification = build.verification
         if verification is None:
             continue
-        if verification.failed:
+        if verification.failed and not (build.task and build.task.other_host):
             moves.append(
                 Move(
                     YOU,
@@ -353,7 +362,10 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
                 and build.task_id is not None
                 and build.task is not None
                 and build.task.error is None
-                and build.task.state in {"running", "needs-you", "review"}
+                and (
+                    build.task.state in {"running", "needs-you", "review"}
+                    or (build.task.other_host is not None and not build.imported)
+                )
             }
             skip = (
                 tuple(item.label for item in gate.items if item.label.split(" ", 1)[0] in live)
@@ -610,7 +622,14 @@ def _tree(
             rank = 1 + (0 if h["status"] == "open" else 3) + SEVERITY_ORDER.get(h["severity"], 3)
         else:
             task_nodes = tuple(
-                Node("Chief task " + (build.task_id or ""), (), build_line(build).split(": ", 1)[1])
+                Node(
+                    "Chief task " + (build.task_id or ""),
+                    (),
+                    build_line(build).removeprefix(
+                        f"{build.spec} -> Chief task {build.task_id}"
+                        + (" " if build.task and build.task.other_host is not None else ": ")
+                    ),
+                )
                 for build in builds
                 if build.spec == str(doc.object_id) and build.task_id is not None
             )

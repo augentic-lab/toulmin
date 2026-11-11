@@ -1,12 +1,13 @@
 """R8 B2: coordinate file-derived build plans and the external Chief adapter."""
 
 import json
+import socket
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from toulmin.adapters.chief import ChiefClient, ChiefConfig, load_config
+from toulmin.adapters.chief import ChiefClient, ChiefConfig, ChiefTaskMissing, load_config
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.build import BuildTask
 from toulmin.core.codec import decode
@@ -14,7 +15,7 @@ from toulmin.core.documents import FormatError, sections
 from toulmin.core.project_proposals import Outcome, validate_build_request, validate_outcome
 from toulmin.core.repository import Repository
 from toulmin.protocols import project_proposals
-from toulmin.protocols.build import build_facts, contract_bytes, load_spec
+from toulmin.protocols.build import BuildFact, build_facts, contract_bytes, load_spec
 from toulmin.protocols.research_map import ResearchMap
 
 FOLDER_TRUST_NOTICE = (
@@ -44,7 +45,9 @@ def _archive(project: str, marker: Outcome, spec: str) -> str:
     return f"projects/{project}/runs/{stamp}-build-{spec}"
 
 
-def _intent(shown: project_proposals.Preview, config: ChiefConfig) -> bytes:
+def _intent(
+    shown: project_proposals.Preview, config: ChiefConfig, *, include_host: bool = True
+) -> bytes:
     assert shown.build is not None
     return (
         json.dumps(
@@ -54,11 +57,42 @@ def _intent(shown: project_proposals.Preview, config: ChiefConfig) -> bytes:
                 "task_id": shown.build.task_id,
                 "chief_home": str(config.home),
                 "command": list(config.command),
+                **({"host": socket.gethostname()} if include_host else {}),
             },
             indent=2,
         )
         + "\n"
     ).encode()
+
+
+def _stored_host(intent: object, location: str) -> str | None:
+    if not isinstance(intent, dict):
+        raise FormatError(f"{location}: expected a build request record")
+    if "host" not in intent:
+        return None
+    host = intent["host"]
+    if not isinstance(host, str) or not host.strip() or any(ord(char) < 32 for char in host):
+        raise FormatError(f"{location}: host: expected nonempty hostname text")
+    return host
+
+
+def _request_host(repository: Repository, project: str, fact: BuildFact) -> str | None:
+    if fact.at is None or fact.request is None or fact.sha256 is None:
+        return None
+    stamp = datetime.fromisoformat(fact.at.replace("Z", "+00:00")).strftime("%Y%m%dT%H%M%SZ")
+    relative = f"projects/{project}/runs/{stamp}-build-{fact.spec}/request.json"
+    path = repository.path(relative)
+    if not path.exists():
+        return None
+    intent = json.loads(repository.path(relative, "file").read_bytes())
+    host = _stored_host(intent, relative)
+    if (
+        intent.get("proposal") != fact.request
+        or intent.get("proposal_sha256") != fact.sha256
+        or intent.get("task_id") != fact.task_id
+    ):
+        raise FormatError(f"{relative}: request identity differs from the applied proposal")
+    return host
 
 
 def prepare_build(root: Path, project: str, relative: str) -> PreparedBuild:
@@ -76,7 +110,6 @@ def prepare_build(root: Path, project: str, relative: str) -> PreparedBuild:
     try:
         if plan.request.tool not in ("codex", "claude", "antigravity"):
             raise FormatError("tool: Chief supports codex, claude or antigravity")
-        client.check_repository(plan.request.repo, plan.request.base_branch)
         if shown.interrupted:
             marker = project_proposals.interrupted_marker(root, project, relative)
             archive = _archive(project, marker, plan.request.spec)
@@ -84,6 +117,12 @@ def prepare_build(root: Path, project: str, relative: str) -> PreparedBuild:
             if folder.exists():
                 frozen = repository.path(f"{archive}/contract.json", "file").read_bytes()
                 intent = repository.path(f"{archive}/request.json", "file").read_bytes()
+                host = _stored_host(json.loads(intent), f"{archive}/request.json")
+                if host is not None and host != socket.gethostname():
+                    raise FormatError(
+                        f"this build was started on {host}; its Chief task lives there; "
+                        f"continue on {host}"
+                    )
                 # An upgrade must not rename an already frozen Chief task. Accept only the
                 # previous title derivation, with every other contract byte still matching.
                 requirements = sections(load_spec(repository, project, plan.request.spec))[
@@ -97,11 +136,14 @@ def prepare_build(root: Path, project: str, relative: str) -> PreparedBuild:
                 if frozen == contract_bytes(legacy):
                     plan = replace(plan, contract=legacy)
                     shown = replace(shown, build=plan)
-                if frozen != contract_bytes(plan.contract) or intent != _intent(shown, config):
+                if frozen != contract_bytes(plan.contract) or intent != _intent(
+                    shown, config, include_host=host is not None
+                ):
                     raise FormatError(
                         "interrupted request differs from its frozen contract/configuration; "
                         "restore the inputs"
                     )
+        client.check_repository(plan.request.repo, plan.request.base_branch)
         existing = client.task(plan.task_id)
         if existing is not None:
             if not shown.interrupted or archive is None or not repository.path(archive).exists():
@@ -262,7 +304,7 @@ def apply_build(
 def external_states(root: Path, project: str) -> dict[str, BuildTask]:
     """Inject read-only Chief facts at L3 boundaries; offline state remains explicit."""
     facts = build_facts(root, project)
-    tasks = [fact.task_id for fact in facts if fact.task_id is not None]
+    tasks = {fact.task_id: fact for fact in facts if fact.task_id is not None}
     if not tasks:
         return {}
     try:
@@ -273,6 +315,17 @@ def external_states(root: Path, project: str) -> dict[str, BuildTask]:
     for task_id in tasks:
         try:
             result[task_id] = client.read_task(task_id)
+        except ChiefTaskMissing as error:
+            try:
+                host = _request_host(Repository(root), project, tasks[task_id])
+            except (OSError, ValueError) as metadata_error:
+                result[task_id] = BuildTask(error=f"{error}; {metadata_error}")
+            else:
+                result[task_id] = (
+                    BuildTask(other_host=host)
+                    if host is not None and host != socket.gethostname()
+                    else BuildTask(error=str(error))
+                )
         except (OSError, ValueError) as error:
             result[task_id] = BuildTask(error=str(error))
     return result

@@ -29,6 +29,46 @@ class VerifyPreview:
         )
 
 
+def _repository_problem(client: ChiefClient, repo: str, head: str) -> str | None:
+    try:
+        if not Path(repo).is_dir():
+            return "missing directory"
+        client.check_repository(repo, head)
+    except (OSError, ValueError) as error:
+        if "base_branch:" in str(error):
+            return f"commit {head} absent ({error})"
+        return f"repository unavailable ({error})"
+    return None
+
+
+def _resolve_repository(
+    client: ChiefClient, project: str, archived: str, head: str
+) -> tuple[str, str]:
+    problem = _repository_problem(client, archived, head)
+    if problem is None:
+        return archived, f"archived path {archived} contains {head}"
+    mapped = client.config.repos.get(project)
+    fallback_problem: str | None
+    if mapped is None:
+        fallback_problem = "no [repos] entry"
+    elif mapped == archived:
+        fallback_problem = f"same as archived path: {problem}"
+    else:
+        fallback_problem = _repository_problem(client, mapped, head)
+        if fallback_problem is None:
+            source = (
+                f"archived path {archived} missing on this machine"
+                if problem == "missing directory"
+                else f"archived path {archived}: {problem}"
+            )
+            return mapped, f"{source}; using [repos] {project} = {mapped}, which contains {head}"
+    raise FormatError(
+        f"verification repository unavailable: archived path {archived}: {problem}; "
+        f"[repos] {project} = {mapped or '<not configured>'}: {fallback_problem}; "
+        f"clone the repository and set [repos] {project} in tools/chief.local.toml"
+    )
+
+
 def prepare_verification(root: Path, project: str, spec: str) -> VerifyPreview:
     repository = Repository(root)
     source = load_spec(repository, project, spec)
@@ -65,6 +105,13 @@ def prepare_verification(root: Path, project: str, spec: str) -> VerifyPreview:
             pending or passing,
             key=lambda item: (datetime.fromisoformat(item[1].at.replace("Z", "+00:00")), item[0]),
         )
+        if pending:
+            client = ChiefClient(repository.root, load_config(root))
+            if problem := _repository_problem(client, saved.repo, saved.head):
+                raise FormatError(
+                    f"interrupted verification keeps repository {saved.repo}: {problem}; "
+                    "restore that repository; recovery will not switch paths"
+                )
         return VerifyPreview(saved, archive)
     if source.header["status"] != "awaiting-acceptance":
         raise FormatError(
@@ -83,11 +130,11 @@ def prepare_verification(root: Path, project: str, spec: str) -> VerifyPreview:
     ):
         raise FormatError(f"{contract_path}: checks must be frozen, nonempty commands")
     repo = contract.get("repo")
-    if not isinstance(repo, str) or not Path(repo).is_absolute() or not Path(repo).is_dir():
-        raise FormatError(f"{repo}: verification repository moved or missing")
+    if not isinstance(repo, str) or not Path(repo).is_absolute():
+        raise FormatError(f"{contract_path}: repo: expected an absolute archived repository path")
     config = load_config(root)
     client = ChiefClient(repository.root, config)
-    client.check_repository(repo, imported.head)
+    repo, reason = _resolve_repository(client, project, repo, imported.head)
     claim, owner = repository.resolve(project, source.header["target"])
     target = current_claim(inspect_project(repository, owner).objects, claim.object_id)[-1]
     claim_ref = str(target) if owner == project else f"{owner}/{target}"
@@ -105,6 +152,7 @@ def prepare_verification(root: Path, project: str, spec: str) -> VerifyPreview:
         config.verify_timeout_seconds,
         "preview",
         utc_text(datetime.now(UTC)),
+        repo_reason=reason,
     )
     return VerifyPreview(record)
 
@@ -146,6 +194,7 @@ def apply_verification(
                 record.checks,
                 record.timeout_seconds,
                 report,
+                repo_reason=record.repo_reason,
             )
             record = build_verify.checkpoint(
                 repository, archive, record, results, env, completed=True
