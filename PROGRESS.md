@@ -1,5 +1,16 @@
 # Toulmin development progress
 
+## 2026-11-11 — S5: two-clone sync trial (agent-run evidence)
+
+- Decision: the researcher authorized S5 ("按你的建议，开始 S5").
+- Run (ledger `~/notes/toulmin/s5-sync-2026-11-11/`): one machine, workspace A (init) and B (clone) in job tmp, local bare remote, repository-local fixture identities, Codex native sessions in profile `toulmin-sim-r`; approvals by "S5 operator (agent; fixture approval, not the researcher)". Five commits, all via `toulmin commit` and a manual `git push`, no merges.
+- Results: `.aoe/` and `tools/chief.local.toml` never committed; B's session continued from A's handoff (stage, open Objection, no Spec); a ruling made on B reached A by `git pull --ff-only` after A's line and decide warned "1 behind … pull before writing"; when both created D-002, A showed "diverged … reconcile before writing", decide warned, `pull --ff-only` refused and `pull --rebase` stopped on an add/add conflict; recovery in the fixture (save, `git reset --hard origin/main`, recreate as D-003) left both clones level.
+- Findings (no code changed): the Codex update prompt is reported only as "a selection menu" (candidate: name it like the trust prompt); manual recovery from same-ID divergence has no written recipe (candidate: a short docs/guide note); an agent's hand-written Objection without a Response section was refused at preview, as designed.
+- Cleanup: both sessions archived; job-tmp workspaces forgotten from the workspace list; tmux count back to baseline.
+- Checks: no code changed in this session; last full suite 1702 passed (S4).
+- Pending: the researcher's S5 ruling; the two candidates above require authorization.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S4: offline git line and `toulmin commit` (Codex-implemented, supervised)
 
 - Decision: the researcher authorized S4 ("按你的建议，开始 S4").
