@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-11 — S1: workspace sync and layered repositories (documentation only)
+
+- Decision: the researcher asked whether a workspace is under git, whether it can sync to a remote, and noted that projects need not share one repository; authorized S1 design only ("按你的建议，开始 S1 设计").
+- Findings (read-only): init creates a local git repository with a lock/journal-only `.gitignore`; Toulmin never commits; test-toulmin-rdma has 0 commits, no remote, 3.4 MB in 378 files. Machine-local: `.aoe/binding.json` (absolute root; a moved binding is refused, `application/aoe.py:268`), `tools/chief.toml` absolute paths; verify reads the archived absolute repository path (`application/build_verify.py:85`); object IDs are directory max + 1, so concurrent creation on two machines collides.
+- Output: `~/notes/toulmin/workspace-sync-design.md` with D1–D8 (one research repository per workspace and code repositories outside it; ignore `.aoe/` and `tools/*.local.toml`; chief.local.toml; verify by commit with a path fallback; one writer at a time with an offline git line; `toulmin commit` without push; large data outside git pinned by digest; migration hints) and slices S2–S5.
+- Checks: documentation only; no code or tests run.
+- Next: the researcher reviews D1–D8.
+- Session ID: unavailable.
+
 ## 2026-11-11 — R8 B6 ruling: passed
 
 - Ruling: the researcher ruled B6 passed ("按你的建议，B6 裁定为通过"), on the delegated round's recorded evidence (`~/notes/toulmin/b6-delegated-2026-11-10/`) with findings 1 and 3 fixed in 0c6d900. R8 (Chief bridge, B1–B6) is complete.

@@ -430,3 +430,11 @@ Design: `/home/tianchi/notes/toulmin/workspace-entry-review-design.md`. Observat
 - [x] WI8 condition — 2026-11-05: the researcher tried `toulmin workspaces scan`, the `toulmin open` picker and `--in` and confirmed ("蛮好的"; "按你的建议，记录 WI8 通过并清理") that WX6 meets the condition. The researcher declined renaming `workspaces` after a `workspace scan` slip.
 - [x] W7 fix — 2026-11-05: native workspace and project contexts give every command the agent runs as `<python> -m toulmin …` (the interpreter that serves the session, as the receipt command already did) and tell the agent to use that prefix wherever files or the state card write `toulmin …`; `toulmin decide` stays as written for the researcher. No template or format change.
 - [x] W9 fix — 2026-11-05: `handoff_mutex` lock files from test runs accumulated in /tmp (about 14,900). Cause: tests calling `monkeypatch.undo()` also undid conftest isolation, so lock files went to /tmp, and before that change every per-test root added one. conftest now isolates with a private MonkeyPatch (config, state, CLI homes, `tempfile.tempdir`/`TMPDIR`), so an undo in a test no longer reaches the researcher's real config or /tmp; regression test `tests/unit/test_isolation.py`. No product change. Removing the existing empty lock files is left to the researcher (the operator's deletion was refused by the permission check).
+
+### S — Workspace sync and layered repositories
+
+- [x] S1 — Design (2026-11-11, documentation only): `~/notes/toulmin/workspace-sync-design.md`. One research repository per workspace, code repositories per project outside it; machine-local `.aoe/` and `tools/*.local.toml` ignored; Chief config split; verify resolves the repository by commit; one writer at a time with an offline git state line; researcher-invoked `toulmin commit` (never push). Decisions D1–D8 pending the researcher's review.
+- [ ] S2 — Ignore rules, chief.local.toml, migration hints, missing pinned data (requires authorization).
+- [ ] S3 — Verify repository fallback by commit; host in build requests (requires authorization).
+- [ ] S4 — Offline git state line; `toulmin commit` (requires authorization).
+- [ ] S5 — Two-clone trial and researcher ruling (requires authorization).
