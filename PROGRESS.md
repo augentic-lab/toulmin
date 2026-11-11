@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-11 — R8 B6 ruling: passed
+
+- Ruling: the researcher ruled B6 passed ("按你的建议，B6 裁定为通过"), on the delegated round's recorded evidence (`~/notes/toulmin/b6-delegated-2026-11-10/`) with findings 1 and 3 fixed in 0c6d900. R8 (Chief bridge, B1–B6) is complete.
+- Open candidates (not conditions, not authorized): a revision path for applied Specs; the handoff row's prominence during build.
+- Checks: records only; no code changed.
+- Next: real use on a research project; new work requires authorization.
+- Session ID: unavailable.
+
 ## 2026-11-11 — R8 B6 corrections: manual kickoff, version-check hint (Codex-implemented, supervised)
 
 - Decision: the researcher authorized fixing B6 findings 1 and 3 ("按你的建议，修发现1和3").

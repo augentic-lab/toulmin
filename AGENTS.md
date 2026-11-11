@@ -79,6 +79,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-10: The researcher asked for the B6 trial instructions first ("按你的建议，先写 B6 试用说明"): `~/notes/toulmin/b6-researcher-trial.md` (documentation only, NOT RUN). The trial and its ruling remain pending.
 2026-11-10: The researcher delegated one small B6 round to the agent ("这样，我授权你来代替我进行一轮小的B6测试"; "继续，跑完后告诉我结果"). It ran with the researcher's normal Chief (agent-run evidence on delegation, ledger `~/notes/toulmin/b6-delegated-2026-11-10/`); G5 was reached and three findings are open. The B6 ruling remains the researcher's.
 2026-11-11: The researcher authorized fixing B6 findings 1 and 3 ("按你的建议，修发现1和3"): manual-kickoff guidance (apply message and a needs-you row keyed on Chief's `kickoff_at`) and a version-asserting check hint. Both are implemented; the B6 ruling remains pending.
+2026-11-11: The researcher ruled B6 passed ("按你的建议，B6 裁定为通过"); R8 (B1–B6) is complete. A Spec revision path and the handoff row's prominence during build remain open candidates requiring authorization.
 
 ## Project goals and scope
 
