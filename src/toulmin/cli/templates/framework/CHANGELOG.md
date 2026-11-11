@@ -1,5 +1,8 @@
 # Framework changes
 
+- S5 follow-ups: readiness names a native CLI update menu as "the CLI update prompt"
+  (choose Skip or update in AoE). protocols.md S5 adds the recovery recipe when two clones
+  created the same object ID. No recorded schema changes.
 - S4: status/open show offline git state and decide warns before writing when behind,
   diverged or in a git operation. Researcher-only `toulmin commit` previews paths and a
   deterministic message, commits only with --confirm, honors identity/hooks and never

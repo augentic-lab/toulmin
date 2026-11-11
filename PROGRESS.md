@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-11 — S6: S5 follow-ups (supervisor-implemented)
+
+- Decision: the researcher authorized both S5 follow-ups ("按你的建议，两个小改进一起做").
+- Change: `adapters/aoe.py` readiness names a native CLI update menu ("Update available" with a Skip choice) as "the CLI update prompt; choose Skip (or update) in AoE, then refresh" (still a researcher-only refusal, never answered by Toulmin); test with the menu text captured live in S5. protocols.md "S5" records the recovery recipe when two clones created the same object ID (copy out, check, `git reset --hard @{u}`, recreate with `toulmin new … --input`, commit, push), matching the D-003 recovery done in the S5 trial. Packaged copy, CHANGELOG, released.json digest.
+- Checks: ruff, format, mypy clean; `uv run --locked pytest -q` 1703 passed (11m34s).
+- Next: real use on a research workspace.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S5 ruling
 
 - Decision: the researcher ruled S5 passed ("按你的建议，S5 裁定为通过") on the agent-run two-clone trial (`~/notes/toulmin/s5-sync-2026-11-11/`). The S plan (S1–S5) is complete.

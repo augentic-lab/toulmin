@@ -284,6 +284,20 @@ def test_ready_names_a_trust_menu_above_blank_rows(calls):
     assert not settling(reason)  # only the researcher can accept it: no startup wait
 
 
+def test_ready_names_a_cli_update_menu(calls):
+    # The Codex update menu as captured live (S5).
+    screen = (
+        "  Update available · 0.167.0 → 0.167.1\n"
+        "  Release notes: https://github.com/openai/codex/releases/latest\n"
+        "› 1. Update now (runs `npm install -g @openai/codex`)\n  2. Skip\n"
+        "  3. Skip until next version\n  enter continue · esc skip\n" + "\n" * 18
+    )
+    calls[1].extend([json.dumps(row()), screen])
+    ready, reason = client().ready(SID)
+    assert not ready and "CLI update prompt" in reason and "Skip" in reason
+    assert not settling(reason)
+
+
 def test_ready_still_accepts_a_prompt_above_blank_rows(calls):
     screen = "OpenAI Codex\n› \n? for shortcuts\n" + "\n" * 30
     calls[1].extend([json.dumps(row()), screen, json.dumps(row()), screen])

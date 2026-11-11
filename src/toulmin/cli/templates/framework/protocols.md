@@ -1160,3 +1160,22 @@ push yourself.” Success prints the commit hash and “Push yourself: git push�
 invoked. Agents never run toulmin commit, git commit or git push in the research workspace;
 this boundary appears in the project guide and workspace AGENTS template. Toulmin never
 pushes, pulls or fetches; S5's two-clone trial and researcher ruling remain separate.
+
+### S5 — Two-clone trial follow-ups
+
+Recovery when two clones created the same object ID (researcher's git work, never an agent's):
+the diverged line appears after a fetch; `git pull --ff-only` refuses and a rebase or merge
+stops on an add/add conflict for that file. Do not resolve the conflict by editing one file
+into the other: both are separate records. On the clone that has not pushed, copy its new
+object files out of the workspace (`git show HEAD:projects/P/decisions/D-002.md > /tmp/x.md`),
+run `git reset --hard @{u}` (this discards that clone's unpushed commits and uncommitted
+changes to tracked files, so check `git status` and `git log @{u}..` first), then recreate
+each object from the copy as that kind's creation input (formats.md; for a Decision the
+frontmatter keeps only `source` and `related`, the body unchanged) with
+`toulmin new KIND P --input FILE --confirm`; it receives the next free ID. References to the
+old ID in that clone's other unpushed records must be recreated the same way. Then
+`toulmin commit --confirm` and `git push`.
+
+L3 readiness (no format change): a native CLI's own update menu ("Update available" with a
+Skip choice, seen from Codex) is named as the CLI update prompt, like the folder-trust prompt:
+choose Skip or update in AoE, then refresh. It is never answered by Toulmin.

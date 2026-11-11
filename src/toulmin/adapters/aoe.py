@@ -319,6 +319,12 @@ class AoEClient:
                     "Native screen contains a selection menu: the folder-trust prompt; "
                     "accept it in AoE, then refresh"
                 )
+            if re.search(r"(?i)update available", tail) and re.search(r"(?i)\bskip\b", tail):
+                # Seen live in S5: Codex offers an npm upgrade before its first prompt.
+                return (
+                    "Native screen contains a selection menu: the CLI update prompt; "
+                    "choose Skip (or update) in AoE, then refresh"
+                )
             return "Native screen contains a selection menu; resolve it in AoE"
         marker = r"^\s*›[^\S\n]*(.*)$" if tool == "codex" else r"^\s*[>❯][^\S\n]*(.*)$"
         prompts = [i for i, line in enumerate(lines) if re.match(marker, line)]
