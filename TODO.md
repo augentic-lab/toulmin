@@ -280,9 +280,9 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 ### C5 — Calibration report and stage trial
 
 - [x] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report (2026-11-09: read-only, deterministic, `--write` to global/calibration/; tests in `tests/cli/test_calibration.py`).
-- [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance. (Needs real model sessions on a real research project: separate authorization.) Delegated agent-run trial 2026-11-12 on project uringlat (`~/notes/toulmin/c5-delegated-2026-11-12/`): C5-1/2/3/5 met by agent check; ruled a conditional pass by the researcher 2026-11-12 (conditions C5-F1, C5-F2 below).
+- [x] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance. (Needs real model sessions on a real research project: separate authorization.) Delegated agent-run trial 2026-11-12 on project uringlat (`~/notes/toulmin/c5-delegated-2026-11-12/`): C5-1/2/3/5 met by agent check; ruled a conditional pass by the researcher 2026-11-12 (conditions C5-F1, C5-F2 below).
 - [x] C5-F1 — Conditional review rounds, approach A (2026-11-12): the round suggestion requires a new current Claim or non-invalidated Evidence since the latest completed review; the review-request preview warns when nothing is new. Reviewer inputs unchanged (approach B not taken).
-- [x] C5-F2 — Duplicate intake outcome (2026-11-12): `duplicate` of an existing Objection in intake.md and recommendations, `[d]` in decide, a Duplicate column in calibration excluded from adoption. Researcher confirmation that the C5 conditions are met is pending.
+- [x] C5-F2 — Duplicate intake outcome (2026-11-12): `duplicate` of an existing Objection in intake.md and recommendations, `[d]` in decide, a Duplicate column in calibration excluded from adoption. The researcher confirmed the conditions met and closed C5 on 2026-11-12.
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 
@@ -322,7 +322,7 @@ Review: `/home/tianchi/notes/toulmin/rdma-trial-review.md` (agent-run analysis, 
 
 - [x] Write [the TUI design](docs/tui-design.md), including interactions, architecture, recovery, compatibility and UI1–UI5 acceptance criteria.
 - [x] Researcher approved Q25–Q29 and authorized implementation on 2026-11-02.
-- [ ] Complete UI1–UI5; C4 is implemented, C5 remains pending.
+- [ ] Complete UI1–UI5; C4 is implemented; C5 closed 2026-11-12.
 
 UI0 delivered the design. Q25–Q29 are approved and UI1 is implemented. On 2026-11-03 the researcher approved returning to a conversation-first workspace after rejecting the UI-R2/UI-R3 activity flow. UI2 resumes with the Brief proposal subset of UI3 as one usable slice. Q30–Q31 remain proposals, not approved scope changes.
 

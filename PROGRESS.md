@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-12 — C5 closed
+
+- Decision: the researcher confirmed the C5 conditions (C5-F1 approach A, C5-F2) are met and closed C5 ("按你的建议，确认 C5 关闭"). Stage 3 (critique, C1–C5) is complete.
+- Open candidates (require authorization): C5-F1 approach B (reviewers see open Objections); next-move advice for Objections that already carry a Response and await data; single-pass supersession; proposal length budgets; packet-level review in decide.
+- Next: real use on a research project.
+- Checks: documentation only; no code changed.
+- Session ID: unavailable.
+
 ## 2026-11-12 — C5-F1 (approach A) and C5-F2 (Codex-implemented, supervised)
 
 - Decision: the researcher authorized C5-F1 approach A and C5-F2 together ("按你的建议，F1 做法 A 和 F2 一起做"), the conditions of the C5 conditional pass.
