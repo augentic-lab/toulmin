@@ -87,6 +87,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-11: The researcher authorized S5 ("按你的建议，开始 S5"): an agent-run two-clone sync trial on temporary workspaces (one machine, two paths, a local bare remote, native sessions in profile toulmin-sim-r, repository-local fixture git identities; the researcher's global git config untouched). Agent-run evidence; the S5 ruling stays the researcher's.
 2026-11-11: The researcher ruled S5 passed ("按你的建议，S5 裁定为通过"); S (S1–S5) is complete. Naming the Codex update prompt in readiness messages and a same-ID divergence recovery note remain open candidates requiring authorization.
 2026-11-11: The researcher authorized both S5 follow-ups ("按你的建议，两个小改进一起做"): readiness names a native CLI update menu, and protocols.md S5 records the same-ID divergence recovery recipe. Both are implemented.
+2026-11-11: The researcher kept three rounds and delegated the C5 stage trial to the agent on a new small project ("按你的建议，保留三轮，我需要你用一个新的小项目做 C5"): temporary workspace, native sessions in profile toulmin-sim-r, real review sessions on the researcher's subscriptions, every decide answer an operator approval labelled as such. Agent-run evidence; the C5 ruling stays the researcher's.
 
 ## Project goals and scope
 

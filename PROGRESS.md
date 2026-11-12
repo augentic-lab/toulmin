@@ -1,5 +1,15 @@
 # Toulmin development progress
 
+## 2026-11-12 — C5 stage trial, delegated run (agent-run evidence)
+
+- Decision: the researcher kept three rounds and delegated the C5 trial on a new small project ("按你的建议，保留三轮，我需要你用一个新的小项目做 C5"), then asked for a retrospective of workflow, time, quality, tokens, components and human-in-the-loop efficiency.
+- Run (ledger and review `~/notes/toulmin/c5-delegated-2026-11-12/`, workspace copy there): project `uringlat` (io_uring vs pread for page-cache-hit 4 KiB reads) in a temporary git workspace; Codex native sessions (gpt-6.1-sol) in profile `toulmin-sim-r`, one handoff to a fresh session; three rounds of reviewer-skeptic and reviewer-why-not-x × claude/codex with rotating synthesis; every decide answer an operator approval labelled as such. 93 min wall time, 73 proposals decided (0 failures), 53 findings with intake outcomes, 14 Objections (5 answered, 7 deferred to the validation experiment, 2 answered earlier), stage explore → critique → brief-final (D-001, D-004).
+- Usage: reviews and syntheses 311k input (126k cached) / 67k output tokens, Claude-reported $1.99; native Codex sessions 17.9M input (17.5M cached) / 148k output.
+- Agent check of C5-1/2/3/5 met; C5-4 met as delegated (operator, not researcher). Findings (no code changed): rounds 2–3 yielded 2 new minor Objections of 33 findings because reviewers do not see open Objections and no data arrived between rounds; calibration counts duplicates as rejections (all 39); next-move advice repeats "draft responses" for Objections waiting on data; supersession needs two decide passes; the agent's io_uring smoke test hit EPERM in its sandbox; proposals are verbose (23.6k words).
+- Checks: no code changed; last full suite 1703 passed (S6).
+- Pending: the researcher's C5 ruling; follow-ups in review.md section 6 require authorization.
+- Session ID: unavailable.
+
 ## 2026-11-11 — S6: S5 follow-ups (supervisor-implemented)
 
 - Decision: the researcher authorized both S5 follow-ups ("按你的建议，两个小改进一起做").
