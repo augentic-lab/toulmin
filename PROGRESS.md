@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-12 — C5 ruling
+
+- Decision: the researcher ruled the C5 stage trial a conditional pass ("按你的建议，C5 裁定为有条件通过") on the delegated run (`~/notes/toulmin/c5-delegated-2026-11-12/`).
+- Conditions (require authorization): C5-F1 conditional review rounds (suggest a further round only after new Evidence or a substantive Claim change, or let reviewers see open Objections); C5-F2 a duplicate intake outcome kept out of calibration's rejection counts.
+- Checks: documentation only; no code changed.
+- Session ID: unavailable.
+
 ## 2026-11-12 — C5 stage trial, delegated run (agent-run evidence)
 
 - Decision: the researcher kept three rounds and delegated the C5 trial on a new small project ("按你的建议，保留三轮，我需要你用一个新的小项目做 C5"), then asked for a retrospective of workflow, time, quality, tokens, components and human-in-the-loop efficiency.
