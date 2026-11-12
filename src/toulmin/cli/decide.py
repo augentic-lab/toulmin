@@ -62,6 +62,7 @@ LABEL_WORDS = {
     "t": "take",
     "o": "other severity",
     "r": "reject",
+    "d": "duplicate of O-…",
     "s": "skip",
     "q": "quit",
 }
@@ -240,6 +241,8 @@ def _advice(advice: Recommendation) -> str:
         return "take" + (f" as {advice.severity}" if advice.severity else "")
     if advice.outcome == "partly":
         return f"partly, as {advice.object} (written by hand)"
+    if advice.outcome == "duplicate":
+        return f"duplicate of {advice.object}"
     return "reject"
 
 
@@ -453,7 +456,8 @@ class Run:
         for problem in unreadable:
             typer.echo(f"Note: {problem}")
         for label, entry in state.recorded.items():
-            typer.echo(f"  {label}: already {entry['outcome']}")
+            target = f" of {entry['object']}" if entry["outcome"] == "duplicate" else ""
+            typer.echo(f"  {label}: already {entry['outcome']}{target}")
         if not intake.remaining:
             typer.echo("Every draft label already has an outcome in intake.md.")
             choice = self._choose("asq")
@@ -467,6 +471,8 @@ class Run:
         take: dict[str, str | None] = {}
         reject: dict[str, str] = {}
         partly: dict[str, str] = {}
+        duplicate: dict[str, str] = {}
+        duplicate_reasons: dict[str, str] = {}
         for index, label in enumerate(intake.remaining, 1):
             draft, advice = state.drafts[label], recommended[label]
             typer.echo(f"\n  ({index}/{len(intake.remaining)}) {label} -> {draft.target} "
@@ -477,7 +483,7 @@ class Run:
             for line in grouped.get(label, ()):
                 typer.echo(f"    Synthesis: {line}")
             typer.echo(f"    Recommended: {_advice(advice)} - {advice.reason}")
-            choice = _ask("atorsq", LABEL_WORDS)
+            choice = _ask("atodrsq", LABEL_WORDS)
             if choice == "q":
                 typer.echo("Nothing recorded for this output; it stays pending.")
                 return False
@@ -488,21 +494,34 @@ class Run:
                     take[label] = advice.severity
                 elif advice.outcome == "reject":
                     reject[label] = advice.reason
-                else:
+                elif advice.outcome == "partly":
                     assert advice.object is not None
                     partly[label] = advice.object
+                else:
+                    assert advice.object is not None
+                    duplicate[label] = advice.object
+                    duplicate_reasons[label] = advice.reason
             elif choice == "t":
                 take[label] = None
             elif choice == "o":
                 take[label] = _severity()
+            elif choice == "d":
+                duplicate[label] = str(
+                    typer.prompt(
+                        "Existing Objection ID",
+                        default=advice.object if advice.outcome == "duplicate" else None,
+                    )
+                ).strip()
+                if advice.outcome == "duplicate":
+                    duplicate_reasons[label] = advice.reason
             else:
                 default = advice.reason if advice.outcome == "reject" else None
                 reject[label] = _reason(default)
-        if not (take or reject or partly):
+        if not (take or reject or partly or duplicate):
             typer.echo("Nothing chosen; the recommendation stays pending.")
             self.skipped += 1
             return True
-        self._record_intake(item, shown, take, reject, partly)
+        self._record_intake(item, shown, take, reject, partly, duplicate, duplicate_reasons)
         return True
 
     def _record_intake(
@@ -512,15 +531,22 @@ class Run:
         take: dict[str, str | None],
         reject: dict[str, str],
         partly: dict[str, str],
+        duplicate: dict[str, str] | None = None,
+        duplicate_reasons: dict[str, str] | None = None,
     ) -> None:
         assert item.project is not None
         result, done = project_proposals.record_intake(
             self.root, item.project, item.path, self.actor, shown.sha256, take, reject, partly,
             "toulmin decide: a",
+            duplicate=duplicate, duplicate_reasons=duplicate_reasons,
         )  # fmt: skip
         if result is not None:
             for line in result.lines:
-                target = f" as {line.object_id}" if line.object_id else ""
+                target = (
+                    (" of " if line.outcome.endswith("duplicate") else " as ") + line.object_id
+                    if line.object_id
+                    else ""
+                )
                 typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
             outcomes = ", ".join(
                 f"{line.label} {line.outcome}" + (f" {line.object_id}" if line.object_id else "")

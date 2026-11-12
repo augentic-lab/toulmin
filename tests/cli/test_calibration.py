@@ -126,12 +126,12 @@ def test_report_counts_outcomes_per_model_role_and_operation(decided):
     text = result.stdout
     assert files(decided) == before  # printing writes nothing
     assert table(text, "Review drafts by model and role")[1:] == [
-        "| fake-claude-model | reviewer-skeptic | 2 | 1 | 0 | 1 | 0 | 50% |",
-        "| fake-codex-model | reviewer-skeptic | 2 | 0 | 1 | 0 | 1 | 100% |",
+        "| fake-claude-model | reviewer-skeptic | 2 | 1 | 0 | 1 | 0 | 0 | 50% |",
+        "| fake-codex-model | reviewer-skeptic | 2 | 0 | 1 | 0 | 0 | 1 | 100% |",
     ]
     assert "| review | example-model | reviewer | 1 | 1 | 0 |" in text
     assert table(text, "Review drafts by role")[-1] == (
-        "| reviewer-skeptic | 4 | 1 | 1 | 1 | 1 | 67% |"
+        "| reviewer-skeptic | 4 | 1 | 1 | 1 | 0 | 1 | 67% |"
     )
     assert table(text, "Objections created from review drafts, by current status") == [
         "| fake-claude-model | reviewer-skeptic | 1 | 0 | 0 | 0 |",
@@ -145,6 +145,55 @@ def test_report_counts_outcomes_per_model_role_and_operation(decided):
     ]  # R6: only what a tool reported
     # The example Run's output has no draft block: reported, never guessed.
     assert "demo/R-001: drafts not counted" in text
+
+
+def test_duplicates_are_separate_and_excluded_from_adoption_and_objection_status(decided):
+    before = (
+        render(calibration(decided), None)
+        .split("## Objections created from review drafts, by current status", 1)[1]
+        .split("## Token usage", 1)[0]
+    )
+    source = output(decided, run_of(decided, "fake-codex-model"))
+    result = confirmed(decided, "intake", "demo", source, "--duplicate", "draft-2=O-001")
+    assert result.exit_code == 0, result.output
+    report = calibration(decided)
+    tally = report.groups[("review", "fake-codex-model", "reviewer-skeptic")]
+    assert (tally.drafts, tally.partly, tally.duplicate, tally.rejected, tally.pending) == (
+        2,
+        1,
+        1,
+        0,
+        0,
+    )
+    text = render(report, None)
+    assert "| Duplicate |" in text
+    assert "| fake-codex-model | reviewer-skeptic | 2 | 0 | 1 | 0 | 1 | 0 | 100% |" in text
+    assert "fake-codex-model: re-found existing Objections: 1" in text
+    assert "A duplicate re-finds an existing Objection; it is neither adopted nor rejected." in text
+    assert (
+        text.split("## Objections created from review drafts, by current status", 1)[1].split(
+            "## Token usage", 1
+        )[0]
+        == before
+    )
+
+
+def test_only_duplicates_have_no_adoption_denominator(bench):
+    assert confirmed(bench, "review", "demo").exit_code == 0
+    source = output(bench, run_of(bench, "fake-codex-model"))
+    result = confirmed(
+        bench,
+        "intake",
+        "demo",
+        source,
+        "--duplicate",
+        "draft-1=O-001",
+        "--duplicate",
+        "draft-2=O-001",
+    )
+    assert result.exit_code == 0, result.output
+    text = render(calibration(bench), None)
+    assert "| fake-codex-model | reviewer-skeptic | 2 | 0 | 0 | 0 | 2 | 0 | - |" in text
 
 
 def test_objection_status_follows_later_rulings(decided):

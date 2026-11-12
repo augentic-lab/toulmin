@@ -31,7 +31,7 @@ from toulmin.protocols.intake import publish_locked
 @dataclass(frozen=True)
 class IntakeLine:
     label: str
-    outcome: str  # taken, partly, rejected, or already-<outcome> for a replay
+    outcome: str  # taken, partly, rejected, duplicate, or already-<outcome> for a replay
     object_id: str | None
 
 
@@ -91,6 +91,8 @@ def intake_review(
     partly: dict[str, str] | None = None,
     *,
     preview: bool = False,
+    duplicate: dict[str, str] | None = None,
+    duplicate_reasons: dict[str, str] | None = None,
 ) -> IntakeResult:
     """Apply the researcher's choices for drafts in one archived raw review output.
 
@@ -98,8 +100,11 @@ def intake_review(
     recorded as partly adopted. `reject` maps label → reason. `partly` maps label → an
     existing Objection the researcher wrote from that draft by hand. ``preview`` (H4) runs
     every check and returns the Run with no lines; nothing is written.
+    `duplicate` links labels to existing local Objections, without creating objects;
+    duplicate_reasons optionally explains those links.
     """
     take, reject, partly = dict(take or {}), dict(reject or {}), dict(partly or {})
+    duplicate, duplicate_reasons = dict(duplicate or {}), dict(duplicate_reasons or {})
     repository = Repository(root)
     repository.project(project)
     output = repository.relative(output_path)
@@ -111,9 +116,9 @@ def intake_review(
     }
     if not actor.strip():
         raise FormatError("confirmed_by.actor: expected nonempty string")
-    chosen = [*take, *reject, *partly]
+    chosen = [*take, *reject, *partly, *duplicate]
     if not chosen:
-        raise FormatError(f"{output}: nothing to record; choose drafts with take/reject/partly")
+        raise FormatError(f"{output}: nothing to record; choose take/reject/partly/duplicate")
     for label in chosen:
         if not LABEL.fullmatch(label) or label not in drafts:
             raise FormatError(f"{output}: {label}: no such draft label")
@@ -136,6 +141,13 @@ def intake_review(
         source = objection.header["source"]
         if source.get("kind") != "run" or source["ref"] != run or source["path"] != output:
             objection.fail("source", f"must cite {run} and {output} to record {label}")
+    for label, value in duplicate.items():
+        repository.load(project, _objection_id(label, value))
+    for label, reason in duplicate_reasons.items():
+        if label not in duplicate or not reason.strip():
+            raise FormatError(
+                f"{label}: duplicate reason needs a duplicate choice and nonempty text"
+            )
     record_path = repository.path(f"{directory}/{INTAKE_FILE}")
     if preview:
         return IntakeResult(run, record_path, ())
@@ -147,7 +159,15 @@ def intake_review(
         outcomes = _load_record(record_path, run, output)
         planned: list[tuple[str, str, str | None, str | None]] = []
         for label in chosen:
-            wanted = "rejected" if label in reject else "partly" if label in partly else "taken"
+            wanted = (
+                "duplicate"
+                if label in duplicate
+                else "rejected"
+                if label in reject
+                else "partly"
+                if label in partly
+                else "taken"
+            )
             if label in take and take[label] not in {None, drafts[label].severity}:
                 wanted = "partly"
             if label in outcomes:
@@ -157,10 +177,27 @@ def intake_review(
                         f"{record_path}: {label}: already {previous['outcome']}; "
                         "an outcome is never changed"
                     )
+                if wanted == "duplicate" and (
+                    previous.get("object") != duplicate[label]
+                    or label in duplicate_reasons
+                    and previous.get("reason") != duplicate_reasons[label].strip()
+                ):
+                    raise FormatError(f"{record_path}: {label}: duplicate outcome is never changed")
                 lines.append(IntakeLine(label, f"already-{wanted}", previous.get("object")))
                 continue
-            planned.append((label, wanted, reject.get(label), partly.get(label)))
-        existing = _existing(repository, project, run, output) if planned else {}
+            planned.append(
+                (
+                    label,
+                    wanted,
+                    duplicate_reasons.get(label) if label in duplicate else reject.get(label),
+                    duplicate.get(label) if label in duplicate else partly.get(label),
+                )
+            )
+        existing = (
+            _existing(repository, project, run, output)
+            if any(label in take for label, *_ in planned)
+            else {}
+        )
         for label, wanted, why, object_id in planned:
             if label in take:
                 draft = drafts[label]

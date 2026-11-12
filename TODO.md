@@ -281,8 +281,8 @@ Design: `/home/tianchi/notes/toulmin/project-research-loop-design.md`. Runs the 
 
 - [x] `toulmin calibration [--project]` derives adoption rates per model/role/operation from Runs, `intake.md` and Objections into a regenerable report (2026-11-09: read-only, deterministic, `--write` to global/calibration/; tests in `tests/cli/test_calibration.py`).
 - [ ] Stage trial: one brief, three review rounds across at least two vendors, with every Objection traced end to end. Record quota use per round. The researcher rules on acceptance. (Needs real model sessions on a real research project: separate authorization.) Delegated agent-run trial 2026-11-12 on project uringlat (`~/notes/toulmin/c5-delegated-2026-11-12/`): C5-1/2/3/5 met by agent check; ruled a conditional pass by the researcher 2026-11-12 (conditions C5-F1, C5-F2 below).
-- [ ] C5-F1 — Conditional review rounds: suggest a further round only after new Evidence or a substantive Claim change, or give reviewers the open Objections (design choice pending; requires authorization).
-- [ ] C5-F2 — Duplicate intake outcome ("duplicate of O-…") recorded separately and excluded from calibration rejection counts (requires authorization).
+- [x] C5-F1 — Conditional review rounds, approach A (2026-11-12): the round suggestion requires a new current Claim or non-invalidated Evidence since the latest completed review; the review-request preview warns when nothing is new. Reviewer inputs unchanged (approach B not taken).
+- [x] C5-F2 — Duplicate intake outcome (2026-11-12): `duplicate` of an existing Objection in intake.md and recommendations, `[d]` in decide, a Duplicate column in calibration excluded from adoption. Researcher confirmation that the C5 conditions are met is pending.
 
 Deferred, as before: MCP, Zotero (stage 6), quota auto-tuning, expander/novelty/estimator roles (stage 4), and the template-upgrade path (needed once a durable workbench exists). Q14 multi-target Objections are revisited after C1 data.
 

@@ -42,6 +42,7 @@ class Tally:
     taken: int = 0
     partly: int = 0
     rejected: int = 0
+    duplicate: int = 0
     objections: Counter[str] = field(default_factory=Counter)  # current status of taken ones
     # R6: summed from usage.json; a count some reporting session left unknown is not summed
     reported: int = 0  # Runs with a usage.json
@@ -50,6 +51,10 @@ class Tally:
 
     @property
     def decided(self) -> int:
+        return self.taken + self.partly + self.rejected + self.duplicate
+
+    @property
+    def adoption_denominator(self) -> int:
         return self.taken + self.partly + self.rejected
 
     @property
@@ -57,7 +62,17 @@ class Tally:
         return self.drafts - self.decided
 
     def add(self, other: "Tally") -> None:
-        names = ("runs", "completed", "failed", "drafts", "taken", "partly", "rejected", "reported")
+        names = (
+            "runs",
+            "completed",
+            "failed",
+            "drafts",
+            "taken",
+            "partly",
+            "rejected",
+            "duplicate",
+            "reported",
+        )
         for name in names:
             setattr(self, name, getattr(self, name) + getattr(other, name))
         self.objections.update(other.objections)
@@ -152,9 +167,11 @@ def calibration(root: Path, project: str | None = None) -> Calibration:
                     tally.taken += 1
                 elif outcome == "partly":
                     tally.partly += 1
+                elif outcome == "duplicate":
+                    tally.duplicate += 1
                 else:
                     tally.rejected += 1
-                if "object" in entry:
+                if outcome != "duplicate" and "object" in entry:
                     tally.objections[_status(repository, name, entry["object"], skipped)] += 1
     return Calibration(tuple(counted), groups, tuple(skipped))
 
@@ -168,9 +185,9 @@ def _status(repository: Repository, project: str, value: str, skipped: list[str]
 
 
 def _rate(tally: Tally) -> str:
-    if not tally.decided:
+    if not tally.adoption_denominator:
         return "-"
-    return f"{100 * (tally.taken + tally.partly) / tally.decided:.0f}%"
+    return f"{100 * (tally.taken + tally.partly) / tally.adoption_denominator:.0f}%"
 
 
 def _merge(groups: dict[tuple[str, str, str], Tally], index: int) -> dict[str, Tally]:
@@ -196,9 +213,9 @@ def render(report: Calibration, project: str | None) -> str:
         "",
         "Derived only from Runs, intake.md records and Objections; edits to this file are lost on",
         "regeneration. It counts what the researcher decided about each draft, not which model is",
-        "right, and small counts mean little. Model is the name each Run recorded. Rejections",
-        "include duplicates of a draft taken from another output; intake.md records each reason.",
-        "Adopted = (taken + partly) / decided drafts.",
+        "right, and small counts mean little. Model is the name each Run recorded.",
+        "Adopted = (taken + partly) / (taken + partly + rejected); "
+        "duplicates and pending excluded.",
         "",
         "## Runs by operation",
         "",
@@ -213,14 +230,14 @@ def render(report: Calibration, project: str | None) -> str:
     if not report.groups:
         lines.append("| - | - | - | 0 | 0 | 0 |")
     header = (
-        "| Drafts | Taken | Partly | Rejected | Pending | Adopted |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Drafts | Taken | Partly | Rejected | Duplicate | Pending | Adopted |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     )
 
     def row(tally: Tally) -> str:
         return (
             f"{tally.drafts} | {tally.taken} | {tally.partly} | {tally.rejected} | "
-            f"{tally.pending} | {_rate(tally)} |"
+            f"{tally.duplicate} | {tally.pending} | {_rate(tally)} |"
         )
 
     reviews = {key: tally for key, tally in sorted(report.groups.items()) if key[0] == REVIEW}
@@ -230,6 +247,8 @@ def render(report: Calibration, project: str | None) -> str:
         f"| {_cell(model)} | {_cell(role)} | {row(tally)}"
         for (_, model, role), tally in reviews.items()
     ]
+    note = "A duplicate re-finds an existing Objection; it is neither adopted nor rejected."
+    lines += ["", note]
     for title, index in (("model", 1), ("role", 2)):
         lines += ["", f"## Review drafts by {title}", ""]
         lines += [f"| {title.capitalize()} " + header[0], "| --- " + header[1]]
@@ -237,6 +256,14 @@ def render(report: Calibration, project: str | None) -> str:
             f"| {_cell(name)} | {row(tally)}"
             for name, tally in _merge(report.groups, index).items()
         ]
+        lines += ["", note]
+    lines += [
+        "",
+        *(
+            f"{_cell(model)}: re-found existing Objections: {tally.duplicate}"
+            for model, tally in _merge(report.groups, 1).items()
+        ),
+    ]
     lines += [
         "",
         "## Objections created from review drafts, by current status",

@@ -211,6 +211,12 @@ def _intake(
             record.fail("outcomes", f"{label}: no such draft in {output}")
         if "object" in entry:
             objection = known.get(entry["object"])
+            if entry["outcome"] == "duplicate":
+                if objection is None or objection.object_id.kind != ObjectKind.OBJECTION:
+                    record.fail(
+                        "outcomes", f"{label}: {entry['object']} is not an existing Objection"
+                    )
+                continue
             source = objection.header["source"] if objection else {}
             if source.get("ref") != record.header["run"] or source.get("path") != output:
                 record.fail("outcomes", f"{label}: {entry['object']} does not cite this output")

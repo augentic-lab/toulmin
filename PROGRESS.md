@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-12 — C5-F1 (approach A) and C5-F2 (Codex-implemented, supervised)
+
+- Decision: the researcher authorized C5-F1 approach A and C5-F2 together ("按你的建议，F1 做法 A 和 F2 一起做"), the conditions of the C5 conditional pass.
+- Change (Codex resumed session, brief `codex-b2/c5f.md`): F2 — intake outcome `duplicate` with `object` = an existing Objection of the same project (creates nothing; checked before writing), in intake.md and intake recommendations; decide's walk offers `[d]uplicate of O-…` (prefilled from the recommendation); calibration adds a Duplicate column, adoption = (taken + partly) / (taken + partly + rejected), and "re-found existing Objections" per model; guide tells the agent to recommend duplicate instead of reject. F1 — new L2 `protocols/review_progress.py`: the review-round suggestion requires a current Claim or non-invalidated Evidence created after the latest completed review; the review-request preview in decide prints an advisory when nothing is new (with the last round's duplicate count when recorded); reviewer inputs unchanged. Docs: formats (compatibility: additive in v1, older builds refuse `duplicate`), protocols, CHANGELOG, README, released.json.
+- Supervisor review and correction: advisory wording when no duplicate count is available ("will likely repeat its findings"). Smoke on a copy of the C5 workspace: map gives no review-round move after round 3; a recommendation turned into `duplicate` of O-007 applied in decide and recorded in intake.md; a copied review request showed "Since the last round (R-014, …): no new Claim or Evidence. Last round: 1 of 16 drafts were duplicates …" and was quit without starting sessions; calibration shows the Duplicate column and excludes it from adoption.
+- Checks (supervisor-run): ruff, format, mypy clean; docs and packaged copies identical; `uv run --locked pytest -q` 1740 passed (11m59s).
+- Pending: the researcher confirms the C5 conditions are met (C5 then closes).
+- Session ID: unavailable.
+
 ## 2026-11-12 — C5 ruling
 
 - Decision: the researcher ruled the C5 stage trial a conditional pass ("按你的建议，C5 裁定为有条件通过") on the delegated run (`~/notes/toulmin/c5-delegated-2026-11-12/`).

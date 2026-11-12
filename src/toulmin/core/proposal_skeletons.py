@@ -109,6 +109,7 @@ def intake_skeleton(project: str, path: str, output: str, drafts: Sequence[Draft
         "# outcome take creates the Objection (optionally with another severity: fatal,",
         "# major or minor); reject records the reason; partly needs object: O-NNN, an",
         "# Objection already written by hand from the draft. Read the drafts in the output.",
+        "# duplicate needs object: O-NNN for an existing Objection this draft repeats.",
     ]
     lines = _head("Intake", project, path, notes)
     lines += ["kind: intake-recommendation", f"output: {_q(output)}", "recommendations:"]
@@ -116,7 +117,7 @@ def intake_skeleton(project: str, path: str, output: str, drafts: Sequence[Draft
         lines += [
             f"  # {draft.label} -> {draft.target}, {draft.severity}: {_one_line(draft.content)}",
             f"  - label: {_q(draft.label)}",
-            f"    outcome: {_fill('take | partly | reject')}",
+            f"    outcome: {_fill('take | partly | reject | duplicate')}",
             f"    reason: {_fill('your grounds; for reject, the reason to record')}",
         ]
     lines.append("---")

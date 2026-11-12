@@ -138,6 +138,52 @@ def recommendation(path, *entries):
     )
 
 
+@pytest.mark.parametrize("choice", ["d\n\na\n", "a\na\n"])
+def test_decide_duplicate_and_as_recommended_use_existing_objection(reviewed, choice):
+    relative = put(
+        reviewed,
+        "intake-20261112T100000Z.md",
+        recommendation(
+            output(reviewed, "R-002"),
+            {
+                "label": "draft-1",
+                "outcome": "duplicate",
+                "object": "O-001",
+                "reason": "Same concern.",
+            },
+            {"label": "draft-2", "outcome": "reject", "reason": "Out of scope."},
+        ),
+    )
+    folder = reviewed / "projects/demo/objections"
+    before = {path.name: path.read_bytes() for path in folder.glob("O-*.md")}
+    result = run(reviewed, choice)
+    assert result.exit_code == 0, result.output
+    assert "[d]uplicate of O-…" in result.stdout
+    assert "draft-1: duplicate of O-001 (R-002)" in result.stdout
+    if choice.startswith("d"):
+        assert "Existing Objection ID [O-001]" in result.stdout
+    assert {path.name: path.read_bytes() for path in folder.glob("O-*.md")} == before
+    assert outcome(reviewed, relative).disposition == "applied"
+    record = decode((reviewed / output(reviewed, "R-002")).with_name("intake.md").read_bytes())
+    duplicate = next(entry for entry in record.header["outcomes"] if entry["label"] == "draft-1")
+    assert duplicate["by"] == "Researcher" and duplicate["object"] == "O-001"
+
+
+def test_decide_manual_duplicate_overrides_a_take_recommendation(reviewed):
+    put(
+        reviewed,
+        "intake-20261112T100000Z.md",
+        recommendation(
+            output(reviewed, "R-002"),
+            {"label": "draft-1", "outcome": "take", "reason": "Sound."},
+            {"label": "draft-2", "outcome": "reject", "reason": "Out of scope."},
+        ),
+    )
+    result = run(reviewed, "d\nO-001\na\n")
+    assert result.exit_code == 0, result.output
+    assert "draft-1: duplicate of O-001 (R-002)" in result.stdout
+
+
 def test_a_review_request_starts_only_on_apply_then_synthesizes(bench, fakes):
     relative = put(bench, "review-20261106T100000Z-c1.md", REQUEST)
     result = run(bench, "s\n")

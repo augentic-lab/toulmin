@@ -48,7 +48,7 @@ Nothing is retargeted: open Objections stay open until ruled (usually accepted, 
 status lists revision chains under `Superseded:`, leaves superseded Claims out of condition checks, and adds notices for every dependent Objection, Evidence, Spec, adopted Exploration and brief reference. Cycles and foreign successors are data errors.
 rule also sets other status-required links with a Decision: `--superseded-by` (Claim or Decision), `--adopted-as` (Exploration) and `--evidence` (Spec, appended). It never replaces or removes an existing link.
 
-Review intake (C1): `toulmin intake <project> <raw-output> --take LABEL[:SEVERITY] --reject LABEL=REASON --partly LABEL=O-NNN --confirm` applies the researcher's choices for drafts in one archived review (formats.md, review draft blocks).
+Review intake (C1; C5-F2 duplicate): `toulmin intake <project> <raw-output> --take LABEL[:SEVERITY] --reject LABEL=REASON --partly LABEL=O-NNN --duplicate LABEL=O-NNN [--duplicate-reason LABEL=REASON] --confirm` applies chosen outcomes in one archived review (formats.md, review draft blocks). Only chosen options are required.
 Nothing is taken by default; unlisted drafts stay pending and status reports them once an intake record exists. The raw output must belong to exactly one archived Run. Every choice is validated (labels, targets, severities, reasons, partly sources, confirmation) before any write.
 Under the project creation lock, each taken draft becomes an open Objection and its outcome is appended to intake.md atomically. A replay reports `already-<outcome>` for recorded labels, never changes an outcome, and reuses an Objection created from the same draft before an interruption instead of creating another.
 The intake does not rule on anything: Objection status, Claim status and gates still change only through rule with a Decision. This L2 change adds a write path for confirmed drafts; object fields and v1 are unchanged.
@@ -610,11 +610,14 @@ from the agent's suggestions.
   interrupted round is never started again: apply records the Runs archived since the marker.
 - Intake recommendation `intake-YYYYMMDDTHHMMSSZ[-name].md`: header `schema_version: 1`,
   `kind: intake-recommendation`, `output` (a review Run's raw output, never a synthesis) and
-  `recommendations`, one entry per draft label: `label`, `outcome` (take, reject, partly),
+  `recommendations`, one entry per draft label: `label`, `outcome` (take, reject, partly,
+  duplicate since C5-F2),
   `reason` (the agent's grounds; for reject the proposed recorded reason), `severity` (take
-  only, to change it) and `object` (partly only, the hand-written Objection). Every label
+  only, to change it) and `object` (partly: hand-written Objection; duplicate: existing local
+  Objection it repeats). Every label
   without an outcome in intake.md must be covered. Decide asks per label: as recommended,
-  take, take with other severity, reject (reason; the proposed one is the default), skip or
+  take, take with other severity, duplicate (existing O-ID, prefilled when recommended),
+  reject (reason; the proposed one is the default), skip or
   quit; the choices are recorded together through `intake_review` when the output's walk ends
   (quit records nothing for it). The recommendation is applied (`result`: the intake.md path)
   once every label has an outcome; skipped labels keep it pending.
@@ -666,14 +669,15 @@ second store. `toulmin calibration [--project NAME] [--write]` reads every Run o
 project (or of all projects), groups them by operation (review for `reviewer` roles,
 synthesis, crossval, other), the model name each Run recorded and the role, and counts runs
 completed/failed. For review Runs it counts the draft labels of the raw output and the
-researcher's intake outcomes (taken, partly, rejected; the rest pending), the adoption rate
-(taken + partly) / decided, and the current status of every Objection an intake outcome
+researcher's intake outcomes (taken, partly, rejected, plus duplicate since C5-F2; the rest
+pending), the adoption rate (taken + partly) / (taken + partly + rejected), and the current
+status of every Objection an intake outcome
 created. Unreadable Runs, outputs without a draft block and missing Objections are listed
 under "Not counted", never guessed. The report has no timestamps, so identical files give an
 identical report; `--write` (re)writes `global/calibration/calibration.md` (or
 `calibration-NAME.md`) and hand edits there do not survive regeneration. The command never
 changes research files and makes no recommendation about role assignment; reading the rates
-is the researcher's call. No format change.
+is the researcher's call. C5-F2's additive intake format is described below.
 
 ### V2 research map and shared next moves (L2 read-only, L3)
 
@@ -694,8 +698,9 @@ top level), recomputes only on change and writes nothing.
   in order: invalid data (resolve errors, nothing else); pending proposals (`toulmin decide`);
   review outputs with undecided labels and no pending intake recommendation (recommend
   intake); open Objections without a pending ruling proposal, fatal/major first (respond);
-  explore: missing core Claims, or G1 holds; critique: a review round when no completed review
-  Run is newer than the newest current Claim, Kill criteria, remaining G2 items, or G2 holds;
+  explore: missing core Claims, or G1 holds; critique: a review round before any completed
+  review, or after later-created current Claims/non-invalidated Evidence (C5-F1), Kill
+  criteria, remaining G2 items, or G2 holds;
   otherwise continue the discussion. A gate that holds is not offered for a stage ruling while
   any review draft is undecided, because those drafts may still become blocking Objections.
 - The card's stage-aware ACTIONS line (H6) and its proposal, open-objection and review lines
@@ -1179,3 +1184,53 @@ old ID in that clone's other unpushed records must be recreated the same way. Th
 L3 readiness (no format change): a native CLI's own update menu ("Update available" with a
 Skip choice, seen from Codex) is named as the CLI update prompt, like the folder-trust prompt:
 choose Skip or update in AoE, then refresh. It is never answered by Toulmin.
+
+### C5-F1/F2 (2026-11-12)
+
+The delegated C5 trial was conditionally passed by the researcher: later rounds re-found
+still-open Objections and treating those drafts as rejected distorted calibration. These
+changes address the conditions; the researcher rules on whether they are met.
+
+F1 L2 reason (approach A): another review should have new material to reassess. The shared
+next-move rule suggests a further round only when a current Claim or non-invalidated
+Evidence was created strictly after the newest completed review Run. First-round behavior,
+row order and MOVE_LIMIT remain. Failed reviews do not move the boundary; timestamps compare
+as instants, including timezone offsets. Current Claims exclude superseded ones. Substantive
+Statement changes use a new successor Claim, as required by the existing Claim revision
+rule; status edits alone do not trigger another round. File-derived progress exposes the
+last Run/time and the new Claim/Evidence IDs for callers, with no cache or external command.
+Otherwise the project agent works on Evidence/validation first.
+
+L3 prints an advisory before deciding a review request, and in the direct review preview,
+when a completed review exists and no new Claim/Evidence followed it. It identifies the
+last Run/time and says another round will likely repeat findings; applying still starts it.
+If intake records contain duplicate outcomes, it also reports duplicates/total draft labels
+for that round. Completed review archives with the same review-planning UTC stamp form the
+round; legacy manual archives without that naming convention count the latest Run alone.
+Missing/unreadable draft counts omit the count clause; existing records without duplicate
+outcomes do not acquire guessed duplicates from rejection prose. This is advice, never a
+refusal or an automatic round. Independent reviewer manifests, prompts and inputs remain
+unchanged: reviewers receive no Objections or Responses (approach B was not authorized).
+
+F2 L1/L2 reason: re-finding an existing Objection is neither adopting another object nor
+rejecting the finding. Additive `duplicate` intake requires an existing local Objection ID,
+with optional reason and ordinary by/at provenance. Any status and an original target that
+was superseded are allowed. Unlike taken/partly outcomes, a duplicate does not require the
+Objection to cite this new output: the original provenance stays intact. Label, ID, local
+existence and optional reason are checked before mutation; the existing project writer lock,
+atomic intake append and replay paths are reused. No object is created. A replay cannot
+change the recorded duplicate target/reason; interrupted publication leaves whole records
+and resumes without duplicate entries. Existing taken/partly/rejected semantics stay intact.
+
+Intake recommendations add duplicate plus object: O-NNN; severity remains take-only. Decide
+offers [d]uplicate of O-… with an ID prompt (prefilled for duplicate recommendations), and
+as-recommended applies the duplicate and its proposed reason. Summaries say “label:
+duplicate of O-NNN (R-NNN)”. The direct intake command accepts --duplicate LABEL=O-NNN and
+optional --duplicate-reason LABEL=TEXT. The agent recommends duplicate for repeated Objections.
+
+Calibration adds a Duplicate column to model/role tables and a per-model re-found count.
+Adoption is (taken + partly) / (taken + partly + rejected); duplicates and pending are
+excluded. Duplicate references never enter the Objections-created-by-status table, whose
+meaning and counts are unchanged. Reports remain deterministic and regenerable. Formats.md
+records compatibility: schema_version 1 stays, existing files need no migration, and older
+builds refuse duplicate outcomes. No prior rejection or research status is rewritten.

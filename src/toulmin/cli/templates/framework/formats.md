@@ -122,8 +122,24 @@ Output without such a block is still archived as a Run; its drafts are taken in 
 
 `intake.md` beside the raw output records the researcher's choices. It is not an eighth object type. Header: `schema_version: 1`, `run` (the local Run whose output is this archive directory), `output` (root-relative raw output path in the same directory) and `outcomes`, a list of
 `{label, outcome, by, at}` plus `object` or `reason`: `taken` and `partly` require `object` (an Objection whose source cites this Run and output); `rejected` requires `reason` and forbids `object`. Labels appear at most once and must exist in the raw output. Entries are appended, never changed or removed.
+Since C5-F2, `duplicate` requires `object`: an existing, unqualified Objection ID in this
+project, of any status and with any original source/Claim target (including a superseded
+Claim). It creates nothing. Its optional `reason` is nonempty text when supplied; `by`
+and timezone-bearing `at` record the researcher's choice as for every other outcome.
 An Objection taken in from a draft has source `{kind: run, ref, path}`, the draft's target and severity (a researcher override is recorded as `partly`), status open, and the body `## Content` (content, then `Grounds:` and `Uncertainty:` paragraphs), empty `## Response` and `## Ruling`.
-Compatibility: additive within v1. Object fields are unchanged; older builds ignore intake.md. No migration.
+Compatibility: C5-F2 is additive within schema_version 1. Existing records stay valid;
+object fields are unchanged and no migration is needed. A build older than C5-F2 refuses
+an intake record containing `duplicate`. Existing rejections are never reclassified by prose.
+
+An intake recommendation (`intake-<UTC>[-name].md` under runs/proposals/) has
+`schema_version: 1`, `kind: intake-recommendation`, root-relative raw `output` and
+`recommendations`: one mapping per pending draft, with `label`, `outcome`
+(`take`, `partly`, `reject`, `duplicate`) and `reason` (the agent's grounds). Only `take`
+may set `severity`. `partly` requires `object`, the hand-written Objection from this
+output; `duplicate` requires `object`, an existing local Objection ID it repeats.
+Other outcomes forbid `object`. The duplicate recommendation adds no object or status
+change. Its reason may be retained with the researcher's duplicate intake choice.
+Older recommendations remain valid; older builds refuse the new duplicate outcome.
 
 ## Role input manifests (C2)
 

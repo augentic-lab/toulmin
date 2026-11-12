@@ -17,7 +17,7 @@ from toulmin.core.schema import SEVERITIES, mapping, reference, text, timestamp
 INTAKE_FILE = "intake.md"
 LABEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
 DRAFT_FIELDS = {"label", "target", "severity", "content", "grounds"}
-OUTCOMES = ("taken", "partly", "rejected")
+OUTCOMES = ("taken", "partly", "rejected", "duplicate")
 
 
 @dataclass(frozen=True)
@@ -159,7 +159,14 @@ def validate_intake(document: Document) -> dict[str, dict[str, Any]]:
             if "object" in entry:
                 document.fail(field + ".object", "a rejected draft has no object")
         else:
-            reference(document, entry.get("object"), field + ".object", ObjectKind.OBJECTION)
+            target = reference(
+                document, entry.get("object"), field + ".object", ObjectKind.OBJECTION
+            )
+            if entry["outcome"] == "duplicate":
+                if target.project is not None:
+                    document.fail(field + ".object", "duplicate names an Objection in this project")
+                if "reason" in entry:
+                    text(document, entry["reason"], field + ".reason")
         outcomes[label] = entry
     sections(document)
     return outcomes

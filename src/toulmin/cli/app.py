@@ -439,6 +439,16 @@ def intake_drafts(
         list[str] | None,
         typer.Option("--partly", help="LABEL=O-NNN for an Objection written by hand."),
     ] = None,
+    duplicate: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--duplicate", help="LABEL=O-NNN for an existing Objection this draft repeats."
+        ),
+    ] = None,
+    duplicate_reason: Annotated[
+        list[str] | None,
+        typer.Option("--duplicate-reason", help="Optional LABEL=REASON for a duplicate choice."),
+    ] = None,
     actor: Annotated[
         str | None,
         typer.Option(
@@ -483,13 +493,19 @@ def intake_drafts(
             chosen,
             pairs(reject, "--reject"),
             pairs(partly, "--partly"),
+            duplicate=pairs(duplicate, "--duplicate"),
+            duplicate_reasons=pairs(duplicate_reason, "--duplicate-reason"),
         )
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     typer.echo(display(result.record, root))
     for line in result.lines:
-        target = f" as {line.object_id}" if line.object_id else ""
+        target = (
+            (" of " if line.outcome.endswith("duplicate") else " as ") + line.object_id
+            if line.object_id
+            else ""
+        )
         typer.echo(f"{line.label}: {line.outcome}{target} ({result.run})")
 
 

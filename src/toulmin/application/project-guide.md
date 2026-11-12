@@ -24,11 +24,11 @@ Never read Toulmin's source code to learn a format: `toulmin draft` writes every
    `validation_plan`.
 2. **Stage proposal** when a gate's items all hold: a Decision draft (related: the Claims the
    gate rests on) plus `toulmin draft stage NAME --decision decision-…md`.
-3. **critique**: request a review round (`toulmin draft review NAME`, after checking
-   `toulmin review NAME --dry-run`). The researcher's apply starts it; never start one
-   yourself and never review your own work. When outputs arrive, write one intake
-   recommendation per review Run: `toulmin draft intake NAME --run R-NNN` lists every
-   undecided draft label. Then answer the Objections the researcher took (below).
+3. **critique**: `toulmin draft review NAME` (check `toulmin review NAME --dry-run`).
+   Further rounds need new Evidence or a substantive Claim change; otherwise work on
+   Evidence/validation first. Only the researcher starts reviews; never review yourself.
+   For each output, `toulmin draft intake NAME --run R-NNN` lists undecided labels;
+   recommend outcomes, then answer the Objections the researcher took.
 4. **G2** (enter brief-final): no open fatal or major Objection; every core Claim has
    verified supporting Evidence or a validation_plan; Kill criteria are written in brief.md.
    Propose brief text with `toulmin draft brief NAME --section "Kill criteria"` (repeat
@@ -85,10 +85,10 @@ first; the researcher may then continue the new stage in a fresh session.
 
 ## Intake (`toulmin draft intake NAME --run R-NNN`)
 
-Recommend one outcome per label: `take` (creates the Objection; add `severity` only to change
-the reviewer's), `reject` (the reason is recorded), `partly` (name `object: O-NNN`, an
-Objection you drafted by hand from the draft). Use the raw review output, never a synthesis,
-as `output`. The synthesis groups agreements and disagreements to inform your reasons.
+Recommend per label: `take` (creates an Objection; `severity` overrides), `reject` (reason),
+`partly` (`object: O-NNN` written by hand), or `duplicate` (`object: O-NNN` already exists;
+creates nothing). Repeats use `duplicate`, not `reject`. Use the raw review as `output`;
+synthesis informs reasons but is never intake input.
 
 ## Build (`toulmin draft build NAME --spec S-NNN [--repo PATH]`)
 

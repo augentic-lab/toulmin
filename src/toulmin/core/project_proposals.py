@@ -47,7 +47,7 @@ RULING_FIELDS = {"schema_version", "kind", "object", "objects", "status", "decis
 RULING_SECTIONS = {"Response", "Ruling", "Invalidation", "Rationale"}
 REVIEW_FIELDS = {"schema_version", "kind", "personas", "models", "claims"}
 INTAKE_FIELDS = {"schema_version", "kind", "output", "recommendations"}
-INTAKE_OUTCOMES = ("take", "reject", "partly")
+INTAKE_OUTCOMES = ("take", "reject", "partly", "duplicate")
 OUTCOME_ORDER = (
     "schema_version",
     "kind",
@@ -248,10 +248,10 @@ def validate_review_request(document: Document) -> ReviewRequest:
 @dataclass(frozen=True)
 class Recommendation:
     label: str
-    outcome: str  # take, reject or partly
+    outcome: str  # take, reject, partly or duplicate
     severity: str | None  # take only: a severity other than the reviewer's
     reason: str  # the agent's grounds; for reject, the proposed recorded reason
-    object: str | None  # partly only: the Objection written by hand from this draft
+    object: str | None  # partly: hand-written Objection; duplicate: existing Objection
 
 
 @dataclass(frozen=True)
@@ -284,10 +284,14 @@ def validate_intake_recommendation(document: Document) -> IntakeRecommendation:
         if severity is not None and (outcome != "take" or severity not in SEVERITIES):
             document.fail(f"{field}.severity", "only take may set fatal, major or minor")
         target = entry.get("object")
-        if (target is not None) != (outcome == "partly"):
-            document.fail(f"{field}.object", "partly names the Objection written by hand")
+        if (target is not None) != (outcome in {"partly", "duplicate"}):
+            document.fail(f"{field}.object", "partly or duplicate requires an Objection object")
         if target is not None:
             text(document, target, f"{field}.object")
+            if outcome == "duplicate":
+                duplicate = reference(document, target, f"{field}.object", ObjectKind.OBJECTION)
+                if duplicate.project is not None:
+                    document.fail(f"{field}.object", "duplicate names an Objection in this project")
         if any(item.label == label for item in items):
             document.fail(f"{field}.label", f"{label} recommended twice")
         items.append(Recommendation(label, outcome, severity, reason, target))

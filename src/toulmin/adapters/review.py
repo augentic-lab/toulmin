@@ -22,6 +22,7 @@ from toulmin.protocols.review import (
     archive_review,
     plan_review,
 )
+from toulmin.protocols.review_progress import review_advisory
 from toulmin.protocols.synthesis import (
     choose_model,
     plan_crossval,
@@ -47,6 +48,8 @@ def run_round(
     """Return the number of failed sessions. Validation errors raise before any session."""
     config, tasks = _plan_round(root, project, personas, models, claims)
     _show(config, tasks, echo)
+    if notice := review_advisory(root, project):
+        echo("Note: " + notice)
     if not _authorised(dry_run, confirmed, "review"):
         return 0
     return sum(
@@ -115,6 +118,8 @@ def prepare_round(
     _models(config, [name])
     _preflight(config, [name])
     _show(config, tasks, echo)
+    if notice := review_advisory(root, project):
+        echo("Note: " + notice)
     echo(f"  then synthesis by {name} ({reason}) when two or more outputs complete with drafts")
     return PlannedRound(root, project, config, tasks, (name, reason))
 

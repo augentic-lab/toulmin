@@ -89,6 +89,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-11: The researcher authorized both S5 follow-ups ("按你的建议，两个小改进一起做"): readiness names a native CLI update menu, and protocols.md S5 records the same-ID divergence recovery recipe. Both are implemented.
 2026-11-11: The researcher kept three rounds and delegated the C5 stage trial to the agent on a new small project ("按你的建议，保留三轮，我需要你用一个新的小项目做 C5"): temporary workspace, native sessions in profile toulmin-sim-r, real review sessions on the researcher's subscriptions, every decide answer an operator approval labelled as such. Agent-run evidence; the C5 ruling stays the researcher's.
 2026-11-12: The researcher ruled the C5 stage trial a conditional pass ("按你的建议，C5 裁定为有条件通过"). Conditions: C5-F1, a further review round is suggested only after new Evidence or a substantive Claim change (or reviewers see open Objections); C5-F2, intake records duplicates of an existing Objection separately so calibration does not count them as rejections. Both require separate authorization; C5 closes when the researcher confirms they are met.
+2026-11-12: The researcher authorized C5-F1 approach A and C5-F2 together ("按你的建议，F1 做法 A 和 F2 一起做"): the review-round suggestion requires new Evidence or a substantive Claim change since the last round (reviewer inputs unchanged), and intake gains a duplicate outcome excluded from calibration rejections. Development by Codex under supervision, as for R8/S.
 
 ## Project goals and scope
 

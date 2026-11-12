@@ -2,9 +2,12 @@ import pytest
 from typer.testing import CliRunner
 
 from toulmin.cli.app import app
+from toulmin.cli.initialize import initialize
 from toulmin.core.codec import decode, encode
-from toulmin.core.documents import FormatError
-from toulmin.core.review import parse_review
+from toulmin.core.documents import Document, FormatError, sections
+from toulmin.core.project_proposals import validate_intake_recommendation
+from toulmin.core.review import parse_review, validate_intake
+from toulmin.protocols import review_intake
 
 ARCHIVE = "projects/demo/runs/20261031T100000Z-review"
 OUTPUT = f"{ARCHIVE}/output.md"
@@ -291,3 +294,175 @@ def test_verbose_status_lists_settled_objections_with_their_decisions(bench):
         "  O-001 | answered | target=C-001 | by D-001"
     )
     assert "Settled objections:" not in status(bench).stdout
+
+
+@pytest.mark.parametrize("object_id", [None, "C-001", "other/O-001", "demo/O-001"])
+def test_duplicate_format_requires_an_unqualified_objection_id(object_id):
+    entry = {"label": "draft-1", "outcome": "duplicate", "by": "R", "at": "2026-11-12T10:00:00Z"}
+    recommendation = {"label": "draft-1", "outcome": "duplicate", "reason": "Already known."}
+    if object_id is not None:
+        entry["object"] = recommendation["object"] = object_id
+    with pytest.raises(FormatError):
+        validate_intake(
+            Document(
+                {"schema_version": 1, "run": "R-001", "output": OUTPUT, "outcomes": [entry]}, ""
+            )
+        )
+    with pytest.raises(FormatError):
+        validate_intake_recommendation(
+            Document(
+                {
+                    "schema_version": 1,
+                    "kind": "intake-recommendation",
+                    "output": OUTPUT,
+                    "recommendations": [recommendation],
+                },
+                "",
+            )
+        )
+
+
+def test_duplicate_reason_optional_and_severity_stays_take_only():
+    entry = {
+        "label": "d",
+        "outcome": "duplicate",
+        "by": "R",
+        "at": "2026-11-12T10:00:00Z",
+        "object": "O-001",
+    }
+    document = Document(
+        {"schema_version": 1, "run": "R-001", "output": OUTPUT, "outcomes": [entry]}, ""
+    )
+    assert validate_intake(document)["d"] == entry
+    entry["reason"] = "Same concern."
+    assert validate_intake(document)["d"]["reason"] == "Same concern."
+    recommendation = {
+        "label": "d",
+        "outcome": "duplicate",
+        "object": "O-001",
+        "reason": "Known.",
+        "severity": "minor",
+    }
+    with pytest.raises(FormatError, match="only take"):
+        validate_intake_recommendation(
+            Document(
+                {
+                    "schema_version": 1,
+                    "kind": "intake-recommendation",
+                    "output": OUTPUT,
+                    "recommendations": [recommendation],
+                },
+                "",
+            )
+        )
+
+
+@pytest.mark.parametrize("state", ["open", "answered", "accepted", "deferred"])
+def test_duplicate_links_any_status_and_a_superseded_target_without_new_objects(bench, state):
+    original = load(bench, "projects/demo/claims/C-001.md")
+    successor = decode(encode(original))
+    successor.header["id"] = "C-002"
+    (bench / "projects/demo/claims/C-002.md").write_bytes(encode(successor))
+    original.header.update(status="superseded", superseded_by="C-002", decisions=["D-001"])
+    (bench / "projects/demo/claims/C-001.md").write_bytes(encode(original))
+    objection = load(bench, f"{OBJECTIONS}/O-001.md")
+    objection.header.update(status=state, source={"kind": "human", "actor": "Fixture"})
+    objection.body = objection.body.replace(
+        "## Response\n", "## Response\nKnown response.\n"
+    ).replace("## Ruling\n", "## Ruling\nRecorded ruling.\n")
+    if not sections(objection).get("Ruling", "").strip():
+        objection.body = objection.body.removesuffix("## Ruling")
+        objection.body += "\n## Ruling\nRecorded ruling.\n"
+    if state == "accepted":
+        objection.header["decisions"] = ["D-001"]
+    (bench / f"{OBJECTIONS}/O-001.md").write_bytes(encode(objection))
+    before = files(bench)
+    result = intake(
+        bench, "--duplicate", "draft-1=O-001", "--duplicate-reason", "draft-1=Same concern."
+    )
+    assert result.exit_code == 0, result.output
+    assert "draft-1: duplicate of O-001 (R-001)" in result.stdout
+    entry = load(bench, RECORD).header["outcomes"][0]
+    assert entry["outcome"] == "duplicate" and entry["object"] == "O-001"
+    assert (
+        entry["by"] == "Tianchi YU"
+        and entry["at"].endswith("Z")
+        and entry["reason"] == "Same concern."
+    )
+    assert {name: data for name, data in files(bench).items() if name != RECORD} == before
+    assert status(bench).exit_code == 0, status(bench).output
+
+
+@pytest.mark.parametrize("object_id", ["O-999", "C-001", "other/O-001"])
+def test_duplicate_refusal_precedes_other_writes(bench, object_id):
+    before = files(bench)
+    result = intake(bench, "--take", "draft-1", "--duplicate", f"draft-2={object_id}")
+    assert result.exit_code == 1
+    assert files(bench) == before
+
+
+def test_duplicate_replay_and_interruption_are_atomic(bench, monkeypatch):
+    before = files(bench)
+    original = review_intake.write_atomic
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    with monkeypatch.context() as patch:
+        patch.setattr(review_intake, "write_atomic", interrupt)
+        with pytest.raises(KeyboardInterrupt):
+            review_intake.intake_review(
+                bench, "demo", OUTPUT, "Researcher", True, duplicate={"draft-1": "O-001"}
+            )
+    assert files(bench) == before and review_intake.write_atomic is original
+    assert intake(bench, "--duplicate", "draft-1=O-001").exit_code == 0
+    recorded = files(bench)
+    replay = intake(bench, "--duplicate", "draft-1=O-001")
+    assert "already-duplicate of O-001" in replay.stdout and files(bench) == recorded
+
+
+def test_old_intake_record_is_valid_without_changes(bench):
+    assert intake(bench, "--take", "draft-1").exit_code == 0
+    before = (bench / RECORD).read_bytes()
+    outcomes = validate_intake(load(bench, RECORD))
+    assert outcomes["draft-1"]["outcome"] == "taken"
+    assert (bench / RECORD).read_bytes() == before
+
+
+@pytest.mark.parametrize("reference", ["other/O-009", "O-009"])
+def test_an_objection_that_exists_only_in_another_project_is_refused(bench, reference):
+    initialize(bench, "other")
+    claim = load(bench, "projects/demo/claims/C-001.md")
+    claim.header["source"] = {"kind": "human", "actor": "Fixture"}
+    (bench / "projects/other/claims/C-001.md").write_bytes(encode(claim))
+    objection = load(bench, f"{OBJECTIONS}/O-001.md")
+    objection.header.update(id="O-009", source={"kind": "human", "actor": "Fixture"})
+    (bench / "projects/other/objections/O-009.md").write_bytes(encode(objection))
+    before = files(bench)
+    result = intake(bench, "--duplicate", f"draft-1={reference}")
+    assert result.exit_code == 1 and files(bench) == before
+
+
+def test_duplicate_target_reason_and_record_references_cannot_be_changed(bench):
+    objection = load(bench, f"{OBJECTIONS}/O-001.md")
+    objection.header["id"] = "O-002"
+    (bench / f"{OBJECTIONS}/O-002.md").write_bytes(encode(objection))
+    assert (
+        intake(
+            bench, "--duplicate", "draft-1=O-001", "--duplicate-reason", "draft-1=Original reason."
+        ).exit_code
+        == 0
+    )
+    before = files(bench)
+    for arguments in (
+        ("--duplicate", "draft-1=O-002"),
+        ("--duplicate", "draft-1=O-001", "--duplicate-reason", "draft-1=Changed reason."),
+    ):
+        result = intake(bench, *arguments)
+        assert result.exit_code == 1 and "never changed" in result.output
+        assert files(bench) == before
+    record = load(bench, RECORD)
+    record.header["outcomes"][0]["object"] = "O-999"
+    (bench / RECORD).write_bytes(encode(record))
+    result = status(bench)
+    assert result.exit_code == 1 and "not an existing Objection" in result.output

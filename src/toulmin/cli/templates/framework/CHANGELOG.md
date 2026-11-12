@@ -1,5 +1,12 @@
 # Framework changes
 
+- C5-F1/F2 (2026-11-12): further-round suggestions need later-created current Claims or
+  non-invalidated Evidence; previews advise when nothing changed without blocking apply.
+  Duplicate intake links an existing local Objection without creating one; decide adds
+  duplicate choices and calibration counts them separately, excluding them from adoption
+  and rejection rates. Additive schema_version 1; old records need no migration, while
+  older builds refuse duplicate outcomes. Independent reviewer inputs remain unchanged.
+
 - S5 follow-ups: readiness names a native CLI update menu as "the CLI update prompt"
   (choose Skip or update in AoE). protocols.md S5 adds the recovery recipe when two clones
   created the same object ID. No recorded schema changes.

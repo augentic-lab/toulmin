@@ -187,7 +187,7 @@ def test_an_intake_draft_lists_every_undecided_label(populated):
     assert f'output: "{OUTPUT}"' in text
     assert "# draft-1 -> C-001, major: The load is unspecified." in text
     assert '- label: "draft-2"' in text
-    filled = text.replace('"<fill: take | partly | reject>"', "take")
+    filled = text.replace('"<fill: take | partly | reject | duplicate>"', "take")
     filled = re.sub(r'"<fill: your grounds[^"]*"', '"Sound."', filled)
     filled = re.sub(r"\n## Notes\n<fill:[^\n]*\n", "\n", filled)
     recommendation = validate_intake_recommendation(decode(filled.encode()))

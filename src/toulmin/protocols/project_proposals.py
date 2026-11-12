@@ -565,11 +565,11 @@ def _intake_preview(
         return fail(
             f"recommendations: no recommendation for {', '.join(missing)}; cover every label"
         )
-    take, reject, partly = choices(recommendation, remaining)
+    take, reject, partly, duplicate = choices(recommendation, remaining)
     try:
         if remaining:
             intake_review(root, project, recommendation.output, "preview", False, take, reject,
-                          partly, preview=True)  # fmt: skip
+                          partly, preview=True, duplicate=duplicate)  # fmt: skip
     except (OSError, ValueError) as error:
         return fail(str(error))
     target = f"{state.run}: {recommendation.output}"
@@ -579,11 +579,12 @@ def _intake_preview(
 
 def choices(
     recommendation: IntakeRecommendation, labels: tuple[str, ...]
-) -> tuple[dict[str, str | None], dict[str, str], dict[str, str]]:
-    """The recommended outcomes for ``labels`` in intake_review's take/reject/partly form."""
+) -> tuple[dict[str, str | None], dict[str, str], dict[str, str], dict[str, str]]:
+    """The recommended take/reject/partly/duplicate choices for ``labels``."""
     take: dict[str, str | None] = {}
     reject: dict[str, str] = {}
     partly: dict[str, str] = {}
+    duplicate: dict[str, str] = {}
     for item in recommendation.items:
         if item.label not in labels:
             continue
@@ -591,10 +592,13 @@ def choices(
             take[item.label] = item.severity
         elif item.outcome == "reject":
             reject[item.label] = item.reason
-        else:
+        elif item.outcome == "partly":
             assert item.object is not None
             partly[item.label] = item.object
-    return take, reject, partly
+        else:
+            assert item.object is not None
+            duplicate[item.label] = item.object
+    return take, reject, partly, duplicate
 
 
 def record_intake(
@@ -607,6 +611,9 @@ def record_intake(
     reject: dict[str, str],
     partly: dict[str, str],
     approval_text: str,
+    *,
+    duplicate: dict[str, str] | None = None,
+    duplicate_reasons: dict[str, str] | None = None,
 ) -> tuple[IntakeResult | None, Outcome | None]:
     """Record the researcher's chosen outcomes; the recommendation is applied once none remain.
 
@@ -621,8 +628,19 @@ def record_intake(
         raise FormatError(f"{relative}: {(current.problems or ('not an intake item',))[0]}")
     output = current.intake.recommendation.output
     result = None
-    if take or reject or partly:
-        result = intake_review(root, project, output, actor, True, take, reject, partly)
+    if take or reject or partly or duplicate:
+        result = intake_review(
+            root,
+            project,
+            output,
+            actor,
+            True,
+            take,
+            reject,
+            partly,
+            duplicate=duplicate,
+            duplicate_reasons=duplicate_reasons,
+        )
     state = output_state(root, project, output)
     if any(label not in state.recorded for label in state.drafts):
         return result, None

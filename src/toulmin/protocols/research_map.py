@@ -10,7 +10,6 @@ researcher and the agent read the same suggestions.
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
 from pathlib import Path
 
 from toulmin.core.build import BuildTask
@@ -34,6 +33,7 @@ from toulmin.protocols.build import BuildFact, build_facts, build_line, other_ho
 from toulmin.protocols.calibration import REVIEW, operation
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
+from toulmin.protocols.review_progress import ReviewProgress, review_progress
 from toulmin.protocols.status import (
     NO_BLOCKING,
     GateReadiness,
@@ -69,10 +69,13 @@ class Facts:
     uncovered: tuple[str, ...]  # review Runs with undecided labels and no intake proposal
     objections: tuple[tuple[str, str], ...]  # open, without a pending ruling: (id, severity)
     current_claims: bool
-    reviewed: bool  # a completed review Run is newer than every current Claim
+    reviewed: (
+        bool  # no current Claim/non-invalidated Evidence created since latest completed review
+    )
     handoff_due: str | None = None  # R4: the stage ruled after the last applied handoff
     builds: tuple[BuildFact, ...] = ()
     supportable: tuple[str, ...] = ()  # Claims meeting supported conditions, no ruling pending
+    review_progress: ReviewProgress | None = None
 
 
 @dataclass(frozen=True)
@@ -386,13 +389,6 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
     return tuple(moves[:limit])
 
 
-def _time(value: object) -> datetime | None:
-    try:
-        return datetime.fromisoformat(str(value))
-    except ValueError:
-        return None
-
-
 def move_facts(
     root: Path,
     project: str,
@@ -437,13 +433,7 @@ def move_facts(
         for doc in snapshot.objects
         if doc.object_id.kind == ObjectKind.CLAIM and doc.header["status"] != "superseded"
     ]
-    newest_claim = max((_time(doc.header["created"]) for doc in claims), default=None, key=_key)
-    reviews = [
-        _time(doc.header["created"])
-        for doc in runs.values()
-        if operation(str(doc.header["role"])) == REVIEW and doc.header["status"] == "completed"
-    ]
-    newest_review = max(reviews, default=None, key=_key)
+    progress = review_progress(snapshot.objects)
     undecided = []
     for key, doc in sorted(runs.items(), key=lambda pair: pair[0].number):
         if operation(str(doc.header["role"])) != REVIEW or doc.header["status"] != "completed":
@@ -455,9 +445,6 @@ def move_facts(
         labels = tuple(label for label in state.drafts if label not in state.recorded)
         if labels:
             undecided.append((str(key), labels))
-    reviewed = (
-        newest_review is not None and newest_claim is not None and newest_review > newest_claim
-    )
     stage = snapshot.charter.header["stage"] if snapshot.charter is not None else None
     handoff = snapshot.charter.header["last_handoff"] if snapshot.charter is not None else None
     return Facts(
@@ -469,7 +456,8 @@ def move_facts(
         uncovered=tuple(run for run, _ in undecided if run not in covered),
         objections=tuple((str(doc.object_id), doc.header["severity"]) for doc in objections),
         current_claims=bool(claims),
-        reviewed=reviewed,
+        reviewed=progress.reviewed,
+        review_progress=progress,
         handoff_due=stage if _stage_after_handoff(repository, project, handoff) else None,
         supportable=tuple(
             str(claim)
@@ -500,10 +488,6 @@ def _stage_after_handoff(repository: Repository, project: str, handoff: object) 
     if not isinstance(handoff, str):
         return True
     return newest > handoff[: len("YYYYMMDDTHHMMSSZ")]
-
-
-def _key(value: datetime | None) -> float:
-    return value.timestamp() if value is not None else float("-inf")
 
 
 def _text(document: Document, section: str) -> str:
