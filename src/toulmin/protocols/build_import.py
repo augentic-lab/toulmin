@@ -8,11 +8,23 @@ from pathlib import Path
 
 from toulmin.core.atomic import digest, sync_directory, write_atomic
 from toulmin.core.build import BuildImport, parse_import, render_import
+from toulmin.core.codec import decode
 from toulmin.core.documents import Document, FormatError
 from toulmin.core.identifiers import ObjectKind
+from toulmin.core.project_proposals import validate_build_request
 from toulmin.core.repository import Repository
 from toulmin.protocols.build import import_proposals
 from toulmin.protocols.intake import publish_locked
+
+
+def _worker(repository: Repository, record: BuildImport) -> str:
+    """Name the worker launcher; a wrapper may route the tool to another provider's model."""
+    worker = record.tool or "not reported"
+    raw = repository.path(record.request, "file").read_bytes()
+    if digest(raw) != record.request_sha256:
+        raise FormatError(f"{record.request}: applied build request was changed")
+    command = validate_build_request(decode(raw, record.request)).command
+    return worker if command is None else f"{worker} via {command}"
 
 
 def read_record(repository: Repository, archive: str) -> BuildImport:
@@ -43,6 +55,8 @@ def apply_frozen_import(
     record = parse_import(render_import(record), "import plan")
     if {name: digest(data) for name, data in files.items()} != record.files:
         raise FormatError("import: artifact set differs from the frozen plan")
+    # Read before anything is published: a changed request must not leave a partial import.
+    worker = _worker(repository, record)
     destination = repository.path(archive)
     if destination.exists():
         saved = read_record(repository, archive)
@@ -91,7 +105,7 @@ def apply_frozen_import(
         "status": "completed" if record.state == "done" else "failed",
         "source": {"kind": "human", "actor": record.actor},
         "role": "implementer",
-        "model": f"{record.tool or 'not reported'} (Chief worker; model not reported)",
+        "model": f"{worker} (Chief worker; model not reported)",
         "session_id": record.session_id,
         "duration_seconds": None,
         "input_files": [f"projects/{project}/specs/{record.spec}.md"],

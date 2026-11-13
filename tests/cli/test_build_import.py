@@ -19,7 +19,7 @@ from toulmin.core.atomic import digest
 from toulmin.core.build import BuildReview, BuildTask
 from toulmin.core.codec import decode, encode
 from toulmin.core.documents import FormatError
-from toulmin.core.project_proposals import Outcome, render_outcome
+from toulmin.core.project_proposals import Outcome, render_outcome, validate_outcome
 from toulmin.core.proposals import MAX_BYTES
 from toulmin.protocols import build_import, project_proposals
 from toulmin.protocols.build import BuildFact, build_facts, build_line
@@ -867,3 +867,31 @@ def test_incomplete_import_resumes_via_decide_and_refuses_modified_draft(chief_e
     assert result.exit_code == 0, result.output
     assert "Imported Chief task demo-s001 as R-002" in result.stdout
     assert len(list((root / "projects/demo/runs").glob("R-*.md"))) == 2
+
+
+def test_import_run_names_the_worker_launch_command(chief_env):
+    root, _, _, _ = chief_env
+    doc = decode((root / PROPOSAL).read_bytes())
+    doc.header["command"] = "claude-mix"
+    raw = encode(doc)
+    (root / PROPOSAL).write_bytes(raw)
+    path = root / project_proposals.outcome_path(PROPOSAL)
+    marker = replace(validate_outcome(decode(path.read_bytes())), proposal_sha256=digest(raw))
+    path.write_bytes(render_outcome(marker))
+    intent = json.loads((root / ARCHIVE / "request.json").read_text())
+    intent["proposal_sha256"] = digest(raw)
+    (root / ARCHIVE / "request.json").write_text(json.dumps(intent))
+    record = do_import(chief_env)
+    run = decode((root / "projects/demo/runs" / f"{record.run}.md").read_bytes())
+    assert run.header["model"] == "codex via claude-mix (Chief worker; model not reported)"
+
+
+def test_import_refuses_a_request_changed_after_preview_before_publishing(chief_env):
+    root, _, _, _ = chief_env
+    shown = prepare_import(root, "demo", "S-001")
+    before = snapshot(root)
+    (root / PROPOSAL).write_bytes((root / PROPOSAL).read_bytes() + b"\nchanged\n")
+    changed = snapshot(root)
+    with pytest.raises(FormatError):
+        apply_import(root, "demo", shown, "Researcher")
+    assert snapshot(root) == changed and changed != before

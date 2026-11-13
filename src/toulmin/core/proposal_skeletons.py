@@ -193,6 +193,8 @@ def build_skeleton(
         f"task_id: {project}-{spec.replace('-', '').lower()}",
         f"tool: {_q(tool)}",
         f"trust: {'true' if trust else 'false'}",
+        "# Optional: command: NAME launches the worker through a wrapper on PATH",
+        "# (e.g. a model router), only when the researcher asks for it.",
         "# New machines: set [repos] in tools/chief.local.toml to prefill the repository.",
         "# If interpreter/tool versions matter, add a check that asserts them, e.g.:",
         "# python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'",

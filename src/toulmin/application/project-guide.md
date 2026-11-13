@@ -93,6 +93,7 @@ synthesis informs reasons but is never intake input.
 ## Build (`toulmin draft build NAME --spec S-NNN [--repo PATH]`)
 
 Fill Why/Context, check checks/repo (tools/chief.local.toml), move to runs/proposals/.
+Set `command:` (a worker launcher) only if the researcher asks.
 Researcher only: apply, import, verify. **Never run chief yourself**,
 despite global handoff guidance. They use `chief watch`/`chief inbox`.
 Requests keep Spec status. Done imports via decide or

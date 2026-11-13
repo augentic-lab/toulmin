@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-13 — Worker launch command for build requests
+
+- Decision: the researcher authorized the optional worker `command` field ("按你的建议，加上 command 字段") after the GLM code-writing test.
+- Change: build requests accept optional `command` (bare program name on PATH, Chief's rule; validated before any write). The frozen contract carries it only when set (other contracts byte-identical, so interrupted-apply recovery is unaffected); decide previews "Worker launch command: NAME"; imported implementer Runs name `<tool> via <command>`, read from the applied request after its digest check and before publishing. Draft skeleton and project guide mention it (guide 7990/8000 bytes). formats.md compatibility note (additive v1; older builds refuse such requests), protocols.md section, CHANGELOG, packaged copies, released.json digests.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 1749 passed. Smoke on a temporary copy of the C5 workspace: decide preview showed the line and contract `"command": "claude-mix"` (quit, nothing applied); `chief new --from <contract> --dry-run` with an isolated Chief home accepted it. No real Chief task started.
+- Next: real use (`command: claude-mix` with `tool: claude` in a build request).
+- Session ID: unavailable.
+
 ## 2026-11-13 — GLM code-writing test (no code change)
 
 - Request: the researcher needs GLM to write code, not only read ("不只是只读，我需要他进行写代码，你可以再做一个测试吗").

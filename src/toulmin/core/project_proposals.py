@@ -368,13 +368,22 @@ class BuildRequest:
     why: str
     context: str
     trust: bool = False
+    command: str | None = None  # worker launcher override, e.g. a model-router wrapper
+
+
+# Chief's rule for a worker launcher: a bare name on PATH, no arguments or paths.
+WORKER_COMMAND = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.+-]{0,127}")
 
 
 def validate_build_request(document: Document) -> BuildRequest:
     validate_values(document)
     required = {"schema_version", "kind", "spec", "repo", "tool", "checks", "test_first", "budget"}
     h = mapping(
-        document, document.header, "", required, {"base_branch", "task_id", "protected", "trust"}
+        document,
+        document.header,
+        "",
+        required,
+        {"base_branch", "task_id", "protected", "trust", "command"},
     )
     _version(document, h, "build-request")
     spec = reference(document, h["spec"], "spec", ObjectKind.SPEC)
@@ -410,6 +419,14 @@ def validate_build_request(document: Document) -> BuildRequest:
     trust = h.get("trust", False)
     if type(trust) is not bool:
         document.fail("trust", "expected true or false")
+    command = h.get("command")
+    if command is not None:
+        text(document, command, "command")
+        if not WORKER_COMMAND.fullmatch(command):
+            document.fail(
+                "command",
+                "expected a bare program name on PATH (no spaces, paths or arguments)",
+            )
     budget = mapping(document, h["budget"], "budget", {"rounds", "hours"})
     if type(budget["rounds"]) is not int or budget["rounds"] <= 0:
         document.fail("budget.rounds", "expected a positive integer")
@@ -435,4 +452,5 @@ def validate_build_request(document: Document) -> BuildRequest:
         why,
         body.get("Context for the implementer", ""),
         trust,
+        command,
     )

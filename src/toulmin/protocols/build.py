@@ -150,6 +150,9 @@ def derive_contract(
     }
     if request.base_branch is not None:
         contract["base_branch"] = request.base_branch
+    if request.command is not None:
+        # Absent unless requested, so contracts frozen before this field stay byte-identical.
+        contract["command"] = request.command
     return contract
 
 

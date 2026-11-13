@@ -318,6 +318,11 @@ def test_build_check_mismatch_is_prominent_but_not_a_refusal(build_env):
         ({"base_branch": "--help"}, "base_branch"),
         ({"base_branch": "absent"}, "base_branch"),
         ({"model": "not allowed"}, "unknown field"),
+        ({"command": "claude mix"}, "command"),
+        ({"command": "/usr/local/bin/claude-mix"}, "command"),
+        ({"command": "-x"}, "command"),
+        ({"command": ""}, "command"),
+        ({"command": 5}, "command"),
     ],
 )
 def test_build_validation_refusals_write_nothing(build_env, changes, reason):
@@ -1065,3 +1070,20 @@ def test_build_invalid_config_trust_is_refused_without_writes(build_env):
     result = run(root)
     assert result.exit_code == 1 and "trust: expected true or false" in result.output
     assert snapshot(root) == before and not calls(home)
+
+
+@pytest.mark.parametrize("command", [None, "claude-mix"])
+def test_build_worker_command_is_previewed_frozen_and_absent_unless_requested(build_env, command):
+    root, _, home = build_env
+    changes = {"tool": "claude"} | ({} if command is None else {"command": command})
+    relative = request(build_env, **changes)
+    result = run(root, "a\n")
+    assert result.exit_code == 0, result.output
+    line = "Worker launch command: claude-mix (instead of Chief's default for claude)"
+    assert (line in result.stdout) is (command is not None)
+    (call,) = calls(home)
+    assert call["contract"].get("command") == command
+    assert ("command" in call["contract"]) is (command is not None)
+    (archive,) = (root / "projects/demo/runs").glob("*-build-S-001")
+    assert json.loads((archive / "contract.json").read_text()).get("command") == command
+    assert outcome(root, relative).result == "chief task demo-s001"

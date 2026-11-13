@@ -627,6 +627,11 @@ class Run:
             )
             if not plan.request.trust:
                 typer.echo(FOLDER_TRUST_NOTICE.format(task_id=plan.task_id))
+            if plan.request.command is not None:
+                typer.echo(
+                    f"Worker launch command: {plan.request.command} "
+                    f"(instead of Chief's default for {plan.request.tool})"
+                )
             typer.echo("Full frozen Chief contract:")
             typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
             if plan.note is not None:

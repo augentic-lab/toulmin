@@ -1234,3 +1234,16 @@ excluded. Duplicate references never enter the Objections-created-by-status tabl
 meaning and counts are unchanged. Reports remain deterministic and regenerable. Formats.md
 records compatibility: schema_version 1 stays, existing files need no migration, and older
 builds refuse duplicate outcomes. No prior rejection or research status is rewritten.
+
+### Worker launch command (2026-11-13)
+
+The researcher wants some Chief workers to run another provider's model through a launcher
+wrapper (a GLM test on temporary fixtures passed with `chief new --command claude-mix`).
+L1 adds the optional build-request field `command`, validated before any write to Chief's
+bare-name rule. L2 reason: the frozen contract must carry the researcher-approved launcher,
+so `derive_contract` adds `command` only when set and leaves every other contract unchanged
+(interrupted-apply recovery compares frozen bytes). The imported implementer Run names the
+launcher (`claude via claude-mix`) because the tool alone would misattribute the work; the
+name is read from the applied request after its recorded digest is checked, before anything
+is published. L3 previews "Worker launch command: NAME" in decide. Chief's own AI calls,
+cross review and model choice are unchanged; Toulmin still passes no model or effort.

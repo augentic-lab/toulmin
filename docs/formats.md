@@ -320,6 +320,7 @@ base_branch: main                       # optional existing commit/branch
 task_id: example-s001                  # optional; default NAME-s001
 tool: codex
 trust: false                           # optional; confirm worker folder trust only
+command: claude-mix                    # optional; worker launcher on PATH
 checks: ["python3 check.py"]
 protected: [tests]                      # optional; omission means no protected paths
 test_first: true
@@ -345,12 +346,20 @@ only the worker's folder-trust prompt, never file edits or commands. It is not a
 field. The preview shows this choice explicitly. `budget`
 has positive integer `rounds` and positive finite numeric `hours`. `Why` is required and
 shown only to the researcher; the optional Context section is included in the contract.
+Optional `command` (2026-11-13, additive within v1) names the program Chief launches the
+worker through instead of its configured default for `tool`, for example a wrapper that
+routes Claude Code to another provider's model. It is a bare program name on the worker's
+PATH: 1–128 ASCII letters, digits, `_ . + -`, not starting with `.`, `+` or `-`, with no
+spaces, paths or arguments (Chief's own rule). It is copied into the contract as `command`
+only when set, so contracts of requests without it are byte-identical to before. Older
+toolkit builds refuse a request that contains it ("unknown field"); existing requests and
+frozen contracts need no migration.
 Unfilled placeholders anywhere in a proposal prevent application.
 
 On apply, `projects/NAME/runs/<UTC>-build-S-NNN/` contains:
 
 - `contract.json`: the frozen Chief JSON contract, with repo, name, goal, checks, protected,
-  test_first, tool, budget and optional base_branch. The goal includes the Spec's Requirements
+  test_first, tool, budget and optional base_branch and command. The goal includes the Spec's Requirements
   and Acceptance criteria verbatim, its target Claim's current successor Statement (if revised),
   titled `Target Claim C-001 (current: C-002): Statement`, PROJECT.md Constraints,
   optional request Context, and the fixed instruction to preserve criteria/checks and deliver
@@ -424,7 +433,8 @@ never an overwrite. Interrupted imports use the frozen workspace snapshot, inclu
 original actor, and can resume without access to Chief. A completed import is idempotent.
 
 The imported Run has role `implementer`, model `<tool> (Chief worker; model not reported)`
-(or an explicit not-reported tool), session_id from Chief or null, input_files containing
+(or an explicit not-reported tool; `<tool> via <command>` when the applied request named a
+worker command, read from the request after checking its recorded digest), session_id from Chief or null, input_files containing
 the Spec and output pointing at this archive. Status is completed for done, failed for
 abandoned. Completed imports draft three proposals, without applying them:
 

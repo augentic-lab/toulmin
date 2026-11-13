@@ -1,5 +1,10 @@
 # Framework changes
 
+- Worker launch command (2026-11-13): build requests accept optional `command`, a bare
+  program name on PATH that Chief uses to launch the worker (e.g. a model-router wrapper).
+  It reaches the frozen contract only when set, decide previews it, and imported Runs name
+  `<tool> via <command>`. Additive schema_version 1; older builds refuse requests with it.
+
 - C5-F1/F2 (2026-11-12): further-round suggestions need later-created current Claims or
   non-invalidated Evidence; previews advise when nothing changed without blocking apply.
   Duplicate intake links an existing local Objection without creating one; decide adds
