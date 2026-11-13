@@ -1,5 +1,29 @@
 # Toulmin development progress
 
+## 2026-11-12 — R11 recorded: explicit cross-provider review models
+
+- Request: record the revised Sol/Claude model allocation as a TODO. Earlier OpenAI-only advice was incomplete; the recorded proposal includes Claude.
+- Change: TODO.md R11 proposes a narrow first round (skeptic/theorist × explicit Sol/Opus IDs), separate synthesis, Sonnet for routine work and Astra for selective escalation, plus configuration visibility and empirical calibration criteria.
+- Scope: documentation only. Existing uncommitted R10 records preserved. No model config, planner, research state, session or review execution changed; implementation and evaluation remain pending.
+- Checks: inspected the documentation diff; git diff --check passed. Code tests skipped because no code changed.
+- Next: implement and evaluate R11 when authorized; do not claim the proposed profile has measured cost or quality benefits.
+- Session ID: unavailable. No commit made in this workspace-originated task.
+
+## 2026-11-12 — R10 recorded: continuous entry into critique
+
+- Request: record the researcher's real-project feedback as a TODO; implementation was not requested.
+- Change: TODO.md R10 makes direct review preparation in the current coordinator conversation the default guidance, keeps session rollover optional, and preserves independent reviewer isolation and researcher approval. Historical R4 completion is unchanged.
+- Checks: documentation diff and references inspected; no code tests run because only TODO/progress records changed. No code, research state, session binding or review execution changed.
+- Pending: R10 implementation and regression/real-use verification; not claimed implemented or accepted.
+- Next: implement R10 when authorized.
+- Session ID: unavailable. No commit made in this workspace-originated task.
+
+## 2026-11-13 — GLM in independent sessions (smoke test, no code change)
+
+- Decision: the researcher wants GLM for read-only analysis and asked to test approach A ("主要是只读分析，先帮我实测方式 A") instead of routing through Chief.
+- Run (`~/notes/toulmin/glm-crossval-smoke-2026-11-13/`): temporary copy of the C5 workspace; `[models.glm]` with adapter claude-code, `command = "claude-mix"` (the researcher's cc-router wrapper), `model = "glm-5.3"`; `toulmin crossval … --models glm --no-synthesis --confirm` completed in 43 s (R-016, 4 points); usage.json modelUsage reports glm-5.3; reported cost is Claude Code's Anthropic-price estimate, not the GLM bill. One answer point stated a buffered-read pinning claim as verified fact (Inferred incorrect): GLM output stays model-asserted.
+- Checks: no code changed. Session ID: unavailable.
+
 ## 2026-11-12 — C5 closed
 
 - Decision: the researcher confirmed the C5 conditions (C5-F1 approach A, C5-F2) are met and closed C5 ("按你的建议，确认 C5 关闭"). Stage 3 (critique, C1–C5) is complete.

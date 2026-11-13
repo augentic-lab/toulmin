@@ -91,6 +91,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-12: The researcher ruled the C5 stage trial a conditional pass ("按你的建议，C5 裁定为有条件通过"). Conditions: C5-F1, a further review round is suggested only after new Evidence or a substantive Claim change (or reviewers see open Objections); C5-F2, intake records duplicates of an existing Objection separately so calibration does not count them as rejections. Both require separate authorization; C5 closes when the researcher confirms they are met.
 2026-11-12: The researcher authorized C5-F1 approach A and C5-F2 together ("按你的建议，F1 做法 A 和 F2 一起做"): the review-round suggestion requires new Evidence or a substantive Claim change since the last round (reviewer inputs unchanged), and intake gains a duplicate outcome excluded from calibration rejections. Development by Codex under supervision, as for R8/S.
 2026-11-12: C5-F1 (approach A) and C5-F2 are implemented. The researcher confirmed the C5 conditions are met and closed C5 ("按你的建议，确认 C5 关闭"); stage 3 (critique) is complete. Next: real use on a research project. Approach B (reviewers see open Objections) remains an open candidate.
+2026-11-13: During real use the researcher asked whether GLM can serve read-only analysis without Chief and authorized a smoke test ("主要是只读分析，先帮我实测方式 A"): one crossval session on a temporary workspace with a models.toml entry using `command = "claude-mix"`, `model = "glm-5.3"` passed (served model glm-5.3 reported). No code changed.
 
 ## Project goals and scope
 
