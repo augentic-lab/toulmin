@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-13 — GLM code-writing test (no code change)
+
+- Request: the researcher needs GLM to write code, not only read ("不只是只读，我需要他进行写代码，你可以再做一个测试吗").
+- Run (`~/notes/toulmin/glm-code-2026-11-13/`, temporary fixtures, agent-run evidence): a C11 latency-statistics tool with a frozen check and 14 held-out cases. T1 headless `claude-mix -p`; T2 an isolated Chief home (profile toulmin-sim-r) with contract `"command": "claude-mix"`, Codex cross review. Both reported glm-5.3 and passed 14/14 held-out cases (T2 10.5 min, review pass; 4 permission prompts answered by the operator).
+- Findings: Toulmin build requests carry no worker `command`, so `toulmin decide` cannot pick GLM per request (Chief direct use or a dedicated Chief home with `commands` works); AoE Claude workers stop on compound-command permission prompts; under denied writes (fixture under a protected `~/.claude` path, an agent setup error) GLM worked around the denials via /tmp staging and a make recipe.
+- Checks: no code changed; code tests not run. Session ID: unavailable.
+
 ## 2026-11-12 — R11 recorded: explicit cross-provider review models
 
 - Request: record the revised Sol/Claude model allocation as a TODO. Earlier OpenAI-only advice was incomplete; the recorded proposal includes Claude.
