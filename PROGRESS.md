@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-14 — Workflow redesign proposal (documentation only)
+
+- Request: list the judgments the researcher must make in a full cycle, research how systems researchers work, and replan Toulmin ("按你的建议，先整理这份清单……重新规划和设计一下我们当前的这个项目"). The researcher observed that real projects start from a simple question and refine it; up-front Claims and Objection evidence scatter thinking.
+- Output: `~/notes/toulmin/workflow-redesign.md` (Chinese): a 22-item judgment checklist (think / glance / remove) with counts from the C5 trial and rkey-lifecycle; a source table (measure-then-build, tracer bullets, write-first, incremental formalization, IBIS overhead, sensemaking loops, Lakatos, exploratory vs confirmatory, interruption costs, benchmarking crimes); a redesign (one question + loop + promote-on-demand + conclusion-level rigor checks + checkpoint decide); decisions D1–D6 (D1 changes design.md section 7, an L0/design change) and steps P0–P4 (P0 guidance-only first).
+- Checks: documentation only; no code or research data changed; code tests not run. The real workspace was read only.
+- Next: the researcher reviews D1–D6; P0 requires authorization.
+- Session ID: unavailable.
+
 ## 2026-11-13 — Worker launch command for build requests
 
 - Decision: the researcher authorized the optional worker `command` field ("按你的建议，加上 command 字段") after the GLM code-writing test.

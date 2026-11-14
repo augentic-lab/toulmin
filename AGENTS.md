@@ -94,6 +94,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-13: During real use the researcher asked whether GLM can serve read-only analysis without Chief and authorized a smoke test ("主要是只读分析，先帮我实测方式 A"): one crossval session on a temporary workspace with a models.toml entry using `command = "claude-mix"`, `model = "glm-5.3"` passed (served model glm-5.3 reported). No code changed.
 2026-11-13: The researcher asked for a GLM code-writing test ("不只是只读，我需要他进行写代码，你可以再做一个测试吗"). On temporary fixtures, a headless claude-mix session and a Chief worker (`"command": "claude-mix"`, isolated Chief home) both produced code passing 14/14 held-out cases (`~/notes/toulmin/glm-code-2026-11-13/`). Toulmin build requests cannot yet select a worker command; no code changed.
 2026-11-13: The researcher authorized the worker launch command ("按你的建议，加上 command 字段"). It is implemented: optional build-request `command` (bare name on PATH) reaches the frozen Chief contract, the decide preview and the imported Run's model (`<tool> via <command>`).
+2026-11-14: The researcher found the operating workflow too heavy for continuous thinking and asked for a judgment checklist, research on systems-research workflows and a replanned design ("按你的建议，先整理这份清单……重新规划和设计一下我们当前的这个项目"). Documentation only: `~/notes/toulmin/workflow-redesign.md`, decisions D1–D6 pending review (D1 is a design/L0-level change); P0–P4 require separate authorization.
 
 ## Project goals and scope
 
