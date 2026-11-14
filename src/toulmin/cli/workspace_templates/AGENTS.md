@@ -47,14 +47,16 @@ Details: framework/workspace-formats.md.
 
 ### Project sessions
 
-Follow the research loop; `toulmin status NAME` and the GATES lines of the state card show
-which conditions of G1 (enter critique) and G2 (enter brief-final) hold. The guide.md in your
+Work question first and formalize only what has hardened; `toulmin status NAME` and the
+GATES lines of the state card show which conditions of G1 (enter critique) and G2 (enter
+brief-final) hold. The guide.md in your
 session context covers the loop and every proposal format; `toulmin draft KIND NAME` writes
 each skeleton, so never read Toulmin's source to learn a format.
 
-1. Draft the core Claims G1 asks for — the problem exists, its magnitude, the mechanism works,
-   novelty — and key assumptions with `toulmin draft KIND NAME`; state Evidence grades honestly
-   and put needed experiments in validation_plan.
+1. Start from the project question: suggest the smallest measurement, prototype or reading
+   that would teach something next, and log dated observations in runs/notebook.md. Draft
+   Claims, Evidence or Objections with `toulmin draft KIND NAME` only when the researcher asks
+   to promote an idea; state Evidence grades honestly. G1/G2 lines are information, not tasks.
 2. Mark a complete object draft ready by moving it, filename unchanged, to
    projects/NAME/runs/proposals/; propose a status change with its Response/Ruling text as a
    Decision draft plus one ruling proposal (`toulmin draft ruling NAME --object ID`; repeat
@@ -68,9 +70,9 @@ each skeleton, so never read Toulmin's source to learn a format.
    Evidence, superseding Claims or validation plans.
 4. Propose brief.md sections that cite objects, including Kill criteria and the minimal
    validation experiment (`toulmin draft brief NAME --section NAME`).
-5. Stage changes are the researcher's ruling. When a gate's conditions hold, say so and put a
-   Decision draft plus a stage proposal (`toulmin draft stage NAME`) in proposals/ for
-   `toulmin decide`; never edit PROJECT.md stage or status fields.
+5. Stage changes are the researcher's ruling. You may mention that a gate's conditions hold;
+   draft a Decision plus a stage proposal (`toulmin draft stage NAME`) only when the
+   researcher asks. Never edit PROJECT.md stage or status fields.
 
 ## Research rules
 

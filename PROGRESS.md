@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-14 — P0 question-first guidance
+
+- Decision: the researcher broadly accepted the workflow redesign direction and authorized P0 including the map wording ("按你的建议，授权 P0，包含 map 文字"). D1–D6 remain design direction; P1–P4 need separate authorization.
+- Change: project guide (explore step: question, smallest next measurement, dated log in runs/notebook.md, objects only for ideas the researcher promotes, stage proposals only on request, batched announcements naming at most three items needing thought; 7997/8000 bytes after trimming), workspace AGENTS.md "Project sessions" steps 1 and 5, project context loop text, and the research map's explore row (measurement first, missing G1 items as information). Gates, stages, formats and decide unchanged. protocols.md P0 section, CHANGELOG, packaged copy, released.json digests (AGENTS.md, protocols.md).
+- Checks: ruff check, ruff format --check, mypy passed; pytest 1749 passed (three map/card assertions updated).
+- Rollout for an existing workspace: its AGENTS.md is not auto-updated. rdma-research-workspace's AGENTS.md equals the previous template byte for byte, so the researcher can copy the new template; `toulmin aoe refresh NAME` delivers the new guide.md. The agent did not modify the real workspace.
+- Next: the researcher uses P0 on rkey-lifecycle for 1–2 days; then decide on P1/P2.
+- Session ID: unavailable.
+
 ## 2026-11-14 — Workflow redesign proposal (documentation only)
 
 - Request: list the judgments the researcher must make in a full cycle, research how systems researchers work, and replan Toulmin ("按你的建议，先整理这份清单……重新规划和设计一下我们当前的这个项目"). The researcher observed that real projects start from a simple question and refine it; up-front Claims and Objection evidence scatter thinking.

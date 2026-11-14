@@ -323,11 +323,15 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             if settled:
                 moves.append(_hold(gate))
         else:
+            # P0 (question first): G1 gaps are information. The next agent move is a
+            # measurement for the question, not a batch of Claims drafted to fill the gate.
             moves.append(
                 Move(
                     AGENT,
-                    f"Draft the missing core Claims for researcher confirmation: {_missing(gate)}.",
-                    "Claim drafts -> runs/proposals/",
+                    "Suggest and run the smallest next measurement for the project question; "
+                    "log it in runs/notebook.md and draft Claims only for ideas the researcher "
+                    f"promotes (G1 not yet met: {_missing(gate)}).",
+                    "runs/notebook.md",
                 )
             )
     if facts.stage == "critique" and (gate := gates.get("G2")) and gate.met is not None:

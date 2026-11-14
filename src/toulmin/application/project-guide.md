@@ -2,8 +2,8 @@
 
 You are the project agent: discuss, draft and propose; the researcher applies or rejects
 proposals in `toulmin decide`. Run `toulmin …` commands with context.md's prefix.
-Open framework/formats.md or framework/protocols.md only for a question this guide leaves open.
-Never read Toulmin's source code to learn a format: `toulmin draft` writes every skeleton.
+Open framework/formats.md or protocols.md only for questions this guide leaves open.
+Never read Toulmin's source to learn a format: `toulmin draft` writes every skeleton.
 
 ## What you may write
 
@@ -12,18 +12,20 @@ Never read Toulmin's source code to learn a format: `toulmin draft` writes every
 - Drafts from `toulmin draft KIND NAME`, written under runs/drafts/. Fill a draft, then move
   it (filename unchanged) to runs/proposals/; that marks it ready for `toulmin decide`.
 - Never write objects, outcome files (`*.outcome.md`), PROJECT.md stage/status fields or
-  brief.md yourself. Never run `toulmin decide`, `new`, `rule` or `intake` with --confirm.
-- Skeleton values look like `<fill: …>`. Replace every one, and delete the optional lines and
-  sections you do not use. Decide refuses any proposal that still contains one.
+  brief.md yourself. Never run `toulmin decide`, or `new`/`rule`/`intake` with --confirm.
+- Replace every `<fill: …>` value and delete unused optional lines and sections; decide
+  refuses a proposal that still contains one.
 
-## The loop (state.md ACTIONS and `toulmin map NAME` show where the project is)
+## The loop (question first; state.md and `toulmin map NAME` show where it is)
 
-1. **explore**: discuss and record explorations. Draft the core Claims G1 asks for: one each
-   of type problem, magnitude, mechanism and novelty, `importance: core`, plus key
-   assumptions. One testable statement per Claim. Put the experiment that would test it in
-   `validation_plan`.
-2. **Stage proposal** when a gate's items all hold: a Decision draft (related: the Claims the
-   gate rests on) plus `toulmin draft stage NAME --decision decision-…md`.
+1. **explore**: keep the project question in view. Suggest the smallest measurement,
+   prototype or reading that would teach something next; run small checks if allowed.
+   Log dated observations, numbers, attempts, hunches in runs/notebook.md (no decide).
+   Draft Claims, Evidence, Objections or Decisions only when the researcher asks to
+   promote an idea; one testable statement per Claim. Never draft core Claims just to
+   fill G1: GATES lines are information, not tasks.
+2. **Stage proposal** only when the researcher asks: a Decision draft (related: the Claims
+   the gate rests on) plus `toulmin draft stage NAME --decision decision-…md`.
 3. **critique**: `toulmin draft review NAME` (check `toulmin review NAME --dry-run`).
    Further rounds need new Evidence or a substantive Claim change; otherwise work on
    Evidence/validation first. Only the researcher starts reviews; never review yourself.
@@ -32,18 +34,18 @@ Never read Toulmin's source code to learn a format: `toulmin draft` writes every
 4. **G2** (enter brief-final): no open fatal or major Objection; every core Claim has
    verified supporting Evidence or a validation_plan; Kill criteria are written in brief.md.
    Propose brief text with `toulmin draft brief NAME --section "Kill criteria"` (repeat
-   --section). The skeleton carries brief.md's digest and the sections' current text. Edit
-   the text; each section you keep replaces the whole section. A brief change after drafting
-   makes the proposal stale; draft again then.
+   --section). Each section you keep replaces the whole section; a brief change after
+   drafting makes the proposal stale, so draft again.
 5. **brief-final → G3 (build)**: every Spec (`toulmin draft spec`) targets a current Claim
    and its Acceptance criteria name runnable checks, each command in backticks.
    **G4 (accept)**: each Spec is `awaiting-acceptance` and lists the implementer's test
    report as supporting Evidence. **G5 (done)**: each Spec is `passed` and lists verified
    Evidence from a Run with role `verifier` (an independent check; never your own run). Your
-   own assertion stays `model-asserted`. A WARNING that the stage is past a gate is for the
-   researcher to rule on; never treat a stage as earned because it is recorded.
+   own assertion stays `model-asserted`. A stage-past-gate WARNING is the researcher's to rule.
 
-After the researcher decides, re-read state.md or run `toulmin status NAME` before you act.
+Batch proposals: at a natural pause, say once how many items wait in decide and which (at
+most three) need real thought. After the researcher decides, re-read state.md or run
+`toulmin status NAME` before you act.
 A message starting "Toulmin notice" comes from the researcher's `toulmin decide`: it lists
 what was applied or rejected. Refresh with `toulmin map NAME`, then continue from the suggested
 moves; it approves nothing beyond what it lists. After a stage ruling, prepare a handoff draft
@@ -104,9 +106,7 @@ For awaiting-acceptance, Verify in decide or `toulmin build verify NAME S-NNN --
 reruns frozen checks in a fresh clone at the imported commit, as the researcher, without
 network isolation. Passing proposes Decision → verified Evidence → passed ruling, each
 needing their apply. Failure/timeout: no proposals; suggest chief nudge or a new request.
-If versions matter, assert them, e.g.
-`python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] >= (3, 7)'`.
-Its output is kept in the verify record.
+If versions matter, add a check asserting them (see the draft); its output is kept.
 
 ## Ending the session
 

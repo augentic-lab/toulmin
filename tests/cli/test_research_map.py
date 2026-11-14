@@ -41,7 +41,9 @@ def test_an_empty_project_shows_stage_gate_and_first_move(workbench):
     assert "● explore ─G1─ ○ critique ─G2─ ○ brief-final" in text
     assert "G1 -> critique  0/4  (advice; the stage changes only by your ruling)" in text
     assert "Waiting on you (toulmin decide): nothing" in text
-    assert "  1 agent  Draft the missing core Claims for researcher confirmation" in text
+    # P0 (question first): the first move is a measurement, not Claims drafted to fill G1.
+    assert "  1 agent  Suggest and run the smallest next measurement for the project" in text
+    assert "Draft the missing core Claims" not in text
     assert "Argument: no Claims yet." in text
     assert snapshot(workbench) == before  # read-only
 
@@ -108,7 +110,7 @@ def test_rule_table_rows_in_order():
     moves = next_moves(facts(proposals=2, gates=(missing,)))
     assert [move.actor for move in moves] == [YOU, AGENT]
     assert moves[0].text == "Run `toulmin decide` for 2 pending proposal(s)."
-    assert moves[1].text.endswith("core novelty Claim (novelty).")
+    assert moves[1].text.endswith("core novelty Claim (novelty)).")
     met = gate("G1", "critique", True)
     assert next_moves(facts(gates=(met,)))[0].text.startswith("G1 conditions hold")
     # Undecided review drafts may still block the gate: no stage suggestion yet.

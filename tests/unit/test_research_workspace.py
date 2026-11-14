@@ -256,7 +256,8 @@ def test_card_shows_gates_and_the_loop_suggestion_for_the_stage(populated):
     )
     assert "G1 -> critique: not met; missing: core magnitude Claim (the problem's size)" in card
     assert "G2 -> brief-final: not met; missing: " in card
-    assert "Draft the missing core Claims for researcher confirmation: core magnitude" in card
+    assert "smallest next measurement for the project question" in card
+    assert "(G1 not yet met: core magnitude" in card
     for number, kind in ((2, "magnitude"), (3, "mechanism"), (4, "novelty")):
         core(populated, number, kind)
     card = render_state(research_state(populated, "demo"))
@@ -275,4 +276,4 @@ def test_card_gates_are_unknown_on_invalid_data(populated):
     (populated / "projects/demo/claims/C-009.md").write_text("not a claim\n")
     card = render_state(research_state(populated, "demo"))
     assert "G1 -> critique: unknown (data invalid)" in card
-    assert "Draft the missing core Claims" not in card
+    assert "G1 not yet met" not in card

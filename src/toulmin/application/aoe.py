@@ -493,9 +493,10 @@ class AoEWorkspace:
         status = _command("status", name, "--root", root)
         dry_run = _command("review", name, "--root", root, "--dry-run")
         return (
-            "Research loop (design section 7; guide.md has the steps and formats). The GATES "
-            f"lines in state.md and `{status}` show G1/G2 readiness; follow the step the "
-            "project is at.\n"
+            "Research loop (design section 7; guide.md has the steps and formats). Work "
+            "question first: suggest the smallest next measurement and log it in "
+            f"runs/notebook.md; promote ideas to objects only when the researcher asks. The "
+            f"GATES lines in state.md and `{status}` show G1/G2 readiness as information.\n"
             f"- `{draft}` writes every skeleton under {self.runs}/drafts/: claim, evidence, "
             "objection, decision, exploration, spec, and the proposals ruling (--object, "
             "repeatable for one ruling on several objects; --status), intake (--run R-NNN), "

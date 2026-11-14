@@ -1,5 +1,10 @@
 # Framework changes
 
+- P0 question-first guidance (2026-11-14): project agents start from the question and the
+  smallest next measurement, log observations in runs/notebook.md and draft objects only for
+  ideas the researcher promotes; the map's explore row suggests a measurement instead of
+  missing core Claims. No schema, gate or stage change.
+
 - Worker launch command (2026-11-13): build requests accept optional `command`, a bare
   program name on PATH that Chief uses to launch the worker (e.g. a model-router wrapper).
   It reaches the frozen contract only when set, decide previews it, and imported Runs name

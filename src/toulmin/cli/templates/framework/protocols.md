@@ -1247,3 +1247,24 @@ launcher (`claude via claude-mix`) because the tool alone would misattribute the
 name is read from the applied request after its recorded digest is checked, before anything
 is published. L3 previews "Worker launch command: NAME" in decide. Chief's own AI calls,
 cross review and model choice are unchanged; Toulmin still passes no model or effort.
+
+### P0 — Question-first guidance (2026-11-14)
+
+The researcher found that real projects start from a simple question and are refined over
+time; drafting every core Claim and its Objection evidence up front scattered their thinking.
+They accepted the direction of `~/notes/toulmin/workflow-redesign.md` and authorized P0 only:
+guidance plus the map's explore wording. Gates, stages, object formats and decide are
+unchanged (P1–P4 need separate authorization).
+
+- Agent guidance (project guide, workspace AGENTS.md "Project sessions", project context):
+  start from the project question, suggest the smallest next measurement, prototype or
+  reading, and log dated observations in `projects/NAME/runs/notebook.md` (free-form, no
+  decision). Draft Claims, Evidence, Objections or Decisions only when the researcher asks to
+  promote an idea; G1/G2 lines are information, not tasks. Stage proposals are drafted only
+  on the researcher's request. Proposals are announced in batches at natural pauses, naming
+  at most three that need real thought.
+- L2 reason (research map): in explore with G1 not met, the agent row now suggests the
+  smallest next measurement and names the missing G1 items as information, instead of
+  "Draft the missing core Claims". Row order, actors and every other rule are unchanged; G1
+  readiness is computed as before and the researcher's "G1 conditions hold" row remains.
+
