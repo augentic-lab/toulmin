@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-16 — User guide in the repository
+
+- Decision: the researcher asked for the general part of the personal operating notes to live in the repository ("按你的建议，整理成 docs/user-guide.md"); machine-specific setup stays in ~/notes/toulmin/real-project-guide.md (version 4).
+- Change: docs/user-guide.md (English) covers setup, the question-first loop, promotion, optional review, Objection outcomes, when Decisions and the Brief are written, stages as information, Chief handoff (work locations, steps, import, verify) and the per-session routine. README links it from Quick start and Project documentation.
+- Checks: documentation only; command forms checked against `toulmin open --help`, `toulmin aoe refresh --help` and the stage enum. Code tests not run (no code changed).
+- Session ID: unavailable.
+
 ## 2026-11-16 — P0 second follow-up: the agent suggests Chief for large tasks
 
 - Decision: the map suggests Specs only in brief-final and build requests only in build, so a new researcher in explore never learns Chief could take a large task; the researcher asked to add the suggestion to the guide ("把主动建议交给 Chief 也加进指南").

@@ -44,6 +44,9 @@ toulmin open        # answer y: creates the workspace and opens the agent sessio
 3. To finish, ask the agent to end the session (it drafts a summary), then `toulmin decide`
    once more. The next session continues from the files.
 
+For the full research workflow (question first, promoting results, reviews, Chief and
+verification), read the [user guide](docs/user-guide.md).
+
 ## Daily use
 
 | When | Command |
@@ -598,6 +601,7 @@ environment merely because a shell hook has removed its PATH entry.
 
 - [Python/Textual TUI design](docs/tui-design.md): approved workflow, architecture and implementation plan.
 
+- [User guide](docs/user-guide.md): the day-to-day research workflow.
 - [Design](docs/design.md), [L1 formats](docs/formats.md), [seven object examples](docs/format-examples.md), [L2 protocols](docs/protocols.md), [workspace-first file contract](docs/workspace-formats.md).
 - [Repository rules](AGENTS.md), [implementation tasks](TODO.md), [session progress](PROGRESS.md).
 

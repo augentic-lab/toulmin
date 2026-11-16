@@ -98,6 +98,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-14: The researcher broadly accepted the redesign direction and authorized P0 with the map wording ("按你的建议，授权 P0，包含 map 文字"). P0 is implemented: question-first agent guidance (smallest next measurement, runs/notebook.md log, objects only for promoted ideas, stage proposals on request, batched announcements) and the map's explore row. Gates, stages, formats and decide are unchanged; P1–P4 require separate authorization.
 2026-11-14: The researcher asked that the agent itself offer promotion at suitable moments ("可以，现在加上"). Implemented as P0 guidance: one brief question when a result is reproducible, a conclusion is stated, or work pauses or ends; drafts only after agreement.
 2026-11-16: The researcher asked that the agent also suggest Chief ("把主动建议交给 Chief 也加进指南"). Implemented as guidance: for a large or long unattended task, one question about a Spec and build request in any stage; small tasks stay in the session.
+2026-11-16: The researcher asked for a repository user guide ("按你的建议，整理成 docs/user-guide.md"): docs/user-guide.md describes the day-to-day workflow; personal machine setup stays in ~/notes. Documentation only.
 
 ## Project goals and scope
 
