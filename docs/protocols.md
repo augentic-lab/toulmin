@@ -1274,3 +1274,10 @@ whether to promote when a result is reproducible, when the researcher states a c
 when work pauses or the session ends, and drafts only after the researcher agrees. Guidance
 only (project guide, workspace AGENTS.md, project context); no rule, format or gate change.
 
+Second P0 follow-up (2026-11-16, "把主动建议交给 Chief 也加进指南"): the map suggests Specs
+only in brief-final and build requests only in build, so a new researcher in explore was never
+told that Chief could take a large task. The agent now does small implementation in the
+session and, for a large or long unattended task, asks once whether to hand it to Chief (a
+Spec on a current Claim, then a build request) in any stage, drafting only after agreement.
+Guidance only; map rules and the build request format are unchanged.
+

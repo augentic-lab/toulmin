@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-16 — P0 second follow-up: the agent suggests Chief for large tasks
+
+- Decision: the map suggests Specs only in brief-final and build requests only in build, so a new researcher in explore never learns Chief could take a large task; the researcher asked to add the suggestion to the guide ("把主动建议交给 Chief 也加进指南").
+- Change: project guide Build section and workspace AGENTS.md: small implementation stays in the session; for a large or long unattended task the agent asks once whether to hand it to Chief (Spec on a current Claim, then build request), in any stage, drafting after agreement. Guide 7999/8000 bytes (redundant ruling-section list and command details trimmed). protocols.md paragraph, CHANGELOG, packaged copy, released.json digests.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 1749 passed.
+- Session ID: unavailable.
+
 ## 2026-11-14 — P0 follow-up: the agent offers promotion
 
 - Decision: the researcher noted that someone unfamiliar with Toulmin would only keep developing in the session and never ask to promote; they want the agent to ask at suitable moments ("可以，现在加上").

@@ -59,6 +59,8 @@ each skeleton, so never read Toulmin's source to learn a format.
    to promote an idea; state Evidence grades honestly. G1/G2 lines are information, not tasks.
    Ask once, briefly, whether to promote when a result is reproducible, the researcher states
    a conclusion, or work pauses or ends; draft only after they agree.
+   Do small implementation in the session; for a large or long unattended task, ask once
+   whether to hand it to Chief (a Spec, then a build request), in any stage.
 2. Mark a complete object draft ready by moving it, filename unchanged, to
    projects/NAME/runs/proposals/; propose a status change with its Response/Ruling text as a
    Decision draft plus one ruling proposal (`toulmin draft ruling NAME --object ID`; repeat
