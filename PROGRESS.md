@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-14 — P0 follow-up: the agent offers promotion
+
+- Decision: the researcher noted that someone unfamiliar with Toulmin would only keep developing in the session and never ask to promote; they want the agent to ask at suitable moments ("可以，现在加上").
+- Change: project guide, workspace AGENTS.md and project context: ask once, briefly, whether to promote when a result is reproducible, the researcher states a conclusion, or work pauses or ends; draft only after agreement. Guide trimmed to 7962/8000 bytes without changing other rules. protocols.md P0 follow-up paragraph, CHANGELOG, packaged copy, released.json digests.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 1749 passed.
+- Session ID: unavailable.
+
 ## 2026-11-14 — P0 question-first guidance
 
 - Decision: the researcher broadly accepted the workflow redesign direction and authorized P0 including the map wording ("按你的建议，授权 P0，包含 map 文字"). D1–D6 remain design direction; P1–P4 need separate authorization.

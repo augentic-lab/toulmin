@@ -495,7 +495,8 @@ class AoEWorkspace:
         return (
             "Research loop (design section 7; guide.md has the steps and formats). Work "
             "question first: suggest the smallest next measurement and log it in "
-            f"runs/notebook.md; promote ideas to objects only when the researcher asks. The "
+            "runs/notebook.md; promote ideas to objects only when the researcher agrees, and "
+            "ask briefly when a result or conclusion looks ready. The "
             f"GATES lines in state.md and `{status}` show G1/G2 readiness as information.\n"
             f"- `{draft}` writes every skeleton under {self.runs}/drafts/: claim, evidence, "
             "objection, decision, exploration, spec, and the proposals ruling (--object, "

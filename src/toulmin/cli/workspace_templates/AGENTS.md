@@ -57,6 +57,8 @@ each skeleton, so never read Toulmin's source to learn a format.
    that would teach something next, and log dated observations in runs/notebook.md. Draft
    Claims, Evidence or Objections with `toulmin draft KIND NAME` only when the researcher asks
    to promote an idea; state Evidence grades honestly. G1/G2 lines are information, not tasks.
+   Ask once, briefly, whether to promote when a result is reproducible, the researcher states
+   a conclusion, or work pauses or ends; draft only after they agree.
 2. Mark a complete object draft ready by moving it, filename unchanged, to
    projects/NAME/runs/proposals/; propose a status change with its Response/Ruling text as a
    Decision draft plus one ruling proposal (`toulmin draft ruling NAME --object ID`; repeat

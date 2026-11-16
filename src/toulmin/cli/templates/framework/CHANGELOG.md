@@ -4,6 +4,8 @@
   smallest next measurement, log observations in runs/notebook.md and draft objects only for
   ideas the researcher promotes; the map's explore row suggests a measurement instead of
   missing core Claims. No schema, gate or stage change.
+  Follow-up: the agent briefly asks whether to promote a reproducible result, a stated
+  conclusion or work at a pause, and drafts only after the researcher agrees.
 
 - Worker launch command (2026-11-13): build requests accept optional `command`, a bare
   program name on PATH that Chief uses to launch the worker (e.g. a model-router wrapper).

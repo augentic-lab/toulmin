@@ -1268,3 +1268,9 @@ unchanged (P1–P4 need separate authorization).
   "Draft the missing core Claims". Row order, actors and every other rule are unchanged; G1
   readiness is computed as before and the researcher's "G1 conditions hold" row remains.
 
+P0 follow-up (2026-11-14, "可以，现在加上"): with promotion left to the researcher, a researcher
+unfamiliar with Toulmin would never formalize anything. The agent therefore asks once, briefly,
+whether to promote when a result is reproducible, when the researcher states a conclusion, or
+when work pauses or the session ends, and drafts only after the researcher agrees. Guidance
+only (project guide, workspace AGENTS.md, project context); no rule, format or gate change.
+

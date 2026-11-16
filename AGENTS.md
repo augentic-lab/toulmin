@@ -96,6 +96,7 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-13: The researcher authorized the worker launch command ("按你的建议，加上 command 字段"). It is implemented: optional build-request `command` (bare name on PATH) reaches the frozen Chief contract, the decide preview and the imported Run's model (`<tool> via <command>`).
 2026-11-14: The researcher found the operating workflow too heavy for continuous thinking and asked for a judgment checklist, research on systems-research workflows and a replanned design ("按你的建议，先整理这份清单……重新规划和设计一下我们当前的这个项目"). Documentation only: `~/notes/toulmin/workflow-redesign.md`, decisions D1–D6 pending review (D1 is a design/L0-level change); P0–P4 require separate authorization.
 2026-11-14: The researcher broadly accepted the redesign direction and authorized P0 with the map wording ("按你的建议，授权 P0，包含 map 文字"). P0 is implemented: question-first agent guidance (smallest next measurement, runs/notebook.md log, objects only for promoted ideas, stage proposals on request, batched announcements) and the map's explore row. Gates, stages, formats and decide are unchanged; P1–P4 require separate authorization.
+2026-11-14: The researcher asked that the agent itself offer promotion at suitable moments ("可以，现在加上"). Implemented as P0 guidance: one brief question when a result is reproducible, a conclusion is stated, or work pauses or ends; drafts only after agreement.
 
 ## Project goals and scope
 
