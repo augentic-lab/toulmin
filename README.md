@@ -82,12 +82,18 @@ verification), read the [user guide](docs/user-guide.md).
 
 ## Removing a workspace
 
-Toulmin has no delete command. To remove a workspace:
+```sh
+toulmin workspaces remove NAME_OR_PATH                     # preview: sessions, Chief tasks, what is lost
+toulmin workspaces remove NAME_OR_PATH --archive ~/old.tar.gz --confirm
+```
 
-1. Remove its agent sessions in AoE: `aoe remove "Workspace: NAME"` and each
-   `aoe remove "Project: CHILD | NAME"` (`-p PROFILE` if not the default profile).
-2. Delete the directory.
-3. `toulmin workspaces forget PATH` drops it from the list of known workspaces.
+The preview lists the AoE sessions it will move to AoE's trash, Chief tasks tied to the
+workspace, the git state and every `LOST:` item (no commits, no upstream, unpushed commits,
+uncommitted files). It refuses while a session is running, a Chief task is unfinished or your
+shell is inside the folder. `--confirm` asks you to type the folder name, writes the optional
+archive, trashes the sessions, deletes the folder and drops it from `toulmin workspaces`. Code
+repositories, Chief state and git remotes are never touched. `toulmin workspaces forget PATH`
+only drops a list entry.
 
 ## Status
 

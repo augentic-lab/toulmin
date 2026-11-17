@@ -254,6 +254,10 @@ class AoEClient:
                 creation_uncertain=True,
             ) from error
 
+    def remove(self, session_id: str) -> None:
+        """Move one session to AoE's trash (restorable there); never ``--purge``."""
+        self._run("remove", _validate_id(session_id))
+
     def send(self, session_id: str, message: str) -> None:
         _validate_id(session_id)
         if not isinstance(message, str) or not message.strip() or "\x00" in message:

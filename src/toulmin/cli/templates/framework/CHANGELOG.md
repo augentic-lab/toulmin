@@ -1,5 +1,9 @@
 # Framework changes
 
+- Workspace removal (2026-11-17): `toulmin workspaces remove` previews and, after the folder
+  name is typed, removes a workspace (sessions to AoE's trash, optional archive). No format
+  change.
+
 - P0 question-first guidance (2026-11-14): project agents start from the question and the
   smallest next measurement, log observations in runs/notebook.md and draft objects only for
   ideas the researcher promotes; the map's explore row suggests a measurement instead of

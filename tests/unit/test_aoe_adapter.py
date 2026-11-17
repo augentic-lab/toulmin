@@ -89,6 +89,7 @@ def test_invalid_id_never_reaches_cli(calls, session_id):
     for operation in (
         lambda: adapter.show(session_id),
         lambda: adapter.send(session_id, "message"),
+        lambda: adapter.remove(session_id),
         lambda: adapter.ready(session_id),
         lambda: adapter.attach(session_id),
     ):
@@ -245,6 +246,13 @@ def test_send_never_revives_or_retries_and_keeps_text_literal(calls):
     client().send(SID, message)
     assert calls[0][0][0][-5:] == ["send", "--no-revive", SID, "--", message]
     assert len(calls[0]) == 1
+
+
+def test_remove_moves_to_trash_and_never_purges(calls):
+    calls[1].append("")
+    client().remove(SID)
+    assert calls[0][0][0][-2:] == ["remove", SID]
+    assert "--purge" not in calls[0][0][0]
 
 
 @pytest.mark.parametrize("message", ["", "  ", "hi\x00bad"])

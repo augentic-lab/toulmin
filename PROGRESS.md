@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-17 — Workspace removal command
+
+- Decision: after removing the test-toulmin-rdma workspace by hand, the researcher asked for Toulmin to manage removal ("按你的建议，实现 workspaces remove"); PROGRESS earlier deferred this until removal became frequent.
+- Change: `toulmin workspaces remove NAME_OR_PATH [--archive FILE] [--profile P] [--confirm]` (application/workspace_remove.py, cli/workspaces.py, AoEClient.remove). Read-only preview of sessions (bindings and paths; trashed skipped), Chief tasks (build records and Chief-home tasks whose repo/worktree is inside), git state and LOST lines; blocks on running sessions, unfinished/unreadable Chief tasks, unreadable build records or a shell inside the folder; refuses non-workspaces, symlinks, home and `/`. `--confirm` requires typing the folder name, then archive (new file outside the folder), `aoe remove` (trash, never purge), folder deletion and list removal, stopping at the first failure. README, user guide, protocols.md section, CHANGELOG, packaged copy and released.json digest.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 1758 passed (8 new CLI tests, 1 new adapter test plus remove in the invalid-ID test). Read-only preview against the real rdma-research-workspace listed its two sessions and LOST lines; nothing removed.
+- Session ID: unavailable.
+
 ## 2026-11-17 — Existing non-Toulmin project onboarding assessment
 
 - Request: assess whether an existing ordinary project can easily move into the current Toulmin version; no migration or feature implementation requested. Read the latest user guide, entry/init/adoption, child creation and external Chief repository contracts, rather than relying on the earlier WI planning state.

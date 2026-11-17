@@ -1281,3 +1281,20 @@ session and, for a large or long unattended task, asks once whether to hand it t
 Spec on a current Claim, then a build request) in any stage, drafting only after agreement.
 Guidance only; map rules and the build request format are unchanged.
 
+## Workspace removal (2026-11-17)
+
+`toulmin workspaces remove NAME_OR_PATH` retires a workspace, at the researcher's request
+after removing one by hand ("按你的建议，实现 workspaces remove"). It is a researcher command
+with no agent role. The preview is read-only: the folder must hold a readable WORKSPACE.md (or
+a legacy workbench) and may not be a symbolic link, the home directory or `/`. It lists AoE
+sessions found through saved bindings and by path in the bound and default profiles (already
+trashed ones are skipped), Chief tasks from build records and from the Chief home whose repo
+or worktree lies inside the folder, the offline git state, and `LOST:` lines for data that
+exists nowhere else. A running session, an unfinished or unreadable Chief task, unreadable
+build records or a shell inside the folder block removal. `--confirm` requires typing the
+folder name, then writes the optional `--archive` (a new gzip tar outside the folder; never
+overwritten), moves sessions to AoE's trash (`aoe remove`, never `--purge`), deletes the folder
+and forgets the list entry, stopping at the first failure with what was already done.
+Code repositories, Chief state, worktrees and git remotes are never touched. No file format
+changes.
+

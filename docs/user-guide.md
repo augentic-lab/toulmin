@@ -148,6 +148,7 @@ records.
 | After a Toulmin update | when the session is idle, `toulmin aoe refresh NAME` delivers the new guidance |
 | Long conversation | optionally: handoff → `decide` → archive the old AoE session → `toulmin open NAME --new-session` |
 | End | `toulmin commit` (preview; check for large files) → `toulmin commit --confirm` → `git push` if you use a remote |
+| Retire a workspace | `toulmin workspaces remove NAME` (preview), then add `--archive FILE.tar.gz --confirm` |
 
 Large re-downloadable files (for example upstream source archives) belong in `.gitignore`;
 record their URL and checksum in `runs/` instead.
