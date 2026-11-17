@@ -1,5 +1,13 @@
 # Toulmin development progress
 
+## 2026-11-17 — Existing non-Toulmin project onboarding assessment
+
+- Request: assess whether an existing ordinary project can easily move into the current Toulmin version; no migration or feature implementation requested. Read the latest user guide, entry/init/adoption, child creation and external Chief repository contracts, rather than relying on the earlier WI planning state.
+- **Verified**: on a temporary nonempty ordinary-project directory containing README.md and main.py, current initialize_workspace and adoption preview both refuse it as unrelated; all fixture file bytes remain unchanged. The fixture was removed on completion. Adoption handles recognized legacy Toulmin workbenches, not arbitrary repositories.
+- **Inferred from code/documentation**: the supported approach is a separate research workbench plus a reviewed child framing/source package; keep the existing code repository and its history in place. Chief can target it through machine-local tools/chief.local.toml [repos]. Existing reports/results need reviewed provenance-aware intake; there is no demonstrated general one-command converter for a project's history, Claims/Evidence or stage.
+- Validation: bounded local initializer/adoption probe and source/document inspection; documentation diff checked. Full code suite not rerun because no runtime code changed. No user research directory, native session, model configuration or original repository was migrated. A pre-existing TODO.md edit was left untouched and excluded from the commit.
+- Session ID unavailable. Blockers: none for assessment. Next: choose the actual source project and inspect its layout/materials before making a concrete onboarding plan. Only this progress note committed locally; no push.
+
 ## 2026-11-16 — User guide in the repository
 
 - Decision: the researcher asked for the general part of the personal operating notes to live in the repository ("按你的建议，整理成 docs/user-guide.md"); machine-specific setup stays in ~/notes/toulmin/real-project-guide.md (version 4).
