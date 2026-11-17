@@ -19,7 +19,16 @@ from toulmin.core.repository import Repository
 from toulmin.core.workspace_journal import incomplete_child
 from toulmin.protocols import project_proposals
 from toulmin.protocols.build import BuildFact, build_facts, build_line
-from toulmin.protocols.research_map import AGENT, EITHER, Move, move_facts, next_moves
+from toulmin.protocols.engineering_tasks import task_summaries
+from toulmin.protocols.onboarding import onboarding_context_files
+from toulmin.protocols.research_map import (
+    AGENT,
+    EITHER,
+    Move,
+    move_facts,
+    next_moves,
+    project_context,
+)
 from toulmin.protocols.session import entry_files
 from toulmin.protocols.status import GateReadiness, project_status, stage_warnings, upcoming
 
@@ -45,6 +54,10 @@ class ResearchState:
     # Suggested next moves from the rule table shared with `toulmin map` (V2).
     moves: tuple[Move, ...] = ()
     builds: tuple[BuildFact, ...] = ()
+    notebook_excerpt: str | None = None
+    overview: str | None = None
+    sources: tuple[str, ...] = ()
+    task_summaries: tuple[str, ...] = ()
 
 
 def _file_digest(repository: Repository, relative: str) -> str:
@@ -86,6 +99,10 @@ def research_state(
     proposals: tuple[str, ...] = ()
     moves: tuple[Move, ...] = ()
     builds: tuple[BuildFact, ...] = ()
+    notebook_excerpt = None
+    overview = None
+    sources: tuple[str, ...] = ()
+    tasks: tuple[str, ...] = ()
 
     def remember(repository: Repository, relative: str) -> bool:
         try:
@@ -100,6 +117,9 @@ def research_state(
         validate_project_name(project)
         repository = Repository(root)
         snapshot = inspect_project(repository, project)
+        overview, sources = project_context(repository, project)
+        tasks, task_errors = task_summaries(repository.root, project)
+        errors.extend(task_errors)
         errors.extend(snapshot.errors)
         objects = tuple(
             (str(document.object_id), document.header["status"])
@@ -148,6 +168,36 @@ def research_state(
                 if relative == "WORKSPACE.md" or os.path.lexists(repository.root / relative):
                     if remember(repository, relative):
                         context.append(relative)
+        # Optional onboarding records are additive: legacy projects need neither.
+        # Local source path bindings stay machine-local and are never resident snapshots.
+        for relative in (
+            f"{base}/overview.md",
+            "sources.toml",
+            *onboarding_context_files(repository.root, project),
+        ):
+            if os.path.lexists(repository.root / relative) and remember(repository, relative):
+                context.append(relative)
+        notebook = f"{base}/runs/notebook.md"
+        if os.path.lexists(repository.root / notebook) and remember(repository, notebook):
+            path = repository.path(notebook, "file")
+            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            try:
+                with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                    size = os.fstat(descriptor).st_size
+                    stream.seek(max(0, size - 8192))
+                    recent = stream.read(8192).decode("utf-8", errors="replace")
+                label = (
+                    "Recent tail only (earlier text omitted; UTF-8 boundary may be partial)."
+                    if size > 8192
+                    else "Current notebook excerpt (not a conversation transcript)."
+                )
+                notebook_excerpt = (
+                    f"# Unconfirmed working notebook\n\nSource: {notebook}\n{label}\n"
+                    "These are working observations, not confirmed conclusions "
+                    "or applied handoff.\n\n" + recent
+                )
+            finally:
+                os.close(descriptor)
         for directory in DIRECTORIES.values():
             try:
                 folder = repository.path(f"{base}/{directory}", "directory")
@@ -197,6 +247,7 @@ def research_state(
         goal,
         next_step,
         *pending,
+        *tasks,
         *errors_tuple,
         *(build_line(build) for build in builds if build.task_id is not None),
     ]
@@ -223,6 +274,10 @@ def research_state(
         proposals,
         moves,
         builds,
+        notebook_excerpt,
+        overview,
+        sources,
+        tasks,
     )
 
 
@@ -290,6 +345,12 @@ def render_state(state: ResearchState) -> str:
     ]
     if not state.objects:
         lines.append("No formal objects recorded.")
+    if state.overview:
+        lines.extend(("", "OVERVIEW (confirmed context)", state.overview))
+    if state.sources:
+        lines.extend(("", "SOURCES (logical identities; not Evidence)", *state.sources))
+    if state.task_summaries:
+        lines.extend(("", "ENGINEERING TASKS (not scientific acceptance)", *state.task_summaries))
     lines.extend(
         ("", "DRAFTS", "Draft files are not formal objects; confirmation is not inferred.")
     )

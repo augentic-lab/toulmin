@@ -310,6 +310,11 @@ def _create(
     intent = read_intent(repository) if pending(repository) else None
     loaded = load(repository.root, value)
     _named(loaded, name)
+    if loaded.packet.input_path.startswith("runs/drafts/onboard-"):
+        raise FormatError(
+            f"{loaded.directory}: this creation belongs to a complete onboarding packet; "
+            "review and apply it through toulmin decide, so sources and context are linked together"
+        )
     record = f"{loaded.directory}/packet.md"
     if intent is not None and intent.record != record:
         raise FormatError(

@@ -1,5 +1,43 @@
 # Toulmin development progress
 
+## 2026-11-17 — O1–O5 existing-project onboarding implementation
+
+- Authorization: researcher selected independent research records, guided rebuilding rather
+  than a copying engine, direct engineering delegation without Claims, one initial child,
+  and confirmed overview checkpoints, then requested implementation of the complete plan.
+- Implementation: additive source/local-binding formats and bounded inventory; reviewed
+  onboarding/overview/source association packets using existing publication recovery;
+  external-source native sessions with v3 cwd/identity bindings; source/overview/notebook
+  and engineering-task map context; ordinary Chief task requests/imports; guided migration
+  assessment records. Original source directories and existing research object schemas
+  remain intact. Exact notebook.md is now correctly treated as an informal log.
+- Validation: locked dev+tui environment synchronized offline; Ruff lint/format, mypy
+  (116 source modules) and CLI help passed. Focused source/creation suite: 64 passed;
+  engineering suite: 19 passed; native-focused suite: 223 passed; root onboarding/migration
+  integration: 24 passed before the final placeholder check. Final full-suite coverage:
+  1,832 passed across four isolated shards (437 + 586 + 347 + 462). The shard containing
+  the architecture allowlist was rerun after its update. Private socket tests required
+  execution outside the restrictive socket sandbox; all final shards passed there.
+  The final offline-source check also passed all 20 onboarding tests.
+- Integrity follow-up: orphan child creation is not offered separately; an unfinished journal
+  remains recoverable after receipt publication; migration replay validates original fields
+  and body. Eleven final integration/integrity cases passed, followed by 85 broader
+  integration/creation cases and 24 source cases. The architecture allowlist explicitly
+  permits standard-library tomllib for tool-independent catalogs (16 architecture tests pass).
+- Live trial: disposable Codex and Claude sessions launched at their external code cwd.
+  Codex exited because its configured permissions rejected --add-dir; Claude stopped at
+  its native folder-trust prompt. No prompt accepted and no permission config changed.
+  Neither trial reached context acknowledgment, editing or handoff, so native acceptance
+  remains pending. Added clear launch-block diagnostics. Both sessions moved to AoE trash;
+  fixtures/screens remain at /tmp/toulmin-onboarding-codex-esosh51x and
+  /tmp/toulmin-onboarding-claude-bq2fr18u. No real research project was touched.
+- Limits: ordinary-directory rebinding after edits may fail the initial content fingerprint;
+  normal in-place edits remain supported. Chief execution and guided rebuilding have
+  automated fixture evidence, not real-worker/researcher acceptance. See docs/onboarding.md.
+- Original TODO.md edits preserved and excluded from staging. No push. Session ID unavailable.
+- Next: complete native permission/trust setup and real development/handoff acceptance,
+  then the real engineering delegation and guided rebuilding trial.
+
 ## 2026-11-17 — Workspace removal command
 
 - Decision: after removing the test-toulmin-rdma workspace by hand, the researcher asked for Toulmin to manage removal ("按你的建议，实现 workspaces remove"); PROGRESS earlier deferred this until removal became frequent.

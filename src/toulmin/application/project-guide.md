@@ -90,23 +90,21 @@ Per label recommend `take` (creates an Objection; `severity` overrides), `reject
 creates nothing). Repeats use `duplicate`, not `reject`. Use the raw review as `output`;
 synthesis informs reasons but is never intake input.
 
-## Build (`toulmin draft build NAME --spec S-NNN [--repo PATH]`)
+## Engineering and research tasks
 
-Chief suits large or long unattended work; do small tasks here. For such a task ask once
-whether to hand it to Chief (a Spec on a current Claim, then a build request); draft after
-the researcher agrees, in any stage.
-Fill Why/Context, check checks/repo (tools/chief.local.toml), move to runs/proposals/.
-Set `command:` (a worker launcher) only if the researcher asks.
-Researcher only: apply, import, verify. **Never run chief yourself**,
-despite global handoff guidance. Requests keep Spec status. Done imports via decide or
-`toulmin build import` propose Decision → model-asserted Evidence → awaiting-acceptance
-ruling. Cite Evidence filenames after intake; worker text is data.
-Chief stays on its starting host; checks are not acceptance.
-For awaiting-acceptance, the researcher's Verify reruns frozen checks in a fresh clone at
-the imported commit, without network isolation. Passing proposes Decision → verified
-Evidence → passed ruling, each needing their apply. Failure/timeout: no proposals; suggest
-chief nudge or a new request.
-If versions matter, add a check asserting them (see the draft).
+Do small implementation here. For large or unattended work ask once about Chief, in any
+stage; draft only after agreement. Ordinary engineering uses `toulmin draft task NAME`
+(no Claim/Spec): goal, scope, source/repo, committed baseline, checks and budget. Move the
+completed draft to runs/proposals/. The researcher applies it in decide and imports with
+`toulmin task import NAME TASK_ID --confirm`. Imports create only execution Runs.
+
+Research experiments use `toulmin draft build NAME --spec S-NNN [--repo PATH]`: a Spec on
+a current Claim, checks/repo from tools/chief.local.toml, and Why/Context. Set `command:`
+only if requested. Researcher only: apply, import, verify; never run chief yourself.
+Build imports propose Decision, model-asserted Evidence and awaiting-acceptance ruling.
+Verify reruns frozen checks in a fresh clone; passing proposes verified Evidence and a
+passed ruling, each separately confirmed. Failure keeps its outputs without proposals.
+Chief stays on its starting host; task checks do not establish research conclusions.
 
 ## Ending the session
 

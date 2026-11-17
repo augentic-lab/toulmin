@@ -176,3 +176,39 @@ record their URL and checksum in `runs/` instead.
 From the workflow redesign (P1–P4): a four-part living document (question, answer, doubts,
 next experiment), checkpoint-style `decide` that confirms a batch at once, gates on
 individual conclusions, and entering review without rolling the session over by hand.
+
+## Existing projects and gradual rebuilding
+
+Use a separate Toulmin workspace for research records and keep the existing code directory
+and its Git history in place. `toulmin onboard SOURCE --root WORKSPACE --project NAME`
+prepares a reviewed connection; confirm it in `toulmin decide`, then use `toulmin open NAME
+--root WORKSPACE`. The initial project needs no Claims. A project conversation starts in
+its working code directory and receives the separate research context.
+
+Begin by correcting the agent's initial understanding: the original purpose, current
+structure, what already works, unresolved issues and what you want to do next. File facts,
+your account and the agent's guesses must remain distinguishable. Daily observations go
+into the notebook; an overview checkpoint preserves the understanding you confirmed.
+Opening a fresh session recovers that checkpoint and labels subsequent notebook material
+as unconfirmed. Code follows the source repository's development rules; research records
+follow Toulmin's proposal and confirmation rules.
+
+For ordinary engineering work, ask for `toulmin draft task NAME`. Fill its goal, scope,
+repository baseline and executable checks, then move the completed task draft to the
+project's proposals directory and review it with `toulmin decide`. Chief manages the worker
+and isolated worktree. `toulmin task import NAME TASK_ID` previews the result; confirmation
+archives an execution Run. Successful delivery does not establish a scientific conclusion.
+The existing Claim/Spec route remains available for research experiments.
+
+To develop a new direction, supply `--work-at TARGET` when onboarding: TARGET is the new
+working repository, and SOURCE remains a reference. Neither is copied or synchronized by
+Toulmin. Select one module or dataset at a time, adapt it using the native development tools,
+and record its source version, changes and checks with `toulmin migration draft NAME` and
+`toulmin migration record NAME --input FILE`. Recording is preview-only until `--confirm`;
+it records your assessment and does not execute the checks. Failed and partial batches are
+valid records. Keep old sources intact and review development-location changes explicitly.
+
+Local paths live in ignored machine configuration. After moving or cloning a workspace,
+use `toulmin source bind ID PATH --root WORKSPACE` to locate the matching source on that
+machine. Shared code can serve several projects; concurrent work uses separate checkouts,
+and each result records the version it actually used.

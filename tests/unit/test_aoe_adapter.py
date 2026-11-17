@@ -501,3 +501,67 @@ def test_missing_executable_is_clear(monkeypatch, calls):
     with pytest.raises(AoEError, match="not found"):
         client()
     assert calls[0] == []
+
+
+def test_all_profile_list_preserves_profile_without_enforcing_selected_profile(calls):
+    calls[1].append(
+        json.dumps([row(profile="other", status=None), row(id=OTHER, profile="trial-1")])
+    )
+    sessions = client().list_all_sessions()
+    assert [(p, s.id) for p, s in sessions] == [("other", SID), ("trial-1", OTHER)]
+    assert calls[0][0][0][-3:] == ["list", "--all", "--json"]
+
+
+@pytest.mark.parametrize("value", [{}, [row()], [row(profile=None)], [row(profile="../bad")]])
+def test_all_profile_list_fails_closed_for_unknown_shape(calls, value):
+    calls[1].append(json.dumps(value))
+    with pytest.raises(AoEError, match="all-profile"):
+        client().list_all_sessions()
+
+
+@pytest.mark.parametrize("agent", ["codex", "claude"])
+def test_source_session_only_adds_research_directory_without_changing_permissions(
+    calls, tmp_path, agent
+):
+    source, records = tmp_path / "code source", tmp_path / "record's workspace"
+    source.mkdir()
+    records.mkdir()
+    calls[1].extend([f"Added session: {SID}\n", json.dumps(row(path=str(source), tool=agent))])
+    client().create(source, "trial", agent, title="Existing project", add_directory=records)
+    argv = calls[0][0][0]
+    extra = argv[argv.index("--extra-args") + 1]
+    import shlex
+
+    assert shlex.split(extra) == ["--add-dir", str(records)]
+    assert not {"--dangerously-skip-permissions", "--yolo", "--full-auto"} & set(argv)
+
+
+def test_native_add_directory_permission_failure_reports_blocker_without_bypass(calls):
+    screen = (
+        "Error adding directories: Ignoring --add-dir (/research) because the effective "
+        "permissions do not allow additional writable roots. Switch to workspace-write "
+        "or danger-full-access to add writable directories.\n"
+    )
+    calls[1].extend([json.dumps(row()), screen])
+    ready, reason = client().ready(SID)
+    assert not ready
+    assert "Native launch blocked" in reason
+    assert "workspace-write" in reason and "open --new-session" in reason
+    assert "Toulmin has not changed" in reason
+    assert len(calls[0]) == 2
+
+
+def test_launch_error_does_not_block_later_healthy_native_prompt(calls):
+    screen = (
+        "Error adding directories: effective permissions do not allow writable roots.\n"
+        "Recovered Codex session\n› "
+    )
+    calls[1].extend([json.dumps(row()), screen, json.dumps(row()), screen])
+    assert client().ready(SID)[0]
+
+
+def test_generic_native_launch_failure_is_not_an_unrecognized_prompt(calls):
+    calls[1].extend([json.dumps(row()), "Error: failed to load configuration\n"])
+    ready, reason = client().ready(SID)
+    assert not ready and "Native launch failed" in reason
+    assert "configuration" in reason

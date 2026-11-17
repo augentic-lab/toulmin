@@ -441,3 +441,26 @@ Design: `/home/tianchi/notes/toulmin/workspace-entry-review-design.md`. Observat
 - [x] S4 — Offline git line and `toulmin commit` (2026-11-11, Codex-implemented, supervisor-reviewed and corrected): `status`/`open` print one git line from local refs (uncommitted count, ahead/behind the upstream as of the last fetch, never fetched, no upstream, detached, operations in progress) with pull/reconcile advice; decide warns before writing when behind, diverged or mid-operation; `toulmin commit` previews grouped paths and a message citing object IDs and applied outcomes, refuses machine-local files, transactions, operations and outside staged changes, commits exactly the computed paths on `--confirm` with the researcher's identity and hooks, and never pushes; agents are told never to commit or push.
 - [x] S5 — Two-clone trial and researcher ruling. Agent-run trial 2026-11-11 (`~/notes/toulmin/s5-sync-2026-11-11/`); ruled passed by the researcher 2026-11-11.
 - [x] S6 — S5 follow-ups: name the CLI update prompt in readiness messages; recovery recipe for same-ID divergence (protocols.md S5).
+
+## O — Existing-project onboarding and continued work (2026-11-17)
+
+The researcher approved the complete O1–O5 plan: independent research records, original
+source development, one initial child per existing project, confirmed understanding
+checkpoints, Claim-free engineering delegation and gradual rebuilding in a new direction.
+
+- [x] O1 — Logical sources and ignored local paths; bounded read-only discovery, identity
+  checks, shared sources, explicit rebinding and overlap/link guards.
+- [x] O2 — Reviewed onboarding, overview and source-change packets, with provenance,
+  rejection, stale-input protection and journal recovery; no required Claims.
+- [x] O3 — Native external-source cwd, v3 bindings, checkout conflict checks, recovery
+  context and map presentation; exact notebook.md excluded from formal Run parsing.
+- [x] O4 — Engineering task drafts and decide submission, frozen Chief contracts, recovery,
+  ordinary Run import, task summaries and workspace-removal protection.
+- [x] O5 — Reviewed new source/working-direction selection and immutable migration batch
+  assessment records; no copying engine, bidirectional sync or source deletion.
+- [ ] Native acceptance — Complete a real code change, recorded handoff and fresh-session
+  recovery for Codex and Claude. Disposable launches reached the correct cwd but Codex
+  rejected the additional-directory permission and Claude awaited folder trust. Neither
+  trial was a pass; sessions were moved to AoE trash. No native permission defaults changed.
+- [ ] End-to-end acceptance — Run a real no-Claim Chief task and a real guided rebuild,
+  then obtain the researcher's usability ruling. Automated/fake-tool tests are not this ruling.

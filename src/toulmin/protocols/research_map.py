@@ -28,9 +28,11 @@ from toulmin.core.project_proposals import (
     validate_ruling_proposal,
 )
 from toulmin.core.repository import Repository
+from toulmin.core.sources import read_catalog
 from toulmin.protocols import project_proposals
 from toulmin.protocols.build import BuildFact, build_facts, build_line, other_host_line
 from toulmin.protocols.calibration import REVIEW, operation
+from toulmin.protocols.engineering_tasks import task_summaries
 from toulmin.protocols.review import OUTPUT_FILE
 from toulmin.protocols.review_intake import output_state
 from toulmin.protocols.review_progress import ReviewProgress, review_progress
@@ -100,6 +102,29 @@ class ResearchMap:
     elsewhere: tuple[str, ...]  # objects aimed at another project's Claims
     errors: tuple[str, ...]
     builds: tuple[BuildFact, ...] = ()
+    overview: str | None = None
+    sources: tuple[str, ...] = ()
+    recorded_next_step: str | None = None
+    task_summaries: tuple[str, ...] = ()
+
+
+def project_context(repository: Repository, project: str) -> tuple[str | None, tuple[str, ...]]:
+    """Confirmed local record summaries only; never inspect an external source here."""
+    path = repository.path(f"projects/{project}/overview.md")
+    overview = None
+    if path.exists():
+        path = repository.path(f"projects/{project}/overview.md", "file")
+        with path.open("r", encoding="utf-8") as stream:
+            excerpt = stream.read(513)
+        overview = " ".join(excerpt[:512].split())
+        if len(excerpt) > 512:
+            overview += " ... (excerpt; see overview.md)"
+    sources = tuple(
+        f"{source.source_id}: {source.role} {source.kind}; identity {source.identity}"
+        for source in read_catalog(repository.root)
+        if source.project == project
+    )
+    return overview, sources
 
 
 # R5: the rows toward G3-G5; {missing} is filled with the gate's unmet items.
@@ -518,6 +543,13 @@ def research_map(
     except (OSError, ValueError) as error:
         pending = ()
         errors.append(str(error))
+    try:
+        overview, sources = project_context(repository, project)
+    except (OSError, ValueError) as error:
+        overview, sources = None, ()
+        errors.append(str(error))
+    tasks, task_errors = task_summaries(root, project)
+    errors.extend(task_errors)
     facts = move_facts(root, project, snapshot, gates, pending)
     try:
         builds = build_facts(root, project, chief)
@@ -541,6 +573,10 @@ def research_map(
         elsewhere,
         tuple(sorted(set(errors))),
         builds,
+        overview,
+        sources,
+        snapshot.charter.header["next_step"] if snapshot.charter else None,
+        tasks,
     )
 
 

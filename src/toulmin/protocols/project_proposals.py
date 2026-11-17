@@ -167,6 +167,8 @@ def inventory(root: Path, project: str) -> Inventory:
         relative = f"{_folder(project)}/{name}"
         if name.startswith(".") or name.endswith(OUTCOME_SUFFIX):
             continue
+        if name.startswith("task-"):
+            continue  # Engineering task requests have their own validated inventory.
         kind = proposal_kind(name)
         if kind is None:
             unrecognized.append(relative)

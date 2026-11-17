@@ -1,5 +1,12 @@
 # Framework changes
 
+- Existing-project onboarding (2026-11-17, O1–O5): additive source catalogs/local bindings,
+  reviewed onboarding and overview/source-change packets, engineering task requests and
+  ordinary execution imports, and migration assessment receipts. Native source sessions
+  use v3 bindings; v1/v2 readers remain supported. No scientific object or stage schema
+  changes. Exact notebook.md is an informal log, excluded from formal Run parsing.
+  See the repository docs/onboarding.md for compatibility and operational limits.
+
 - Workspace removal (2026-11-17): `toulmin workspaces remove` previews and, after the folder
   name is typed, removes a workspace (sessions to AoE's trash, optional archive). No format
   change.

@@ -630,3 +630,20 @@ Discuss in the native CLI, ask for `draft.md`, exit the CLI, then confirm **Appl
 on the project board. Requires Linux, tmux and bubblewrap for new sessions. The returned draft
 and input snapshots are archived as a Run; the full native conversation is not captured.
 See [native workspace usage and recovery](docs/native-workspace.md).
+
+## Continue an existing project
+
+Keep the code repository in place and use a separate research workspace:
+
+```sh
+toulmin onboard /path/to/existing-code --root /path/to/research --project my-project --init
+toulmin decide --root /path/to/research
+toulmin open my-project --root /path/to/research
+```
+
+`--init` explicitly permits initializing a missing or empty workspace. Onboarding itself
+only reads the source and prepares a reviewed packet. Claims are optional; ordinary
+engineering work can use `toulmin draft task`. For a new direction, `--work-at TARGET`
+selects another existing code directory while keeping the original as a reference.
+See [existing-project onboarding](docs/onboarding.md) and the
+[working loop](docs/user-guide.md#existing-projects-and-gradual-rebuilding).

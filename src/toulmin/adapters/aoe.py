@@ -7,6 +7,7 @@ an agent received or understood a message, and never override ``starting``.
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import time
@@ -197,6 +198,23 @@ class AoEClient:
             raise AoEError("Malformed AoE list: duplicate session IDs")
         return sessions
 
+    def list_all_sessions(self) -> tuple[tuple[str, AoESession], ...]:
+        """Read every profile for checkout conflict checks; unknown shapes fail closed."""
+        value = self._json("list", "--all", "--json")
+        if not isinstance(value, list):
+            raise AoEError("Malformed AoE all-profile list: expected an array")
+        sessions: list[tuple[str, AoESession]] = []
+        for item in value:
+            if not isinstance(item, dict):
+                raise AoEError("Malformed AoE all-profile session")
+            profile = item.get("profile")
+            if not isinstance(profile, str) or not _PROFILE.fullmatch(profile):
+                raise AoEError("Malformed AoE all-profile session profile")
+            sessions.append((profile, _session(item)))
+        if len({(profile, item.id) for profile, item in sessions}) != len(sessions):
+            raise AoEError("Malformed AoE all-profile list: duplicate session IDs")
+        return tuple(sessions)
+
     def show(self, session_id: str) -> AoESession:
         session_id = _validate_id(session_id)
         session = self._parse_session(self._json("session", "show", session_id, "--json"))
@@ -208,7 +226,13 @@ class AoEClient:
         return self._parse_session(self._json("session", "current", "--json"))
 
     def create(
-        self, root: Path, project: str | None, agent: str, *, title: str | None = None
+        self,
+        root: Path,
+        project: str | None,
+        agent: str,
+        *,
+        title: str | None = None,
+        add_directory: Path | None = None,
     ) -> AoESession:
         """Create and launch one native session at ``root``; ``project`` None is the workspace."""
         try:
@@ -226,6 +250,14 @@ class AoEClient:
         root = root.expanduser().resolve()
         if not root.is_dir():
             raise AoEError(f"AoE root is not a directory: {root}")
+        extra: tuple[str, ...] = ()
+        if add_directory is not None:
+            directory = add_directory.expanduser().resolve()
+            if not directory.is_dir():
+                raise AoEError(f"Additional native directory is not a directory: {directory}")
+            # AoE forwards one shell-quoted argument string; never alter native trust or
+            # approval settings to grant the research records directory.
+            extra = ("--extra-args", shlex.join(["--add-dir", str(directory)]))
         output = self._run(
             "add",
             str(root),
@@ -236,6 +268,7 @@ class AoEClient:
             "--tool",
             agent,
             "--launch",
+            *extra,
             timeout=_CREATE_TIMEOUT,
         )
         ids = _output_ids(output)
@@ -333,6 +366,28 @@ class AoEClient:
         marker = r"^\s*›[^\S\n]*(.*)$" if tool == "codex" else r"^\s*[>❯][^\S\n]*(.*)$"
         prompts = [i for i, line in enumerate(lines) if re.match(marker, line)]
         if not prompts:
+            if re.search(r"(?i)error adding directories|ignoring --add-dir", tail) and re.search(
+                r"(?i)effective permissions|writable roots", tail
+            ):
+                return (
+                    "Native launch blocked: Codex refused --add-dir because its effective "
+                    "permissions do not allow additional writable roots. Explicitly choose "
+                    "a native permission mode permitting the records directory for this "
+                    "session (Codex suggests workspace-write), then archive the failed session "
+                    "and open --new-session. Toulmin has not changed native permission settings"
+                )
+            failure = re.search(
+                r"(?im)^\s*(?:error(?: adding directories| loading configuration)?[: ]|"
+                r"failed to launch|.*command not found|process exited with (?:code|status))[^\n]*",
+                tail,
+            )
+            if failure:
+                return (
+                    "Native launch failed: "
+                    + failure.group(0).strip()[:240]
+                    + "; inspect the native CLI configuration and output in AoE, then "
+                    "archive the failed session and open --new-session"
+                )
             if _BLOCKED.search(tail):
                 return _BLOCKED_REASON
             return "Native input prompt is not recognizable"

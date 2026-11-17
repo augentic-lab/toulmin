@@ -201,24 +201,26 @@ def _chief_tasks(root: Path, projects: tuple[str, ...]) -> tuple[list[Task], lis
         config_error = str(error)
     for project in projects:
         try:
+            from toulmin.application.engineering_tasks import engineering_task_ids
+
             facts = build_facts(root, project)
+            task_ids = {fact.task_id for fact in facts if fact.task_id is not None}
+            task_ids.update(engineering_task_ids(root, project))
         except (OSError, ValueError) as error:
             blockers.append(f"{project}: build records not read ({error})")
             continue
-        for fact in facts:
-            if fact.task_id is None:
-                continue
+        for task_id in sorted(task_ids):
             if client is None:
-                blockers.append(f"{fact.task_id}: Chief state not read ({config_error})")
+                blockers.append(f"{task_id}: Chief state not read ({config_error})")
                 continue
             try:
-                state = client.read_task(fact.task_id).state
+                state = client.read_task(task_id).state
             except ChiefTaskMissing:
-                state = None  # never started here, or its Chief home was cleared
+                state = None
             except (OSError, ValueError) as error:
-                blockers.append(f"{fact.task_id}: Chief state not read ({error})")
+                blockers.append(f"{task_id}: Chief state not read ({error})")
                 continue
-            tasks[fact.task_id] = Task(project, fact.task_id, state)
+            tasks[task_id] = Task(project, task_id, state)
     # Tasks started directly with `chief new` inside the workspace have no build record.
     if client is not None:
         folder = client.config.home / "tasks"

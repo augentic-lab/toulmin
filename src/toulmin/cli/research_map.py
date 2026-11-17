@@ -128,6 +128,19 @@ def render_project(
         head += " " * max(pad, 2) + f"refreshed {refreshed}"
     lines = [head, track(report.stage, width, glyphs), ""]
 
+    if report.overview:
+        lines.append("Overview (confirmed context)")
+        lines += wrap(report.overview, width, "  ")
+    if report.sources:
+        lines.append("Sources (logical identities; not Evidence)")
+        lines.extend(fit("  " + source, width) for source in report.sources)
+    if report.recorded_next_step:
+        lines += wrap("Recorded next step (historical): " + report.recorded_next_step, width, "  ")
+    if report.task_summaries:
+        lines.append("Engineering tasks (not scientific acceptance)")
+        lines.extend(fit("  " + task, width) for task in report.task_summaries)
+    if report.overview or report.sources or report.recorded_next_step or report.task_summaries:
+        lines.append("")
     following = NEXT_GATE.get(report.stage or "")
     behind = {gate.gate for gate in unheld(report.stage, report.gates)}
     for gate in report.gates:

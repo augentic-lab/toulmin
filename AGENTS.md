@@ -101,6 +101,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 2026-11-16: The researcher asked for a repository user guide ("按你的建议，整理成 docs/user-guide.md"): docs/user-guide.md describes the day-to-day workflow; personal machine setup stays in ~/notes. Documentation only.
 2026-11-17: The researcher authorized workspace removal ("按你的建议，实现 workspaces remove"): `toulmin workspaces remove` previews, blocks on running sessions or unfinished Chief tasks, and on --confirm with the typed folder name archives (optional), trashes AoE sessions, deletes the folder and forgets it. Code repositories, Chief state and remotes are untouched.
 
+2026-11-17: The researcher approved implementation of O1–O5: existing-project onboarding into a separate research workspace, reviewed project understanding, native sessions in linked code repositories, Claim-free engineering delegation, and guided rebuilding with preserved origins. This is the current authorized task; older scope pauses do not restrict it. Maintain compatibility and distinguish automated verification from live usability acceptance.
+
 ## Project goals and scope
 
 - Toulmin is a project-based research workbench for a single systems researcher. Open files preserve the claim–evidence–objection network and its full provenance.

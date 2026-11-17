@@ -172,6 +172,9 @@ class Repository:
         directory = self.path(f"projects/{project}/{DIRECTORIES[kind]}", "directory")
         largest = 0
         for path in sorted(directory.glob("*.md")):
+            if kind == ObjectKind.RUN and path.name == "notebook.md":
+                self.path(str(path.relative_to(self.root)), "file")
+                continue  # P0's working log never allocates a formal Run ID.
             try:
                 object_id = ObjectId.parse(path.stem)
             except ValueError as error:

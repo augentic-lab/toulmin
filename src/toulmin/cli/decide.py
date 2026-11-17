@@ -7,6 +7,7 @@ confirming command, this relies on being run by the researcher, not by an agent.
 """
 
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,8 @@ from toulmin.protocols.workspace_state import RootState, workspace_status
 
 LABEL = {
     "change": "Workspace change",
+    "onboarding": "Existing project onboarding",
+    "context-change": "Project context change",
     "creation": "Child creation",
     "handoff": "Workspace handoff",
     "object": "Object draft",
@@ -49,6 +52,7 @@ LABEL = {
     "brief": "Brief proposal",
     "stage": "Stage proposal",
     "build": "Build request",
+    "task-request": "Engineering task",
     "build-import": "Chief result ready",
     "build-verify": "Verify",
     "project-handoff": "Project handoff",
@@ -120,6 +124,11 @@ def _project_proposals(repository: Repository) -> tuple[list[Item], list[str]]:
         except (OSError, ValueError) as error:
             ignored.append(str(error))
             continue
+        from toulmin.protocols.engineering_tasks import task_inventory
+
+        tasks, task_errors = task_inventory(repository.root, name)
+        items += [Item("task-request", path, name) for path in tasks]
+        ignored += list(task_errors)
         kinds = {k: k for k in ("ruling", "intake", "review", "brief", "stage", "build")}
         items += [Item(kinds.get(item.kind, "object"), item.path, name) for item in found.items]
         ignored += [
@@ -189,21 +198,60 @@ def _project_handoffs(repository: Repository) -> tuple[list[Item], int]:
     return items, stale
 
 
+def _onboarding_creation(repository: Repository, relative: str) -> bool:
+    if repository.path(f"{relative}/onboarding").exists():
+        return True
+    creation = project_creation.load(repository.root, relative)
+    return (
+        re.fullmatch(r"runs/drafts/onboard-[0-9a-f]{32}\.md", creation.packet.input_path)
+        is not None
+    )
+
+
 def inventory(root: Path) -> Inventory:
     """Everything awaiting a decision, in the order decide shows it."""
     report = workspace_status(root, workspace_setup())
     state = report.root.state
     if state not in {RootState.WORKSPACE, RootState.LEGACY}:
         raise ValueError(f"{report.root.root}: not a Toulmin workbench; nothing to decide")
+    repository = Repository(report.root.root)
+    from toulmin.core.workspace_journal import pending as journal_pending
+    from toulmin.core.workspace_journal import read_intent
+
+    recovery_record = read_intent(repository).record if journal_pending(repository) else None
     pending = [item for item in report.proposals if item.disposition == "pending"]
     items = [Item("change", item.path) for item in pending if item.kind == "change"]
-    items += [Item("creation", item.path) for item in pending if item.kind == "creation"]
+    items += [
+        Item("creation", item.path)
+        for item in pending
+        if item.kind == "creation" and not _onboarding_creation(repository, item.path)
+    ]
     items += [
         Item("handoff", item.path) for item in report.handoffs if item.disposition == "pending"
     ]
     stale = sum(item.disposition == "stale" for item in report.handoffs)
     repository = Repository(report.root.root)
     proposals, ignored = _project_proposals(repository)
+    from toulmin.protocols import context_change, onboarding
+    from toulmin.protocols.workspace_change import receipt_for
+
+    for pattern, kind, loader in (
+        ("*-onboard-*", "onboarding", onboarding.load),
+        ("*-context-*", "context-change", context_change.load),
+    ):
+        for folder in sorted(repository.path("runs").glob(pattern)):
+            relative = folder.relative_to(repository.root).as_posix()
+            try:
+                seal = repository.path(f"{relative}/seal", "file").read_text().strip()
+                if (
+                    receipt_for(repository, relative, seal) is not None
+                    and recovery_record != f"{relative}/packet.md"
+                ):
+                    continue
+                loaded = loader(repository.root, relative)
+                items.append(Item(kind, relative, loaded.project))
+            except (OSError, ValueError) as error:
+                ignored.append(str(error))
     projects, project_stale = _project_handoffs(repository)
     return Inventory(tuple(items + proposals + projects), stale + project_stale, tuple(ignored))
 
@@ -269,6 +317,8 @@ class Run:
         """Show and decide one item; False means quit."""
         handler = {
             "change": self._change,
+            "onboarding": self._context_packet,
+            "context-change": self._context_packet,
             "creation": self._creation,
             "handoff": self._handoff,
             "object": self._proposal,
@@ -278,6 +328,7 @@ class Run:
             "brief": self._proposal,
             "stage": self._proposal,
             "build": self._build,
+            "task-request": self._task_request,
             "build-import": self._build_import,
             "build-verify": self._build_verify,
             "project-handoff": self._project_handoff,
@@ -289,6 +340,62 @@ class Run:
         if choice == "s":
             self.skipped += 1
         return choice
+
+    def _context_packet(self, item: Item) -> bool:
+        from toulmin.protocols import context_change, onboarding
+
+        protocol = onboarding if item.kind == "onboarding" else context_change
+        shown = protocol.apply(self.root, item.path, None, confirmed=False)
+        if shown.status not in {"preview", "incomplete"}:
+            typer.echo(f"No longer pending ({shown.status}); skipped.")
+            return True
+        typer.echo(shown.loaded.body)
+        for problem in shown.problems:
+            typer.echo(f"Problem: {problem}")
+        choices = "asq" if shown.status == "incomplete" else ("rsq" if shown.problems else "arsq")
+        choice = self._choose(choices)
+        if choice == "a":
+            done = protocol.apply(
+                self.root, item.path, self.actor, confirmed=True, approval_text="toulmin decide: a"
+            )
+            typer.echo(f"{done.status}: {done.loaded.project}")
+            self.applied += 1
+            if item.kind == "context-change":
+                self._note(done.loaded.project, "updated confirmed project context")
+        elif choice == "r":
+            protocol.reject(self.root, item.path, self.actor, _reason())
+            self.rejected += 1
+        return choice != "q"
+
+    def _task_request(self, item: Item) -> bool:
+        from toulmin.application.engineering_tasks import apply_task, prepare_task, reject_task
+
+        assert item.project is not None
+        shown = prepare_task(self.root, item.project, item.path)
+        typer.echo(json.dumps(shown.plan.contract, indent=2, ensure_ascii=False))
+        for problem in shown.problems:
+            typer.echo(f"Problem: {problem}")
+        typer.echo("Apply delegates this engineering task; no research conclusion is approved.")
+        choices = (
+            "sq"
+            if shown.interrupted and shown.problems
+            else ("asq" if shown.interrupted else "rsq" if shown.problems else "arsq")
+        )
+        choice = self._choose(choices)
+        if choice == "a":
+            done = apply_task(
+                self.root, item.project, shown, self.actor, "toulmin decide: a", report=typer.echo
+            )
+            typer.echo(f"Task outcome: {done.disposition}: {done.result}")
+            if done.disposition == "failed":
+                self.failed += 1
+            else:
+                self.applied += 1
+            self._note(item.project, f"engineering task {done.disposition}: {done.result}")
+        elif choice == "r":
+            reject_task(self.root, item.project, item.path, self.actor, _reason())
+            self.rejected += 1
+        return choice != "q"
 
     def _change(self, item: Item) -> bool:
         outcome = workspace_change.apply(self.root, item.path, None, confirmed=False)

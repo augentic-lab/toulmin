@@ -15,9 +15,12 @@ from toulmin.cli.commit import commit_command
 from toulmin.cli.decide import decide_command
 from toulmin.cli.entry import config_app, open_research
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
+from toulmin.cli.migration import app as migration_app
+from toulmin.cli.onboarding import onboard_command, overview_command, source_app
 from toulmin.cli.project import app as project_app
 from toulmin.cli.registry import note as register_workspace
 from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
+from toulmin.cli.task import app as task_app
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.cli.workspaces import app as workspaces_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
@@ -42,6 +45,11 @@ app = typer.Typer(
 )
 app.add_typer(aoe_app, name="aoe")
 app.add_typer(build_app, name="build")
+app.add_typer(migration_app, name="migration")
+app.add_typer(task_app, name="task")
+app.add_typer(source_app, name="source")
+app.command("onboard")(onboard_command)
+app.command("overview")(overview_command)
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(project_app, name="project")
 app.add_typer(config_app, name="config")
@@ -209,6 +217,8 @@ class DraftKind(StrEnum):
     BRIEF = "brief"
     STAGE = "stage"
     BUILD = "build"
+    TASK = "task"
+    OVERVIEW = "overview"
 
 
 @app.command("draft")
@@ -281,7 +291,28 @@ def draft_object(
         raise typer.BadParameter(str(error), param_hint="project") from error
     proposal = kind.value not in {item.value for item in ObjectKind}
     try:
-        if proposal:
+        if kind == DraftKind.OVERVIEW:
+            from toulmin.protocols.overview_draft import write_overview_draft
+
+            path = write_overview_draft(root, project)
+        elif kind == DraftKind.TASK:
+            from toulmin.adapters.chief import load_config
+            from toulmin.application.sources import resolve_working_source
+            from toulmin.protocols.engineering_tasks import write_task_draft
+
+            config = load_config(root)
+            source = resolve_working_source(root, project) if repo is None else None
+            path = write_task_draft(
+                root,
+                project,
+                name=name,
+                repo=str(repo) if repo else None if source else config.repos.get(project),
+                source=source.source_id if source else None,
+                tool=config.tool,
+                budget=config.budget,
+                trust=config.trust,
+            )
+        elif proposal:
             if role is not None:
                 raise ValueError(f"{kind.value}: role: only a Run draft takes a role's inputs")
             build_defaults = None
@@ -339,7 +370,13 @@ def draft_object(
     typer.echo(relative)
     location = "" if root == Path(".") else f" --root {root}"
     new = f"toulmin new {kind.value} {project}{location} --input {relative} --confirm"
-    if kind == DraftKind.RUN:
+    if kind == DraftKind.OVERVIEW:
+        typer.echo(
+            f'Fill the draft, then: toulmin overview {project} "Reason for update"'
+            f"{location} --input {relative}",
+            err=True,
+        )
+    elif kind == DraftKind.RUN:
         typer.echo(f"Fill every <fill: ...> value, then: {new}", err=True)
     elif proposal:
         typer.echo(

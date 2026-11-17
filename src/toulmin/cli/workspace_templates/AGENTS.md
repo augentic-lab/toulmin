@@ -78,6 +78,24 @@ each skeleton, so never read Toulmin's source to learn a format.
    draft a Decision plus a stage proposal (`toulmin draft stage NAME`) only when the
    researcher asks. Never edit PROJECT.md stage or status fields.
 
+### Existing projects and external working sources
+
+A project can describe an existing codebase without a first Claim or a forced starting
+stage. Its optional overview.md is researcher-confirmed context; runs/notebook.md contains
+unconfirmed working observations. Native recovery loads a bounded recent notebook excerpt,
+never a complete transcript. Begin by discussing the project's current work and the smallest
+useful next action. Offer a draft task for substantial development; confirmation creates a
+Spec and Chief build request without requiring a Claim.
+
+A registered working source is separate from shared resources and research records. When the
+session context names an external code checkout as cwd, follow that repository's AGENTS.md
+and development rules for code edits, tests and code commits. Keep all research outputs in
+absolute projects/NAME/runs/ paths in this workspace and use --root for Toulmin commands.
+This workspace's no-commit rule governs research records; it does not replace the external
+repository's code commit policy. Preserve native permissions and resolve trust prompts in
+the native CLI. Chief runs implementation in separate worktrees. A source-path or identity
+change requires explicitly replacing the old native session; never silently change its cwd.
+
 ## Research rules
 
 - Write maintained documentation and handoff notes in English. Preserve original source

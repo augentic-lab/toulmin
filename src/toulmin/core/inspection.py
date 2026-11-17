@@ -144,6 +144,10 @@ def inspect_project(repository: Repository, project: str) -> ProjectSnapshot:
                     if not path.is_file():
                         raise ValueError(f"{path}: expected regular .gitkeep file")
                     continue
+                if kind == ObjectKind.RUN and path.name == "notebook.md":
+                    if not path.is_file():
+                        raise ValueError(f"{path}: expected a regular working notebook")
+                    continue  # The exact P0 working log is not a formal Run.
                 if path.is_dir() and kind == ObjectKind.RUN and path.suffix != ".md":
                     continue  # Raw outputs and drafts are deliberately opaque.
                 if path.suffix != ".md" or not path.is_file():

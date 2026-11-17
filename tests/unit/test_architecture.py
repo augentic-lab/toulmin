@@ -35,6 +35,7 @@ DATA_MODULES = {
     "shutil",
     "tempfile",
     "typing",
+    "tomllib",  # O1 tool-independent source catalog decoding, Python standard library
     "unicodedata",  # reject line-break/control characters in display names (WI2)
     "uuid",
 }
