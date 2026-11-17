@@ -1,5 +1,27 @@
 # Toulmin development progress
 
+## 2026-11-18 — Chief permission-task status and console visibility audit
+
+- Researcher asked for progress and why Chief console omitted the delegated task.
+  Actual Chief registry still lists o3-general-codex-permission-co, phase=test,
+  state=running, worker 7915342ee9604c73 in its isolated worktree. Feature implementation
+  has not begun and test approval is not yet submitted; test files/progress remain uncommitted.
+- Read logs: 41 new acceptance cases (30 expected missing-feature failures, 11 passes),
+  160 existing affected regressions pass. Full test-first log records 35 failures/1840
+  passes; extra prototype/native-runtime failures were rerun with private socket access
+  and their files pass (3 and 11 tests). Chief's earlier cached 0/6 setup failures are stale,
+  not a current final check verdict. Did not rerun checks or nudge the busy worker.
+- Verified console and watcher share HOME and default Chief state root. Captured console
+  shows only four thinking sessions and an explicit source-update/restart notice.
+  Fresh current-code collect/entries shows five entries including this running delegated
+  task. This establishes outdated loaded console behavior, rather than a missing task or
+  separate state root. Recommend restarting only console session 68733c219c6540a0.
+- No session restart, task mutation, approval or research interaction performed. Validation:
+  live CLI registry, console capture, restricted environment comparison, fresh view model,
+  worker logs and diff check. Documentation only; no code tests. Existing TODO edits
+  retained. Session ID unavailable; local commit, no push. Next: user refreshes console;
+  worker finishes test evidence and requests approval through Chief.
+
 ## 2026-11-18 — WO1 three explicit repository intake modes
 
 - Researcher approved and requested documentation/TODO updates for A: repo to workspace
