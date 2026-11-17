@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Weekly Projects state and next discussion guidance
+
+- Read-only offline status confirms weekly-projects has valid explore-stage data,
+  confirmed structural overview and a v3 binding to d4faf008257a406b. Its saved context
+  receipt is acknowledged. This proves a recorded read receipt, not research approval
+  or current native liveness; no session capture/send was performed.
+- Source remains clean at 553e09c0ccb33734fbc6e34c8714a2f55eee48fe on master.
+  Project goal is still generic; no notebook, proposals, formal Claims/Specs or applied
+  handoff is recorded. Research workspace reports 83 uncommitted generated/record files.
+- Recommended researcher path: discuss intended project purpose and next small outcome,
+  review/update the structural overview and goal through a proposal/decide checkpoint,
+  then authorize one bounded engineering task with executable acceptance criteria.
+  No Claim or research gate is required merely to continue this existing code project.
+- Validation: actual offline CLI status and project files; no runtime modifications,
+  research writes or model-session operations. Code tests not rerun for documentation.
+  Existing TODO edits retained; session ID unavailable. Next: researcher clarifies purpose
+  with their project agent. Documentation record committed locally, no push.
+
 ## 2026-11-18 — O3 general permission fix delegated to Chief
 
 - Researcher authorized handing the agreed general Codex launch fix to Chief while
