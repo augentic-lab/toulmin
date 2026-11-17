@@ -1,5 +1,29 @@
 # Toulmin development progress
 
+## 2026-11-18 — O3 general permission fix delegated to Chief
+
+- Researcher authorized handing the agreed general Codex launch fix to Chief while
+  retaining the active conversation for discussion. Followed ~/aoe-chief/rules/handoff.md;
+  created task o3-general-codex-permission-co with test_first=true, protected tests,
+  15-round/4-hour budget and Codex worker (native display: GPT-6.1-Sol high).
+- Contract: /tmp/toulmin-codex-permissions-contract.json, validated by Chief dry-run.
+  Covers explicit project-local permission choice, consistent new/replacement/resume
+  launch behavior, native-policy refusal, diagnostics, compatibility and regression tests.
+  Checks: locked offline dev/TUI sync, complete pytest suite, Ruff lint/format, mypy and CLI help.
+- Chief created isolated branch chief/o3-general-codex-permission-co and worktree
+  /home/tianchi/workspace/toulmin-worktrees/o3-general-codex-permission-configuration-and-session-recove;
+  worker session 7915342ee9604c73. Existing Chief watch was verified running (300s interval).
+- Worker initially encountered an optional Codex update. Skipped via Escape in its own
+  pane only, without upgrading software; Chief tick reports resumed and the worker
+  acknowledged the test-first contract and is working. No trust choice was accepted.
+- Contract explicitly protects the active research session d4faf008257a406b, both real
+  Weekly-Projects directories and this delegating conversation. No adoption/rebinding or
+  implementation in the main checkout. Researcher tests/implementation acceptance remains
+  pending; the handoff policy requires approving the prepared tests in Chief inbox first.
+- Validation: actual Chief creation/tick output, native worker acknowledgment and diff check.
+  No runtime code changed, so no code tests rerun. Existing TODO edits retained. Session ID
+  unavailable; this delegation record committed locally, no push. Next: Chief test proposal.
+
 ## 2026-11-18 — O3 Codex launch recovery and dead-pane diagnostics
 
 - Researcher reproduced the external-source open failure. Captured actual session
