@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-18 — Weekly Projects onboarding confirmed by researcher
+
+- Researcher reported applying the onboarding packet. The actual AoE status command
+  confirms valid project data, confirmed structural overview and a working Git source
+  at ~/workspace/Weekly-Projects; source changes: zero, native binding: absent.
+- Next user action: open the project in their own terminal, initially with Claude because
+  the earlier Codex trial encountered an additional-directory permission refusal. Review
+  any native folder-trust prompt, then discuss the intended direction with the project agent.
+- No model session launched, source files changed or further research decisions applied.
+  Read-only status verification only; code tests not rerun because no runtime code changed.
+  Original TODO edits preserved. Session ID unavailable; local documentation commit only.
+
 ## 2026-11-18 — Weekly Projects real onboarding preparation
 
 - The researcher selected lialittis/Weekly-Projects as the first existing-project trial.
