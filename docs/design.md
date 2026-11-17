@@ -13,10 +13,12 @@ The name comes from Stephen Toulmin's model of argument (claim, grounds, rebutta
 ## 1. Overview
 
 **2026-11-18 accepted onboarding direction (design only).** Existing repositories first
-enter a workspace for overall understanding and continued work. Projects are optional
-subtopics created later after the researcher confirms an independent goal, scope and
-acceptance criteria. Shared source definitions and overall understanding belong to the
-workspace. Existing project data is preserved. See the
+use a workspace for overall understanding and continued work. Supported design paths
+are: new workspace only; new workspace plus one explicitly requested project; or a new
+project in an explicitly selected existing workspace. Projects are optional and may be
+created during intake or later, with confirmed goals, scope and acceptance criteria.
+Shared sources and overall understanding belong to the workspace. Existing project data
+is preserved. See the
 [workspace-first onboarding design](workspace-onboarding-design.md) for boundaries,
 compatibility and planned work; current onboarding still creates an explicit child.
 

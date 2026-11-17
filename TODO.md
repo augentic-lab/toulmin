@@ -467,26 +467,33 @@ checkpoints, Claim-free engineering delegation and gradual rebuilding in a new d
 
 ## WO — Workspace-first existing-repository onboarding (2026-11-18)
 
-Accepted direction: intake creates/uses a workspace; overall understanding and sources
-belong there; projects are optional independent topics created later. This supersedes O's
-initial-one-child default for future implementation only. Existing O completion records
-and real workspaces/projects remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
+Accepted modes: A) repo to new workspace only; B) repo to new workspace plus one explicit
+project; C) repo plus selected existing workspace to a new project. Workspace selection
+and optional child creation are independent choices. Overall understanding and shared
+sources belong to the workspace. Projects may be created during intake or later.
+This supersedes O's mandatory initial-child assumption; historical completion records
+and existing data remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
 Current authorization: documentation only; implementation and live scenarios are NOT RUN.
 The separate Chief permission task is unchanged.
 
-- [x] WO1 — Record accepted ownership, workflow, confirmation boundaries and compatibility
-  constraints. Preserve the distinction between current executable behavior and the new design.
-- [ ] WO2 — Freeze versioned source definitions/scope associations, workspace understanding
-  and notes, reviewed onboarding/child/task contracts, CLI forms and compatibility matrix.
-  Acceptance: zero-project examples need no sentinel child; old v1 catalogs and v1/v2/v3
-  bindings have an explicit unchanged-read path; no mandatory migration of existing data.
-- [ ] WO3 — Implement reviewed workspace-only source intake and understanding checkpoints.
-  Acceptance: temporary preview/apply creates no child or project Brief, leaves source
-  bytes unchanged, and covers stale/tampered/interrupted publication and explicit legacy use.
+- [x] WO1 — Record accepted A/B/C modes, ownership, workflow, confirmation and compatibility
+  boundaries. Distinguish current executable behavior from the accepted design.
+- [ ] WO2 — Freeze versioned source definitions/scope associations, workspace understanding,
+  onboarding/child/task contracts and CLI forms for A/B/C. Acceptance: matrix covers zero/
+  multiple children, registered/new sources, duplicate project names and ambiguous scopes;
+  A needs no sentinel child; old v1 catalogs and v1/v2/v3 bindings have unchanged-read paths;
+  existing data needs no mandatory migration.
+- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+  Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
+  one in the selected existing workspace. C reuses a registered source or registers it once;
+  old children, unrelated workspace context and source bytes stay unchanged. Rejection,
+  stale/tampered input, replay and interruption recovery cannot partially publish a child.
 - [ ] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
-  Acceptance: fake clients verify cwd, context, explicit permissions, source identity/conflicts,
-  recovery and no forced Claim/gate; workspace task/result flow pins scope and source version.
-- [ ] WO5 — Implement reviewed optional project derivation and perform compatibility/trial checks.
-  Acceptance: confirmation creates exactly the requested child and shared source references;
-  workspace history and original code stay intact; old fixtures pass; a disposable live journey
-  and separate researcher ruling cover project-free intake/work, later child creation and restore.
+  Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
+  permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
+  workspace task/results pin scope/source version; child creation never redirects a live session.
+- [ ] WO5 — Implement later optional project derivation and perform compatibility/trial checks.
+  Acceptance: reviewed derivation links shared source references without moving history/code;
+  old catalog/binding/receipt and explicit-child fixtures pass; disposable live A/B/C journeys
+  include C source reuse, workspace-only work, later child creation and fresh-session recovery.
+  Researcher usability acceptance remains a separate explicit ruling.

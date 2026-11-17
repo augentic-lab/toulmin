@@ -3,8 +3,9 @@
 **Current implementation and accepted next design.** The commands below describe the
 released project-scoped onboarding behavior. On 2026-11-18 the researcher approved
 [workspace-first onboarding](workspace-onboarding-design.md): intake and understanding
-start in the workspace; child projects are created later only when needed. That change
-is design-only and does not modify any existing workspace/project.
+belong to the workspace. The accepted design supports new workspace only, new workspace
+plus one explicitly requested project, and a new project in a selected existing workspace.
+These design changes are not implemented and do not modify existing workspace/project data.
 
 Onboarding creates an independent research workspace linked to local code or
 project directories. It does not move, copy, initialize Git in, or change those

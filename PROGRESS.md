@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO1 three explicit repository intake modes
+
+- Researcher approved and requested documentation/TODO updates for A: repo to workspace
+  only; B: repo to new workspace plus one project; C: repo plus selected existing workspace
+  to a new project. Refined the earlier later-project-only wording: workspace ownership
+  and optional child creation are independent, and explicit intake-time creation is first-class.
+- Updated workspace onboarding design, main design, current-behavior notice and AGENTS scope.
+  Specified reviewed source reuse/registration and child creation, no arbitrary scope choice,
+  no side-effect edits to unrelated existing context, safe publication/replay, and A/B/C
+  acceptance coverage in WO2–WO5. Implementation scenarios remain NOT RUN.
+- No runtime code, real workspaces/projects, active sessions or Chief tasks changed.
+  Existing TODO R10/R11 changes retained and excluded using a task-only staged patch.
+- Validation: documentation diff and relative-file links checked. No code tests for this
+  documentation-only revision. Session ID unavailable; next: freeze WO2 contracts across
+  all three modes before implementation. Local commit only, no push.
+
 ## 2026-11-18 — WO1 workspace-first onboarding development design
 
 - Researcher confirmed workspace-first intake, later optional project derivation and no
