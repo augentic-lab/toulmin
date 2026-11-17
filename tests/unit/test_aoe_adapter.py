@@ -560,6 +560,27 @@ def test_launch_error_does_not_block_later_healthy_native_prompt(calls):
     assert client().ready(SID)[0]
 
 
+@pytest.mark.parametrize(
+    "error",
+    [
+        "",
+        "Error adding directories: Ignoring --add-dir (/records) because the effective "
+        "permissions do not allow additional writable roots. Switch to workspace-write "
+        "to allow them.",
+    ],
+)
+def test_dead_pane_reports_launch_failure_above_blank_padding(calls, error):
+    screen = error + "\n" * 60 + "Pane is dead (status 1, Wed Nov 18 00:16:33 2026)\n"
+    calls[1].extend([json.dumps(row()), screen])
+    ready, reason = client().ready(SID)
+    assert not ready
+    assert "Native launch failed (dead pane)" in reason
+    assert "open --new-session" in reason
+    if error:
+        assert "workspace-write" in reason
+    assert len(calls[0]) == 2
+
+
 def test_generic_native_launch_failure_is_not_an_unrecognized_prompt(calls):
     calls[1].extend([json.dumps(row()), "Error: failed to load configuration\n"])
     ready, reason = client().ready(SID)

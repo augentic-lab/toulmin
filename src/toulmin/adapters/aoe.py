@@ -346,6 +346,17 @@ class AoEClient:
         kept = len(rows)
         while kept and not rows[kept - 1].strip():
             kept -= 1
+        # tmux can retain a launch error above blank rows and its dead-pane footer.
+        # Inspect that failed pane in full before applying live-composer heuristics.
+        if kept and re.match(r"^Pane is dead\b", rows[kept - 1]):
+            failure = re.search(r"(?im)^\s*Error adding directories:[^\n]*", screen)
+            detail = failure.group(0).strip()[:400] if failure else "Native process exited"
+            return (
+                "Native launch failed (dead pane): "
+                + detail
+                + "; inspect the native launch settings, then archive the failed session "
+                "and open --new-session"
+            )
         lines = rows[:kept][-18:]
         tail = "\n".join(lines)
         if not tail.strip():

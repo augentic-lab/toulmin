@@ -1,5 +1,30 @@
 # Toulmin development progress
 
+## 2026-11-18 — O3 Codex launch recovery and dead-pane diagnostics
+
+- Researcher reproduced the external-source open failure. Captured actual session
+  9974fef208d6447d: Codex rejected --add-dir under its effective permissions and exited;
+  tmux left blank rows followed by a dead-pane footer, hiding the error from the existing
+  bottom-18-row readiness check. The precise source of the default restriction remains
+  unverified; folder trust was absent in the inspected configuration.
+- Adapter now identifies a final dead-pane footer and reports the original additional-
+  directory failure from the complete capture. Tests cover padded failures with/without
+  an original error; healthy-composer handling remains unchanged.
+- Verified a native, per-launch --sandbox workspace-write --add-dir launch reaches the
+  folder-trust prompt. Did not accept trust or submit model input; stopped the probe.
+  Archived the researcher's dead session (restorable), created replacement d4faf008257a406b
+  at the same source with those explicit per-session arguments, and rebound the project.
+  No global Codex/AoE permission settings changed. Replacement currently shows the native
+  update menu, before folder trust. Context is prepared only, not delivered/acknowledged.
+- Recovery: researcher attaches to d4faf008257a406b, chooses Skip on the update menu and
+  reviews folder trust; from another terminal, runs aoe refresh for weekly-projects once
+  the composer is ready. Native usability acceptance remains pending.
+- Checks: affected adapter tests 125 passed; locked offline dev/TUI sync, Ruff lint/format,
+  mypy (116 modules), CLI help and diff check passed. Full suite: 1,834 passed across
+  four isolated shards (484 + 397 + 536 + 417); the initial serial attempt was stopped
+  to run those complete shards. Original source worktree remains clean.
+  Existing TODO changes retained. Session ID unavailable; no push.
+
 ## 2026-11-18 — Clarify the Codex onboarding launch failure
 
 - Rechecked the preserved temporary-trial screen: Codex rejected --add-dir because
