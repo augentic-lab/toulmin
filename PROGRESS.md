@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Weekly Projects real onboarding preparation
+
+- The researcher selected lialittis/Weekly-Projects as the first existing-project trial.
+  Cloned via the existing SSH setup into ~/workspace/Weekly-Projects (master,
+  553e09c0ccb33734fbc6e34c8714a2f55eee48fe; 56 tracked files, 16 commits).
+- Read the file inventory, selected Week 2/3/5 documentation and source. Prepared an
+  English structural overview distinguishing observed structure, inferred purpose and
+  historical results that have not been reproduced. No source scripts were executed.
+- Created ~/workspace/weekly-projects-research and prepared one sealed onboarding packet:
+  runs/20261117T230156Z-onboard-e3341ee9c5d64fcabd2c5a51ceaca754. The real CLI's read-only
+  decide inventory reports exactly one pending onboarding item. The source worktree
+  remains clean; no child, formal objects or native agent session has been created.
+- Next: researcher reviews and applies that packet in their terminal, then opens the
+  linked project conversation. This is preparation, not a completed native acceptance.
+- Validation: SSH access, clone, source Git state, actual onboard command and noninteractive
+  decide preview. No code changed, so no code test suite rerun. Original TODO edits left
+  untouched. Session ID unavailable; progress committed locally, no push.
+
 ## 2026-11-17 — O1–O5 existing-project onboarding implementation
 
 - Authorization: researcher selected independent research records, guided rebuilding rather
