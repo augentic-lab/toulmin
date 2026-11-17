@@ -1,5 +1,22 @@
 # Toulmin development progress
 
+## 2026-11-18 — Clarify the Codex onboarding launch failure
+
+- Rechecked the preserved temporary-trial screen: Codex rejected --add-dir because
+  effective permissions did not allow additional writable roots; this was not an OS
+  file-permission error and was not a failure observed in Weekly-Projects.
+- Verified installed Codex 0.167.0 help and official CLI documentation support additional
+  writable directories. Toulmin forwards --add-dir through AoE without selecting a sandbox;
+  AoE configuration adds --no-daemon. User config has no explicit sandbox/permissions mode
+  and no trust entry for the temporary trial. The exact origin of the effective restriction
+  remains unverified; an untrusted-directory default is a hypothesis, not a diagnosis.
+- Corrected the earlier recommendation: this trial does not establish that the researcher
+  must switch providers. Next investigate/reproduce the native launch permission selection
+  before changing integration or user configuration. No native session or config changed.
+- Validation: archived screen/session metadata, adapter source, local CLI help and official
+  CLI reference. Documentation-only diff check; no code tests. Existing TODO edits retained.
+  Session ID unavailable; local progress commit only, no push.
+
 ## 2026-11-18 — Weekly Projects onboarding confirmed by researcher
 
 - Researcher reported applying the onboarding packet. The actual AoE status command
