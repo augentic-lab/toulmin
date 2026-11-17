@@ -1,5 +1,11 @@
 # Existing projects and source directories
 
+**Current implementation and accepted next design.** The commands below describe the
+released project-scoped onboarding behavior. On 2026-11-18 the researcher approved
+[workspace-first onboarding](workspace-onboarding-design.md): intake and understanding
+start in the workspace; child projects are created later only when needed. That change
+is design-only and does not modify any existing workspace/project.
+
 Onboarding creates an independent research workspace linked to local code or
 project directories. It does not move, copy, initialize Git in, or change those
 source directories. Git and ordinary directories are supported. The new research

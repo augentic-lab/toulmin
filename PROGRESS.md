@@ -1,5 +1,22 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO1 workspace-first onboarding development design
+
+- Researcher confirmed workspace-first intake, later optional project derivation and no
+  changes to already created workspaces/projects; authorized Toulmin design changes only.
+- Added docs/workspace-onboarding-design.md: accepted journey/ownership, confirmation and
+  research boundaries, shared sources, proposed implementation surfaces, compatibility,
+  dependencies and WO2–WO5 executable acceptance scenarios (all NOT RUN).
+- Linked the decision in docs/design.md, distinguished current CLI behavior in
+  docs/onboarding.md and recorded documentation-only scope in AGENTS.md. Added WO1–WO5
+  tasks without replacing historical O completion or acceptance records.
+- No feature code, research data, active sessions or Chief contracts were changed. Existing
+  TODO R10/R11 edits preserved and excluded from this commit using a task-only staged patch.
+- Validation: documentation diff and relative-link checks; code tests not run because only
+  development documentation changed. Session ID unavailable. Next: freeze WO2 contracts
+  before any implementation; implementation authorization remains pending. Local commit,
+  no push.
+
 ## 2026-11-18 — Weekly Projects state and next discussion guidance
 
 - Read-only offline status confirms weekly-projects has valid explore-stage data,

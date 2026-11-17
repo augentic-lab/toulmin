@@ -464,3 +464,29 @@ checkpoints, Claim-free engineering delegation and gradual rebuilding in a new d
   trial was a pass; sessions were moved to AoE trash. No native permission defaults changed.
 - [ ] End-to-end acceptance — Run a real no-Claim Chief task and a real guided rebuild,
   then obtain the researcher's usability ruling. Automated/fake-tool tests are not this ruling.
+
+## WO — Workspace-first existing-repository onboarding (2026-11-18)
+
+Accepted direction: intake creates/uses a workspace; overall understanding and sources
+belong there; projects are optional independent topics created later. This supersedes O's
+initial-one-child default for future implementation only. Existing O completion records
+and real workspaces/projects remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
+Current authorization: documentation only; implementation and live scenarios are NOT RUN.
+The separate Chief permission task is unchanged.
+
+- [x] WO1 — Record accepted ownership, workflow, confirmation boundaries and compatibility
+  constraints. Preserve the distinction between current executable behavior and the new design.
+- [ ] WO2 — Freeze versioned source definitions/scope associations, workspace understanding
+  and notes, reviewed onboarding/child/task contracts, CLI forms and compatibility matrix.
+  Acceptance: zero-project examples need no sentinel child; old v1 catalogs and v1/v2/v3
+  bindings have an explicit unchanged-read path; no mandatory migration of existing data.
+- [ ] WO3 — Implement reviewed workspace-only source intake and understanding checkpoints.
+  Acceptance: temporary preview/apply creates no child or project Brief, leaves source
+  bytes unchanged, and covers stale/tampered/interrupted publication and explicit legacy use.
+- [ ] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
+  Acceptance: fake clients verify cwd, context, explicit permissions, source identity/conflicts,
+  recovery and no forced Claim/gate; workspace task/result flow pins scope and source version.
+- [ ] WO5 — Implement reviewed optional project derivation and perform compatibility/trial checks.
+  Acceptance: confirmation creates exactly the requested child and shared source references;
+  workspace history and original code stay intact; old fixtures pass; a disposable live journey
+  and separate researcher ruling cover project-free intake/work, later child creation and restore.
