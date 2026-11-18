@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Concurrency assessment for WO and the Chief permission task
+
+- Researcher reported test approval and asked whether new onboarding development conflicts
+  with the existing Chief task. Actual decision :2 is sent and worker task is running;
+  metadata still records phase=test. Do not claim feature implementation completed/started
+  solely from approval. Current worktree diff contains acceptance tests and progress only.
+- Separate worktrees prevent direct file overwrite but not later merge or behavior conflicts.
+  Chief's agreed change touches project-native policy, AoE launch/recovery and CLI entry;
+  WO4 extends those same concepts to workspace scope. CLI/docs/progress may overlap too.
+- Recommended order: WO2 design/contracts can proceed separately without changing runtime
+  code or Chief's contract. Accept and integrate the permission implementation before
+  source-backed workspace runtime work, using that integrated commit as the next baseline.
+  WO3 can be isolated later once WO2 freezes its data/protocol boundary; no implementation
+  or extra delegation is authorized by this assessment.
+- Validation: task/decision records, actual worker Git diff/log and accepted WO design.
+  No model/session interaction, checks rerun or task edits. Documentation-only diff check;
+  existing TODO changes retained. Session ID unavailable; local commit only, no push.
+
 ## 2026-11-18 — Chief permission task now awaits test approval
 
 - Actual task metadata now says needs-you, phase=test. Worker committed d21a39c with
