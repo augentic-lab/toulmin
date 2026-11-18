@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-18 — Protected approval audit distinction (no code changes)
+
+- Latest Decision names unit-test blob c69b043a58e9e58e2a96eb1a5e596d38cb94f4c3 as
+  approved. **Verified current file instead remains at previously explicitly approved
+  3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d**, unchanged since bc3fd01. The newly named
+  blob is b90b519's multiline fixture-signature state, before required Ruff formatting.
+- Read both complete blobs and confirmed identical module ASTs; exact bytes differ only
+  by joining the approved fixture signature onto one line. WO5 compatibility-test hash
+  9c30504a5b35bfef94dd4f28632cf58e9c648349 still matches. Preserve both approval audits;
+  no test/runtime/frozen-contract or Chief approval metadata changed. Further edits still
+  require renewed approval. Existing 2,124-pass runtime/check evidence remains applicable.
+- Next: Chief reconcile its protected-state record with the already approved current
+  blob, then complete independent review. No code tests repeated for this documentation-
+  only audit; hash/AST/exact-diff and whitespace checked. Root live/human remains pending.
+  Session unavailable; no main/global/research/session changes, merge or push.
+
 ## 2026-11-18 — Exact protected test states approved and verified
 
 - Subsequent Chief delivery reaffirms the same approved WO5 compatibility-test blob;
