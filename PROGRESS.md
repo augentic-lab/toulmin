@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-18 — Approved v1 rebind test amendment, before runtime fix
+
+- Explicit delegated-supervisor Decision approves exactly the amendment at e921721,
+  SHA256 d0fe1b7c98ec398e4fb2dcc6de5d00fa223aff09c4cfbf26fb695cc3dc68c557.
+  Applied only the allowed monkeypatch/fake read-only AoE constructor to the original
+  successful-bind unit case, preserving every assertion; added the six approved cases.
+- Verified **4 failed / 3 passed** (six new cases plus affected legacy test), before any
+  runtime fix: /tmp/wo-v1-approved-red.log. Intended failures are old/new/moved-inode/
+  unknown v1 inventory; unrelated/none and the original successful case pass.
+- Read runtime files directly, including source binding, portable validation, operational
+  identity attribution, receipt validation/discovery; read the updated supervisor notes.
+  Next: commit tests first, remove the version exemption without changing v1 data, verify
+  preview/offline purity, rerun all registered checks and return for independent review.
+  No additional original-test/support edits or real tools/research data/global changes.
+  Root owns all live/human trials; session ID unavailable.
+
 ## 2026-11-18 — Final v1 rebind audit / further protected-fixture request
 
 - **Verified:** R1–R3/D1 and v2 guard fixes are committed at 56e60bf; registered checks pass

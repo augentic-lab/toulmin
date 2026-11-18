@@ -199,7 +199,15 @@ def test_interrupted_publication_recovers_without_second_child(workspace, source
     assert "Other Operator" not in receipt
 
 
-def test_clone_without_local_paths_has_inventory_and_requires_bind(workspace, source):
+def test_clone_without_local_paths_has_inventory_and_requires_bind(
+    workspace, source, monkeypatch
+):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(
+        "toulmin.adapters.aoe.AoEClient",
+        lambda *a, **kw: SimpleNamespace(list_all_sessions=lambda: ()),
+    )
     applied(workspace, source)
     (workspace / LOCAL).unlink()
     for path in (workspace / "tools").glob("onboard-*.local.toml"):
