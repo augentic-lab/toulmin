@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — R4 real adapter regression, failing before correction
+
+- Root's live R4 on 092510d reopens native launch completion: source-backed workspace
+  Codex fails prelaunch because real AoEClient.create rejects project=None when a
+  sandbox is explicit. Read supervisor R4 in full. Root separately reports 18 real
+  A/B/C CLI operations passed with original source preserved; not researcher acceptance.
+- Added only tests/acceptance/test_wo_real_aoe_workspace.py. Actual create/show/readiness/
+  send, CLI routing, scoped policy and binding/context run above fake command transport.
+  No real AoE/model/Chief/global config or research data. Existing tests unchanged.
+- **Verified RED: 4 intended failures / 20 passing controls**, /tmp/wo-r4-red.log:
+  direct workspace-write/inherit, CLI workspace-write and known prelaunch retry fail
+  with the live diagnostic. Controls cover explicit inherit, uncertain creation recovery,
+  title/agent/mode/directory validation and project/Claude compatibility. Tests inspect
+  exact persisted native arguments, single creation, context delivery and failed history.
+- Decision: preserve explicit --new-session recovery and fail closed for equal/nested
+  workspace code/records grants; retain project/Claude behavior and protected assertions.
+  Next: commit these tests before runtime fix, then affected/full registered checks.
+  Independent Claude review blocked by OAuth login; root owns login/live trials. Session
+  unavailable. No merge/push/main or live profile/session/research/global modifications.
+
 ## 2026-11-18 — Protected approval audit distinction (no code changes)
 
 - Latest Decision names unit-test blob c69b043a58e9e58e2a96eb1a5e596d38cb94f4c3 as
