@@ -1,5 +1,19 @@
 # Toulmin development progress
 
+## 2026-11-18 — Commit pending R10/R11 planning notes
+
+- Researcher explicitly requested `commit` after the WO3–WO5 integration. The only
+  remaining change was the eight-line R10/R11 TODO addition previously preserved
+  separately; this instruction authorizes committing that documentation now.
+- R10 records continuous entry into critique; R11 records explicit, cost-aware
+  cross-provider review profiles and calibration. Both remain unchecked planning
+  items: this commit does not implement them or launch/authorize model reviews.
+- Verified the exact diff, UTF-8/LF, unique pending R10/R11 entries, referenced local
+  provenance file, and git diff --check. Code tests not repeated: docs-only change,
+  no runtime, dependency or template modifications. No push.
+- Next: researcher usability feedback on the integrated Weekly workflow; R10/R11
+  implementation still needs its own scope/authorization. Session: 01a192fa-a22e-7531-86d7-7f1fe4c99753.
+
 ## 2026-11-18 — WO3–WO5 integrated and real Weekly workflow technically verified
 
 - Researcher manually ran both independent Claude/Sonnet reviews and supplied pass /
