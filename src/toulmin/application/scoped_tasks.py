@@ -14,6 +14,7 @@ from typing import Any
 from uuid import uuid4
 
 from toulmin.adapters.chief import ChiefClient, ChiefConfig, load_config
+from toulmin.application.chief_contract import validate_chief_contract as validate_chief_contract
 from toulmin.application.sources import (
     checkout_locks,
     filesystem_identity,
@@ -213,15 +214,6 @@ def _git(repo: Path, *args: str) -> str:
     if result is None:
         raise FormatError(f"{repo}: Git observation unavailable: {args[0]}; inspect locally")
     return result
-
-
-def validate_chief_contract(existing: dict[str, Any], contract: dict[str, Any]) -> None:
-    """Old Chief versions may omit optional fields; any persisted contract value must agree."""
-    if existing.get("repo") != contract["repo"] or existing.get("base") != contract["base_branch"]:
-        raise FormatError("existing Chief task repo/baseline differs from frozen contract")
-    for key, value in contract.items():
-        if key in existing and existing[key] != value:
-            raise FormatError(f"existing Chief task {key} differs from frozen contract")
 
 
 def prepare(root: Path, scope: Scope, value: str) -> Prepared:

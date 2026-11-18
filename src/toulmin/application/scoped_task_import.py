@@ -8,6 +8,7 @@ from pathlib import Path
 
 from toulmin.adapters.chief import ChiefClient, load_config
 from toulmin.application.build_import import _read_optional
+from toulmin.application.chief_contract import validate_chief_contract, validate_lineage
 from toulmin.application.scoped_tasks import _git, archive, frozen_submission, request_path
 from toulmin.core.atomic import digest, handoff_mutex
 from toulmin.core.codec import decode
@@ -77,17 +78,15 @@ def prepare(root: Path, scope: Scope, value: str) -> Preview:
     ):
         raise FormatError("task import must use the original host and Chief home/command")
     client = ChiefClient(root, config)
-    from toulmin.application.scoped_tasks import validate_chief_contract
-
     raw_task = client.task(submission["task_id"])
     if raw_task is None:
         raise FormatError("Chief task missing from original home; never redirect result import")
-    validate_chief_contract(raw_task, contract)
+    scope_base = validate_chief_contract(raw_task, contract)
     task = client.read_task(submission["task_id"])
     if task.state not in {"done", "abandoned"}:
         raise FormatError("task import requires done or abandoned Chief state")
-    if task.repo != contract["repo"] or task.base != contract["base_branch"]:
-        raise FormatError("Chief result repo/base differ from exact frozen contract")
+    if task.repo != contract["repo"] or task.base != scope_base:
+        raise FormatError("Chief result repo/scope base changed during contract validation")
     repo = Path(str(contract["repo"]))
     head = _git(
         repo,
@@ -96,6 +95,7 @@ def prepare(root: Path, scope: Scope, value: str) -> Preview:
         "--end-of-options",
         f"{task.review.head or task.branch or task.base}^{{commit}}",
     )
+    validate_lineage(str(repo), scope_base, head)
     commits = _git(repo, "log", "--oneline", f"{contract['base_branch']}..{head}", "--")
     diffstat = _git(
         repo, "diff", "--no-ext-diff", "--stat", str(contract["base_branch"]), head, "--"

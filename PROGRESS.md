@@ -1,5 +1,50 @@
 # Toulmin development progress
 
+## 2026-11-18 — R6 test-first Chief lifecycle imports corrected; all checks pass
+
+- **Verified:** shared L3 application/chief_contract.py distinguishes frozen source
+  base_branch from Chief's mutable accepted-test scope base. An advanced base requires
+  matching immutable base_branch, complete matching contract, explicit test_first/build
+  transition, retained portable protections, and available full-commit ancestor lineage.
+  Missing/ambiguous/conflicting/unrelated lineage, changed checks/goal/repo and weakened or
+  malformed protections refuse with FormatError. Result HEAD must descend from scope base.
+- Scoped task reconciliation/import use that validator without changing frozen submission,
+  SourcePin, original contract, host/Chief-home/command checks, source baseline or result
+  attribution. Commit/diff summaries still begin at ORIGINAL source baseline, retaining
+  accepted-test and implementation commits. Normal nonterminal tasks now reach the intended
+  done/abandoned refusal; validation never starts checks, a worker or scientific approval.
+- Test-first 81f3404: **12 intended failures / 34 controls** before runtime changes
+  (/tmp/wo-r6-red.log). **78 focused PASS** (/tmp/wo-r6-focused.log), including all 46 new
+  cases, original engineering tests, WO4 tasks and R2 attribution. Workspace/project v2
+  done/abandoned import/replay, reconciliation and six nonterminal CLI scenarios pass.
+  Separate real temporary Git worktrees model accepted-test/build commits; source HEAD
+  stays frozen, preview bytes unchanged and no second fake Chief new occurs.
+- Legacy assessment: O4 v1 engineering import had the same false base equality and now
+  shares advanced-base validation with unchanged paths/schema/Run/session attribution.
+  Existing legacy tests exposed historical reported tool/command attribution independent
+  of launcher config; retain that only on unchanged-base legacy records. Advanced records
+  require the complete contract; v2 always retains strict frozen-field authority. Sparse
+  older Chief metadata remains compatible at the unchanged known baseline; unproven
+  lineage refuses without repair. No original test/assertion/support state was changed.
+- Separate legacy application/build_import.py (Spec/claim/G4 route) already allows an
+  advanced base, but its commit/diff summaries start at mutable task.base, potentially
+  excluding approved-test commits. Inspected and reported; left its historical research
+  behavior unchanged because R6 corrects engineering import, not scientific adjudication.
+- **All six registered commands exit 0:** locked offline dev+tui sync; unmodified COMPLETE
+  checker; Ruff check; Ruff format (270 files); mypy (126 modules); toulmin --help.
+  COMPLETE: **2,202 unique nodes / eight passing shards**, every node assigned exactly once;
+  .chief/regression-2342004 and /tmp/wo-r6-complete.log. No filters/xfail/checker modifications
+  or type/lint ignores. R1–R5/D1 and old CLI/architecture/data-integrity remain green.
+  Private-socket runtime cases use unique disposable sockets/fake providers only.
+- Approved old blobs unchanged: WO5 9c30504a5b35bfef94dd4f28632cf58e9c648349 and legacy
+  unit 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. Frozen contract and L1/L2 unchanged;
+  no migration, main/other-worker/global/source/session changes, merge or push. Specified
+  live Chief task.json and Chief source were read ONLY; no real Chief/model was executed.
+- Next: stop for Chief independent review and root's live retry/import after terminal Chief
+  state. Claude review remains OAuth-blocked, not a verdict; technical tests are not
+  researcher usability/scientific acceptance. Remaining live/human criteria stay pending.
+  Session unavailable; root owns live state, completion/review decisions and integration.
+
 ## 2026-11-18 — R6 Chief test-approval lifecycle regressions (red first)
 
 - Root reports result preview rejects a normal test-first engineering build because Chief

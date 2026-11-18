@@ -7,6 +7,7 @@ from pathlib import Path
 
 from toulmin.adapters.chief import ChiefClient, load_config
 from toulmin.application.build_import import _git, _read_optional
+from toulmin.application.chief_contract import validate_chief_contract, validate_lineage
 from toulmin.application.engineering_tasks import engineering_task_ids, task_archive
 from toulmin.core.atomic import digest, handoff_mutex
 from toulmin.core.documents import FormatError
@@ -78,6 +79,9 @@ def prepare_task_import(root: Path, project: str, task_id: str) -> TaskImportPre
     repo = contract["repo"]
     config = load_config(root)
     client = ChiefClient(repository.root, config)
+    raw_task = client.task(task_id)
+    if raw_task is None:
+        raise FormatError("Chief task disappeared during engineering result preview")
     task = client.read_task(task_id)
     if task.state not in {"done", "abandoned"}:
         raise FormatError(
@@ -86,8 +90,15 @@ def prepare_task_import(root: Path, project: str, task_id: str) -> TaskImportPre
     if task.repo is None or Path(task.repo).resolve() != Path(repo).resolve():
         raise FormatError("Chief task repository differs from the frozen engineering contract")
     client.check_repository(repo, contract["base_branch"])
-    if task.base is not None and task.base != contract["base_branch"]:
-        raise FormatError("Chief task baseline differs from the frozen engineering contract")
+    compared = raw_task
+    if task.base == contract["base_branch"]:
+        # V1 historically imports reported tool/command attribution independently
+        # of launch configuration. Preserve that unchanged-base compatibility;
+        # an advanced scope base still requires the complete frozen contract.
+        compared = {key: value for key, value in raw_task.items() if key not in {"tool", "command"}}
+    scope_base = validate_chief_contract(compared, contract)
+    if task.base != scope_base:
+        raise FormatError("Chief task scope base changed during result preview")
     notes = []
     head = None
     revision = task.review.head or task.branch
@@ -100,6 +111,7 @@ def prepare_task_import(root: Path, project: str, task_id: str) -> TaskImportPre
             notes.append(str(error))
     commits = diffstat = "Not available: task head not reported or not present.\n"
     if head is not None:
+        validate_lineage(repo, scope_base, head)
         base = contract["base_branch"]
         commits = _git(root, repo, "log", "--oneline", f"{base}..{head}", "--")
         diffstat = _git(root, repo, "diff", "--stat", base, head, "--")

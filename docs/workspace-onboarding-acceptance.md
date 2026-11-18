@@ -165,6 +165,16 @@ local export. Record exact Chief ID/contract/repo/base and manual kickoff. Impor
 abandoned output twice: exactly one operational run.md, private raw artifacts with portable
 hashes, no root R-NNN IDs, scientific objects, auto-merge/push/check execution or gate changes.
 
+During a normal test-first Chief task, record the original frozen `base_branch`, the
+accepted-test commit now used as Chief's scope `base`, and the approved additions to
+`protected`. The source pin/submission/contract baseline stays original; imported commits
+and diff include both accepted tests and implementation. Do not edit Chief state or frozen
+submission bytes to reconcile these distinct baselines. Result preview must still refuse
+until Chief reports done or abandoned; technical test approval is not result acceptance.
+Automated R6 regressions cover both v2 scopes and legacy O4 engineering import/replay.
+The separate legacy Spec-build import retains its historical summaries from mutable Chief
+base; this engineering correction does not change its research/G4 semantics.
+
 For each journey retain commands, resolved paths/scope, seals/receipts, observed cwd/args,
 context/ack paths and limitations. Label operator approvals and AI-run observations honestly.
 Root reviews these technical results; the researcher supplies a separate usability ruling.
