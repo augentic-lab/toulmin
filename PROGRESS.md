@@ -1,5 +1,39 @@
 # Toulmin development progress
 
+## 2026-11-18 — O3 supervisor follow-up: unlocked permission choice
+
+- Supervisor authorized this correction before independent delivery review. The two
+  approved acceptance files/support and TODO.md remain unchanged; no live research
+  workspace, native session, global configuration or main working tree was operated on.
+- Permission selection now observes state under the existing locks, releases both
+  workspace and checkout flocks before invoking the chooser, then reacquires and
+  revalidates before publication. Observations include exact binding/catalog/local-map/
+  policy images, selected source and cwd identity, records-root identity, AoE profile,
+  checkout sessions across profiles and any previously bound session. Changes refuse
+  without consuming the stale choice, overwriting another choice or creating a writer.
+- Creation/replacement eligibility is shared across both phases. Losing a saved policy
+  during open refuses instead of falling back to inheritance. Existing-session reuse
+  and new Claude sessions do not reinterpret Codex settings or invoke its chooser.
+- Verified/refuted the path concern: Repository already makes roots absolute, forbids
+  '..' and rejects component symlinks. Relative/absolute and symlink regressions passed
+  before this fix and still pass; normalization semantics are unchanged. The unlocked
+  interval rechecks the same Repository guarantees and filesystem identity.
+- Dead-pane diagnostics now select the most recent matching native error from history;
+  managed-refusal and healthy-composer behavior remain unchanged. Onboarding docs explain
+  unlocked selection and safe refusal when another operation changes the observed state.
+- New regression file: tests/unit/test_native_prompt_concurrency.py (16 cases). Initial
+  tests reproduced 10 failures and 2 passes before implementation. Final focused choice/
+  integrity/approved suite: 81 passed (18.57s), including cross-process acquisition of
+  both flocks, concurrent open/policy publication, source/catalog/checkout/root changes,
+  session revival, unbound writers and compatibility. Broader intermediate suite: 287
+  passed. Offline sync, Ruff lint/format, mypy (117 modules), CLI help and diff checks pass.
+- The supervisor's registered full check passed: all 1,915 collected nodes assigned
+  exactly once across eight isolated shards, all exit 0 (longest shard 115.59s).
+  Manifest/results: .chief/regression-77994/; output .chief/supervisor-complete-final.log.
+  The runner is unchanged; no checks weakened. Earlier follow-up run: 1,913 nodes passed.
+  Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. Next: independent supervisor review;
+  native trust/usability acceptance remains separate. No push or merge.
+
 ## 2026-11-18 — O3 general Codex launch policy and recovery (build)
 
 - The researcher explicitly approved both acceptance-test files and authorized build.

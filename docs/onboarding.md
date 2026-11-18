@@ -175,6 +175,11 @@ interactive terminal. It names both directories: the working source (native cwd)
 and the research workspace (`--add-dir`). Answering yes saves `workspace-write`,
 requesting write access to both; no or Enter saves `inherit`, preserving native
 settings. Canceling the question creates neither a policy nor a session.
+The question holds no workspace or checkout lock. Before saving or launching,
+Toulmin reacquires the locks and rechecks the binding/session, source catalog,
+directory identities and local policy. If another operation changed them while
+you were choosing, this open refuses without overwriting that operation's choice
+or creating a duplicate session; retry `open` against the current state.
 
 Without an interactive terminal, an unknown or stale choice stops before launch
 and prints the two paths and these explicit options:
