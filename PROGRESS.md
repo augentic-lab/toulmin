@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-18 — Guide freshness in project context fingerprints
+
+- Decision: "按你的建议，把 guide 算进指纹" after a refresh of rkey-lifecycle reused an 11-16 context whose guide.md predated the WO5 guide edits.
+- Change: `scope_state` folds the digest of `application/project-guide.md` into project-scope fingerprints (v4 bindings inherit it through the resident fingerprint). An updated guide reports "stale context; refresh required" and refresh delivers the current guide. Existing bound project sessions show stale once; workspace contexts unchanged. protocols.md section, packaged copy, released.json digest, CHANGELOG.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2302 passed (new test: unchanged guide reuses the context, a changed guide makes it stale and refresh writes the new guide).
+- Session ID: unavailable.
+
 ## 2026-11-18 — R10/R11 merged into main
 
 - Deferred integration completed after the researcher confirmed UX work was committed.

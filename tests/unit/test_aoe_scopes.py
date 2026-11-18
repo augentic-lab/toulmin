@@ -489,3 +489,22 @@ def test_project_context_walks_the_research_loop_without_confirming(root, fake):
     workspace = (root / stored(root)["context"] / "context.md").read_text()
     assert "Research loop" not in workspace  # the workspace scope gets no project loop
     assert not (root / stored(root)["context"] / "guide.md").exists()
+
+
+def test_an_updated_project_guide_makes_the_context_stale(root, fake, tmp_path, monkeypatch):
+    import toulmin.application.aoe as aoe_module
+
+    add_child(root)
+    service = AoEWorkspace(root, "scheduling", fake)
+    service.open()
+    first = stored(root, "scheduling")["context"]
+    service.refresh()
+    assert stored(root, "scheduling")["context"] == first  # unchanged guide: reused
+    newer = tmp_path / "project-guide.md"
+    newer.write_text(aoe_module.PROJECT_GUIDE.read_text() + "\nA newer rule.\n")
+    monkeypatch.setattr(aoe_module, "PROJECT_GUIDE", newer)
+    assert service.status().context_status.startswith("stale")
+    service.refresh()
+    second = stored(root, "scheduling")["context"]
+    assert second != first
+    assert (root / second / "guide.md").read_text().endswith("A newer rule.\n")

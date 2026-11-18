@@ -1454,3 +1454,15 @@ Display only; formats, gates, notices, the rule table and the agent's state card
   `aoe status`, `refresh`, `bind`) shows the project card instead of the agent's state card;
   invalid data still falls back to the full state view. The agent still receives the full
   state card in its context files.
+
+## Guide freshness (2026-11-18)
+
+Authorized with "按你的建议，把 guide 算进指纹". A project scope's context fingerprint now
+includes the digest of the packaged agent guide (`application/project-guide.md`). When a
+Toulmin update changes the guide, the bound project context reports "stale context; refresh
+required" and `toulmin aoe refresh NAME` delivers a new context with the current guide.
+Before, only research state changed the fingerprint, so sessions kept the guide copied into
+their first context. Each existing bound project session therefore shows stale once after
+this update. Workspace contexts are unchanged. Reason for this L3 change: a refresh
+after the R2/WO5 guide edits reused an 11-16 context carrying the older guide.
+

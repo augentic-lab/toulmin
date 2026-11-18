@@ -1,5 +1,8 @@
 # Framework changes
 
+- Guide freshness (2026-11-18): an updated agent guide makes project contexts stale, so
+  `toulmin aoe refresh NAME` delivers it. Existing project sessions show stale once.
+
 ## R10/R11 — 2026-11-18
 
 - Critique continues in the current coordinator; handoff/replacement is optional.

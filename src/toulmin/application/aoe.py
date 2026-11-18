@@ -143,6 +143,10 @@ def scope_state(root: Path, project: str | None) -> ResearchState | WorkspaceSta
                 )
         except (OSError, ValueError) as error:
             state = replace(state, errors=(*state.errors, str(error)))
+        # The agent guide travels with each project context; an updated guide makes the
+        # bound context stale so refresh delivers it (otherwise sessions keep an old copy).
+        guide = digest(PROJECT_GUIDE.read_bytes())
+        state = replace(state, fingerprint=digest(f"{state.fingerprint}\nguide {guide}".encode()))
     git_report = git_state(root)
     return replace(
         state,
