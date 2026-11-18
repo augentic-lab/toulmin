@@ -224,7 +224,9 @@ class DraftKind(StrEnum):
 @app.command("draft")
 def draft_object(
     kind: Annotated[DraftKind, typer.Argument(help="Object, Run or proposal type.")],
-    project: Annotated[str, typer.Argument(help="Project name.")],
+    project: Annotated[
+        str | None, typer.Argument(help="Project name; omit for workspace overview/task.")
+    ] = None,
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
     name: Annotated[
         str | None, typer.Option("--name", help="Optional filename suffix, e.g. tail-cause.")
@@ -279,12 +281,62 @@ def draft_object(
     to: Annotated[
         str | None, typer.Option("--to", help="stage: the stage to enter (default: the next).")
     ] = None,
+    workspace: Annotated[
+        bool, typer.Option("--workspace", help="Workspace overview or task draft.")
+    ] = False,
+    source: Annotated[
+        str | None, typer.Option("--source", help="Explicit source for a scoped task.")
+    ] = None,
 ) -> None:
-    """Write a fillable draft skeleton under the project's runs/drafts/.
+    """Draft for PROJECT, or explicit --workspace overview/task.
 
+    Scoped v2 tasks go directly to runs/proposals/; other drafts go to runs/drafts/.
     Proposal kinds (ruling, intake, review, brief, stage) are prefilled from the files: current
     statuses, undecided review draft labels, the brief's digest and sections, the stage.
     """
+    if workspace and project is not None:
+        raise typer.BadParameter("give PROJECT or --workspace")
+    if project is None and not workspace:
+        raise typer.BadParameter("give PROJECT or explicit --workspace")
+    if kind == DraftKind.TASK and project is not None and source is None:
+        from toulmin.core.sources import read_source_catalog
+
+        if read_source_catalog(root).schema_version == 2 and (root / "sources.toml").exists():
+            raise typer.BadParameter("scoped task draft requires explicit --source ID")
+    if project is None or (kind == DraftKind.TASK and source is not None):
+        if kind == DraftKind.OVERVIEW and project is None:
+            from toulmin.protocols.overview_draft import write_workspace_overview_draft
+
+            path = write_workspace_overview_draft(root)
+            typer.echo(display(path, root))
+            typer.echo(
+                "Fill then propose overview --workspace --input "
+                "FILE --source ID --rationale TEXT --root ROOT"
+            )
+            return
+        if kind == DraftKind.TASK:
+            if source is None or repo is not None:
+                raise typer.BadParameter("scoped task requires --source ID, without --repo")
+            from toulmin.application.scoped_tasks import write_draft as write_scoped_draft
+            from toulmin.core.scope import Scope
+
+            try:
+                path = write_scoped_draft(root, Scope(project), source, name=name)
+            except (OSError, ValueError) as error:
+                typer.echo(f"Error: {error}", err=True)
+                raise typer.Exit(1) from error
+            typer.echo(display(path, root))
+            scope_option = "--workspace" if project is None else f"--project {project}"
+            typer.echo(
+                "Fill Goal/Scope/checks/protection/budget; task preview "
+                f"FILE {scope_option}, then researcher decide {scope_option}"
+            )
+            return
+        raise typer.BadParameter(
+            "workspace drafts are overview/task only; scientific drafts require PROJECT"
+        )
+    if source is not None:
+        raise typer.BadParameter("--source is for scoped task drafts only")
     try:
         validate_project_name(project)
     except ValueError as error:
@@ -301,13 +353,13 @@ def draft_object(
             from toulmin.protocols.engineering_tasks import write_task_draft
 
             config = load_config(root)
-            source = resolve_working_source(root, project) if repo is None else None
+            working_source = resolve_working_source(root, project) if repo is None else None
             path = write_task_draft(
                 root,
                 project,
                 name=name,
-                repo=str(repo) if repo else None if source else config.repos.get(project),
-                source=source.source_id if source else None,
+                repo=str(repo) if repo else None if working_source else config.repos.get(project),
+                source=working_source.source_id if working_source else None,
                 tool=config.tool,
                 budget=config.budget,
                 trust=config.trust,
@@ -884,6 +936,9 @@ def show_map(
         ),
     ] = None,
     root: Annotated[Path, root_option("Research workbench root.")] = Path("."),
+    workspace: Annotated[
+        bool, typer.Option("--workspace", help="Workspace; suppress records-child inference.")
+    ] = False,
     watch: Annotated[
         bool, typer.Option("--watch", help="Redraw whenever project files change; Ctrl-C stops.")
     ] = False,
@@ -905,7 +960,9 @@ def show_map(
     from toulmin.cli import research_map as view
     from toulmin.cli.entry import _child
 
-    if project is None:
+    if workspace and project is not None:
+        raise typer.BadParameter("give PROJECT or --workspace")
+    if project is None and not workspace:
         try:
             project = _child(Path.cwd().resolve(), root.resolve())
         except OSError:
@@ -1133,6 +1190,26 @@ def _workspace_status(root: Path, verbose: bool) -> None:
             "Next: project commands keep working; preview adoption with "
             f"`toulmin workspace adopt {report.root.root}`"
         )
+    from toulmin.core.sources import read_source_catalog
+
+    try:
+        catalog = read_source_catalog(root)
+        if catalog.definitions:
+            typer.echo("Sources:")
+            from toulmin.application.sources import scope_source_reports
+
+            for line in scope_source_reports(root, None):
+                typer.echo(f"  {line}")
+            typer.echo(
+                "Understanding: overview.md is a reviewed "
+                "checkpoint; runs/notebook.md is unconfirmed."
+            )
+            typer.echo(
+                "Work: draft task --workspace --source ID for "
+                "bounded engineering; no Claim/Spec/gate required."
+            )
+    except (OSError, ValueError):
+        pass  # The structured read-only report above includes invalid source diagnostics.
     typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
     from toulmin.application.workspace_sync import git_state, sync_notices
 

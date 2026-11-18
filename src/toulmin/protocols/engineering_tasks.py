@@ -18,6 +18,7 @@ from toulmin.core.project_proposals import OUTCOME_SUFFIX, Outcome, render_outco
 from toulmin.core.render import header
 from toulmin.core.repository import Repository
 from toulmin.core.schema import utc_text
+from toulmin.core.scope import Scope
 
 
 @dataclass(frozen=True)
@@ -29,9 +30,10 @@ class TaskPlan:
     contract: dict[str, Any]
 
 
-def request_path(repository: Repository, project: str, relative: str) -> Path:
-    repository.project(project)
-    prefix = f"projects/{project}/runs/proposals/"
+def request_path(repository: Repository, project: str | None, relative: str) -> Path:
+    if project is not None:
+        repository.project(project)
+    prefix = f"{Scope(project).records('runs')}/proposals/"
     if not relative.startswith(prefix) or not TASK_FILENAME.fullmatch(relative[len(prefix) :]):
         raise FormatError(f"{relative}: expected a task proposal directly under {prefix}")
     return repository.path(relative, "file")
@@ -51,11 +53,24 @@ def read_outcome(repository: Repository, relative: str, sha256: str) -> Outcome 
     return record
 
 
-def preview_task(root: Path, project: str, relative: str) -> TaskPlan:
+def preview_task(root: Path, project: str | None, relative: str) -> TaskPlan:
     repository = Repository(root)
     raw = request_path(repository, project, relative).read_bytes()
-    request = validate_task_request(decode(raw, relative))
-    task_id = request.task_id or f"{project}-{Path(relative).stem}"
+    document = decode(raw, relative)
+    if document.header.get("schema_version") == 2:
+        from toulmin.core.scoped_tasks import validate_request
+
+        scoped = validate_request(document)
+        if scoped.scope != Scope(project):
+            raise FormatError("task request scope differs from selected records path")
+        request = scoped.request
+    else:
+        if project is None:
+            raise FormatError(
+                "workspace engineering requests require explicit v2 scope/source pins"
+            )
+        request = validate_task_request(document)
+    task_id = request.task_id or f"{project or 'workspace'}-{Path(relative).stem}"
     if len(task_id) > 128:
         raise FormatError("task_id: derived identifier exceeds 128 characters; give task_id")
     return TaskPlan(relative, digest(raw), request, task_id, {})
@@ -83,13 +98,14 @@ def task_inventory(root: Path, project: str) -> tuple[tuple[str, ...], tuple[str
     return tuple(pending), tuple(errors)
 
 
-def task_summaries(root: Path, project: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+def task_summaries(root: Path, project: str | None) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """File-derived submission/import facts; no scientific acceptance is inferred."""
     summaries: list[str] = []
     errors: list[str] = []
     repository = Repository(root)
-    repository.project(project)
-    folder = repository.path(f"projects/{project}/runs/proposals")
+    if project is not None:
+        repository.project(project)
+    folder = repository.path(f"{Scope(project).records('runs')}/proposals")
     if not folder.exists():
         return (), ()
     for path in sorted(folder.glob("task-*.md")):
@@ -113,14 +129,14 @@ def task_summaries(root: Path, project: str) -> tuple[tuple[str, ...], tuple[str
                 .strftime("%Y%m%dT%H%M%SZ")
             )
             record_path = (
-                f"projects/{project}/runs/{stamp}-task-"
+                f"{Scope(project).records('runs')}/{stamp}-task-"
                 f"{marker.proposal_sha256[:12]}-result/import.json"
             )
             result = repository.path(record_path)
             if result.exists():
-                from toulmin.protocols.engineering_task_import import read_task_import
+                from toulmin.core.engineering_tasks import parse_task_import
 
-                record, _ = read_task_import(repository, record_path.rsplit("/", 1)[0])
+                record = parse_task_import(result.read_bytes(), record_path)
                 if (
                     record.task_id != task_id
                     or record.request != relative

@@ -266,6 +266,20 @@ def inventory(root: Path) -> Inventory:
                 items.append(Item(kind, relative, loaded.project))
             except (OSError, ValueError) as error:
                 ignored.append(str(error))
+    root_tasks = repository.path("runs/proposals")
+    if root_tasks.exists():
+        from toulmin.protocols.engineering_tasks import read_outcome
+
+        for task in sorted(root_tasks.glob("task-*.md")):
+            if task.name.endswith(".outcome.md"):
+                continue
+            relative = task.relative_to(repository.root).as_posix()
+            try:
+                marker = read_outcome(repository, relative, digest(task.read_bytes()))
+                if marker is None or marker.disposition == "applying":
+                    items.append(Item("task-request", relative))
+            except (OSError, ValueError) as error:
+                ignored.append(str(error))
     projects, project_stale = _project_handoffs(repository)
     return Inventory(tuple(items + proposals + projects), stale + project_stale, tuple(ignored))
 
@@ -412,6 +426,29 @@ class Run:
         return choice != "q"
 
     def _task_request(self, item: Item) -> bool:
+        document = decode(Repository(self.root).path(item.path, "file").read_bytes(), item.path)
+        if document.header.get("schema_version") == 2:
+            from toulmin.application import scoped_tasks
+            from toulmin.core.scope import Scope
+
+            scope = Scope(item.project)
+            shown_v2 = scoped_tasks.prepare(self.root, scope, item.path)
+            typer.echo(json.dumps(shown_v2.contract, indent=2))
+            typer.echo(
+                "Apply delegates a bounded engineering task; no "
+                "scientific approval or worker kickoff is implied."
+            )
+            choice = self._choose("asq" if shown_v2.marker is not None else "arsq")
+            if choice == "a":
+                done_v2 = scoped_tasks.apply(
+                    self.root, scope, shown_v2, self.actor, "toulmin decide: a", report=typer.echo
+                )
+                typer.echo(f"Task outcome: {done_v2.disposition}: {done_v2.result}")
+                self.applied += 1
+            elif choice == "r":
+                scoped_tasks.reject(self.root, scope, item.path, self.actor, _reason())
+                self.rejected += 1
+            return choice != "q"
         from toulmin.application.engineering_tasks import apply_task, prepare_task, reject_task
 
         assert item.project is not None

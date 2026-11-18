@@ -25,14 +25,23 @@ from toulmin.adapters.provider_logs import (
 )
 from toulmin.application import native_policy
 from toulmin.application.build import external_states
-from toulmin.application.sources import ResolvedSource, filesystem_identity, resolve_working_source
+from toulmin.application.sources import (
+    ResolvedSource,
+    checkout_conflicts,
+    checkout_locks,
+    filesystem_identity,
+    resolve_working_source,
+)
 from toulmin.application.workspace_sync import git_state, sync_notices
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.codec import decode
 from toulmin.core.documents import FormatError
 from toulmin.core.repository import Repository
 from toulmin.core.scope import Scope
+from toulmin.core.sources import LOCAL as SOURCE_LOCAL
+from toulmin.core.sources import parse_bindings, read_source_catalog
 from toulmin.core.workspace import CHARTER_FILE, validate_charter
+from toulmin.core.workspace_journal import pending as publication_pending
 from toulmin.protocols.research_workspace import ResearchState, render_state, research_state
 from toulmin.protocols.workspace_context import (
     WorkspaceState,
@@ -64,6 +73,12 @@ class Binding:
     source_id: str | None = None
     source_identity: str | None = None
     cwd_identity: str | None = None
+    catalog_sha256: str | None = None
+    definition_sha256: str | None = None
+
+    @property
+    def scope(self) -> Scope:
+        return Scope(self.project)
 
 
 V1_FIELDS = (
@@ -83,6 +98,7 @@ V1_FIELDS = (
 )
 V2_FIELDS = ("scope", "title", *(name for name in V1_FIELDS if name != "project"))
 V3_FIELDS = (*V2_FIELDS, "cwd", "source_id", "source_identity", "cwd_identity")
+V4_FIELDS = (*V3_FIELDS, "catalog_sha256", "definition_sha256")
 
 
 @dataclass(frozen=True)
@@ -155,14 +171,25 @@ def _source_report(source: ResolvedSource) -> str:
         ):
             try:
                 result = subprocess.run(
-                    ["git", "--no-optional-locks", "-C", str(source.path), *args],
+                    [
+                        "git",
+                        "--no-optional-locks",
+                        "-c",
+                        "core.fsmonitor=false",
+                        "-c",
+                        "core.hooksPath=/dev/null",
+                        "-C",
+                        str(source.path),
+                        *args,
+                    ],
                     capture_output=True,
                     text=True,
                     timeout=5,
                     check=False,
                     stdin=subprocess.DEVNULL,
+                    env={**os.environ, "GIT_NO_LAZY_FETCH": "1", "GIT_TERMINAL_PROMPT": "0"},
                 )
-                value = result.stdout.strip()
+                value = result.stdout[:2_000_000].strip()
                 if label == "Worktree changes" and result.returncode == 0:
                     value = str(len(value.splitlines())) if value else "0"
                 elif not value:
@@ -246,7 +273,7 @@ class AoEWorkspace:
         self.default_profile = default_profile
 
     def _source(self) -> ResolvedSource | None:
-        return resolve_working_source(self.root, self.project) if self.project else None
+        return resolve_working_source(self.root, self.project)
 
     def _cwd(self) -> Path:
         source = self._source()
@@ -272,6 +299,9 @@ class AoEWorkspace:
         """
         base = self._title()
         taken = {item.title for item in sessions if item.path.resolve() == self._cwd()}
+        previous = self._read(allow_moved=True)
+        if previous is not None and previous.version == 4 and previous.title:
+            taken.add(previous.title)
         title, number = base, 2
         while title in taken:
             title, number = f"{base} ({number})", number + 1
@@ -297,12 +327,20 @@ class AoEWorkspace:
                 session_id,
                 known_ids=known_ids,
                 message=message,
-                version=3,
+                version=4 if read_source_catalog(self.root).schema_version == 2 else 3,
                 title=title or self._title(),
                 cwd=str(source.path.resolve()),
                 source_id=source.source_id,
                 source_identity=source.identity,
                 cwd_identity=filesystem_identity(source.path),
+                catalog_sha256=source.version
+                if read_source_catalog(self.root).schema_version == 2
+                else None,
+                definition_sha256=(
+                    read_source_catalog(self.root).definition(source.source_id).sha256
+                    if read_source_catalog(self.root).schema_version == 2
+                    else None
+                ),
             )
         if not self.workspace_root:
             return Binding(
@@ -322,13 +360,27 @@ class AoEWorkspace:
         )
 
     def _lock(self) -> AbstractContextManager[object]:
-        # All project bindings share one lock: one session must not silently serve two projects.
+        # Checkout → root → child → native binding. The permission callback is outside
+        # this entire stack; all observations are revalidated after it returns.
         stack = ExitStack()
         try:
-            stack.enter_context(handoff_mutex(self.root / ".aoe-binding-writer"))
+            records_identity = filesystem_identity(self.root)
             source = self._source()
             if source:
-                stack.enter_context(handoff_mutex(source.path.resolve() / ".toulmin-native-writer"))
+                stack.enter_context(
+                    checkout_locks(
+                        ((str(source.path.resolve()), filesystem_identity(source.path)),)
+                    )
+                )
+                stack.enter_context(handoff_mutex(self.root))
+                if self.project is not None:
+                    stack.enter_context(handoff_mutex(self.directory))
+            stack.enter_context(handoff_mutex(self.root / ".aoe-binding-writer"))
+            Repository(self.root)
+            if records_identity != filesystem_identity(self.root) or self._source() != source:
+                raise FormatError(
+                    "source/records selection changed while acquiring launch locks; retry open"
+                )
             return stack
         except BaseException:
             stack.close()
@@ -341,6 +393,10 @@ class AoEWorkspace:
         try:
             self.repository.path(self.binding_relative, "file")
             value = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(value, dict) and value.get("schema_version") == 4:
+                from toulmin.core.workspace_onboarding import json_data
+
+                value = json_data(path.read_bytes(), str(path))
             if not isinstance(value, dict) or type(value.get("schema_version")) is not int:
                 raise ValueError("expected versioned binding mapping")
             version = value.pop("schema_version")
@@ -349,12 +405,12 @@ class AoEWorkspace:
                     raise ValueError("a version 1 binding is a project binding")
                 if set(value) != set(V1_FIELDS):
                     raise ValueError("binding fields differ from version 1")
-            elif version in {2, 3}:
-                expected = V2_FIELDS if version == 2 else V3_FIELDS
+            elif version in {2, 3, 4}:
+                expected = V2_FIELDS if version == 2 else V3_FIELDS if version == 3 else V4_FIELDS
                 if set(value) != set(expected):
                     raise ValueError(f"binding fields differ from version {version}")
-                if version == 3:
-                    if self.project is None:
+                if version in {3, 4}:
+                    if version == 3 and self.project is None:
                         raise ValueError("a source binding requires a project scope")
                     for field in ("cwd", "source_id", "source_identity", "cwd_identity"):
                         if not isinstance(value[field], str) or not value[field].strip():
@@ -366,6 +422,16 @@ class AoEWorkspace:
                 if not isinstance(value["title"], str) or not value["title"].strip():
                     raise ValueError("invalid binding title")
                 value["project"] = self.project
+                if version == 4:
+                    for field in ("catalog_sha256", "definition_sha256"):
+                        if not isinstance(value[field], str) or not re.fullmatch(
+                            r"[0-9a-f]{64}", value[field]
+                        ):
+                            raise ValueError(f"invalid v4 pin {field}")
+                    if ".." in Path(value["cwd"]).parts or str(Path(value["cwd"])) != value["cwd"]:
+                        raise ValueError("v4 cwd must be canonical without traversal")
+                    if not re.fullmatch(r"[0-9]+:[0-9]+", value["cwd_identity"]):
+                        raise ValueError("v4 checkout identity must be DEVICE:INODE")
             else:
                 raise ValueError("unsupported binding version")
             value["version"] = version
@@ -419,6 +485,11 @@ class AoEWorkspace:
                 or binding.delivery != "none"
             ):
                 raise ValueError("context metadata without an archive")
+            if binding.version == 4:
+                if len(binding.known_ids) != len(set(binding.known_ids)):
+                    raise ValueError("duplicate known session IDs")
+                if binding.delivery != "none" and binding.session_id is None:
+                    raise ValueError("prepared v4 delivery requires a session ID")
             return binding
         except (OSError, UnicodeError, ValueError, TypeError) as error:
             raise FormatError(f"{path}: invalid AoE binding: {error}") from error
@@ -432,7 +503,13 @@ class AoEWorkspace:
             value = {"schema_version": 1, **{name: fields[name] for name in V1_FIELDS}}
         else:
             value = {"schema_version": binding.version, "scope": self.scope.to_data()}
-            names = V3_FIELDS if binding.version == 3 else V2_FIELDS
+            names = (
+                V4_FIELDS
+                if binding.version == 4
+                else V3_FIELDS
+                if binding.version == 3
+                else V2_FIELDS
+            )
             value.update({name: fields[name] for name in names if name != "scope"})
         write_atomic(path, (json.dumps(value, indent=2) + "\n").encode(), replace=path.exists())
 
@@ -448,7 +525,7 @@ class AoEWorkspace:
 
     def _check_session(self, session: AoESession, binding: Binding | None = None) -> None:
         source = self._source()
-        if binding and binding.version == 3:
+        if binding and binding.version in {3, 4}:
             if (
                 source is None
                 or source.source_id != binding.source_id
@@ -506,7 +583,22 @@ class AoEWorkspace:
                     raise FormatError(f"Session already bound to project {other.name}")
 
     def _state(self) -> ResearchState | WorkspaceState:
+        if publication_pending(self.repository):
+            from toulmin.core.workspace_journal import incomplete_child
+
+            if self.project is not None and incomplete_child(self.repository) == self.project:
+                raise FormatError(
+                    "creation incomplete; replay the exact confirmed workspace publication"
+                )
+            raise FormatError(
+                "workspace publication journal pending; replay "
+                "exact apply before native context writes"
+            )
         state = scope_state(self.root, self.project)
+        if self._source() is not None and read_source_catalog(self.root).schema_version == 2:
+            from toulmin.application.source_context import fingerprint
+
+            state = replace(state, fingerprint=fingerprint(self, state.fingerprint))
         if state.errors:
             subject = "workspace" if self.project is None else "project"
             raise FormatError(
@@ -521,6 +613,10 @@ class AoEWorkspace:
         )  # fmt: skip
 
     def _context(self, binding: Binding, state: ResearchState | WorkspaceState) -> Binding:
+        if binding.version == 4:
+            from toulmin.application.source_context import prepare_context
+
+            return prepare_context(self, binding, state)
         if binding.context and binding.fingerprint == state.fingerprint:
             self._verify_context(binding)
             return binding
@@ -744,6 +840,11 @@ class AoEWorkspace:
         )
 
     def _verify_context(self, binding: Binding) -> None:
+        if binding.version == 4:
+            from toulmin.application.source_context import verify_context
+
+            verify_context(self, binding)
+            return
         if not binding.context:
             raise FormatError("No prepared context")
         manifest_path = self.repository.path(binding.context + "/manifest.json", "file")
@@ -854,6 +955,9 @@ class AoEWorkspace:
             "available actions, then wait for researcher input. Do not prepare a handoff or "
             "apply research decisions automatically."
         )
+        if binding.version == 4:
+            local = self.directory / ".aoe/contexts" / str(binding.token) / "local.json"
+            message += f" Machine-local cwd/receipt command: read {local}."
         try:
             client.send(binding.session_id, message)
         except (AoEError, OSError) as error:
@@ -874,6 +978,17 @@ class AoEWorkspace:
 
     def status(self, *, check_session: bool = True) -> WorkspaceView:
         state = scope_state(self.root, self.project)
+        try:
+            if self._source() is not None and read_source_catalog(self.root).schema_version == 2:
+                from toulmin.application.source_context import fingerprint
+
+                state = replace(state, fingerprint=fingerprint(self, state.fingerprint))
+        except (OSError, ValueError) as error:
+            state = replace(
+                state,
+                errors=(*state.errors, str(error)),
+                fingerprint=digest((state.fingerprint + str(error)).encode()),
+            )
         diagnostics: list[str] = []
         session = None
         try:
@@ -897,6 +1012,8 @@ class AoEWorkspace:
             status = "creation unresolved; inspect AoE before retrying"
         elif check_session:
             try:
+                if binding.session_id is None:
+                    raise FormatError("Context has no bound native session")
                 session = self._client(binding).show(binding.session_id)
                 self._check_session(session, binding)
                 if session.agent_session_id != binding.provider_session_id:
@@ -948,13 +1065,37 @@ class AoEWorkspace:
                 and previous.root == str(self.root)
                 and previous.profile == client.profile
                 and previous.agent == session.tool
-                and (previous.version == 3 or self._source() is None)
+                and (previous.version in {3, 4} or self._source() is None)
             ):
                 if previous.profile != client.profile:
                     raise FormatError("Profile differs; use bind --replace")
                 self._check_session(session, previous)
                 binding = previous
             else:
+                if previous is not None and previous.version == 4:
+                    if previous.session_id and (
+                        previous.session_id != session.id or previous.profile != client.profile
+                    ):
+                        old_client = (
+                            client
+                            if previous.profile == client.profile
+                            else AoEClient(previous.profile)
+                        )
+                        old = next(
+                            (
+                                item
+                                for item in old_client.list_sessions()
+                                if item.id == previous.session_id
+                            ),
+                            None,
+                        )
+                        if old is not None and old.state == "live":
+                            raise FormatError(
+                                "Existing session is live; archive it in AoE before replacement"
+                            )
+                    history = self.repository.path(self.binding_relative).parent / "bindings"
+                    history.mkdir(exist_ok=True)
+                    write_atomic(history / f"{uuid4().hex}.json", self.binding_path.read_bytes())
                 binding = self._new_binding(
                     client.profile, session.tool, session_id=session.id, title=session.title
                 )
@@ -1016,12 +1157,16 @@ class AoEWorkspace:
                     binding, codex_sandbox, require_choice=choose_codex_sandbox is not None
                 )
                 self._checkout_available(client)
+                if replaced is not None and replaced.version == 4:
+                    history = self.repository.path(self.binding_relative).parent / "bindings"
+                    history.mkdir(exist_ok=True)
+                    write_atomic(history / f"{uuid4().hex}.json", self.binding_path.read_bytes())
                 self._save(binding)
                 try:
                     if binding.version == 1:
                         assert self.project is not None
                         session = client.create(self.root, self.project, agent)
-                    elif binding.version == 3:
+                    elif binding.version in {3, 4}:
                         # Only opted-in launches add a sandbox argument. Keeping it out
                         # of the binding preserves v1/v2/v3 and manually configured AoE
                         # sessions. AoE persists --extra-args for resume/restart.
@@ -1068,7 +1213,7 @@ class AoEWorkspace:
             self._checkout_available(client, session.id)
             self._unique(client.profile, session.id)
             binding = self._sync_identity(binding, session)
-            binding = self._context(binding, state)
+            binding = self._context(binding, self._state() if binding.version == 4 else state)
         if created:
             assert binding.session_id is not None
             self._await_startup(client, binding.session_id)
@@ -1108,7 +1253,7 @@ class AoEWorkspace:
                 return None
             selected = agent or (binding.agent if binding else fallback_agent)
             source = self._source()
-            if selected != "codex" or source is None or self.project is None:
+            if selected != "codex" or source is None:
                 return None
             inputs = self._launch_inputs()
             if self._read() != binding or self._source() != source:
@@ -1195,7 +1340,7 @@ class AoEWorkspace:
             # sessions whose args Toulmin has never inspected.
             return
         source = self._source()
-        if binding.agent != "codex" or source is None or self.project is None:
+        if binding.agent != "codex" or source is None:
             raise FormatError("--codex-sandbox requires an external-source Codex project session")
         # A local preference is not proof of the args of an existing/manual session.
         # Even a repeated flag cannot be represented as changing that session's policy.
@@ -1213,7 +1358,7 @@ class AoEWorkspace:
         require_choice: bool,
     ) -> str | None:
         source = self._source()
-        if binding.agent != "codex" or source is None or self.project is None:
+        if binding.agent != "codex" or source is None:
             if requested is not None:
                 raise FormatError(
                     "--codex-sandbox requires an external-source Codex project session"
@@ -1276,18 +1421,32 @@ class AoEWorkspace:
         if self._source() is None:
             return
         cwd = self._cwd()
-        conflicts = [
-            f"{profile}/{session.id}"
-            for profile, session in client.list_all_sessions()
-            if session.state == "live"
-            and session.path.resolve() == cwd
-            and (session.id != own or profile != client.profile)
-        ]
+        local = self.repository.path(SOURCE_LOCAL)
+        if local.exists():
+            bindings = parse_bindings(local.read_bytes())
+            source = self._source()
+            assert source is not None
+            checkout_conflicts(bindings, source.source_id, cwd, filesystem_identity(cwd))
+        identity = filesystem_identity(cwd)
+        conflicts = []
+        for profile, session in client.list_all_sessions():
+            same = session.path.resolve() == cwd
+            if not same and session.path.is_dir():
+                same = filesystem_identity(session.path) == identity
+            if (
+                same
+                and session.state == "live"
+                and (session.id != own or profile != client.profile)
+            ):
+                conflicts.append(f"{profile}/{session.id}")
         if conflicts:
             raise FormatError(
                 f"Working checkout {cwd} already has a live native session: "
                 + ", ".join(conflicts)
-                + "; reuse it or archive it before opening another"
+                + (
+                    "; archive it before opening another. Local "
+                    "coordination cannot isolate arbitrary external writers"
+                )
             )
 
     def _creation_candidates(self, client: AoEClient, binding: Binding) -> list[AoESession]:
@@ -1353,6 +1512,17 @@ class AoEWorkspace:
             if self._state().fingerprint != binding.fingerprint:
                 raise FormatError("Context is stale; refresh before acknowledging")
             if binding.delivery == "acknowledged":
+                return self.status(check_session=False)
+            if binding.version == 4:
+                from toulmin.application.source_context import acknowledge
+
+                if binding.session_id is None:
+                    raise FormatError("Context has no bound native session")
+                session = self._client(binding).show(binding.session_id)
+                self._check_session(session, binding)
+                if session.agent_session_id != binding.provider_session_id:
+                    raise FormatError("Native identity changed; refresh before acknowledging")
+                acknowledge(self, binding)
                 return self.status(check_session=False)
             receipt: dict[str, object] = {"schema_version": binding.version}
             if binding.version >= 2:

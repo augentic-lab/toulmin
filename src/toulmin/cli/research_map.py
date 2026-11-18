@@ -229,6 +229,24 @@ def render_workspace(root: Path, width: int, glyphs: Glyphs, refreshed: str | No
     if refreshed:
         head += f"  refreshed {refreshed}"
     lines = [head, ""]
+    from toulmin.protocols.workspace_context import (
+        render_workspace as source_card,
+    )
+    from toulmin.protocols.workspace_context import (
+        workspace_research,
+    )
+
+    shared_state = workspace_research(base)
+    if shared_state.sources:
+        lines.extend(source_card(shared_state).splitlines())
+        from toulmin.application.sources import scope_source_reports
+
+        try:
+            for line in scope_source_reports(base, None):
+                lines.extend(wrap(line, width, "  "))
+        except (OSError, ValueError) as error:
+            lines.append(fit(f"Source observations unavailable: {error}", width))
+        lines.append("")
     try:
         waiting = list(decide.inventory(base).items)
     except (OSError, ValueError) as error:

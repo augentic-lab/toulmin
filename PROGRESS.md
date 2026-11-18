@@ -1,5 +1,42 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO4 workspace-native context and engineering implementation
+
+- Status: **Verified technical implementation**; WO3 commit 76b3f0b is the preceding
+  source/intake layer. Workspace source-backed conversations use existing AoE supervision,
+  source/checkout/cwd pins and strict native v4 bindings. Portable scoped snapshots stay
+  under runs; local manifests, launch paths and receipt metadata stay ignored under .aoe.
+  Tokens, exact manifests, scope, identity and current fingerprints are checked on ack.
+  Same-checkout refresh, archived explicit replacement and scoped restoration retain history;
+  child creation never redirects a workspace conversation. Old v1/v2/v3 bindings keep their
+  established versions/paths and offline reads write nothing.
+- Extended application/native_policy.py rather than introducing a second permission store.
+  Workspace choices coexist with old project-only policy files. Permission selection remains
+  outside locks, followed by directory/source/policy/profile/session revalidation and ordered
+  checkout/root/child/binding coordination. Conflicting path/inode writers across profiles
+  refuse. No global configuration, permission bypass, trust acceptance or scientific grant
+  is performed. Source registration/selection/permission remain independent.
+- Scoped task v2 draft/preview/decide freezes exact scope/catalog/definition/observation/
+  baseline and local Chief export before the external boundary. Unknown creation outcomes
+  reconcile the original ID/contract without another new call; raw failed output is retained.
+  Confirmed imports create a root operational run.md without formal IDs, or an ordinary
+  project v1 execution Run for project v2 requests. Portable hashes and ignored raw artifacts
+  remain distinct. Replay is idempotent; worker output is never scientific acceptance.
+- Workspace status/map/source list report local availability and bounded snapshot freshness.
+  `workspace note --input ENTRY` validates the required provenance/section shape and appends
+  under the root writer lock without rewriting historical bytes or touching child notebooks.
+  New traversal time/output/count/byte budgets and failed Git-discovery diagnostics preserve
+  historical v1 identity behavior while avoiding clean state after failed observations.
+- Actual evidence: 154 approved acceptance/source/removal checks passed; disposable script
+  /tmp/wo-extra-checks-final.log confirms real B packet → workspace/child v4 ack, C exact
+  noncanonical mapping preservation, noncanonical catalog understanding pins, unknown Chief
+  creation with missing task and retained raw output, project v2 submission/import/replay,
+  and notebook append/lock behavior. No real provider/Chief worker ran. Ruff check/format,
+  mypy 125 modules and locked CLI help passed. The unchanged COMPLETE checker has already
+  passed 2,047/2,047 twice; a final frozen-runtime run is ongoing. Tests/support unchanged.
+- Next: WO5 derivation CLI/generated guides/documentation and final evidence. Independent
+  Chief cross-model review and root-owned live/human trials remain pending, not self-approved.
+
 ## 2026-11-18 — WO3 reviewed workspace-first intake implementation
 
 - Status: **Verified technical implementation** of strict source catalog v2 and reviewed

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from toulmin.core.repository import Repository
+from toulmin.core.scope import Scope
 from toulmin.protocols.research_workspace import _file_digest
 from toulmin.protocols.workspace_state import CREATION_INCOMPLETE, RootState, workspace_status
 
@@ -30,6 +31,8 @@ class WorkspaceState:
     errors: tuple[str, ...]
     fingerprint: str
     context_files: tuple[str, ...]
+    sources: tuple[str, ...] = ()
+    tasks: tuple[str, ...] = ()
 
 
 def workspace_research(root: Path) -> WorkspaceState:
@@ -58,6 +61,45 @@ def workspace_research(root: Path) -> WorkspaceState:
     if report.root.state == RootState.WORKSPACE:
         for relative in RESIDENT:
             remember(relative, resident=True)
+    from toulmin.protocols.engineering_tasks import task_summaries
+
+    task_lines, task_errors = task_summaries(root, None)
+    errors.extend(task_errors)
+    folder = repository.path("runs/proposals")
+    if folder.exists():
+        for task in sorted(folder.glob("task-*.md")):
+            remember(task.relative_to(repository.root).as_posix())
+    source_lines = []
+    from toulmin.core.sources import CATALOG, LOCAL, parse_bindings, read_source_catalog
+
+    try:
+        catalog = read_source_catalog(root)
+        if repository.path(CATALOG).exists():
+            remember(CATALOG, resident=True)
+        local = repository.path(LOCAL)
+        bindings = parse_bindings(local.read_bytes()) if local.exists() else {}
+        for association in catalog.associated(Scope()):
+            definition = catalog.definition(association.source)
+            bound = (
+                "local binding available"
+                if definition.id in bindings
+                else "unavailable: explicit source bind needed"
+            )
+            source_lines.append(
+                f"{definition.id} | {association.role} | {definition.kind} | {bound}"
+            )
+        from toulmin.protocols.workspace_onboarding import confirmed_overview
+
+        if confirmed_overview(root) is not None:
+            remember("overview.md", resident=True)
+        notebook = repository.path("runs/notebook.md")
+        if notebook.exists():
+            remember("runs/notebook.md")
+        for source_id in bindings:
+            if source_id not in {definition.id for definition in catalog.definitions}:
+                notices.append(f"{LOCAL}: unreferenced old local entry {source_id}; retained")
+    except (OSError, ValueError) as error:
+        errors.append(str(error))
     latest = report.history[0] if report.history else None
     if latest is not None:
         remember(f"sessions/{latest.filename}", resident=True)
@@ -68,7 +110,7 @@ def workspace_research(root: Path) -> WorkspaceState:
     for resource in report.resources:
         remember(f"shared/resources/{resource.name}.md")
     journal = repository.root / ".workspace-pending"
-    values: list[str] = []
+    values: list[str] = list(task_lines)
     if os.path.lexists(journal):
         values.append("journal")
         if os.path.lexists(journal / "intent.md"):
@@ -130,6 +172,8 @@ def workspace_research(root: Path) -> WorkspaceState:
         errors_tuple,
         fingerprint.hexdigest(),
         tuple(context),
+        tuple(source_lines),
+        task_lines,
     )
 
 
@@ -164,10 +208,22 @@ def render_workspace(state: WorkspaceState) -> str:
     lines.extend(("", "AWAITING RESEARCHER DECISION"))
     lines.extend(state.pending or ("Nothing pending.",))
     lines.extend(("", "RESOURCES", *(state.resources or ("None registered.",))))
+    lines.extend(("", "SOURCES", *(state.sources or ("None registered.",))))
+    if state.tasks:
+        lines.extend(("", "ENGINEERING TASKS (execution only)", *state.tasks))
     lines.extend(("", "ACTIONS"))
     if state.errors:
         lines.append("Inspect and resolve the reported file errors, then refresh state.")
     else:
+        if state.sources:
+            lines.append(
+                "Discuss source understanding; draft overview "
+                "--workspace for a reviewed checkpoint."
+            )
+            lines.append(
+                "Draft task --workspace --source ID for bounded "
+                "engineering; no child, Claim, Spec or gate required."
+            )
         lines.extend(
             (
                 "Continue workspace discussion from the current files.",

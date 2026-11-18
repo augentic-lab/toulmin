@@ -315,3 +315,18 @@ def adopt_command(
         "No model or session was started. Bound project native contexts, if any, are now "
         "stale (they gain WORKSPACE.md); refresh each with `toulmin aoe refresh PROJECT`."
     )
+
+
+@app.command("note")
+def note_command(
+    input_file: Annotated[Path, typer.Option("--input", help="One unconfirmed notebook entry.")],
+    root: Root = Path("."),
+) -> None:
+    """Append one provenance-labeled workspace note; never confirm understanding."""
+    from toulmin.protocols.workspace_notes import append
+
+    try:
+        path = append(root, input_file.read_bytes())
+    except (OSError, ValueError) as error:
+        raise _fail(error) from error
+    typer.echo(f"Appended unconfirmed workspace observation: {path}")

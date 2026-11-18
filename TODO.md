@@ -495,7 +495,7 @@ weekly-projects-research workspace for final trials; original source data must b
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,
   stale/tampered input, replay and interruption recovery cannot partially publish a child.
-- [ ] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
+- [x] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
   Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
   permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
   workspace task/results pin scope/source version; child creation never redirects a live session.
