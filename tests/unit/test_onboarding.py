@@ -199,9 +199,7 @@ def test_interrupted_publication_recovers_without_second_child(workspace, source
     assert "Other Operator" not in receipt
 
 
-def test_clone_without_local_paths_has_inventory_and_requires_bind(
-    workspace, source, monkeypatch
-):
+def test_clone_without_local_paths_has_inventory_and_requires_bind(workspace, source, monkeypatch):
     from types import SimpleNamespace
 
     monkeypatch.setattr(

@@ -491,16 +491,15 @@ weekly-projects-research workspace for final trials; original source data must b
   Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
   for implementation on 2026-11-18. Current technical evidence is in PROGRESS.md;
   live/human cases remain pending.
-- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+- [x] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,
   stale/tampered input, replay and interruption recovery cannot partially publish a child.
-  V2 guard and supervisor R1–R3 regressions pass. Final v1 audit exposed a remaining
-  managed-only guard exception: four proposed v1 cases fail, two controls pass. Removing
-  it requires a fake constructor in one protected legacy successful-bind fixture;
-  see docs/workspace-onboarding-v1-bind-test-amendment.patch (not applied). V1 data must
-  remain byte-identical; no safety exception or schema migration is being approved here.
+  V1 and v2 share the same selected old/new path/saved-inode/all-profile guard, with no
+  catalog exemption. Approved v1 amendment is applied/committed before the runtime fix;
+  v1 catalog bytes/roles/identity and preview/offline purity are verified. R1–R3 stay green.
+  Protected fixture audit and exact validation evidence are recorded in PROGRESS.md.
 - [x] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
   Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
   permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
@@ -511,7 +510,6 @@ weekly-projects-research workspace for final trials; original source data must b
   include C source reuse, workspace-only work, later child creation and fresh-session recovery.
   Researcher usability acceptance remains a separate explicit ruling.
   Derivation, generated guides/docs and the approved automated matrix are implemented.
-  The approved v2 rebind amendment and R1–R3/D1 regressions pass (registered 2,112/2,112).
-  The additional proposed v1 rebind cases are not yet passing/registered; fixture approval
-  and guard completion are pending, followed by independent final Chief review and root
-  live journeys. Human usability is NOT RUN by this worker.
+  Both approved rebind amendments and all R1–R3/D1/observation regressions pass: registered
+  COMPLETE 2,124/2,124. Independent final Chief review and root-owned live journeys remain
+  pending; human usability is NOT RUN by this worker.

@@ -1,5 +1,63 @@
 # Toulmin development progress
 
+## 2026-11-18 — All-format rebind guard completed and registered checks pass
+
+- Status: **Verified: v1 and v2 confirmed rebind use the same operational writer boundary;
+  every registered command exits 0.** No catalog-version exemption or managed-only fallback
+  remains. WO3 technical criteria close; WO4 remains technically complete. WO5's code and
+  automated matrix are complete, but final Chief review/root live/human criteria remain open.
+  This is neither scientific approval nor researcher-usability acceptance. Session unavailable.
+- Exact approved test-first audit: b90b519 applies the e921721 patch before runtime changes
+  (SHA256 d0fe1b7c98ec398e4fb2dcc6de5d00fa223aff09c4cfbf26fb695cc3dc68c557), with four
+  intended failures and three passes including the affected legacy test. New-file preview/
+  offline/lifecycle cases committed separately at 4552aa0 before the fix (1 failed/5 passed).
+  No original assertion is removed or weakened. The two approved existing-fixture injections
+  remain the only behavioral changes to original tests; all other tests/support stay intact.
+- The exact approved legacy signature was multiline and failed Ruff formatting. Normalized
+  ONLY its already approved parameter-list layout to one line. Asserted the entire module
+  AST is identical and the bytes equal that exact signature-only replacement. Exact applied
+  state remains at b90b519; normalized state and SHA audit are preserved in
+  .chief/wo-v1-fixture-format-audit.json for Chief's separate protected-state approval:
+  before f7c556db10f24d2d4a4318420c1a681c8605ce5fd78554386c7c1c6bdc800ac6,
+  after 2c96e4eff8080f48c00a36ed3a17f38277ca65831ac1639d64a9985624a86842.
+  There is no additional fixture behavior or assertion change and no format/lint exemption.
+- Common guard holds only selected-source old/new path/inode locks, then the root writer
+  lock, and queries all profiles. Unknown inventory or matching unknown lifecycle refuses;
+  known archived/trashed sessions and unrelated writers do not block distinct rebinds.
+  V1 catalogs, formats, project roles and logical identities stay byte-identical; successful
+  bind changes only the named local mapping. Preview returns before native client creation;
+  offline status with saved native bindings likewise makes no native call or workspace write.
+- Directly read source/runtime files beyond truncated diffs: inspection, source resolution/
+  bind/locks, R1 typed portable validation, R2 operational header/raw import identity, R3
+  generic applied receipts, archived effects and handoff discovery/revalidation. R1–R3 and
+  approved D1 remain green. No scientific or scope rules were redesigned.
+- Actual focused verification: **78 passed** (/tmp/wo-v1-final-focused.log), covering the
+  affected legacy unit case, all approved v1/v2 guards, preview/offline sentinels, unknown/
+  archived lifecycle and all previous R1–R3/D1 regressions. No real AoE/model/Chief runs;
+  fake client boundaries include every legitimate successful-bind case.
+- Unchanged registered COMPLETE: **2,124 unique nodes assigned exactly once**, all eight
+  shards exit 0; .chief/regression-1455294/{manifest,results}.json and shard logs,
+  /tmp/wo-v1-complete.log. No checker edits, filtering, skip/xfail or test weakening.
+  Permitted socket access is limited to the previously proven private temporary tmux
+  fixture sockets/fake Codex/demo workers. Runtime behavior was frozen during the run;
+  the fixture signature-only format normalization preserves the verified AST exactly.
+- All other exact registered commands exit 0 using UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (266 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help` (/tmp/wo-v1-help.log).
+  COMPLETE used `run --locked --extra tui python
+  /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Generated framework/init/released-digest subset: **6 passed**. Canonical/packaged current
+  guidance and frozen-spec copies match; all historical release digests are retained.
+- Updated actual generated onboarding/protocol/live guidance to remove the obsolete v1
+  exemption/pending-fixture warnings. Historical proposals, failed logs and protected audit
+  commits remain available. No main/global settings/real research data/session or other
+  worker changed; no merge/push. Root owns final trials and local integration.
+- Next: end turn for Chief independent review/protected-state approval, then root-owned
+  live A/B/C/native context/ack/restart/handoff/engineering trials. Live/human remain NOT RUN.
+
 ## 2026-11-18 — Binding observation and legacy lifecycle regression checkpoint
 
 - Added only tests/acceptance/test_wo_binding_observation.py for the explicit remaining

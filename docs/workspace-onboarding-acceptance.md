@@ -13,7 +13,7 @@ original source as an intake effect. Root chooses the actual paths and isolated 
 
 ## Technical regression status
 
-The approved fake-only v2 rebind amendment is applied. Regression cases cover unmanaged
+Both approved fake-only rebind fixture amendments are applied. Regression cases cover unmanaged
 writers at the selected source's old/new checkout, a moved old inode, unknown inventory/
 lifecycle, and an unrelated source's writer that must not block rebind. Bind checks only
 the selected source and preserves all other associations/local entries.
@@ -24,11 +24,11 @@ handoff/discovery/restoration, including rejection and tampering. These automate
 do not establish real provider behavior or researcher usability. Independent final Chief
 review and the live steps below remain separate pending evidence.
 
-A final v1 audit remains open: v1 rebind still uses a managed-only guard. Four proposed
-v1 safety cases are expected RED and two data-preservation controls pass. A narrow legacy
-successful-bind fake-fixture amendment awaits Chief approval; v1 must receive the same
-all-profile check without converting its catalog. Do not count this case or the live
-rebind matrix as complete before that follow-up is implemented and rechecked.
+The v1 catalog receives the same check: old/new/moved-inode writers and unknown inventory
+refuse, while unrelated/no-writer controls retain exact v1 catalog bytes/roles/identity.
+Unknown matching lifecycle refuses; known archived sessions need not block. Preview and
+offline status have fake-client sentinels proving they query no native tool, including
+when a saved native binding is present. These are technical regression results only.
 
 ## A: understand and work with zero projects
 

@@ -1336,11 +1336,13 @@ Automated technical evidence and live/human acceptance remain separate; the supe
 - New portable discriminators and versions validate their types before use. Scope parser
   failures become domain errors at the new portable boundary; the older Scope API remains
   compatible. Malformed input is refused without normalizing or rewriting its bytes.
-- V2 source rebind holds only the selected source's old/new checkout locks, then the root
+- Source rebind for either catalog version holds only the selected source's old/new
+  checkout locks, then the root
   lock, and checks all profiles by canonical path and saved old filesystem identity.
   Unknown inventory or matching unknown lifecycle refuses; unrelated source writers do
-  not prevent a distinct rebind. V1 data/roles remain unchanged; the equivalent all-profile
-  v1 guard awaits a protected successful-bind fake-fixture amendment (see the live recipe).
+  not prevent a distinct rebind. V1 data/format/roles/identity remain unchanged; only the
+  common operational safety boundary is enforced. Preview/offline observations never
+  construct a native client or reserve a writer.
 - Workspace operational Run session_id is a reported native identity or null. The current
   Chief adapter supplies only an AoE session ID, so that header stays null; import.json and
   private task facts retain the original AoE attribution. Legacy project Run attribution
