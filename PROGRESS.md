@@ -1,5 +1,33 @@
 # Toulmin development progress
 
+## 2026-11-18 — Final v1 rebind audit / further protected-fixture request
+
+- **Verified:** R1–R3/D1 and v2 guard fixes are committed at 56e60bf; registered checks pass
+  (2,112 cases). A final v1 audit found the all-profile guard still has a legacy managed-only
+  branch (`all_profiles=catalog.schema_version == 2`). Preserving v1 data does not justify
+  silently exempting those rebinds from the shared old/new-checkout safety rule. WO3 is
+  reopened for this concrete remaining gap; WO5 remains open. Earlier technical closure
+  was premature for that full scope, though the reported registered results are accurate.
+- Disposable fake-only v1 cases prove **four expected failures**: unmanaged old/new/moved
+  old inode writers and unknown inventory currently allow bind. **Two controls pass**:
+  an unrelated source writer and no writers permit a rebind while retaining exact v1
+  catalog bytes/project roles. Evidence: /tmp/wo-v1-bind-red.log. No real AoE/model/Chief.
+- Removing the exception would invoke AoE in protected existing unit test
+  tests/unit/test_onboarding.py::test_clone_without_local_paths_has_inventory_and_requires_bind,
+  which currently has no fake client. The latest user Decision expressly requires proposing
+  any further fixture change; the worker has NOT edited that test or bypassed this gate.
+- Concrete unapplied amendment: docs/workspace-onboarding-v1-bind-test-amendment.patch.
+  It injects only monkeypatch plus an empty fake all-profile adapter into that successful
+  legacy case, retains every original assertion, and adds six independent v1 safety/data
+  preservation cases in a NEW file. `git apply --unidiff-zero --check` passes. Existing
+  successful-bind fixture amendment at 0678367 remains the only original-test change.
+- Next after explicit supervisor approval: apply this exact patch, commit failing tests,
+  remove the catalog-version exception/legacy guard branch, enforce the same selected-source
+  path/saved-inode/all-profile check for both catalog formats, then rerun focused and full
+  registered checks. Never upgrade/normalize v1 data, broaden scope or touch real projects.
+- All other authorized review work is committed; clean runtime, no merge/push/main/global
+  writes. Root live/human and independent final review remain pending. Session unavailable.
+
 ## 2026-11-18 — WO3–WO5 supervisor fixes and complete technical validation
 
 - Status: **Verified: all provided review findings and selected-source rebind are fixed;
