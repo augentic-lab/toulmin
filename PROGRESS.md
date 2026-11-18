@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — R5 decide archive classification regression (red first)
+
+- Read supervisor R5 in full. Root reports real workspace decide prints false missing-seal
+  diagnostics for a valid task-context inventory before its correct task preview; submission
+  succeeded. Discovery broadly matches *-context-* and reads seal before the declared
+  protocol grammar. Runtime remains 4c28869 during this test-first checkpoint.
+- Added only tests/acceptance/test_wo_decide_packet_discovery.py. Real draft task creates
+  inventory/pins; real native context generation uses fake native service; real decide CLI
+  inventories/previews/skips with private Chief state and a forbidden-new sentinel. No real
+  native/model/Chief, live research roots, source, sessions or global settings accessed.
+- **Verified RED: 7 intended failures / 1 passing control**, /tmp/wo-r5-red.log. Cases
+  require quiet interactive/noninteractive discovery for both valid archive families, exact
+  diagnostics for missing seal/packet, tampering and wrong kind, and a valid context change
+  still offered. Standalone exactly named incomplete change retains its existing diagnosis.
+- Decision: use existing declared protocol regexes before dependency reads, preserve all
+  seal/receipt/schema validation and report genuine damage. No blanket missing-seal catch.
+  Commit tests before fix; then affected/full registered checks and stop for independent
+  review. Root owns ongoing live tests/R4 retry; Claude review awaits OAuth login. Technical
+  evidence is not researcher usability acceptance. Session unavailable; no merge/push/main.
+
 ## 2026-11-18 — R4 real workspace launch corrected; registered checks pass
 
 - **Verified:** the real AoE adapter now permits explicit workspace Codex workspace-write
