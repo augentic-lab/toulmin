@@ -1,5 +1,19 @@
 # Toulmin development progress
 
+## 2026-11-18 — Chief permission task now awaits test approval
+
+- Actual task metadata now says needs-you, phase=test. Worker committed d21a39c with
+  tests/cli/test_native_permissions.py and tests/unit/test_native_permission_diagnostics.py;
+  its worktree is clean. No feature implementation has started.
+- Verified pending decision o3-general-codex-permission-co:2 is a test-approval request
+  listing exactly those two files. The earlier optional update decision :1 is resolved.
+- Researcher next action: review the test proposal and explicitly accept decision :2
+  (or return feedback). This authorizes implementation and locks the listed tests; it
+  does not accept/merge the final feature. No approval was issued on the researcher's behalf.
+- Validation: actual task/decision JSON, worker progress, Git log/status. No code tests
+  rerun or worker interaction; documentation-only diff check. Existing TODO edits retained.
+  Session ID unavailable; local progress commit only, no push.
+
 ## 2026-11-18 — Chief permission-task status and console visibility audit
 
 - Researcher asked for progress and why Chief console omitted the delegated task.
