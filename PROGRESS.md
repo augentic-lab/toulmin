@@ -1,5 +1,57 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO5 derivation/guidance and final technical checkpoint
+
+- Status: **Verified: implementation across WO3–WO5 is present and every registered
+  check passes; one additional source-rebind safety gap remains open.** WO3 is reopened,
+  WO4's approved fake-service criteria pass, and WO5 remains open for this follow-up plus
+  root-owned live and researcher acceptance. Earlier implementation entries are technical
+  checkpoints, not a claim of full frozen-contract completion. Session ID unavailable.
+- WO5 reviewed derivation links explicitly selected existing workspace sources and pinned
+  confirmed context to one independent child. It inherits no working choice by default,
+  moves no history/code and starts no native writer. Legacy source-free creation remains.
+  Updated the actual generated workspace AGENTS, project context guide, packaged framework
+  contracts/current onboarding/live recipe, README and English user guide. Old onboarding
+  guide retained as docs/onboarding-v1.md; historical released digests remain accepted.
+- Final unchanged COMPLETE checker: .chief/regression-1047158, **2,047 unique nodes assigned
+  exactly once to eight successful shards**, exit 0; all runtime was frozen for this run.
+  Earlier successful complete runs: -932929 and -990127. Approved tests/support and the
+  frozen specification are byte-identical to 33d4f44. No filtering/xfail/checker edits.
+  Final generated-template checks: **6 passed** (/tmp/wo-final-packaging.log). Follow-up
+  approved acceptance/source/removal run: **154 passed** (/tmp/wo-last-targeted.log).
+- Other registered checks all exited 0, using UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (259 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help`. Full checker used `run --locked --extra tui
+  python /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Private-socket access was explicitly permitted after proving unique temporary sockets
+  and fake Codex/demo workers; no real subscribed model/Chief worker was run.
+- Additional disposable evidence: /tmp/wo-extra-checks-final.log passes six scenario groups
+  (real B packet scoped v4 ack, C exact mapping bytes, exact overview catalog pins,
+  missing uncertain Chief creation, project-v2 task import/replay, notebook serialization).
+  These are implementation experiments, never independent or researcher acceptance.
+- **Known gap and protected-test gate:** frozen contract :171–178 requires source bind to
+  refuse live writers at old/new checkout; current application/sources.py:_bound_writer_guard
+  checks this root's managed bindings only. Native launch checks all profiles, but rebind
+  can miss unmanaged other-profile sessions and a renamed old inode. Four disposable
+  scenarios prove the gap (/tmp/wo-bind-proposal-red.log, all expected RED). The successful
+  approved bind case at tests/acceptance/test_wo5_compatibility.py:286 has no fake native
+  fixture; an unconditional external inventory would invoke a real AoE command there.
+  User explicitly protects approved tests/support, so the worker has not changed them or
+  silently weakened that requirement. Concrete proposal is committed as
+  docs/workspace-onboarding-bind-test-amendment.patch: inject the existing fake native
+  client at the adapter boundary in that case, keep every assertion, and add four
+  independent fake-only rebind cases.
+  After explicit Chief approval, apply with `git apply --unidiff-zero` (no changes to
+  protected files have been made), commit failing tests, then implement
+  the all-profile/canonical-path/saved-inode fail-closed guard and repeat registered checks.
+- Root/Chief next action: approve that narrow test/support amendment and conduct independent
+  cross-model review. Root then owns live A/B/C/native ack/restart/handoff/engineering trials
+  using docs/workspace-onboarding-acceptance.md. All live/human rows remain NOT RUN here.
+  No push/merge, global settings, actual research data or former worker/session was touched.
+
 ## 2026-11-18 — WO4 workspace-native context and engineering implementation
 
 - Status: **Verified technical implementation**; WO3 commit 76b3f0b is the preceding

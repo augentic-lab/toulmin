@@ -1,8 +1,8 @@
 # Project session guide
 
 You are the project agent: discuss, draft and propose; the researcher applies or rejects
-proposals in `toulmin decide`. Run `toulmin …` commands with context.md's prefix.
-Open framework/formats.md or protocols.md only for questions this guide leaves open.
+proposals in `toulmin decide`. Run `toulmin …` commands with context.md's prefix (v4 local.json supplies local paths/ack).
+Consult framework/formats.md or protocols.md for remaining questions.
 Never read Toulmin's source to learn a format: `toulmin draft` writes every skeleton.
 
 ## What you may write
@@ -11,8 +11,7 @@ Never read Toulmin's source to learn a format: `toulmin draft` writes every skel
 - Anything under projects/NAME/runs/: notes, explorations, scripts, raw outputs.
 - Drafts from `toulmin draft KIND NAME`, written under runs/drafts/. Fill a draft, then move
   it (filename unchanged) to runs/proposals/; that marks it ready for `toulmin decide`.
-- Never write objects, outcome files (`*.outcome.md`), PROJECT.md stage/status fields or
-  brief.md yourself. Never run `toulmin decide`, or `new`/`rule`/`intake` with --confirm.
+- Never write objects, outcome files (`*.outcome.md`), PROJECT.md stage/status or brief.md. Never run `toulmin decide`, or `new`/`rule`/`intake` with --confirm.
 - Replace every `<fill: …>` value and delete unused optional lines and sections; decide
   refuses a proposal that still contains one.
 
@@ -44,12 +43,10 @@ Never read Toulmin's source to learn a format: `toulmin draft` writes every skel
    Evidence from a Run with role `verifier` (an independent check; never your own run). Your
    own assertion stays `model-asserted`. A stage-past-gate WARNING is the researcher's to rule.
 
-Batch proposals: at a natural pause, say once how many items wait in decide and which (at
-most three) need real thought. After the researcher decides, re-read state.md or run
-`toulmin status NAME` before you act.
-A "Toulmin notice" message comes from the researcher's decide and lists what was applied or
-rejected, nothing more; refresh with `toulmin map NAME` and continue from its moves. After a stage ruling, prepare a handoff draft
-first; the researcher may then continue the new stage in a fresh session.
+At pauses, report pending proposals and up to three questions. After decide, re-read
+state.md or `toulmin status NAME` before acting.
+A "Toulmin notice" lists decide outcomes; refresh with `toulmin map NAME`. After a stage
+ruling, draft a handoff; the researcher may continue in a fresh session.
 
 ## Object drafts (`toulmin draft claim|evidence|objection|decision|exploration|spec NAME`)
 
@@ -59,7 +56,7 @@ first; the researcher may then continue the new stage in a fresh session.
 - Evidence: target C-NNN; direction supports | refutes; kind measurement | literature |
   derivation | experiment | computation; grade verified only when a reproducible check
   verified it (with `verification` and existing artifacts), else model-asserted or intuition.
-  Those two never make a Claim supported on their own.
+  Neither supports a Claim alone.
 - Decision: `related` lists every object it rules on; Context, Choice, Rejected
   alternatives, Rationale. A status change cites a Decision that is active and names the
   object. A Decision draft beside a ruling may be cited by its filename.
@@ -92,23 +89,29 @@ synthesis informs reasons but is never intake input.
 
 ## Engineering and research tasks
 
-Do small implementation here. For large or unattended work ask once about Chief, in any
-stage; draft only after agreement. Ordinary engineering uses `toulmin draft task NAME`
-(no Claim/Spec): goal, scope, source/repo, committed baseline, checks and budget. Move the
-completed draft to runs/proposals/. The researcher applies it in decide and imports with
-`toulmin task import NAME TASK_ID --confirm`. Imports create only execution Runs.
+For large or unattended work, ask once about Chief in any stage; draft after agreement.
+Ordinary tasks need no Claim/Spec. Legacy: `toulmin draft task NAME`, move the completed
+file to runs/proposals/. V2: `toulmin draft task NAME --source ID` already writes there,
+pinning scope/source/commit; preview with `toulmin task preview FILE --project NAME`.
+Researcher applies in decide, imports with `toulmin task import NAME FILE --confirm
+--confirmed-by ACTOR` (legacy: TASK_ID instead of FILE). Imports are execution records.
 
-Research experiments use `toulmin draft build NAME --spec S-NNN [--repo PATH]`: a Spec on
-a current Claim, checks/repo from tools/chief.local.toml, and Why/Context. Set `command:`
-only if requested. Researcher only: apply, import, verify; never run chief yourself.
-Build imports propose Decision, model-asserted Evidence and awaiting-acceptance ruling.
-Verify reruns frozen checks in a fresh clone; passing proposes verified Evidence and a
-passed ruling, each separately confirmed. Failure keeps its outputs without proposals.
-Chief stays on its starting host; task checks do not establish research conclusions.
+Research: `toulmin draft build NAME --spec S-NNN [--repo PATH]`, with a current Claim,
+checks/repo from tools/chief.local.toml and Why/Context. Set `command:` only on request.
+Researcher applies/imports/verifies; never run Chief yourself. Import proposes Decision,
+model-asserted Evidence and awaiting-acceptance ruling. Verify reruns frozen checks in a
+fresh clone and proposes verified Evidence/passed ruling, each separately confirmed.
+Failures retain outputs. Chief stays on its starting host and uses a separate worktree.
 
 ## Ending the session
 
-Only when the researcher asks to end it: write a summary under runs/drafts/ (roles/scribe.md)
-and run `toulmin aoe handoff NAME --input FILE`. Show the returned runs/<archive>/draft.md;
-the researcher applies it in `toulmin decide`. Offer one after a stage ruling or before a
-long pause (it keeps PROJECT.md's next step current).
+On requested session end, summarize in runs/drafts/ (roles/scribe.md), then
+`toulmin aoe handoff NAME --input FILE`. Show runs/<archive>/draft.md for researcher
+decide. Offer a handoff after stage rulings or before long pauses.
+
+## Shared workspace context
+
+Workspace owns shared sources/understanding; this child owns its goal and notebook.
+Only explicitly pinned shared overview is resident; sibling/root notebooks stay separate.
+Source selection never redirects a live session. Archive and explicitly replace it.
+V4 local.json supplies cwd/receipt commands; a receipt is no research approval.

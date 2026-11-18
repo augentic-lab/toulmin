@@ -18,7 +18,9 @@ Name = Annotated[str, typer.Argument(help="Child project name (lowercase, hyphen
 Root = Annotated[Path, root_option("Workspace root.")]
 Packet = Annotated[
     str,
-    typer.Option("--from", help="Creation packet runs/<stamp>-project-<hex> (or packet.md)."),
+    typer.Option(
+        "--from", "--draft", help="Creation packet runs/<stamp>-project-<hex> (or packet.md)."
+    ),
 ]
 Actor = Annotated[
     str | None,
@@ -107,9 +109,36 @@ def propose_command(
         str, typer.Option("--input", help="Creation input under root runs/drafts/.")
     ],
     root: Root = Path("."),
+    source: Annotated[list[str] | None, typer.Option("--source")] = None,
+    working_source: str | None = None,
 ) -> None:
     """Freeze a sealed creation packet; no project directory is created."""
     try:
+        if source or working_source:
+            if not source or (working_source is not None and working_source not in source):
+                raise typer.BadParameter("--working-source must be among repeated --source IDs")
+            if len(source) != len(set(source)):
+                raise typer.BadParameter("duplicate --source ID")
+            from toulmin.application import workspace_onboarding
+            from toulmin.cli.onboarding import _show
+            from toulmin.core.repository import Repository
+
+            repository = Repository(root)
+            raw = repository.path(repository.relative(input_path), "file").read_bytes()
+            result = workspace_onboarding.prepare(
+                root,
+                project=name,
+                operation="child-derive",
+                project_input=raw,
+                sources=tuple(source),
+                working_source=working_source,
+                rationale=(
+                    "Derive one explicitly requested independent "
+                    "project from shared sources/context"
+                ),
+            )
+            _show(root, result)
+            return
         outcome = propose(root, name, input_path)
     except (OSError, ValueError) as error:
         raise _fail(error) from error

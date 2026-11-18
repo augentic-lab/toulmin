@@ -92,12 +92,16 @@ Do small implementation and measurements in the session. For a large task that s
 unattended for a long time, use AoE Chief. The agent asks once whether to hand such a task to
 Chief; this is possible in any stage.
 
+Ordinary workspace engineering uses scoped tasks without a Claim, Spec or gate; see
+[existing repository work](#existing-projects-and-gradual-rebuilding). The scientific build
+route below remains available when implementation is intended to test a project Claim.
+
 ### Where the work lives
 
 | | Small task (in the session) | Chief task |
 | --- | --- | --- |
 | Code | `projects/NAME/runs/<timestamp>-<name>/` | a separate code git repository, outside the project directory |
-| Working directory | the session starts at the workspace root; the agent writes only under `runs/` | Chief creates a worktree and branch `chief/<task_id>` per task; the AoE `[worktree] path_template` decides the location (by default beside the repository) |
+| Working directory | selected source checkout for source-backed scopes; records root otherwise; source repository rules govern code | Chief creates a worktree and branch `chief/<task_id>` per task; the AoE `[worktree] path_template` decides the location (by default beside the repository) |
 | Records | raw output in `runs/`, observations in `runs/notebook.md` | archived under `runs/<timestamp>-build-S-NNN/` on import |
 
 Register the code repository in the workspace's machine-local `tools/chief.local.toml`:
@@ -111,7 +115,7 @@ Do not put the code repository inside the workspace; that nests one git reposito
 another. If a small script will be reused or extended by Chief later, put it in the code
 repository from the start and keep only outputs in `runs/`.
 
-### Steps
+### Steps for a scientific build
 
 1. **A Claim exists.** A Spec must target a current Claim.
 2. **Spec** (`S-NNN`): which Claim it serves, what to implement (Requirements) and when it is
@@ -120,7 +124,8 @@ repository from the start and keep only outputs in `runs/`.
 3. **Build request**: the agent drafts it. To run the worker through another launcher (for
    example a wrapper for a different model), say so; the agent then sets `command:`.
 4. **Start**: `toulmin decide` shows the frozen contract (and the worker launch command, if
-   set); apply it with `a`. Chief starts the worker in AoE.
+   set); apply it with `a`. Handle any native trust prompt, then use Chief's manual kickoff
+   guidance. Submission alone does not guarantee a worker has started.
 5. **While it runs**: answer worker questions and permission prompts through `chief inbox`.
 6. **Accept in Chief**: when the task is ready to accept, `chief close TASK_ID`; use
    `chief nudge` to ask for more work.
@@ -179,36 +184,50 @@ individual conclusions, and entering review without rolling the session over by 
 
 ## Existing projects and gradual rebuilding
 
-Use a separate Toulmin workspace for research records and keep the existing code directory
-and its Git history in place. `toulmin onboard SOURCE --root WORKSPACE --project NAME`
-prepares a reviewed connection; confirm it in `toulmin decide`, then use `toulmin open NAME
---root WORKSPACE`. The initial project needs no Claims. A project conversation starts in
-its working code directory and receives the separate research context.
+Keep code and Git history in place and create separate research records:
 
-Begin by correcting the agent's initial understanding: the original purpose, current
-structure, what already works, unresolved issues and what you want to do next. File facts,
-your account and the agent's guesses must remain distinguishable. Daily observations go
-into the notebook; an overview checkpoint preserves the understanding you confirmed.
-Opening a fresh session recovers that checkpoint and labels subsequent notebook material
-as unconfirmed. Code follows the source repository's development rules; research records
-follow Toulmin's proposal and confirmation rules.
+```sh
+toulmin onboard SOURCE --root ROOT --init
+toulmin decide --workspace --root ROOT
+toulmin open --workspace --root ROOT
+```
 
-For ordinary engineering work, ask for `toulmin draft task NAME`. Fill its goal, scope,
-repository baseline and executable checks, then move the completed task draft to the
-project's proposals directory and review it with `toulmin decide`. Chief manages the worker
-and isolated worktree. `toulmin task import NAME TASK_ID` previews the result; confirmation
-archives an execution Run. Successful delivery does not establish a scientific conclusion.
-The existing Claim/Spec route remains available for research experiments.
+This starts with zero projects. Add explicit `--project NAME [--project-input FILE]` for one
+independent goal during intake. For C, select an existing workspace with --root and omit
+--init; do not infer a child from its source basename or the workspace's sole project.
+Review source identities, inventory limits, source roles and exact overview before apply.
 
-To develop a new direction, supply `--work-at TARGET` when onboarding: TARGET is the new
-working repository, and SOURCE remains a reference. Neither is copied or synchronized by
-Toulmin. Select one module or dataset at a time, adapt it using the native development tools,
-and record its source version, changes and checks with `toulmin migration draft NAME` and
-`toulmin migration record NAME --input FILE`. Recording is preview-only until `--confirm`;
-it records your assessment and does not execute the checks. Failed and partial batches are
-valid records. Keep old sources intact and review development-location changes explicitly.
+Shared understanding/sources, discussion, maintenance and ordinary engineering belong to
+the workspace. Distinguish file facts, the researcher's account and model guesses. Append
+unconfirmed dated notes with `toulmin workspace note --input ENTRY --root ROOT`; propose
+shared checkpoints using `draft overview --workspace` and `overview --workspace`. A fresh
+session restores confirmed context and a labeled bounded notebook excerpt, never a complete
+transcript. Code follows source repository rules; research records follow scoped decisions.
 
-Local paths live in ignored machine configuration. After moving or cloning a workspace,
-use `toulmin source bind ID PATH --root WORKSPACE` to locate the matching source on that
-machine. Shared code can serve several projects; concurrent work uses separate checkouts,
-and each result records the version it actually used.
+For substantial ordinary engineering use `toulmin draft task --workspace --source ID
+--root ROOT`. Fill Goal/Scope/checks/protected paths/budget, preview with `toulmin task preview
+--workspace FILE --root ROOT`, then review in `toulmin decide --workspace`. Chief uses a
+separate worktree. `toulmin task import --workspace FILE --root ROOT` previews the result;
+`--confirm --confirmed-by ACTOR` records an operational workspace Run with no formal ID.
+No Claim/Spec is required and delivery is not scientific acceptance. Project v2 tasks use
+`draft task NAME --source ID` and `task import NAME FILE`; legacy v1 tasks retain their
+project draft/proposals and `task import NAME TASK_ID` paths. The Claim/Spec build route
+remains available for research experiments.
+
+Later `toulmin project propose NAME --input FILE --source ID [--working-source ID]
+--root ROOT` derives a reviewed independent child without moving history/code or opening
+another writer. Without --working-source it links references only. Explicitly pinned shared
+context can carry into the child; root notebook and sibling histories are not inherited.
+
+For a new direction, --work-at TARGET uses an already existing separate working repository
+and retains SOURCE as reference. Neither is copied/synchronized by Toulmin. C changes only
+the new child's selection; it preserves existing workspace/project working choices. Adapt
+one module/dataset at a time and preserve raw source version, failed batches and checks.
+An explicit child may additionally use `migration draft NAME` / `migration record NAME
+--input FILE --confirm`; these record an assessment and never execute its checks.
+
+After moving/cloning records, `toulmin source bind ID PATH --root ROOT` previews a local
+mapping; --confirm replaces only that entry after identity/writer checks. It never changes
+source selection or redirects a native session. Source selection, native permissions, Chief
+kickoff and scientific approval stay separate. See [onboarding](onboarding.md) for exact
+commands/recovery/legacy conversion and the [pending supervisor live trial](workspace-onboarding-acceptance.md).

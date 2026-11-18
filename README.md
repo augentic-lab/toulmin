@@ -242,7 +242,8 @@ toulmin aoe status --workspace --root /path/to/research --offline
 ```
 
 Each scope has its own binding (`.aoe/binding.json` for the workspace) and its own native
-session started at the root; one session never serves two scopes. The workspace context holds
+session; source-free sessions start at the records root and v4 source-backed sessions at their
+explicitly selected checkout. One session never serves two scopes. The workspace context holds
 WORKSPACE.md and the latest applied workspace handoff; a project context adds the read-only
 WORKSPACE.md to its usual inputs, never workspace discussion or sibling histories. Existing
 project bindings keep their version 1 form until an explicit `bind --replace` or
@@ -633,22 +634,23 @@ See [native workspace usage and recovery](docs/native-workspace.md).
 
 ## Continue an existing project
 
-Keep the code repository in place and use a separate research workspace:
+Keep the code repository in place and establish shared understanding in a separate workspace:
 
 ```sh
-toulmin onboard /path/to/existing-code --root /path/to/research --project my-project --init
-toulmin decide --root /path/to/research
-toulmin open my-project --root /path/to/research
+toulmin onboard /path/to/existing-code --root /path/to/research --init
+toulmin decide --workspace --root /path/to/research
+toulmin open --workspace --root /path/to/research
 ```
 
-`--init` explicitly permits initializing a missing or empty workspace. Onboarding itself
-only reads the source and prepares a reviewed packet. Claims are optional; ordinary
-engineering work can use `toulmin draft task`. For a new direction, `--work-at TARGET`
-selects another existing code directory while keeping the original as a reference.
-For a new external-source Codex session, `open` offers a project-local permission choice
-for code and records (default: inherit native settings). Noninteractive callers must
-explicitly select `--codex-sandbox workspace-write` or `--codex-sandbox inherit` once.
-Existing sessions keep their permissions; changing them requires an archived replacement
-with `--new-session`. Global Codex/AoE settings and native trust prompts are unchanged.
-See [existing-project onboarding](docs/onboarding.md) and the
-[working loop](docs/user-guide.md#existing-projects-and-gradual-rebuilding).
+This creates zero projects. Add explicit `--project NAME [--project-input FILE]` for one
+independent topic during intake, or use an existing selected workspace without --init for
+mode C. Overall understanding/shared sources belong to the workspace; ordinary discussion,
+maintenance and engineering need no placeholder child, Claim or Spec. Native source selection,
+permissions, Chief kickoff and scientific approval remain separate choices.
+
+For a new external-source Codex scope, choose `--codex-sandbox workspace-write` or `inherit`
+once explicitly or in the terminal. New v4 context keeps local paths/manifest/ack in ignored
+.aoe metadata; read the announced local.json for its executable receipt command. Working-source
+changes never redirect a live session. Legacy source/catalog/binding/task paths remain supported.
+See [onboarding](docs/onboarding.md), [the frozen specification](docs/workspace-onboarding-contract.md)
+and the [pending root-owned live trial recipe](docs/workspace-onboarding-acceptance.md).

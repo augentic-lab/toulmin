@@ -490,11 +490,15 @@ weekly-projects-research workspace for final trials; original source data must b
   exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
   Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
   for implementation on 2026-11-18. Runtime/live cases remain pending.
-- [x] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,
   stale/tampered input, replay and interruption recovery cannot partially publish a child.
+  Implemented and approved cases pass; still open: source rebind must inspect unmanaged
+  all-profile writers, including a moved old checkout inode. The protected successful-bind
+  fixture needs the existing fake native client before that check can be enabled safely;
+  see docs/workspace-onboarding-bind-test-amendment.patch and PROGRESS.md.
 - [x] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
   Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
   permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
@@ -504,3 +508,6 @@ weekly-projects-research workspace for final trials; original source data must b
   old catalog/binding/receipt and explicit-child fixtures pass; disposable live A/B/C journeys
   include C source reuse, workspace-only work, later child creation and fresh-session recovery.
   Researcher usability acceptance remains a separate explicit ruling.
+  Derivation, generated guides/docs and the approved automated matrix are implemented.
+  The new rebind safety cases are expected RED pending test amendment approval; root-owned
+  live A/B/C/native/engineering journeys and human usability remain NOT RUN by this worker.
