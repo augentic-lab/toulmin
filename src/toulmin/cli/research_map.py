@@ -108,24 +108,46 @@ def _count(gate: GateReadiness) -> str:
     return f"{met}/{len(gate.items)}" + (" met" if gate.met else "")
 
 
-def _node_line(node: Node, glyphs: Glyphs) -> str:
+def _node_line(
+    node: Node, glyphs: Glyphs, provenance: bool = True, extra: tuple[str, ...] = ()
+) -> str:
     if node.object_id == "plan":
         return f"plan: {node.summary}"
     facts = [
         ("← " + fact[3:]) if fact.startswith("<- ") and not glyphs.ascii else fact
         for fact in node.facts
+        if provenance or not fact.startswith("<- ")  # UX4: review provenance on request
     ]
-    head = f"{node.object_id} " + f" {glyphs.dot} ".join(facts)
+    head = f"{node.object_id} " + f" {glyphs.dot} ".join([*facts, *extra])
     return f"{head}  {node.summary}" if node.summary else head
 
 
-def _branch(nodes: tuple[Node, ...], prefix: str, width: int, glyphs: Glyphs) -> list[str]:
+def _branch(
+    nodes: tuple[Node, ...],
+    prefix: str,
+    width: int,
+    glyphs: Glyphs,
+    seen: set[str] | None = None,
+    provenance: bool = True,
+) -> list[str]:
+    """The tree below a node; a Decision already shown is named on its parent instead (UX4)."""
+    seen = set() if seen is None else seen
     lines = []
     for index, node in enumerate(nodes):
         last = index == len(nodes) - 1
         mark = glyphs.last if last else glyphs.branch
-        lines.append(fit(prefix + mark + _node_line(node, glyphs), width))
-        lines += _branch(node.children, prefix + ("   " if last else glyphs.down), width, glyphs)
+        repeated = tuple(
+            child.object_id
+            for child in node.children
+            if child.object_id.startswith("D-") and child.object_id in seen
+        )
+        children = tuple(child for child in node.children if child.object_id not in repeated)
+        extra = (f"by {', '.join(repeated)} (above)",) if repeated else ()
+        lines.append(fit(prefix + mark + _node_line(node, glyphs, provenance, extra), width))
+        seen.update(child.object_id for child in children if child.object_id.startswith("D-"))
+        lines += _branch(
+            children, prefix + ("   " if last else glyphs.down), width, glyphs, seen, provenance
+        )
     return lines
 
 
@@ -136,6 +158,7 @@ def render_project(
     glyphs: Glyphs,
     refreshed: str | None = None,
     claim: str | None = None,
+    provenance: bool = False,
 ) -> str:
     head = report.project + ("  (data INVALID: partial view)" if report.errors else "")
     if refreshed:
@@ -170,7 +193,7 @@ def render_project(
         if gate.gate != following:
             lines.append(fit(title, width))
             continue
-        lines.append(fit(title + "  (advice; the stage changes only by your ruling)", width))
+        lines.append(fit(title + "  (next gate)", width))
         for item in gate.items:
             detail = f": {item.detail}" if item.detail else ""
             lines.append(fit(f"  [{'x' if item.met else ' '}] {item.label}{detail}", width))
@@ -192,7 +215,7 @@ def render_project(
         lines.append(fit(f"Review drafts without intake: {run}: {', '.join(labels)}", width))
     lines.append("")
 
-    lines.append("Suggested next (advice; you rule)")
+    lines.append("Suggested next")
     for number, move in enumerate(report.moves, start=1):
         who = {YOU: "you", AGENT: "agent"}.get(move.actor, "either")
         first = f"  {number} {who:<6} "
@@ -208,9 +231,10 @@ def render_project(
         lines.append("Argument: no Claims yet.")
     elif claims:
         lines.append("Argument")
+    seen: set[str] = set()
     for node in claims:
-        lines.append(fit(_node_line(node, glyphs), width))
-        lines += _branch(node.children, "", width, glyphs)
+        lines.append(fit(_node_line(node, glyphs, provenance), width))
+        lines += _branch(node.children, "", width, glyphs, seen, provenance)
     if report.superseded and claim is None:
         arrow = " -> " if glyphs.ascii else " → "
         lines.append(
@@ -232,6 +256,11 @@ def render_project(
                 width,
                 "  ",
             )
+    lines.append("")
+    footer = "Gates and suggestions are advice from the files; every change is yours to rule."
+    if not provenance:
+        footer += " --provenance shows which review raised each Objection."
+    lines += wrap(footer, width, "")
     return "\n".join(lines) + "\n"
 
 

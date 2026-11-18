@@ -99,7 +99,7 @@ Write stalls account for more than half of p99 write latency.
     write(populated, "projects/demo/claims/C-002.md", legacy)
     result = CliRunner().invoke(app, ["status", "demo", "--root", str(populated)])
     assert result.exit_code == 0, result.output
-    assert "C-002 | stored=proposed" in result.stdout
+    assert "C-002 proposed · " in result.stdout
 
 
 def test_status_verbose_shows_statements_objections_and_last_handoff(populated):
@@ -121,11 +121,11 @@ def test_status_verbose_shows_statements_objections_and_last_handoff(populated):
     assert "Queueing delay is the main source" not in plain.stdout
     lines = verbose.stdout.splitlines()
     assert "Last handoff: none" in lines
-    claim = lines.index(next(line for line in lines if line.startswith("  C-001 |")))
+    claim = lines.index(next(line for line in lines if line.startswith("  C-001 ")))
     assert lines[claim + 1] == (
         "      Queueing delay is the main source of tail latency under the specified load."
     )
-    long_claim = lines.index(next(line for line in lines if line.startswith("  C-002 |")))
+    long_claim = lines.index(next(line for line in lines if line.startswith("  C-002 ")))
     assert lines[long_claim + 1] == "      " + "x" * 97 + "..."
     write(
         populated,
@@ -138,9 +138,9 @@ def test_status_verbose_shows_statements_objections_and_last_handoff(populated):
     )
     lines = CliRunner().invoke(app, ["status", "demo", "--root", str(populated), "-v"]).stdout
     lines = lines.splitlines()
-    wrapped = lines.index(next(line for line in lines if line.startswith("  C-003 |")))
+    wrapped = lines.index(next(line for line in lines if line.startswith("  C-003 ")))
     assert lines[wrapped + 1] == "      Wrapped by hand."
-    objection = lines.index("  O-001 | major | target=C-001")
+    objection = lines.index("  O-001 major · on C-001")
     assert lines[objection + 1].startswith("      A fixed request distribution")
 
     draft = CliRunner().invoke(app, ["handoff", "demo", "--root", str(populated)])

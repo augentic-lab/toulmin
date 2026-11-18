@@ -26,7 +26,7 @@ from toulmin.cli.settings import (
     resolve_actor,
     root_option,
 )
-from toulmin.cli.terminal import sayer
+from toulmin.cli.terminal import colour, sayer
 from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import validate_project_name
 from toulmin.protocols import workspace_handoff as workspace_handoffs
@@ -169,7 +169,10 @@ def _present(
     say(f"Root: {root.absolute()}")
     say("Scope: " + ("Workspace" if project is None else f"Project: {project}") + "\n")
     shown = _card(root, project) if card and project is not None else None
-    say(shown or render_scope(view.research), nl=False)
+    if shown is not None:
+        typer.echo(colour(shown), nl=False)  # laid out to the terminal width already
+    else:
+        say(render_scope(view.research), nl=False)
     say("\nBINDING")
     binding = view.binding
     if binding is None:
@@ -228,7 +231,7 @@ def _execute(
     attach: bool = False,
     bound_only: bool = False,
     recovery_on_error: bool = False,
-    card: bool = False,
+    card: bool = True,  # UX5: every project screen shows the card, not the agent's state card
 ) -> None:
     workspace = None
     try:
@@ -413,7 +416,6 @@ def open_scope(
         launch,
         attach=default_attach() if attach is None else attach,
         recovery_on_error=True,
-        card=True,
     )
 
 

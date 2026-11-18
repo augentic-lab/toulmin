@@ -21,7 +21,7 @@ from toulmin.cli.project import app as project_app
 from toulmin.cli.registry import note as register_workspace
 from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.cli.task import app as task_app
-from toulmin.cli.terminal import sayer
+from toulmin.cli.terminal import colour, sayer
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.cli.workspaces import app as workspaces_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
@@ -990,6 +990,12 @@ def show_map(
         bool,
         typer.Option("--full", help="Gates, the whole argument tree and sources, not the card."),
     ] = False,
+    provenance: Annotated[
+        bool,
+        typer.Option(
+            "--provenance", help="With --full: name the review that raised each Objection."
+        ),
+    ] = False,
     ascii_only: Annotated[
         bool,
         typer.Option("--ascii", help="ASCII marks only (default when the terminal is not UTF-8)."),
@@ -1032,7 +1038,9 @@ def show_map(
             report = project_map(root, project)
             waiting = [item for item in decide.inventory(root).items if item.project == project]
             if full or chosen is not None:
-                text = view.render_project(report, waiting, width, glyphs, refreshed, chosen)
+                text = view.render_project(
+                    report, waiting, width, glyphs, refreshed, chosen, provenance
+                )
             else:
                 from toulmin.protocols.project_card import project_card
 
@@ -1044,7 +1052,7 @@ def show_map(
 
     if not watch:
         text, healthy = draw()
-        typer.echo(text, nl=False)
+        typer.echo(colour(text), nl=False)
         if not healthy:
             raise typer.Exit(1)
         return
@@ -1054,7 +1062,7 @@ def show_map(
             lambda: draw(time.strftime("%H:%M:%S"))[0],
             lambda: (view.signature(folder), view.chief_signature(root, project)),
             interval,
-            lambda text: typer.echo(text, nl=False),
+            lambda text: typer.echo(colour(text), nl=False),
             clear=sys.stdout.isatty(),
         )
     except KeyboardInterrupt:
@@ -1106,15 +1114,25 @@ def show_status(
     )
     say("Claims:" + ("" if report.claims else " none"))
 
-    def flag(value: bool | None) -> str:
-        return "unknown" if value is None else "yes" if value else "no"
+    def objections(value: bool | None) -> str:
+        return (
+            "Objections unknown"
+            if value is None
+            else "open Objections"
+            if value
+            else ("no open Objections")
+        )
+
+    def conditions(value: bool | None) -> str:
+        return "unknown" if value is None else "met" if value else "not met"
 
     for claim in report.claims:
+        # UX4: researcher wording instead of key=value fields.
         say(
-            f"  {claim.object_id} | stored={claim.stored_status} | "
-            f"verified_support={claim.verified_support_count} | "
-            f"open_objection={flag(claim.has_open_objection)} | "
-            f"eligible_supported={flag(claim.eligible_for_supported)}"
+            f"  {claim.object_id} {claim.stored_status} · "
+            f"{claim.verified_support_count} verified support · "
+            f"{objections(claim.has_open_objection)} · "
+            f"supported conditions {conditions(claim.eligible_for_supported)}"
         )
         if verbose and claim.summary:
             say(f"      {claim.summary}")
@@ -1126,14 +1144,14 @@ def show_status(
             say(f"      {revised.summary}")
     say("Open objections:" + ("" if report.open_objections else " none"))
     for objection in report.open_objections:
-        say(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
+        say(f"  {objection.object_id} {objection.severity} · on {objection.target}")
         if verbose and objection.summary:
             say(f"      {objection.summary}")
     if verbose:
         say("Settled objections:" + ("" if report.settled_objections else " none"))
     for settled in report.settled_objections if verbose else ():
-        by = f" | by {', '.join(settled.decisions)}" if settled.decisions else ""
-        say(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
+        by = f" · by {', '.join(settled.decisions)}" if settled.decisions else ""
+        say(f"  {settled.object_id} {settled.status} · on {settled.target}{by}")
         if settled.summary:
             say(f"      {settled.summary}")
     if report.gates:

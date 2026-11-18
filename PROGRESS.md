@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — R10/R11 final integration with UX4–UX6
+
+- Researcher reported the other session had committed, allowing the deferred integration.
+  Verified main clean at 7a97bbe (UX4/UX5), with UX6 already present in the feature branch.
+- Merged that committed baseline in the isolated R10/R11 worktree. Runtime changes merged
+  without conflicts; only additive PROGRESS/protocol/changelog entries conflicted. Kept
+  both sides, synchronized canonical/shipped protocols and retained both parents' released
+  hashes plus the merged template digest. No research data or model settings were edited.
+- Verified targeted review/profile/decide/readable/terminal tests: 54 passed. Compared the
+  merged app against 7a97bbe: the remaining app changes are the R11 options/validation.
+- Verified final complete validation: all 2,301 collected pytest nodes ran exactly once
+  across eight independent shards and passed. Locked offline dev+tui sync, Ruff lint/format,
+  mypy (133 modules), CLI help and diff whitespace checks passed. Full logs:
+  /tmp/toulmin-r10-r11-validation/integrated-final-1795014075.
+- Next: after successful checks, commit this integration and fast-forward clean main to
+  the verified feature head. No push authorized. Real model cost/quality and researcher
+  usability acceptance remain separate/unverified. Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — R10/R11 integration with committed UX6
 
 - R10/R11 implementation committed as 69ddc3e. Integrated main's committed UX6 baseline
@@ -56,6 +74,15 @@
   researcher acceptance. Session ID unavailable; not fabricated. No push authorized.
 - Next: commit this branch, integrate after concurrent UX work is committed, then verify the
   combined version. Real calibration remains a separately authorized follow-up in TODO.md.
+
+## 2026-11-18 — UX4 wording and folding, UX5 colour and shorter AoE status
+
+- Decision: authorized with "做完之后接着推进剩下的UX开发" and "好，测完继续做 UX4 和 UX5".
+- UX4: card labels read the whole first paragraph of Statement/Content; `map --full` names repeated Decisions as "by D-NNN (above)", hides review provenance unless `--provenance`, and replaces per-section advice notes with one footer; `status` uses researcher wording for Claims and Objections ("C-001 proposed · 1 verified support · open Objections · supported conditions not met", "O-001 major · on C-001").
+- UX5: `cli/terminal.colour` styles card and map after layout, only on a terminal with NO_COLOR unset and TERM not dumb; every AoE project screen (`open`, `aoe status`, `refresh`, `bind`) shows the project card instead of the agent state card (invalid data falls back). rkey-lifecycle `aoe status`: 109 → 47 lines (read-only check).
+- Not changed: L2 notices (still "stored=..."), the agent's state card and context files, "Data: valid" and workspace status lines.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2215 passed (status/readable/intake/revision/resume assertions updated to the new wording; colour tests added).
+- Session ID: unavailable.
 
 ## 2026-11-18 — UX6 summary-first decide previews
 

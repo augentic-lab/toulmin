@@ -27,3 +27,27 @@ def test_terminal_output_is_wrapped(monkeypatch, capsys):
     terminal.sayer()("word " * 20)
     lines = capsys.readouterr().out.splitlines()
     assert len(lines) > 1 and all(len(line) <= 40 for line in lines)
+
+
+def test_colour_only_on_a_terminal_and_never_with_no_color(monkeypatch):
+    card = "\n".join(
+        [
+            "demo · critique",
+            "─" * 40,
+            "Answer    ✓ C-005 Keys are not rejected.  (ready to rule supported)",
+            "          ? C-002 Collisions.  (1 fatal, 4 major open)",
+            "Doubts    C-002 5 major, 1 minor: O-007 Only a condition.",
+        ]
+    )
+    monkeypatch.setattr(terminal, "interactive", lambda: False)
+    assert terminal.colour(card) == card
+    monkeypatch.setattr(terminal, "interactive", lambda: True)
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("TERM", "xterm")
+    coloured = terminal.colour(card)
+    assert "\x1b[2m" + "─" * 40 in coloured  # rules dimmed
+    assert "\x1b[32m✓\x1b[0m C-005" in coloured and "\x1b[33m?\x1b[0m C-002" in coloured
+    assert "\x1b[1mAnswer\x1b[0m" in coloured and "\x1b[1m\x1b[31mfatal\x1b[0m" in coloured
+    assert "C-005" in coloured and coloured.count("\n") == card.count("\n")
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert terminal.colour(card) == card

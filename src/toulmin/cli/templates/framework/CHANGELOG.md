@@ -10,6 +10,10 @@
   synthesis. Existing settings are never rewritten: explicitly adjust an old cap if needed.
 - Additive archived review-plan provenance and read-only profile calibration.
 
+- Readable views (2026-11-18): researcher wording in `status`, folded repeats and optional
+  provenance in `map --full`, terminal-only colour (`NO_COLOR` respected), and the project card
+  on every AoE project screen. Display only.
+
 - Summary-first decide (2026-11-18): proposals and build requests show a short summary; `v`
   views all of it, `decide --full` prints everything. Application is unchanged.
 

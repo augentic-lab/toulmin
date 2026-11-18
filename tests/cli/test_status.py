@@ -108,7 +108,7 @@ def test_supported_conditions_use_valid_verified_support_and_open_objections(
     assert claim.verified_support_count == count
     assert claim.has_open_objection is has_open
     assert claim.stored_status == "proposed"
-    assert f"eligible_supported={'yes' if eligible else 'no'}" in result.stdout
+    assert f"supported conditions {'met' if eligible else 'not met'}" in result.stdout
     if eligible:
         assert "researcher decision pending" in result.stdout
 
@@ -121,9 +121,9 @@ def test_lost_support_preserves_historical_state_and_reports_review(populated, s
     before = snapshot(populated)
     result = run_status(populated)
     assert result.exit_code == 0, result.output
-    assert f"stored={state}" in result.stdout
+    assert f"C-001 {state} · " in result.stdout
     assert "does not meet supported conditions" in result.stdout
-    assert "eligible_supported=no" in result.stdout
+    assert "supported conditions not met" in result.stdout
     assert snapshot(populated) == before
 
 
@@ -133,9 +133,9 @@ def test_minor_objection_and_supported_eligibility_are_both_shown(populated):
     edit(populated, "claims/C-001.md", status="challenged")
     result = run_status(populated)
     assert result.exit_code == 0, result.output
-    assert "stored=challenged" in result.stdout
-    assert "open_objection=yes | eligible_supported=yes" in result.stdout
-    assert "O-001 | minor" in result.stdout
+    assert "C-001 challenged · " in result.stdout
+    assert "open Objections · supported conditions met" in result.stdout
+    assert "O-001 minor" in result.stdout
 
 
 def test_severity_and_numeric_id_order_is_deterministic(populated):
@@ -173,8 +173,8 @@ def test_dangling_target_marks_all_conditions_unknown_and_is_read_only(populated
     assert result.exit_code == 1
     assert "Data: INVALID" in result.stdout
     assert "S-001.md" in result.stderr and "target" in result.stderr
-    assert "eligible_supported=unknown" in result.stdout
-    assert "eligible_supported=yes" not in result.stdout
+    assert "supported conditions unknown" in result.stdout
+    assert "supported conditions met" not in result.stdout
     assert snapshot(populated) == before
 
 
@@ -287,9 +287,9 @@ def test_project_isolation_and_target_qualification(populated):
     objection(populated, status="answered")
     result = run_status(populated)
     assert result.exit_code == 0, result.output
-    assert "verified_support=0" in result.stdout
+    assert "0 verified support" in result.stdout
     support(populated, target="demo/C-001")
-    assert "verified_support=1" in run_status(populated).stdout
+    assert "1 verified support" in run_status(populated).stdout
     (populated / "projects/demo/brief.md").write_text("[[other/C-001]]\n")
     assert run_status(populated).exit_code == 0
     assert run_status(populated, "other").exit_code == 1

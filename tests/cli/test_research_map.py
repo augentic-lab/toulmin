@@ -43,7 +43,8 @@ def test_an_empty_project_shows_stage_gate_and_first_move(workbench):
     assert result.exit_code == 0, result.output
     text = result.stdout
     assert "● explore ─G1─ ○ critique ─G2─ ○ brief-final" in text
-    assert "G1 -> critique  0/4  (advice; the stage changes only by your ruling)" in text
+    assert "G1 -> critique  0/4  (next gate)" in text
+    assert "every change is yours to rule." in text
     assert "Waiting on you (toulmin decide): nothing" in text
     # P0 (question first): the first move is a measurement, not Claims drafted to fill G1.
     assert "  1 agent  Suggest and run the smallest next measurement for the project" in text
@@ -53,7 +54,7 @@ def test_an_empty_project_shows_stage_gate_and_first_move(workbench):
 
 
 def test_the_tree_links_evidence_objections_specs_and_plans(populated):
-    result = run(populated, "demo", columns=200)
+    result = run(populated, "demo", "--provenance", columns=200)
     assert result.exit_code == 0, result.output
     text = result.stdout
     assert "\nC-001 problem · core · proposed  " in text
