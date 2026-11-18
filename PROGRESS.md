@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Supervisor R1–R3 and rebind-scope regression checkpoint
+
+- Added four NEW test files only, as explicitly requested: unrelated managed/unmanaged
+  source writer control; malformed inventory/source pin/scope and rehashed v4 version
+  inputs; operational Run identity vs retained raw Chief provenance; all five v2 receipt
+  families in handoff/discovery, rejected/tampered refusal and real fake-native restoration.
+- Verified **20 failed, 36 passed** before runtime fixes (56 new cases, no setup/collection
+  errors; /tmp/wo-supervisor-regressions-red.log). Inventory's public wrapper already catches
+  the reported list-kind error, but adjacent scope parsers raise ValueError rather than
+  FormatError; the audit also exposed float versions accepted as integers in manifest/
+  receipt/submission validation. These strict-format regressions intentionally stay red.
+- Existing unrelated source's managed writer currently over-blocks bind; root operational
+  Run currently relabels the AoE session ID; valid v2 receipts cannot be cited/discovered.
+  Every original test/assertion/support stays unchanged beyond the exact approved amendment.
+- Next: implement guards/domain validation/identity separation/v2 receipt integration,
+  then repeat focused and registered checks. No live or human acceptance is claimed.
+  Session ID unavailable; only isolated branch/disposable fixtures/fake tools are used.
+
 ## 2026-11-18 — Approved rebind test amendment (red checkpoint)
 
 - Explicit supervisor/user Decision approved exactly the patch committed at 9f22095.
