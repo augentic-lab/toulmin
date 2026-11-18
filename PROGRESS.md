@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-18 — UX1 reading-experience design (documentation only)
+
+- Decision: the researcher found Toulmin's terminal views hard to read and agreed to a design that merges the reading fixes with P1's living document ("是的，我同意").
+- Output: `~/notes/toulmin/reading-experience-design.md` — nine problems observed read-only on rkey-lifecycle (`map`, `status`, `status -v`, `aoe status`), a derived project card as the first screen of `open`/`map`, short labels, grouping/folding, researcher wording, staleness marks, terminal-width wrapping and colour, narrower `aoe status`, summary-first decide previews. Decisions D1–D6 pending review; slices UX2–UX6 require separate authorization.
+- Checks: documentation only; no code changed, no tests run.
+- Session ID: unavailable.
+
 ## 2026-11-18 — Publish main after explicit researcher request
 
 - Researcher explicitly requested `push`. Verified clean main, origin/main upstream
