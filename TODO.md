@@ -473,8 +473,11 @@ and optional child creation are independent choices. Overall understanding and s
 sources belong to the workspace. Projects may be created during intake or later.
 This supersedes O's mandatory initial-child assumption; historical completion records
 and existing data remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
-Current authorization: documentation only; implementation and live scenarios are NOT RUN.
-The separate Chief permission task is unchanged.
+Current authorization: supervise/accept/merge the permission and WO2 Chief deliveries, then
+implement WO3–WO5 in a new supervised worker from that integrated baseline. Implementation
+and live scenarios remain NOT RUN until actual evidence is recorded. The existing permission
+task retains its scope. The researcher authorized repeated rebuilds of the disposable
+weekly-projects-research workspace for final trials; original source data must be preserved.
 
 - [x] WO1 — Record accepted A/B/C modes, ownership, workflow, confirmation and compatibility
   boundaries. Distinguish current executable behavior from the accepted design.

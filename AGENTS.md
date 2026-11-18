@@ -113,6 +113,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 
 2026-11-18: The researcher accepted workspace-first existing-repository onboarding and authorized updating Toulmin development design only. Overall understanding and shared sources belong to the workspace; independent projects are optional and explicitly created during intake or later after confirmation. The accepted modes are repo to new workspace only, repo to new workspace plus one project, and repo plus selected existing workspace to a new project. See docs/workspace-onboarding-design.md and WO1–WO5 in TODO.md. Do not implement this revision, migrate existing data or change the separate Chief permission task without further authorization.
 
+2026-11-18: The researcher authorized root to supervise the permission and WO2 Chief workers, decide routine requests, verify and merge their completed deliveries, then delegate and supervise WO3–WO5 from the integrated baseline until acceptance criteria are met. The disposable ~/workspace/weekly-projects-research may be removed/recreated for final trials; preserve ~/workspace/Weekly-Projects source data and unrelated sessions. Major scientific decisions and scope expansion remain researcher-owned.
+
 ## Layers and dependencies
 
 - L0: the eight design principles constrain every implementation.

@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-18 — Supervision through WO3–WO5 and disposable live acceptance authorized
+
+- Researcher authorized monitoring both Chief workers, routine approvals, acceptance and
+  merging, then a new Chief worker for WO3–WO5 from the integrated baseline, reusing the
+  permission mechanism. Continue until criteria are met. The final trial workspace
+  ~/workspace/weekly-projects-research may be removed/recreated repeatedly; preserve the
+  original ~/workspace/Weekly-Projects code and unrelated sessions/data.
+- Permission worker is implementing; WO2 is drafting. Verified accepted test decision :2
+  but task phase remained test. Backed up task metadata under /tmp and restored build phase,
+  approved test base d21a39c and protected paths after verifying approved test bytes unchanged.
+  No approval was fabricated or re-sent. Exact stale-state cause is not established.
+- Next: review/check both deliveries, handle routine requests, merge with original TODO
+  edits preserved, delegate WO3–WO5 and run isolated automated plus disposable live trials.
+- This is an ongoing execution session. Records will be updated with actual checks,
+  decisions, merge commits and any remaining limits; session ID unavailable. No push.
+
 ## 2026-11-18 — WO2 delegated to a separate Chief documentation worker
 
 - Researcher explicitly requested a new Chief worker for WO2. Followed handoff.md and
