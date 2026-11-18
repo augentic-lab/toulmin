@@ -110,7 +110,7 @@ def test_a_stale_or_invalid_brief_proposal_writes_nothing(populated):
     before = snapshot(populated)
     result = run(populated, "a\ns\ns\ns\n")
     assert "brief.md changed since this proposal was drafted" in result.stdout
-    assert "Choose one of: reject, skip, quit" in result.stdout
+    assert "Choose one of: reject, skip, view all, quit" in result.stdout
     assert "C-099" in result.stdout.split("[2/3]")[1]
     assert "Budget: expected exactly one such section" in result.stdout
     assert snapshot(populated) == before
@@ -168,7 +168,7 @@ def test_invalid_stage_proposals_write_nothing(workbench, text, message):
     before = snapshot(workbench)
     result = run(workbench, "s\n")
     assert message in result.stdout
-    assert "[r]eject / [s]kip / [q]uit" in result.stdout
+    assert "[r]eject / [s]kip / [v]iew all / [q]uit" in result.stdout
     assert snapshot(workbench) == before
 
 

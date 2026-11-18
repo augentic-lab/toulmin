@@ -52,7 +52,7 @@ verification), read the [user guide](docs/user-guide.md).
 | When | Command |
 | --- | --- |
 | Start or resume | `toulmin open` in the workspace; from elsewhere it lists your workspaces, or `toulmin open --in NAME` |
-| Something awaits your review | `toulmin decide` (in your own terminal); it ends with each project's next moves and offers to tell the project session what you decided (`--notify`/`--no-notify` skip the question) |
+| Something awaits your review | `toulmin decide` (in your own terminal; each proposal shows a short summary, `v` shows all of it, `--full` always prints everything); it ends with each project's next moves and offers to tell the project session what you decided (`--notify`/`--no-notify` skip the question) |
 | A review repeats an existing Objection | Recommend `duplicate` with its O-ID; choose duplicate in `decide`, or `toulmin intake NAME OUTPUT --duplicate LABEL=O-NNN --confirm`. It creates nothing and calibration excludes it from adoption/rejection rates. |
 | Considering another review round | Add new Evidence or a substantive Claim revision first. With no new material, review previews warn about repeats; you can still apply. Independent reviewer inputs are unchanged. |
 | After a stage ruling | ask the agent for a handoff, `toulmin decide`, then archive the old session and `toulmin open NAME --new-session` (decide prints both commands) |

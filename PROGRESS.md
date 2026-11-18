@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-18 — UX6 summary-first decide previews
+
+- Decision: the researcher authorized UX6 ("按你的建议，开始 UX6") and, afterwards, the remaining UX slices ("做完之后接着推进剩下的UX开发"; "好，测完继续做 UX4 和 UX5").
+- Change: `protocols/proposal_summary.py` (L2 text shaping); decide shows object drafts, rulings, Brief/stage proposals and build requests as a summary (short header facts, first paragraph of the main section and of Why); `v` ("view all") prints the full text and, for builds, the full frozen contract with the goal, then asks again. Build summaries always list name, repo, tool, command, every check, protected, budget, test_first. `decide --full` restores the full print. Application, digests and outcomes unchanged; other item kinds unchanged. README, user guide, protocols.md, CHANGELOG, packaged copy, released.json digest.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2214 passed (build tests run with --full; prompt-string assertions updated; new summary, v and --full tests).
+- Session ID: unavailable.
+
 ## 2026-11-18 — Project card module rules
 
 - Decision: after reading the card the researcher asked for dividing lines to make it modular ("最好还可以增加分割线将其模块化").

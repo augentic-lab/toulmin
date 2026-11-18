@@ -1,5 +1,8 @@
 # Framework changes
 
+- Summary-first decide (2026-11-18): proposals and build requests show a short summary; `v`
+  views all of it, `decide --full` prints everything. Application is unchanged.
+
 - Project card (2026-11-18): `toulmin map` and `toulmin open` lead with a derived project
   card (question, Claim states, grouped doubts, waiting items, next moves); `map --full` keeps
   the earlier view. Labels cut at word boundaries; terminal-only wrapping. No format change.

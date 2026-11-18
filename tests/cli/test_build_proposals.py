@@ -140,7 +140,8 @@ def request(env, **changes):
 def run(root, answers="s\n"):
     return CliRunner().invoke(
         app,
-        ["decide", "--root", str(root), "--confirmed-by", "Researcher", "--no-notify"],
+        # --full: these tests read the whole frozen contract (the summary view is UX6's).
+        ["decide", "--root", str(root), "--confirmed-by", "Researcher", "--no-notify", "--full"],
         input=answers,
     )
 
@@ -1087,3 +1088,19 @@ def test_build_worker_command_is_previewed_frozen_and_absent_unless_requested(bu
     (archive,) = (root / "projects/demo/runs").glob("*-build-S-001")
     assert json.loads((archive / "contract.json").read_text()).get("command") == command
     assert outcome(root, relative).result == "chief task demo-s001"
+
+
+def test_build_summary_lists_checks_and_hides_the_goal_until_v(build_env):
+    root, repo, home = build_env
+    request(build_env)
+    result = CliRunner().invoke(
+        app,
+        ["decide", "--root", str(root), "--confirmed-by", "Researcher", "--no-notify"],
+        input="v\ns\n",
+    )
+    assert result.exit_code == 0, result.output
+    summary, _, full = result.stdout.partition("[a]pply / [r]eject / [s]kip / [v]iew all / [q]uit")
+    assert "Frozen Chief contract (v views all of it, with the worker's goal):" in summary
+    assert f"  repo: {repo}" in summary and "run as you on apply and verify" in summary
+    assert "Full frozen Chief contract" not in summary and "## Acceptance criteria" not in summary
+    assert "Full frozen Chief contract" in full and "## Acceptance criteria" in full
