@@ -2,6 +2,10 @@
 
 ## 2026-11-18 — Exact protected test states approved and verified
 
+- Subsequent Chief delivery reaffirms the same approved WO5 compatibility-test blob;
+  rechecked and matching. No runtime/test changes or additional permission granted.
+  Existing independent-review/live-trial boundary and prior approval audit remain intact.
+
 - Explicit user/Chief Decision approves the current Git blob states:
   tests/acceptance/test_wo5_compatibility.py = 9c30504a5b35bfef94dd4f28632cf58e9c648349;
   tests/unit/test_onboarding.py = 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d.
