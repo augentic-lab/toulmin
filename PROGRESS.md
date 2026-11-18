@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-18 — Manual independent-review instructions
+
+- Researcher chose to perform the blocked step manually. Rechecked actual Chief task
+  metadata: feature remains clean at d4c74ac, needs-you/observe with no review verdict;
+  disposable helper remains cc3d395 with no verdict. Original TODO additions unchanged.
+- Verified installed Claude auth login help and Chief review command implementation.
+  Explicit manual review works independently of task autonomy; no need to re-enable
+  automatic reviews. Provide separate default/private Chief-home review commands and
+  request both Verdict/Issues outputs before integration. The commands send code to Claude.
+- No login, external review, closure, merge, research-file change or push executed.
+  Authorization for automatic external retries remains pending; observe stays in place.
+  Validation: read-only state/help/source inspection and git diff --check only; no runtime
+  code changed, so no repeated code tests. Next: researcher runs manual reviews; supervisor
+  resolves findings and completes accepted integration/result-import/final Weekly trials.
+
 ## 2026-11-18 — WO3–WO5 final checked delivery; external review awaiting authorization
 
 - Feature branch chief/wo3-wo5-workspace-first-onboar is clean at d4c74ac. R6 test-first
