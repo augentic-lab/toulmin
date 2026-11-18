@@ -1,5 +1,36 @@
 # Toulmin development progress
 
+## 2026-11-18 — R4 real workspace launch corrected; registered checks pass
+
+- **Verified:** the real AoE adapter now permits explicit workspace Codex workspace-write
+  and inherit with an existing separate records directory. It retains printable title,
+  supported agent/mode and existing-directory validation; canonical equal/nested workspace
+  code/records grants refuse before transport. Project/Claude behavior remains compatible.
+  Only adapters/aoe.py runtime changes; no L1/L2, native policy/binding schema, global
+  configuration, trust/approval defaults or scientific behavior changed. Session unavailable.
+- Test-first commit 177c870 records four intended R4 failures and 20 passing controls before
+  correction. Its 24 fake-command-only real-adapter cases now pass. Focused launch-policy/
+  permission/real-adapter suite: **84 PASS**, /tmp/wo-r4-focused.log. Actual create/show/
+  readiness/send and workspace CLI/policy/context execute; no provider/AoE/Chief is run.
+- Pending v4 prelaunch state retries through existing explicit --new-session: no candidate
+  permits one add and archives failed bytes; an existing matching creation recovers its ID
+  without another add. Repeat open preserves stored args and sends no duplicate context.
+  The live recipe documents exact retry and inspection forms; root owns its real execution.
+- **All six registered commands exit 0:** locked offline dev+tui sync; COMPLETE unmodified
+  checker; Ruff check; Ruff format (267 files); mypy (125 modules); toulmin --help.
+  COMPLETE: **2,148 unique nodes, all eight shards PASS**, each node assigned once, no
+  filtering/xfail/checker edits. Logs: .chief/regression-1795802 and /tmp/wo-r4-complete.log.
+  Permitted private-socket tests use unique /tmp/toulmin-native-test-* sockets and fake
+  provider demos only. R1–R3/D1 and old CLI/architecture/data-integrity tests remain green.
+- Both approved protected blobs still exactly match: WO5 test 9c30504a5b35bfef94dd4f28632cf58e9c648349;
+  legacy unit test 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. No old tests/assertions/support
+  or frozen contract modified. Preserve the historical c69 vs current 3c audit above.
+- Next: stop for Chief independent review and root's native retry/live trials. Claude review
+  awaits researcher OAuth login, not a code verdict. Root's reported 18 real A/B/C actions
+  and unchanged original source are technical observations; native real retry and researcher
+  usability acceptance remain pending. No main/live research/profile/session/global changes,
+  other-worker operations, integration, merge or push were performed.
+
 ## 2026-11-18 — R4 real adapter regression, failing before correction
 
 - Root's live R4 on 092510d reopens native launch completion: source-backed workspace

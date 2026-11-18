@@ -30,6 +30,14 @@ Unknown matching lifecycle refuses; known archived sessions need not block. Prev
 offline status have fake-client sentinels proving they query no native tool, including
 when a saved native binding is present. These are technical regression results only.
 
+Root reported 18 real A/B/C CLI actions passed on 092510d with the original source
+unchanged, followed by R4: workspace Codex open failed before creating a session. The
+real adapter rejected an explicit workspace sandbox choice. R4 regressions exercise the
+real adapter, CLI, policy and context above fake command transport, including exact saved
+workspace-write/inherit arguments and pending-binding recovery. Root's native retest and
+final independent review remain pending; an expired Claude OAuth login blocked review,
+which is not a code verdict. These results are not researcher usability acceptance.
+
 ## A: understand and work with zero projects
 
 ```sh
@@ -60,6 +68,21 @@ them or retry with broader access. Resolve any native prompt, then run the exact
 `aoe refresh --workspace --root ROOT_A --profile TRIAL_PROFILE` command. Read the announced
 tracked context plus ignored local.json, run its exact ack_command, and verify acknowledged.
 Record that preparation/submission/attach alone did not claim acknowledgment.
+
+For the known R4 prelaunch failure, retain the failed binding and inspect the selected
+profile first. If it contains no matching session, explicitly retry the pending launch:
+
+```sh
+aoe -p TRIAL_PROFILE list --json
+toulmin open --workspace --root ROOT_A --agent codex --profile TRIAL_PROFILE \
+  --codex-sandbox workspace-write --new-session --no-attach
+```
+
+Choose `inherit` instead only when that is the intended native restriction. This retry
+archives the failed v4 binding and checks for an existing matching creation before adding
+one. If a candidate already exists, run `open` without a new sandbox flag to recover its
+identity and retain its saved permissions; inspect ambiguous candidates before binding.
+Do not delete the pending binding or launch another writer to work around uncertainty.
 
 Discuss one small measurement, append a correctly formatted unconfirmed notebook entry
 with `toulmin workspace note --root ROOT_A --input ENTRY`,
