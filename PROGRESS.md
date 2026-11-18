@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Additional review regressions and field-access correction
+
+- Added new-file regressions for unknown vs archived selected-checkout lifecycle, receipt
+  damage between handoff preview/apply and after an applied handoff, and approved D1's
+  opaque-v1 read/refusal/no-byte-rewrite behavior. Before fixes, unknown lifecycle was
+  **1 failed/1 control passed** (/tmp/wo-bind-lifecycle-red.log); D1's refusal lacked
+  actionable v1 guidance (**1 failed**, /tmp/wo-opaque-upgrade-red.log).
+- Corrected only the new handoff tests' access to existing HandoffRecord.draft.confirmed_changes;
+  the earlier six AttributeError failures were test-authoring errors, not new format fields
+  or a reason to remove receipt assertions. Original protected tests/support are unchanged
+  after approved 0678367. Test additions/corrections precede the runtime-fix commit.
+- Current working-tree fixes pass **65 new cases** (/tmp/wo-supervisor-final-focused.log).
+  The earlier combined acceptance/legacy handoff/change/onboarding/task selection passed
+  **302 cases** (/tmp/wo-supervisor-targeted-all.log). The unchanged COMPLETE checker is
+  running on the combined final runtime/docs; no claim of final completion yet.
+- Next: finish registered checks, commit fixes and evidence, and return for Chief's final
+  independent review. Root owns all live/human trials. Session ID unavailable.
+
 ## 2026-11-18 — Supervisor R1–R3 and rebind-scope regression checkpoint
 
 - Added four NEW test files only, as explicitly requested: unrelated managed/unmanaged

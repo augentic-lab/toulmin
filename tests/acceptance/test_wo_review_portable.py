@@ -182,3 +182,20 @@ def test_v4_context_versions_must_be_integer_even_when_manifest_is_rehashed(wo, 
     with pytest.raises(FormatError):
         service.acknowledge(view.binding.token)
     assert tree(wo.root) == before
+
+
+def test_opaque_v1_identity_remains_readable_and_upgrade_refuses_without_rewriting(wo):
+    from tests.acceptance.test_wo5_compatibility import legacy_workspace
+    from toulmin.core.sources import parse_catalog, read_catalog
+
+    original = legacy_workspace(wo)
+    old = parse_catalog(original)[0].identity.encode()
+    raw = original.replace(old, b"historical-opaque-identity")
+    path = wo.root / "sources.toml"
+    path.write_bytes(raw)
+    before = tree(wo.root)
+    assert read_catalog(wo.root)[0].identity == "historical-opaque-identity"
+    invoke("source", "list", "--project", "latency", "--root", wo.root)
+    result = invoke("source", "upgrade", "--root", wo.root, code=1)
+    assert "v1" in result.output and "identity" in result.output
+    assert path.read_bytes() == raw and tree(wo.root) == before

@@ -100,7 +100,7 @@ def test_all_workspace_v2_receipt_families_can_be_cited_and_discovered(wo, opera
     assert drafted.loaded.draft.confirmed_changes == (receipt,)
     applied = workspace_handoff.apply(wo.root, drafted.loaded.path, ACTOR, confirmed=True)
     assert applied.status == "applied"
-    assert workspace_handoff.latest_handoff(wo.root).record.confirmed_changes == (receipt,)
+    assert workspace_handoff.latest_handoff(wo.root).record.draft.confirmed_changes == (receipt,)
     assert workspace_handoff.uncited_receipts(wo.root, ()) == []
     state = workspace_research(wo.root)
     assert not state.errors and applied.record in state.context_files
@@ -145,4 +145,33 @@ def test_fresh_source_backed_context_restores_applied_handoff_with_v2_confirmati
     assert receipt in texts and "Which trace next?" in texts
     assert applied.record in view.research.context_files
     AoEWorkspace(wo.root, None, native).acknowledge(view.binding.token)
-    assert workspace_handoff.latest_handoff(wo.root).record.confirmed_changes == (receipt,)
+    assert workspace_handoff.latest_handoff(wo.root).record.draft.confirmed_changes == (receipt,)
+
+
+def test_receipt_damage_after_draft_prevents_handoff_apply_without_recovery(wo):
+    packet = onboard_a(wo.root, wo.source)
+    receipt = (packet / "receipt.md").relative_to(wo.root).as_posix()
+    drafted = workspace_handoff.draft(wo.root, summary(wo.root, [receipt]))
+    doc = decode((packet / "receipt.md").read_bytes())
+    doc.header["results"] = []
+    (packet / "receipt.md").write_bytes(encode(doc))
+    before = tree(wo.root)
+    assert workspace_handoff.check(wo.root, drafted.loaded)
+    with pytest.raises(FormatError):
+        workspace_handoff.apply(wo.root, drafted.loaded.path, ACTOR, confirmed=True)
+    assert tree(wo.root) == before and not (wo.root / ".workspace-pending").exists()
+
+
+def test_damaged_cited_receipt_blocks_fresh_context_after_applied_handoff(wo, native):
+    packet = onboard_a(wo.root, wo.source)
+    receipt = (packet / "receipt.md").relative_to(wo.root).as_posix()
+    drafted = workspace_handoff.draft(wo.root, summary(wo.root, [receipt]))
+    workspace_handoff.apply(wo.root, drafted.loaded.path, ACTOR, confirmed=True)
+    doc = decode((packet / "receipt.md").read_bytes())
+    doc.header["record_sha256"] = "0" * 64
+    (packet / "receipt.md").write_bytes(encode(doc))
+    before = tree(wo.root)
+    assert workspace_research(wo.root).errors
+    with pytest.raises(FormatError):
+        AoEWorkspace(wo.root, None, native).open(codex_sandbox="inherit")
+    assert tree(wo.root) == before and not native.created and not native.sent

@@ -66,3 +66,33 @@ def test_unrelated_sources_writer_does_not_prevent_selected_rebind(
     }
     assert bindings["source-main"]["path"] == str(target)
     assert not native.created and not native.sent
+
+
+@pytest.mark.parametrize("state", ["unknown", "archived"])
+def test_rebind_treats_unknown_checkout_lifecycle_as_possible_writer(
+    wo, native, monkeypatch, state
+):
+    v2_workspace(wo.root, wo.source)
+    target = wo.tmp / "clone"
+    git(wo.source, "clone", "-q", str(wo.source), str(target))
+    native.other = [
+        (
+            "other-profile",
+            AoESession("f" * 16, wo.source, "codex", state, "idle", "native-writer", "Other"),
+        )
+    ]
+    monkeypatch.setattr("toulmin.adapters.aoe.AoEClient", lambda *a, **kw: native)
+    before = tree(wo.root)
+    invoke(
+        "source",
+        "bind",
+        "source-main",
+        target,
+        "--root",
+        wo.root,
+        "--confirm",
+        code=1 if state == "unknown" else 0,
+    )
+    if state == "unknown":
+        assert tree(wo.root) == before
+    assert not native.created and not native.sent
