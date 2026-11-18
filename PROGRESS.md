@@ -1,5 +1,30 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO2 delegated to a separate Chief documentation worker
+
+- Researcher explicitly requested a new Chief worker for WO2. Followed handoff.md and
+  validated /tmp/toulmin-wo2-chief-contract.json with Chief dry-run before creation.
+- Task wo2-freeze-workspace-onboardin, branch chief/wo2-freeze-workspace-onboardin;
+  worktree /home/tianchi/workspace/toulmin-worktrees/wo2-freeze-workspace-onboarding-contracts-for-three-intake-m;
+  worker session 1bb489c4f57b4d2a, native model GPT-6.1-Sol high. Chief kickoff confirms
+  running; native capture shows the worker reading this repository's design/code.
+- WO2-only delivery: docs/workspace-onboarding-contract.md plus narrowly allowed design,
+  format cross-reference, WO2 TODO and progress updates. Freeze A/B/C commands, schemas,
+  proposals/receipts, native integration boundaries, workspace tasks, examples and the
+  compatibility/acceptance matrix. Runtime implementation and live operations are excluded.
+- Documentation-only scope uses test_first=false under the repository's no-mechanical-tests
+  rule; final design still needs independent Chief review and researcher acceptance.
+  External /tmp/toulmin-wo2-doc-check.py verifies required sections, relative file links,
+  TOML syntax, exact allowed paths and whitespace, not semantic design quality.
+- Protected runtime/tests/dependency/user-guide paths; no edits to the existing permission
+  task, its worktree/session, main checkout or real research data. Explicitly coordinate
+  future native permission integration without competing configuration contracts.
+- Existing Chief watch verified running. Skipped only the new worker's optional Codex
+  update via Escape, then used targeted kickoff; no upgrade or trust choice accepted.
+- Validation: actual task creation/kickoff/native activity and main documentation diff check.
+  No code tests for delegation-only records. Existing TODO edits retained. Session ID
+  unavailable; local commit only, no push. Next: review WO2 specification when delivered.
+
 ## 2026-11-18 — Concurrency assessment for WO and the Chief permission task
 
 - Researcher reported test approval and asked whether new onboarding development conflicts
