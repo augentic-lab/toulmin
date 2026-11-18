@@ -490,7 +490,7 @@ weekly-projects-research workspace for final trials; original source data must b
   exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
   Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
   for implementation on 2026-11-18. Runtime/live cases remain pending.
-- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+- [x] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,

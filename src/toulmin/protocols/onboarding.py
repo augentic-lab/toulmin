@@ -461,6 +461,16 @@ def onboarding_context_files(root: Path, project: str) -> tuple[str, ...]:
             value = json.loads(packet)
             if value["project"] != project:
                 continue
+            if value.get("schema_version") == 2:
+                from toulmin.protocols.workspace_onboarding import load as load_outer
+                from toulmin.protocols.workspace_onboarding import validate_disposed
+
+                loaded_outer = load_outer(root, directory, local_optional=True)
+                outer_receipt = receipt_for(repository, directory, loaded_outer.seal)
+                if outer_receipt is not None:
+                    validate_disposed(repository, loaded_outer, outer_receipt)
+                # v4 references bounded inventories on demand, not as resident knowledge.
+                continue
             receipt = receipt_for(repository, directory, seal)
             if receipt is None or receipt.disposition != "applied":
                 continue

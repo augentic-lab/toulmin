@@ -1,5 +1,39 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3 reviewed workspace-first intake implementation
+
+- Status: **Verified technical implementation** of strict source catalog v2 and reviewed
+  A/B/C intake, source selection, understanding and opt-in conversion. Explicit user
+  Decision approved all seven acceptance files at 33d4f44; they remain byte-identical.
+  Narrow baseline repair 497c0c1 was cherry-picked first as 5cdb704, with the six old
+  packaging/digest/init checks passing. No arbitrary main changes were incorporated.
+- Source definitions/associations, exact catalog/definition/snapshot pins and bounded
+  observations are distinct from local checkout mappings and write permissions. V1
+  catalog read/write stays unchanged. C preserves old roles/children/root charter and
+  overview bytes; exact-path/inode reuse changes no existing local mapping bytes.
+- Sealed outer packets own privately prepared v1 child creations. Ownership is visible
+  with the child archive before the outer seal. Apply authenticates exact inputs and
+  semantic before/after effects, then reuses the v1 journal/two-receipt publication.
+  Rejection, stale/tampered/resealed inputs, replay, global recovery prechecks and
+  incomplete-child guards are covered. Reads perform no initialization or recovery.
+- Evidence on the combined implementation tree: all 132 approved cases passed; registered
+  COMPLETE .chief/regression-932929 and .chief/regression-990127 each ran all 2,047 nodes
+  once and passed with permitted private-socket access. Five earlier socket failures were
+  sandbox EPERM at unique temporary sockets using fake Codex/demo workers, not product
+  failures. 154 follow-up acceptance/source/removal cases passed. Final delivery checks
+  continue after the WO4/WO5 commits; these counts are technical evidence, not live or
+  researcher acceptance. Mypy 125 modules and Ruff check/format pass. Session unavailable.
+- Compatibility edge for supervisor review: contract identity constraint at
+  docs/workspace-onboarding-contract.md:78 requires kind:64-hex, while its conversion
+  rule at :1131 preserves stored identity and the released v1 reader accepts opaque
+  nonempty identities (core/sources.py:33). Bounded fail-closed handling retains those
+  opaque values indefinitely on v1 and refuses only their opt-in unrepresentable upgrade;
+  it neither invents a new identity nor writes an invalid v2 definition. Normal legacy
+  identities produced by the original inspector convert without change.
+- Next: commit native workspace context/permission and scoped engineering integration
+  (WO4), then reviewed derivation/templates/docs/compatibility guidance (WO5). Root owns
+  all live journeys and researcher rulings; independent Chief review remains pending.
+
 ## 2026-11-18 — Repair WO2 released-contract baseline drift
 
 - WO3–WO5's test-first full run exposed three old failures: workspace-format packaged

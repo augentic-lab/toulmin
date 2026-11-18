@@ -199,9 +199,14 @@ def _project_handoffs(repository: Repository) -> tuple[list[Item], int]:
 
 
 def _onboarding_creation(repository: Repository, relative: str) -> bool:
-    if repository.path(f"{relative}/onboarding").exists():
+    from toulmin.core.workspace_onboarding import PACKET_DIR as OUTER
+    from toulmin.core.workspace_onboarding import owners
+
+    if owners(repository, relative) or repository.path(f"{relative}/onboarding").exists():
         return True
     creation = project_creation.load(repository.root, relative)
+    if OUTER.fullmatch(creation.packet.input_path.rsplit("/", 1)[0]):
+        return True
     return (
         re.fullmatch(r"runs/drafts/onboard-[0-9a-f]{32}\.md", creation.packet.input_path)
         is not None
@@ -221,6 +226,7 @@ def inventory(root: Path) -> Inventory:
     recovery_record = read_intent(repository).record if journal_pending(repository) else None
     pending = [item for item in report.proposals if item.disposition == "pending"]
     items = [Item("change", item.path) for item in pending if item.kind == "change"]
+    items += [Item("onboarding", item.path) for item in pending if item.kind == "onboarding"]
     items += [
         Item("creation", item.path)
         for item in pending
@@ -241,6 +247,14 @@ def inventory(root: Path) -> Inventory:
     ):
         for folder in sorted(repository.path("runs").glob(pattern)):
             relative = folder.relative_to(repository.root).as_posix()
+            if any(
+                item.path == relative and item.kind == "onboarding" for item in report.proposals
+            ):
+                if recovery_record == f"{relative}/packet.md" and not any(
+                    item.path == relative for item in items
+                ):
+                    items.append(Item("onboarding", relative))
+                continue
             try:
                 seal = repository.path(f"{relative}/seal", "file").read_text().strip()
                 if (
@@ -342,7 +356,37 @@ class Run:
         return choice
 
     def _context_packet(self, item: Item) -> bool:
+        from toulmin.cli.workspace import _v2
         from toulmin.protocols import context_change, onboarding
+
+        if _v2(self.root, item.path):
+            from toulmin.application import workspace_onboarding
+            from toulmin.protocols import workspace_onboarding as packets
+
+            shown_v2 = workspace_onboarding.apply(self.root, item.path, None)
+            typer.echo(packets.preview(self.root, shown_v2.loaded))
+            for problem in shown_v2.problems:
+                typer.echo(f"Problem: {problem}")
+            choice = self._choose(
+                "asq" if shown_v2.status == "incomplete" else "rsq" if shown_v2.problems else "arsq"
+            )
+            if choice == "a":
+                done_v2 = workspace_onboarding.apply(
+                    self.root,
+                    item.path,
+                    self.actor,
+                    confirmed=True,
+                    expect_seal=shown_v2.loaded.seal,
+                    approval_text="toulmin decide: a",
+                )
+                typer.echo(f"{done_v2.status}: workspace publication")
+                self.applied += 1
+            elif choice == "r":
+                workspace_onboarding.reject(
+                    self.root, item.path, self.actor, _reason(), expect_seal=shown_v2.loaded.seal
+                )
+                self.rejected += 1
+            return choice != "q"
 
         protocol = onboarding if item.kind == "onboarding" else context_change
         shown = protocol.apply(self.root, item.path, None, confirmed=False)
@@ -1071,6 +1115,12 @@ def decide_command(
             "--confirmed-by", help="Deciding researcher; defaults to $TOULMIN_ACTOR, then config."
         ),
     ] = None,
+    workspace: Annotated[
+        bool, typer.Option("--workspace", help="Root publications/tasks only.")
+    ] = False,
+    project: Annotated[
+        str | None, typer.Option("--project", help="Existing child proposals only.")
+    ] = None,
     notify: Annotated[
         bool | None,
         typer.Option(
@@ -1088,13 +1138,30 @@ def decide_command(
     """
     from toulmin.application.workspace_sync import git_state
 
+    if workspace and project is not None:
+        raise typer.BadParameter("give --workspace or --project")
+
+    def selected(item: Item) -> bool:
+        return (
+            item.project is None
+            if workspace
+            else item.project == project
+            if project is not None
+            else True
+        )
+
     git_report = git_state(root)
     if git_report and git_report.error:
         typer.echo(git_report.line())
     elif git_report and git_report.warning:
         typer.echo("Warning: " + git_report.warning)
     try:
-        found = inventory(root)
+        collected = inventory(root)
+        found = Inventory(
+            tuple(item for item in collected.items if selected(item)),
+            collected.stale,
+            collected.ignored,
+        )
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
@@ -1140,7 +1207,8 @@ def decide_command(
             queue = [
                 item
                 for item in refreshed.items
-                if (item.kind, item.spec or item.path, item.project) not in offered
+                if selected(item)
+                and (item.kind, item.spec or item.path, item.project) not in offered
             ]
             run.rescan = False
     typer.echo(

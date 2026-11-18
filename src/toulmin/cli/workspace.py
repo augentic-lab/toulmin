@@ -13,7 +13,7 @@ from toulmin.protocols.adoption import adopt, preview
 from toulmin.protocols.workspace_change import Outcome, apply, propose, reject
 
 app = typer.Typer(
-    help="Propose, apply or reject reviewed changes to WORKSPACE.md and shared resources.",
+    help="Review workspace/child intake and shared changes, or append unconfirmed notes.",
     no_args_is_help=True,
 )
 
@@ -100,34 +100,90 @@ def propose_command(
     _review(outcome, root)
 
 
+def _selected(packet: str | None, draft: str | None) -> str:
+    if (packet is None) == (draft is None):
+        raise typer.BadParameter("give PACKET or --draft PACKET, not both")
+    assert packet is not None or draft is not None
+    return packet if packet is not None else str(draft)
+
+
+def _v2(root: Path, value: str) -> bool:
+    from toulmin.core.repository import Repository
+    from toulmin.core.workspace_onboarding import PACKET_DIR
+
+    relative = Repository(root).relative(value).removesuffix("/packet.md").rstrip("/")
+    return PACKET_DIR.fullmatch(relative) is not None
+
+
+def _v2_command(
+    root: Path,
+    value: str,
+    actor: str | None,
+    confirm: bool,
+    seal: str | None,
+    *,
+    rejection: str | None = None,
+    approval: str | None = None,
+) -> None:
+    from toulmin.application import workspace_onboarding
+    from toulmin.protocols import workspace_onboarding as protocol
+
+    if not seal or (confirm and (not actor or not actor.strip())):
+        raise typer.BadParameter(
+            "v2 packets require --expect-seal SHA and explicit --confirmed-by "
+            "ACTOR with --confirm; environment defaults never approve"
+        )
+    if rejection is not None and not confirm:
+        raise typer.BadParameter("rejection requires --confirm and explicit reason")
+    try:
+        if rejection is not None:
+            assert actor is not None
+            outcome = workspace_onboarding.reject(root, value, actor, rejection, expect_seal=seal)
+        else:
+            outcome = workspace_onboarding.apply(
+                root, value, actor, confirmed=confirm, expect_seal=seal, approval_text=approval
+            )
+        if outcome.status in {"preview", "incomplete"}:
+            typer.echo(protocol.preview(root, outcome.loaded))
+            typer.echo("Preview only; nothing written.")
+        else:
+            typer.echo(
+                f"Disposition: {outcome.receipt.disposition if outcome.receipt else outcome.status}"
+            )
+            if outcome.receipt:
+                typer.echo(f"By: {outcome.receipt.actor} at {outcome.receipt.at}")
+    except (OSError, ValueError) as error:
+        raise _fail(error) from error
+
+
 @app.command("apply")
 def apply_command(
-    draft: Draft,
+    packet: Annotated[str | None, typer.Argument(help="Exact v2 workspace packet.")] = None,
+    draft: Annotated[str | None, typer.Option("--draft", help="Existing v1 packet form.")] = None,
     root: Root = Path("."),
     actor: Actor = None,
     confirm: Confirm = False,
-    approval_text: Annotated[
-        str | None,
-        typer.Option("--approval-text", help="The researcher's captured approval words."),
+    approval_text: Annotated[str | None, typer.Option("--approval-text")] = None,
+    expect_seal: Annotated[
+        str | None, typer.Option("--expect-seal", help="Full v2 packet SHA-256.")
     ] = None,
 ) -> None:
-    """Preview a packet (no --confirm) or publish it exactly as reviewed."""
+    """Preview or explicitly apply exactly one sealed packet; never bulk approve."""
+    selected = _selected(packet, draft)
+    if _v2(root, selected):
+        _v2_command(root, selected, actor, confirm, expect_seal, approval=approval_text)
+        return
     if actor is not None and not confirm:
         typer.echo(
-            "Error: not applied; confirmation missing. Review the preview, then rerun with "
-            "--confirm.",
-            err=True,
+            "Error: not applied; confirmation missing. Review then rerun with --confirm.", err=True
         )
         raise typer.Exit(1)
     if confirm:
         actor = resolve_actor(actor)
         if actor is None:
-            raise typer.BadParameter(
-                f"required: {ACTOR_HINT}",
-                param_hint="--confirmed-by",
-            )
+            raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     try:
-        outcome = apply(root, draft, actor, confirmed=confirm, approval_text=approval_text)
+        outcome = apply(root, selected, actor, confirmed=confirm, approval_text=approval_text)
     except (OSError, ValueError) as error:
         raise _fail(error) from error
     if outcome.status in {"preview", "incomplete"}:
@@ -135,19 +191,25 @@ def apply_command(
             typer.echo("State: publication incomplete")
         _review(outcome, root)
         typer.echo("Preview only; nothing written.")
-        return
-    _result(outcome)
+    else:
+        _result(outcome)
 
 
 @app.command("reject")
 def reject_command(
-    draft: Draft,
     reason: Annotated[str, typer.Option("--reason", help="Why this packet is rejected.")],
+    packet: Annotated[str | None, typer.Argument()] = None,
+    draft: Annotated[str | None, typer.Option("--draft")] = None,
     root: Root = Path("."),
     actor: Actor = None,
     confirm: Confirm = False,
+    expect_seal: Annotated[str | None, typer.Option("--expect-seal")] = None,
 ) -> None:
-    """Record a final rejection of a pending packet; nothing else changes."""
+    """Record one final rejection; source/catalog/overview/child state stays unchanged."""
+    selected = _selected(packet, draft)
+    if _v2(root, selected):
+        _v2_command(root, selected, actor, confirm, expect_seal, rejection=reason)
+        return
     if not confirm:
         typer.echo("Error: not rejected; confirmation missing. Rerun with --confirm.", err=True)
         raise typer.Exit(1)
@@ -155,7 +217,7 @@ def reject_command(
     if actor is None:
         raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     try:
-        outcome = reject(root, draft, reason, actor)
+        outcome = reject(root, selected, reason, actor)
     except (OSError, ValueError) as error:
         raise _fail(error) from error
     _result(outcome)

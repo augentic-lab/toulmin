@@ -6,7 +6,9 @@ import os
 import stat
 import subprocess
 import tempfile
+import time
 from collections.abc import Iterator
+from contextlib import ExitStack
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
@@ -18,7 +20,7 @@ from toulmin.core.sources import (
     CATALOG,
     LOCAL,
     parse_bindings,
-    read_catalog,
+    read_source_catalog,
     render_bindings,
 )
 
@@ -73,7 +75,7 @@ SENSITIVE = (
 @dataclass(frozen=True)
 class ResolvedSource:
     source_id: str
-    project: str
+    project: str | None
     kind: str
     role: str
     path: Path
@@ -148,9 +150,11 @@ def _sensitive(name: str) -> bool:
     return any(fnmatch.fnmatch(name.lower(), pattern) for pattern in SENSITIVE)
 
 
-def inspect_source(root: Path, path: Path) -> SourceInspection:
+def inspect_source(root: Path, path: Path, *, _deadline: float | None = None) -> SourceInspection:
     path = validate_directory(root, path)
     top = _git(path, "rev-parse", "--show-toplevel")
+    if _deadline is not None and os.path.lexists(path / ".git") and not top:
+        raise FormatError(f"{path}: Git discovery unavailable; never reinterpret it as a directory")
     if top and Path(top).resolve() != path:
         raise FormatError(f"{path}: select the Git repository root {top}")
     kind = "git" if top else "directory"
@@ -168,6 +172,9 @@ def inspect_source(root: Path, path: Path) -> SourceInspection:
     examined = 0
     truncated = False
     anchors = []
+
+    def expired() -> bool:
+        return _deadline is not None and time.monotonic() >= _deadline
 
     def ignored(candidate: Path) -> bool:
         excluded = False
@@ -203,13 +210,14 @@ def inspect_source(root: Path, path: Path) -> SourceInspection:
         while directories:
             directory = directories.pop()
             visited += 1
-            if visited > MAX_FILES * 8:
+            if visited > MAX_FILES * 8 or expired():
                 truncated = True
                 return
             try:
                 with os.scandir(directory) as entries:
                     selected = list(islice(entries, MAX_FILES * 8 + 1))
             except OSError:
+                truncated = True
                 continue
             if len(selected) > MAX_FILES * 8:
                 truncated = True
@@ -232,7 +240,7 @@ def inspect_source(root: Path, path: Path) -> SourceInspection:
     )
     for candidate in iterator:
         examined += 1
-        if examined > MAX_FILES * 8 or len(files) >= MAX_FILES:
+        if examined > MAX_FILES * 8 or len(files) >= MAX_FILES or expired():
             truncated = True
             break
         relative = candidate.relative_to(path)
@@ -264,6 +272,7 @@ def inspect_source(root: Path, path: Path) -> SourceInspection:
                     anchors.append((relative.as_posix(), digest(data)))
             files.append(item)
         except OSError:
+            truncated = True
             continue
     if not identity:
         # Content identity is checked on an explicit rebind, not on ordinary opens.
@@ -292,46 +301,69 @@ def inspect_source(root: Path, path: Path) -> SourceInspection:
     return SourceInspection(path, kind, identity, filesystem_identity(path), inventory)
 
 
-def resolve_source(root: Path, project: str, source_id: str) -> ResolvedSource:
-    sources = read_catalog(root)
-    source = next((s for s in sources if s.source_id == source_id and s.project == project), None)
-    if source is None:
-        raise FormatError(f"{source_id}: no such source associated with project {project}")
+def resolve_source(root: Path, project: str | None, source_id: str) -> ResolvedSource:
+    from toulmin.core.scope import Scope
+
+    catalog = read_source_catalog(root)
+    association = next(
+        (item for item in catalog.associated(Scope(project)) if item.source == source_id), None
+    )
+    if association is None:
+        raise FormatError(f"{source_id}: no such source associated with {Scope(project).display}")
+    definition = catalog.definition(source_id)
     repo = Repository(root)
     bindings = (
         parse_bindings(repo.path(LOCAL, "file").read_bytes()) if repo.path(LOCAL).exists() else {}
     )
     if source_id not in bindings:
         raise FormatError(
-            f"{source_id}: local path missing; run toulmin source bind "
-            f"{source_id} PATH --root {root}"
+            f"{source_id}: local path missing; run toulmin "
+            f"source bind {source_id} PATH --root {root}"
         )
     name, filesystem = bindings[source_id]
     path = validate_directory(root, Path(name))
     if filesystem_identity(path) != filesystem:
         raise FormatError(f"{source_id}: source directory was replaced; explicitly bind it again")
-    if source.kind == "git":
+    if definition.kind == "git":
+        top = _git(path, "rev-parse", "--show-toplevel")
         roots = _git(path, "rev-list", "--max-parents=0", "HEAD")
-        if not roots or "git:" + digest(roots.encode()) != source.identity:
+        if (
+            not top
+            or Path(top).resolve() != path
+            or not roots
+            or "git:" + digest(roots.encode()) != definition.identity
+        ):
             raise FormatError(
                 f"{source_id}: repository identity changed; bind the original repository"
             )
     return ResolvedSource(
         source_id,
         project,
-        source.kind,
-        source.role,
+        definition.kind,
+        association.role,
         path,
         digest(repo.path(CATALOG, "file").read_bytes()),
-        source.identity,
+        definition.identity,
     )
 
 
-def resolve_working_source(root: Path, project: str) -> ResolvedSource | None:
-    source = next(
-        (s for s in read_catalog(root) if s.project == project and s.role == "working"), None
-    )
-    return resolve_source(root, project, source.source_id) if source else None
+def resolve_working_source(root: Path, project: str | None) -> ResolvedSource | None:
+    from toulmin.core.scope import Scope
+
+    catalog = read_source_catalog(root)
+    associated = catalog.associated(Scope(project))
+    working = next((item for item in associated if item.role == "working"), None)
+    if working is None and associated and catalog.schema_version == 2:
+        scope = "--workspace" if project is None else project
+        raise SourceSelectionRequired(
+            f"{Scope(project).display}: references have no working selection; "
+            f"propose toulmin source working {scope} ID --root {root}"
+        )
+    return resolve_source(root, project, working.source) if working else None
+
+
+class SourceSelectionRequired(FormatError):
+    """Invocation requires explicit selection, reported as exit 2 at the CLI boundary."""
 
 
 load_primary_source = resolve_working_source
@@ -341,20 +373,202 @@ def resolve_source_repo(root: Path, project: str, source: str) -> Path:
     return resolve_source(root, project, source).path
 
 
-def bind_source(root: Path, source_id: str, path: Path) -> ResolvedSource:
+def bind_source(
+    root: Path, source_id: str, path: Path, *, confirmed: bool = True
+) -> ResolvedSource:
+    from toulmin.core.scope import Scope
+    from toulmin.core.workspace_journal import pending
+
     repo = Repository(root)
-    with handoff_mutex(repo.root):
-        source = next((s for s in read_catalog(root) if s.source_id == source_id), None)
-        if source is None:
-            raise FormatError(f"{source_id}: no such source")
-        inspected = inspect_source(root, path)
-        if (inspected.kind, inspected.identity) != (source.kind, source.identity):
-            raise FormatError(
-                f"{source_id}: source identity mismatch; original directory/repository required"
-            )
-        target = repo.path(LOCAL)
-        bindings = parse_bindings(target.read_bytes()) if target.exists() else {}
+    catalog = read_source_catalog(root)
+    definition = catalog.definition(source_id)
+    inspected = inspect_source(root, path)
+    if (inspected.kind, inspected.identity) != (definition.kind, definition.identity):
+        raise FormatError(
+            f"{source_id}: source identity mismatch; original directory/repository "
+            f"required; register "
+            f"a genuinely distinct edited source after review if original anchors "
+            f"cannot be restored"
+        )
+    target = repo.path(LOCAL)
+    before = target.read_bytes() if target.exists() else None
+    bindings = parse_bindings(before) if before is not None else {}
+    checkout_conflicts(bindings, source_id, inspected.path, inspected.filesystem)
+    selected = next(
+        (item.scope for item in catalog.associations if item.source == source_id), Scope()
+    )
+    result = ResolvedSource(
+        source_id,
+        selected.project,
+        definition.kind,
+        "reference",
+        inspected.path,
+        digest(repo.path(CATALOG, "file").read_bytes()),
+        definition.identity,
+    )
+    if not confirmed:
+        return result
+    lock_bindings = tuple([*bindings.values(), (str(inspected.path), inspected.filesystem)])
+    with checkout_locks(lock_bindings), handoff_mutex(repo.root):
+        if pending(repo):
+            raise FormatError("workspace journal pending; finish the recorded operation first")
+        if (target.read_bytes() if target.exists() else None) != before or read_source_catalog(
+            root
+        ) != catalog:
+            raise FormatError("source mapping/catalog changed during bind preview; retry")
+        current = inspect_source(root, path)
+        if (current.kind, current.identity, current.filesystem) != (
+            inspected.kind,
+            inspected.identity,
+            inspected.filesystem,
+        ):
+            raise FormatError("source identity changed during bind; retry")
+        _bound_writer_guard(repo, set(name for name, _ in lock_bindings))
         bindings[source_id] = (str(inspected.path), inspected.filesystem)
-        target.parent.mkdir(exist_ok=True)
         write_atomic(target, render_bindings(bindings), replace=target.exists())
-    return resolve_source(root, source.project, source_id)
+    return result
+
+
+def _bound_writer_guard(repository: Repository, paths: set[str]) -> None:
+    """Local mutations reconcile managed bindings; launch still checks every profile."""
+    from toulmin.adapters.aoe import AoEClient
+
+    candidates = [
+        repository.root / ".aoe/binding.json",
+        *repository.root.glob("projects/*/.aoe/binding.json"),
+    ]
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        relative = candidate.relative_to(repository.root).as_posix()
+        raw = json.loads(repository.path(relative, "file").read_bytes())
+        if raw.get("cwd") in paths and raw.get("session_id"):
+            session = AoEClient(raw["profile"]).show(raw["session_id"])
+            if session.state == "live":
+                raise FormatError(
+                    f"{relative}: live native writer {session.id}; archive it before binding"
+                )
+
+
+def inspect_source_v2(
+    root: Path, path: Path, *, observed_at: str | None = None, identity: str | None = None
+) -> SourceInspection:
+    """Version observations keep the v1 logical identity algorithm unchanged."""
+    from dataclasses import replace
+    from datetime import UTC, datetime
+
+    from toulmin.core.schema import utc_text
+    from toulmin.core.workspace_onboarding import LIMITS, MAX_BYTES, canonical, inventory
+
+    # The v1 reader/identity path keeps its historical default. New observations
+    # additionally bound traversal time; each read-only Git command has its own timeout.
+    inspected = inspect_source(root, path, _deadline=time.monotonic() + 8)
+    value = json.loads(inspected.inventory)
+    if value["kind"] == "git" and (value["head"] is None or value["status"] is None):
+        raise FormatError(f"{path}: Git observation unavailable; inspect locally and retry")
+    value.update(
+        schema_version=2,
+        observed_at=observed_at or utc_text(datetime.now(UTC)),
+        identity=identity or inspected.identity,
+        limits=LIMITS,
+        exclusions=[
+            "credential filename patterns, symlinks, ignored/generated material",
+            "binary/oversize files are not read; no scripts or checks executed",
+            "traversal budget: 8 seconds; Git commands: 8 seconds and bounded output each",
+        ],
+    )
+    if any("\ufffd" in item.get("text", "") for item in value["files"]):
+        value["exclusions"].append("Selected UTF-8 display is lossy; hashes cover original bytes")
+    raw = canonical(value)
+    if len(raw) > MAX_BYTES:
+        raise FormatError(
+            f"{path}: escaped inventory exceeds 1,000,000 bytes; narrow inspected material"
+        )
+    inventory(raw, str(path))
+    return replace(inspected, inventory=raw)
+
+
+def checkout_conflicts(
+    bindings: dict[str, tuple[str, str]], source_id: str, path: Path, filesystem: str
+) -> None:
+    for other, (saved_path, saved_filesystem) in bindings.items():
+        if other == source_id:
+            continue
+        saved = Path(saved_path)
+        if (
+            saved == path
+            or saved.is_relative_to(path)
+            or path.is_relative_to(saved)
+            or saved_filesystem == filesystem
+        ):
+            raise FormatError(
+                f"{source_id}: checkout conflicts with {other} at {saved}; "
+                f"reuse its ID or choose a distinct non-overlapping checkout"
+            )
+
+
+def checkout_locks(bindings: tuple[tuple[str, str], ...]) -> ExitStack:
+    """Canonical path then saved filesystem locks, all before the root writer lock."""
+    from contextlib import ExitStack
+
+    stack = ExitStack()
+    try:
+        paths = sorted(set(bindings))
+        for path in sorted({name for name, _ in paths}):
+            stack.enter_context(handoff_mutex(Path(path) / ".toulmin-native-writer"))
+        for identity in sorted({identity for _, identity in paths}):
+            stack.enter_context(
+                handoff_mutex(Path(tempfile.gettempdir()) / ("toulmin-checkout-" + identity))
+            )
+        return stack
+    except BaseException:
+        stack.close()
+        raise
+
+
+def scope_source_reports(root: Path, project: str | None) -> tuple[str, ...]:
+    """Local availability and freshness advice; observations never revise confirmed records."""
+    from toulmin.core.scope import Scope
+    from toulmin.core.sources import read_source_catalog
+    from toulmin.core.workspace_onboarding import inventory, overview
+    from toulmin.protocols.workspace_onboarding import confirmed_overview
+
+    catalog = read_source_catalog(root)
+    pins = {}
+    if project is None and (raw := confirmed_overview(root)) is not None:
+        pins = {pin["source"]: pin for pin in overview(raw, "overview.md")["sources"]}
+    lines = []
+    for association in catalog.associated(Scope(project)):
+        source_id = association.source
+        try:
+            resolved = resolve_source(root, project, source_id)
+            detail = f"{source_id} | {association.role} | available: {resolved.path}"
+            pin = pins.get(source_id)
+            if pin is not None:
+                definition = catalog.definition(source_id)
+                previous = inventory(
+                    Repository(root).path(pin["snapshot"], "file").read_bytes(), pin["snapshot"]
+                )
+                current = inspect_source_v2(
+                    root,
+                    resolved.path,
+                    observed_at=previous["observed_at"],
+                    identity=definition.identity if definition.kind == "directory" else None,
+                )
+                observed = inventory(current.inventory, source_id)
+                changed = any(
+                    previous[key] != observed[key]
+                    for key in ("identity", "head", "status", "files", "truncated", "read_bytes")
+                )
+                detail += (
+                    " | changed since confirmed snapshot; consider a reviewed "
+                    "understanding checkpoint"
+                    if changed
+                    else " | matches bounded confirmed snapshot (not runtime verification)"
+                )
+            else:
+                detail += " | no confirmed shared snapshot"
+            lines.append(detail)
+        except (OSError, ValueError) as error:
+            lines.append(f"{source_id} | {association.role} | unavailable: {error}")
+    return tuple(lines)

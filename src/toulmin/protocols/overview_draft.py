@@ -28,3 +28,30 @@ def write_overview_draft(root: Path, project: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     write_atomic(path, content)
     return path
+
+
+def write_workspace_overview_draft(root: Path) -> Path:
+    from datetime import UTC, datetime
+
+    from toulmin.core.codec import decode
+    from toulmin.core.workspace_onboarding import HEADINGS
+    from toulmin.protocols.workspace_onboarding import confirmed_overview
+
+    repository = Repository(root)
+    current = confirmed_overview(root)
+    body = (
+        decode(current, "overview.md").body
+        if current is not None
+        else "\n".join(
+            (
+                f"## {heading}\n<fill: inspected material, "
+                f"source IDs/revisions and explicit uncertainty>\n"
+            )
+            for heading in HEADINGS
+        )
+    )
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    path = repository.path(f"runs/drafts/overview-{stamp}-{uuid4().hex}.md")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_atomic(path, body.encode())
+    return path
