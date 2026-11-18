@@ -45,8 +45,16 @@
   Codex). Native provider ID is unavailable from AoE: this verifies fresh file restoration,
   not opaque native-conversation resume. technical-derived is an explicit disposable
   test child, not an adopted scientific direction; no research ruling was made.
-- Next: restore and verify the original user TODO diff, leave the final acknowledged Weekly
-  session usable, and obtain researcher usability feedback. No push. Root session
+- Integration committed as d8c11d4. Original eight-line user TODO diff restored exactly,
+  remains unstaged and was excluded from the merge; the temporary owned stash was removed
+  only after backup/hash verification. Automatic approval initially mistook the technical
+  TODO staging for those original edits; read-only proof showed both R10/R11 additions
+  absent from index/worktree and safely stashed. Retry after that evidence was approved.
+- Final Weekly workspace is valid and its main-interpreter context is acknowledged;
+  the bounded fresh-model probe returned all exact recovery/result fields. Both Chief
+  tasks are closed; unrelated watch/console/sessions remain unchanged. No push.
+- Next: researcher tries the preserved Weekly session and supplies a separate usability
+  ruling. Technical work is complete; no scientific conclusion was adopted. Root session
   01a192fa-a22e-7531-86d7-7f1fe4c99753; external supervision ledger retains all trial evidence.
 
 ## 2026-11-18 — Manual independent-review instructions
