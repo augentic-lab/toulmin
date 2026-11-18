@@ -1,5 +1,17 @@
 # Toulmin development progress
 
+## 2026-11-18 — Publish main after explicit researcher request
+
+- Researcher explicitly requested `push`. Verified clean main, origin/main upstream
+  and configured origin git@github.com:augentic-lab/toulmin.git.
+- Normal git push origin main succeeded: remote main advanced edb7157 -> cf532a6,
+  publishing the integrated WO3–WO5 work and committed R10/R11 planning notes.
+  Local HEAD and origin/main were equal after the push. No force push, tags or
+  unrelated branches. This progress-only commit is published to the same branch.
+- Validation: Git push output, clean status, matching refs and diff whitespace.
+  Code tests not repeated: publishing and progress documentation only; runtime unchanged.
+- Next: researcher usability ruling on the preserved Weekly workflow. Session: 01a192fa-a22e-7531-86d7-7f1fe4c99753.
+
 ## 2026-11-18 — Commit pending R10/R11 planning notes
 
 - Researcher explicitly requested `commit` after the WO3–WO5 integration. The only
