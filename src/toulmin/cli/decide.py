@@ -241,12 +241,17 @@ def inventory(root: Path) -> Inventory:
     from toulmin.protocols import context_change, onboarding
     from toulmin.protocols.workspace_change import receipt_for
 
-    for pattern, kind, loader in (
-        ("*-onboard-*", "onboarding", onboarding.load),
-        ("*-context-*", "context-change", context_change.load),
+    for pattern, kind, packet_directory, loader in (
+        ("*-onboard-*", "onboarding", onboarding.DIRECTORY, onboarding.load),
+        ("*-context-*", "context-change", context_change.DIRECTORY, context_change.load),
     ):
         for folder in sorted(repository.path("runs").glob(pattern)):
             relative = folder.relative_to(repository.root).as_posix()
+            # Task/native context archives are not sealed change packets. Classify
+            # by the protocol grammar first; genuine incomplete packets still report
+            # missing dependencies through the normal validation below.
+            if not packet_directory.fullmatch(relative):
+                continue
             if any(
                 item.path == relative and item.kind == "onboarding" for item in report.proposals
             ):

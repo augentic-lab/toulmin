@@ -1,5 +1,34 @@
 # Toulmin development progress
 
+## 2026-11-18 — R5 exact decision discovery corrected; registered checks pass
+
+- **Verified:** decide classifies onboarding/context-change candidates using each protocol's
+  declared DIRECTORY.fullmatch before reading seal, receipt or packet dependencies. Valid
+  task-context and aoe-context archives no longer produce false missing-seal errors. Genuine
+  exactly named incomplete/damaged packets retain normal dependency/seal/schema diagnostics;
+  valid context changes remain offered. Only cli/decide.py runtime changes; no L1/L2 or
+  format, transaction, permissions, data paths or archival writes changed. Session unavailable.
+- Test-first 8b1e2da records seven intended failures and one passing incomplete-packet
+  control before runtime changes. All eight new CLI cases now pass; focused old decide,
+  onboarding, workspace task and R4 real-adapter suites: **73 PASS** (/tmp/wo-r5-focused.log).
+  Real task/context generation and decision preview/skip run with fake native service and
+  private Chief state only. Source and records snapshots prove discovery/skip is read-only.
+- **All six registered commands exit 0:** locked offline dev+tui sync, unmodified COMPLETE
+  checker, Ruff check, Ruff format (268 files), mypy (125 modules), and toulmin --help.
+  COMPLETE: **2,156 unique nodes, all eight shards PASS**, every node assigned once with
+  no filtering, xfail or checker edits. Logs: .chief/regression-1957312 and
+  /tmp/wo-r5-complete.log. Permitted private-socket tests use unique disposable tmux
+  sockets/fake demo providers only. R1–R4/D1, old CLI/architecture/data-integrity remain green.
+- Only one new test file; all original protected assertions/fixtures/support unchanged.
+  Approved hashes rechecked: WO5 9c30504a5b35bfef94dd4f28632cf58e9c648349; legacy unit
+  3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. Frozen contract unchanged. Live recipe records
+  the classification correction without deleting, resealing or relabeling actual archives.
+- Next: stop for Chief independent review and root's R4 retry/R5 live recheck. Claude review
+  awaits researcher OAuth login, not a code verdict. Root's live task submission observation
+  is technical evidence; researcher usability and remaining live validation stay pending.
+  No real research roots/source/profiles/sessions/global settings/other workers, main,
+  integration, merge or push touched. Runtime fix and progress are committed together.
+
 ## 2026-11-18 — R5 decide archive classification regression (red first)
 
 - Read supervisor R5 in full. Root reports real workspace decide prints false missing-seal

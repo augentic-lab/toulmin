@@ -38,6 +38,13 @@ workspace-write/inherit arguments and pending-binding recovery. Root's native re
 final independent review remain pending; an expired Claude OAuth login blocked review,
 which is not a code verdict. These results are not researcher usability acceptance.
 
+Root also reported R5: a valid task-context inventory produced a false missing-seal
+diagnostic before a successful task preview/submission. Discovery now uses the declared
+change-packet path grammar before reading seals. Real CLI regressions with generated
+task/native archives retain diagnostics for genuinely missing seal/packet, tampering and
+wrong packet kind, and still offer valid changes. Root owns the live recheck; no archive
+was deleted or relabeled to conceal the error.
+
 ## A: understand and work with zero projects
 
 ```sh
