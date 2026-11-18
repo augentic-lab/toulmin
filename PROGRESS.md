@@ -1,5 +1,40 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 real trials and independent-review blocker
+
+- Worker head 8ce7450 includes R1–R3 corrections, all-profile source-rebind writer guards,
+  R4 actual AoE adapter workspace launch fix and R5 exact decision-packet classification.
+  All six registered worker checks passed: 2,156 unique tests assigned exactly once to
+  eight passing shards; Ruff lint/format, mypy (125 modules), locked sync and help pass.
+  Original assertions remain intact; only separately inspected fixture injections approved.
+  No independent review verdict and no WO3–WO5 merge into main yet.
+- Verified 18 real A/B/C CLI actions on the authorized disposable Weekly workspace:
+  zero-child A, exactly-one-child B, C reuse from zero/multiple children, separate-checkout
+  registration, duplicate refusal, replay and preservation of existing context/children.
+  Original Weekly-Projects HEAD, clean status and all 56 tracked file hashes remain exact.
+- Real native Codex read snapshots, wrote/read back the exact records probe and acknowledged
+  context. Its acknowledgment needed normal per-command escalation for host AoE runtime
+  ownership checks; no ownership bypass, credential copy or global setting change. Applied
+  only an administrative test handoff. A fresh native session read it, acknowledged its new
+  context and retrieved WO-FRESH-RECOVERY-20261118 plus the exact saved next step.
+  This is file-based recovery, not verified native-conversation resume; provider ID is null.
+- Real later derivation created the explicitly disposable technical-derived child with a
+  shared reference. Parent charter/overview/notebook/binding hashes unchanged; existing
+  workspace session retained its identity and reports stale context rather than redirecting.
+  No scientific objects, research conclusion or selected real research topic was created.
+- A real no-Claim workspace task submitted through Toulmin to a private Chief home on a
+  disposable source clone. Eight substantive red acceptance tests committed 798837a;
+  reviewed/approved decision :2 after verifying original protected files unchanged.
+  Implementation, independent review and result import remain pending. Test-only update
+  override prevented AoE transcript tracking; removed it and used normal configured
+  --no-daemon plus explicit one-time startup Skip. No global configuration was modified.
+- Blocker: Claude CLI OAuth login expired and cannot renew. Minimal direct request confirms
+  authentication failure, not a code verdict; researcher asked to run claude auth login.
+  Continue independent live verification; do not merge or declare final acceptance without
+  the required independent review. Evidence: ~/notes/toulmin/wo-supervision-20261118/.
+  Root session 01a192fa-a22e-7531-86d7-7f1fe4c99753. Original user TODO R10/R11 diff retained.
+  Technical trials do not replace researcher usability acceptance. No push.
+
 ## 2026-11-18 — WO3–WO5 delivery checkpoints and supervised correction round
 
 - Worker committed WO3 as 76b3f0b, WO4 as 4df36db and WO5 as 9f22095. These are
