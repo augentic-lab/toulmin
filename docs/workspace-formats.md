@@ -6,12 +6,6 @@ sections 5–7 with the section 10 journal for workspace changes (WI3), section 
 handoffs (WI4), section 11 native bindings and context scope (WI5), section 9 child
 creation (WI6), and section 12 legacy adoption (WI7). WS3 acceptance cases remain NOT RUN.
 
-Proposed follow-up: [WO2 workspace onboarding contract](workspace-onboarding-contract.md)
-specifies future v2 source ownership, workspace understanding and scoped operational
-records for the three accepted intake modes. It is an implementation specification pending
-review, not a change to the current contracts below. In particular, existing source catalogs,
-bindings, receipts and handoffs are not upgraded on read; WO2 defines explicit opt-in writes.
-
 This contract is additive. The seven object types, PROJECT.md, brief.md, project handoffs,
 review manifests and every other rule in [formats.md](formats.md) are unchanged (project
 object v1). Nothing here is an eighth object type, a global ID namespace or a scientific status.

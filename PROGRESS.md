@@ -1,5 +1,21 @@
 # Toulmin development progress
 
+## 2026-11-18 — Repair WO2 released-contract baseline drift
+
+- WO3–WO5's test-first full run exposed three old failures: workspace-format packaged
+  copy equality, released digest coverage and workspace-only initialization. Cause was
+  the WO2 proposed-contract cross-reference added to the canonical released format but
+  intentionally not to its shipped template/digests; runtime itself had not changed.
+- Restored docs/workspace-formats.md to exact pre-WO2 released bytes. The accepted new
+  specification stays in docs/workspace-onboarding-contract.md and remains linked from
+  development design/TODO. Do not ship a forward link to an absent runtime framework file.
+- Verified the six affected parameterized checks pass (adoption digest coverage, packaged
+  framework equality, workspace initialization). This documentation baseline repair is
+  separate from WO3 implementation/test approval. Worker will incorporate it before build.
+- No source/runtime/test edits, research data or existing TODO changes modified. Diff check
+  passed; no broader repeated suite for restoring the already-tested released document.
+  Ongoing supervised execution; session ID unavailable, local commit only, no push.
+
 ## 2026-11-18 — Preliminary native probe failure and restored CLI installation
 
 - During WO3–WO5 test preparation, a disposable legacy fixture verified real AoE stores
