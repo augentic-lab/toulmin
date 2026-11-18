@@ -29,11 +29,20 @@
   installed CLI help and diff checks pass. Full required suite: 1,899 passed in 756.99
   seconds, with private-socket access for the existing fixture-only tmux tests; no real
   provider session used. Installed CLI subprocess preflight also passed with a fake AoE
-  executable and isolated homes/config; fresh committed-worktree check next.
+  executable and isolated homes/config.
+- Fresh detached worktree /tmp/toulmin-o3-fresh-0IRHby at implementation commit dd82c89:
+  locked offline dev/TUI install, installed CLI help and real CLI subprocess smoke passed.
+  Disposable fake AoE verified unknown-policy refusal, quoted paths, persisted opt-in,
+  reuse, simulated restart identity, replacement with saved args, live policy-change
+  refusal and explicit inheritance. Source bytes/native-config canary stayed unchanged;
+  submitted context had no acknowledgment. Fixtures: /tmp/toulmin-o3-installed-cli-eds1tgyy;
+  worker ledger: .chief/build-fresh-cli.log and .chief/verify_fresh_cli.py. Both worktrees
+  were clean before this progress-only update; no source change followed the full suite.
 - No real provider session, trust prompt, live AoE/research workspace, global Codex/AoE
   configuration or main working tree changed. Tests are technical evidence; Chief's
   independent cross-model delivery review and researcher/native usability acceptance
-  remain separate. Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. No push.
+  remain separate. Next: Chief's independent delivery review; native trust and researcher
+  usability acceptance stay pending. Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. No push.
 
 ## 2026-11-18 — O3 general Codex permissions: acceptance-test phase
 
