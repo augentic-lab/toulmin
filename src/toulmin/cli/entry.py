@@ -190,6 +190,12 @@ def open_research(
     new_session: NewSession = False,
     attach: Attach = None,
     codex_sandbox: CodexSandbox = None,
+    workspace: Annotated[
+        bool,
+        typer.Option(
+            "--workspace", help="Explicit workspace; overrides child-directory inference."
+        ),
+    ] = False,
 ) -> None:
     """Open the workspace session, or a child's, from wherever you are.
 
@@ -198,6 +204,8 @@ def open_research(
     awaiting your review, then runs `aoe open` for the chosen scope. Preferences come from
     `toulmin config show`; `toulmin workspaces` lists the known workspaces.
     """
+    if workspace and project is not None:
+        raise typer.BadParameter("give PROJECT or --workspace, not both")
     if project is not None:
         try:
             validate_project_name(project)
@@ -216,10 +224,21 @@ def open_research(
     if (
         codex_sandbox is not None
         and project is None
-        and (root is not None or _child(here, base) is None)
+        and (workspace or root is not None or _child(here, base) is None)
     ):
-        # Reject an inapplicable permission choice before offering initialization.
-        raise typer.BadParameter("select an external-source project", param_hint="--codex-sandbox")
+        from toulmin.application.sources import resolve_working_source
+
+        try:
+            selected_source = (
+                resolve_working_source(base, None) if state == RootState.WORKSPACE else None
+            )
+        except (OSError, ValueError) as error:
+            raise _fail(str(error)) from error
+        if selected_source is None:
+            raise typer.BadParameter(
+                "select an external-source project or a source-backed workspace",
+                param_hint="--codex-sandbox",
+            )
     unfound = {RootState.MISSING, RootState.EMPTY, RootState.INCOMPLETE, RootState.UNRELATED}
     if state in unfound and root is None and project is None:
         items = listing()
@@ -237,7 +256,7 @@ def open_research(
             f"{base} is not a Toulmin workbench and is not empty; nothing was initialized. "
             "Create a workspace in an empty directory: toulmin init DIR"
         )
-    if project is None and root is None:
+    if project is None and root is None and not workspace:
         project = _child(here, base)
     if state is RootState.LEGACY and project is None:
         typer.echo(

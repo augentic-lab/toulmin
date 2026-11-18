@@ -266,11 +266,14 @@ def reject_task(root: Path, project: str, relative: str, actor: str, reason: str
         return marker
 
 
-def engineering_task_ids(root: Path, project: str) -> tuple[str, ...]:
+def engineering_task_ids(root: Path, project: str | None) -> tuple[str, ...]:
     """Task identities requiring Chief-state checks before workspace removal."""
     repository = Repository(root)
-    repository.project(project)
-    folder = repository.path(f"projects/{project}/runs/proposals")
+    if project is not None:
+        repository.project(project)
+    from toulmin.core.scope import Scope
+
+    folder = repository.path(f"{Scope(project).records('runs')}/proposals")
     identities: set[str] = set()
     if not folder.exists():
         return ()

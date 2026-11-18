@@ -1,0 +1,61 @@
+"""V1 source data is preserved while the common rebind safety boundary is enforced."""
+
+import pytest
+
+from tests.acceptance.test_wo5_compatibility import legacy_workspace
+from tests.acceptance.wo_support import git, invoke, repository, tree
+from toulmin.adapters.aoe import AoESession
+from toulmin.application.sources import filesystem_identity
+from toulmin.core.sources import render_bindings
+
+
+@pytest.mark.parametrize(
+    "writer", ["old", "new", "moved-old-inode", "unknown", "unrelated", "none"]
+)
+def test_v1_rebind_guards_selected_checkouts_without_upgrading_data(
+    wo, native, monkeypatch, writer
+):
+    catalog = legacy_workspace(wo)
+    local = wo.root / "tools/sources.local.toml"
+    local.write_bytes(
+        render_bindings({"source-main": (str(wo.source), filesystem_identity(wo.source))})
+    )
+    target = wo.tmp / "clone"
+    git(wo.source, "clone", "-q", str(wo.source), str(target))
+    if writer == "unknown":
+        native.lookup_error = True
+    elif writer != "none":
+        cwd = target if writer == "new" else wo.source
+        if writer == "moved-old-inode":
+            cwd = wo.tmp / "moved-old"
+            wo.source.rename(cwd)
+        elif writer == "unrelated":
+            cwd = repository(wo.tmp / "unrelated")
+        native.other = [
+            (
+                "other-profile",
+                AoESession("f" * 16, cwd, "codex", "live", "idle", "native-writer", "Other"),
+            )
+        ]
+    monkeypatch.setattr("toulmin.adapters.aoe.AoEClient", lambda *a, **kw: native)
+    before = tree(wo.root)
+    refuse = writer not in {"unrelated", "none"}
+    invoke(
+        "source",
+        "bind",
+        "source-main",
+        target,
+        "--root",
+        wo.root,
+        "--confirm",
+        code=1 if refuse else 0,
+    )
+    after = tree(wo.root)
+    if refuse:
+        assert after == before
+    else:
+        assert {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)} == {
+            "tools/sources.local.toml"
+        }
+    assert (wo.root / "sources.toml").read_bytes() == catalog
+    assert not native.created and not native.sent

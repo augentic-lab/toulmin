@@ -15,8 +15,8 @@ records and read others only when the researcher asks.
 
 | Scope | Resident inputs | Your outputs |
 | --- | --- | --- |
-| Workspace | this file, WORKSPACE.md, the applied sessions/ record named by its last_handoff | root runs/ |
-| Project: NAME | this file, WORKSPACE.md (read-only charter), projects/NAME/PROJECT.md, brief.md, its applied handoff | projects/NAME/runs/ |
+| Workspace | this file, WORKSPACE.md, confirmed root overview.md, sources.toml, applied handoff and labeled bounded notebook excerpt | root runs/ |
+| Project: NAME | this file, WORKSPACE.md, its charter/Brief/overview/handoff; shared overview only when explicitly pinned in its creation | projects/NAME/runs/ |
 
 Never substitute an unconfirmed draft, an activity record or an orphan session file for the
 applied handoff. Independent task sessions follow their role's input list instead
@@ -25,6 +25,22 @@ Details: framework/workspace-formats.md.
 
 ### Workspace sessions
 
+Workspace discussion, maintenance and ordinary engineering require no child, Claim, Spec or
+research gate. Overall repository understanding and shared logical sources belong here.
+Read framework/onboarding.md for current workspace-first forms; exact v2 schemas are in
+framework/workspace-onboarding-contract.md (its WO2 status labels are historical).
+
+- Work question first. Append unconfirmed entries with `toulmin workspace note --input FILE`
+  (workspace writer lock); never rewrite root runs/notebook.md observations: Source/snapshot, Author/model/session (unknown when unknown),
+  Coverage, Limits, then Observation and Next measurement. Qualify [[project/C-001]] links.
+- Offer a reviewed understanding checkpoint when useful: `toulmin draft overview --workspace`,
+  fill its body, then `toulmin overview --workspace --input FILE --source ID --rationale TEXT`.
+  This creates a proposal; the researcher decides it. Never hand-edit confirmed overview.md.
+- For substantial engineering, offer `toulmin draft task --workspace --source ID`; fill its
+  Goal/Scope/checks/protected paths/budget and show `toulmin task preview --workspace FILE`.
+  The researcher uses `toulmin decide --workspace` to submit through Chief. No Spec/Claim is
+  required and no scheduler/kickoff is implied. Imports are operational workspace Runs;
+  do not promote them to scientific Evidence without a separate reviewed project workflow.
 - Explore freely; no approval is needed to write in root runs/. Record a bounded exploration
   as runs/<UTC stamp>-activity-<32 hex>/activity.md. Keep the researcher's corrections in
   their own words, and state capture coverage honestly (full, selected, summary or unknown,
@@ -37,8 +53,9 @@ Details: framework/workspace-formats.md.
   a proposal; do not wait to be asked.
 - A child project is created only from a reviewed packet: write a creation input under
   runs/drafts/ (question, scope, unresolved assumptions and the initial Brief), run `toulmin
-  project propose NAME --input FILE`, show the packet and say it awaits `toulmin decide`.
-  Never create project directories by hand or force a first Claim.
+  project propose NAME --input FILE --source ID [--working-source ID]`, show the packet and say it awaits `toulmin decide --workspace`.
+  Source flags link existing workspace definitions, never inherit a working choice or move
+  workspace history/code. Never create project directories by hand or force a first Claim.
 - Creating a child starts no session. Opening it is a separate `toulmin aoe open NAME` step in
   its own session; this workspace session continues. Do not work on a project's objects here.
 - End a workspace session with a summary under runs/drafts/ and `toulmin aoe handoff
@@ -85,12 +102,13 @@ stage. Its optional overview.md is researcher-confirmed context; runs/notebook.m
 unconfirmed working observations. Native recovery loads a bounded recent notebook excerpt,
 never a complete transcript. Begin by discussing the project's current work and the smallest
 useful next action. Offer a draft task for substantial development; confirmation creates a
-Spec and Chief build request without requiring a Claim.
+bounded Chief task without requiring a Claim or Spec.
 
-A registered working source is separate from shared resources and research records. When the
+A workspace or project working source is a selection, not a permission grant. A registered working source is separate from shared resources and research records. When the
 session context names an external code checkout as cwd, follow that repository's AGENTS.md
 and development rules for code edits, tests and code commits. Keep all research outputs in
-absolute projects/NAME/runs/ paths in this workspace and use --root for Toulmin commands.
+the selected scope's runs/ in this workspace and use --root for Toulmin commands. Read the
+ignored local.json for actual v4 paths and its executable acknowledgment command.
 This workspace's no-commit rule governs research records; it does not replace the external
 repository's code commit policy. Preserve native permissions and resolve trust prompts in
 the native CLI. Chief runs implementation in separate worktrees. A source-path or identity

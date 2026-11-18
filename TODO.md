@@ -474,10 +474,11 @@ sources belong to the workspace. Projects may be created during intake or later.
 This supersedes O's mandatory initial-child assumption; historical completion records
 and existing data remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
 Current authorization: supervise/accept/merge the permission and WO2 Chief deliveries, then
-implement WO3–WO5 in a new supervised worker from that integrated baseline. Implementation
-and live scenarios remain NOT RUN until actual evidence is recorded. The existing permission
-task retains its scope. The researcher authorized repeated rebuilds of the disposable
-weekly-projects-research workspace for final trials; original source data must be preserved.
+implement WO3–WO5 in a new supervised worker from that integrated baseline. Technical
+implementation, integrated checks and root-owned live trials are recorded in PROGRESS.md;
+researcher usability acceptance remains pending. The permission task retained its scope.
+The researcher authorized repeated rebuilds of the disposable weekly-projects-research
+workspace for final trials; original source data is preserved.
 
 - [x] WO1 — Record accepted A/B/C modes, ownership, workflow, confirmation and compatibility
   boundaries. Distinguish current executable behavior from the accepted design.
@@ -489,18 +490,34 @@ weekly-projects-research workspace for final trials; original source data must b
   Specification delivered: [WO2 contract](docs/workspace-onboarding-contract.md), including
   exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
   Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
-  for implementation on 2026-11-18. Runtime/live cases remain pending.
-- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+  for implementation on 2026-11-18. Runtime and live technical verification is recorded
+  in PROGRESS.md; researcher usability acceptance remains separate.
+- [x] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,
   stale/tampered input, replay and interruption recovery cannot partially publish a child.
-- [ ] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
+  V1 and v2 share the same selected old/new path/saved-inode/all-profile guard, with no
+  catalog exemption. Approved v1 amendment is applied/committed before the runtime fix;
+  v1 catalog bytes/roles/identity and preview/offline purity are verified. R1–R3 stay green.
+  Protected fixture audit and exact validation evidence are recorded in PROGRESS.md.
+- [x] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
   Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
   permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
   workspace task/results pin scope/source version; child creation never redirects a live session.
-- [ ] WO5 — Implement later optional project derivation and perform compatibility/trial checks.
+- [x] WO5 — Implement later optional project derivation and perform compatibility/trial checks.
   Acceptance: reviewed derivation links shared source references without moving history/code;
   old catalog/binding/receipt and explicit-child fixtures pass; disposable live A/B/C journeys
   include C source reuse, workspace-only work, later child creation and fresh-session recovery.
   Researcher usability acceptance remains a separate explicit ruling.
+  Derivation, generated guides/docs and the automated matrix are implemented. R1–R6,
+  legacy compatibility and both approved fixture amendments pass: all 2,202 tests and
+  six required checks also pass on the integrated main tree. Researcher-run Claude
+  reviews passed at d4c74ac (feature; limited spot-check coverage recorded) and cc3d395
+  (disposable helper). Real Weekly A/B/C, source reuse, workspace-only Chief work with
+  confirmed terminal result import/replay, later child derivation and fresh restoration
+  are recorded in PROGRESS.md and the external supervision ledger.
+- [ ] WO usability ruling — Researcher tries the integrated workflow and explicitly rules
+  on usability. Agent-run technical trials and independent code review are complete;
+  neither is a substitute for this ruling. Legacy O's provider-specific manual acceptance
+  remains separate; the live native trial here used Codex.

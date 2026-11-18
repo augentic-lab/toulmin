@@ -253,10 +253,9 @@ class AoEClient:
             codex_sandbox not in {"workspace-write", "inherit"}
             or agent != "codex"
             or add_directory is None
-            or project is None
         ):
             raise AoEError(
-                "codex_sandbox requires workspace-write or inherit for a Codex project "
+                "codex_sandbox requires workspace-write or inherit for a Codex session "
                 "with an additional records directory"
             )
         root = root.expanduser().resolve()
@@ -267,6 +266,17 @@ class AoEClient:
             directory = add_directory.expanduser().resolve()
             if not directory.is_dir():
                 raise AoEError(f"Additional native directory is not a directory: {directory}")
+            if (
+                project is None
+                and codex_sandbox is not None
+                and (root.is_relative_to(directory) or directory.is_relative_to(root))
+            ):
+                # Workspace source and records grants are distinct. Resolve first so
+                # aliases cannot turn the workspace grant into access to its parent.
+                raise AoEError(
+                    "codex_sandbox requires separate, non-overlapping workspace code "
+                    "and records directories"
+                )
             # AoE persists this shell-quoted string for resume/restart. Only a local
             # explicit choice adds a sandbox; native trust/approvals remain untouched.
             native = ["--sandbox", "workspace-write"] if codex_sandbox == "workspace-write" else []

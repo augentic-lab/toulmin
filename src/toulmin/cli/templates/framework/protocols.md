@@ -1298,3 +1298,59 @@ and forgets the list entry, stopping at the first failure with what was already 
 Code repositories, Chief state, worktrees and git remotes are never touched. No file format
 changes.
 
+
+## WO3–WO5 — Reviewed workspace-first repository intake and continued work
+
+L2 now publishes workspace-owned source/understanding records with optional owned child
+creation, because a body of existing work need not be an independent research question.
+The additive schemas, exact publication allow-lists, A/B/C roles and opt-in v1 conversion
+are frozen in [workspace-onboarding-contract.md](workspace-onboarding-contract.md).
+[onboarding.md](onboarding.md) describes executable forms. Historical entries above retain
+their original scope/status; no scientific gate or old object format is replaced.
+
+- Observations and external identity/Chief/native operations stay in L3. L1 validates strict
+  bytes/schema/pins; L2 validates exact catalog/overview/child before/after semantics and
+  forwards approved journal images. The child archive/marker publish together before the
+  final outer seal. Ownership discovery does not rely on an intact marker. Both receipts
+  reuse v1 and freeze the original actor/time; no digest cycle or partial usable child.
+- Native v4 separates portable resident snapshots from ignored local cwd/manifest/receipt.
+  Relevant source/selection/permission/notes bytes stale context; explicit selection or
+  child creation never redirects/reuses another scope's writer. Checkout → root → child →
+  binding locks coordinate writers across profiles and with record mutations. Interactive
+  permission choice is unlocked, then revalidated through the existing local mechanism.
+- Scoped Chief tasks need no Claim/Spec/gate. Applying outcome plus exact local frozen export
+  precede external creation; uncertain outcomes reconcile the same ID/home/host/base.
+  Workspace result Run-shaped records have no formal IDs; project results keep ordinary
+  Runs. Raw machine-path-bearing artifacts remain ignored, with portable digests and
+  availability limits. Failed/rejected results remain provenance, never scientific rulings.
+
+Readers never migrate, recover, re-anchor or fall back to an old artifact. Existing v1
+project catalogs/packets/tasks and v1/v2/v3 native archives retain their original paths and
+meanings. Source upgrade is an explicit reviewed journal transaction; old opaque identities
+that cannot satisfy strict v2 refuse conversion rather than changing provenance.
+Automated technical evidence and live/human acceptance remain separate; the supervisor's
+[pending live recipe](workspace-onboarding-acceptance.md) is not an executed ruling.
+
+### WO supervisor integration corrections
+
+- New portable discriminators and versions validate their types before use. Scope parser
+  failures become domain errors at the new portable boundary; the older Scope API remains
+  compatible. Malformed input is refused without normalizing or rewriting its bytes.
+- Source rebind for either catalog version holds only the selected source's old/new
+  checkout locks, then the root
+  lock, and checks all profiles by canonical path and saved old filesystem identity.
+  Unknown inventory or matching unknown lifecycle refuses; unrelated source writers do
+  not prevent a distinct rebind. V1 data/format/roles/identity remain unchanged; only the
+  common operational safety boundary is enforced. Preview/offline observations never
+  construct a native client or reserve a writer.
+- Workspace operational Run session_id is a reported native identity or null. The current
+  Chief adapter supplies only an AoE session ID, so that header stays null; import.json and
+  private task facts retain the original AoE attribution. Legacy project Run attribution
+  is unchanged. Tool/command remain separate from an unknown model identity.
+- L2 handoff receipt validation/discovery accepts declared workspace-owned v2 onboarding,
+  understanding, source, derivation and catalog-upgrade transactions in addition to v1
+  workspace changes. Validate the seal, receipt record/digest/disposition, archived effects
+  and owned child receipt where present. Do not compare historical results with today's
+  legitimately changed targets or recover/migrate on read. Project-only legacy receipts
+  gain no workspace authority from their filename. Rejected/tampered receipts cannot be
+  cited; applied handoff restoration retains confirmed changes rather than omitting them.

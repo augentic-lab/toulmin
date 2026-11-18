@@ -1,5 +1,54 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 integrated and real Weekly workflow technically verified
+
+- Researcher manually ran both independent Claude/Sonnet reviews and supplied pass /
+  Issues:none cards at exact clean heads d4c74ac (feature) and cc3d395 (disposable helper).
+  Verified persisted reviews, heads and approved protected hashes: WO5 fixture
+  9c30504a5b35bfef94dd4f28632cf58e9c648349; legacy unit fixture
+  3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. Both Chief tasks accepted/closed; sessions
+  archived, branches/worktrees retained. No additional external review was triggered.
+- Review limitation: feature reviewer explicitly spot-checked one runtime file because
+  its diff was truncated. Root additionally inspected source writer/rebind locks, native
+  policy and v4 receipt validation, sealed onboarding effects/journal/ownership, frozen
+  task authority and terminal result publication. This is a supervisor audit, not another
+  independent model review. Sparse unchanged-base legacy compatibility risk retained;
+  host/home/command remain checked separately against frozen local intent. Full evidence:
+  ~/notes/toulmin/wo-supervision-20261118/supervisor-integration-audit.md.
+- Local no-ff integration preserves all feature commits. The sole merge conflict was
+  PROGRESS.md: all 154 main sections and 167 worker sections preserved, deduplicating exact
+  shared sections and retaining 20 additional worker entries. Runtime, tests and packaged
+  framework documents remain byte-identical to reviewed d4c74ac; only development
+  TODO/progress metadata was updated. Original user TODO additions were privately backed
+  up/stashed for restoration after commit and are excluded from this integration.
+- **Verified on integrated main: all six required commands PASS**, including **2,202
+  unique collected tests**, each assigned once across eight passing shards, locked offline
+  dev+tui sync, Ruff lint/format, mypy 126 modules and CLI help. Evidence directory:
+  ~/notes/toulmin/wo-supervision-20261118/main-checks-1794996580/. No skipped/filtered
+  acceptance substitution; automated/fake-tool tests remain distinct from live trials.
+- Real no-Claim Chief task finished at cc3d395; explicit confirmed result import created
+  runs/20261118T041224Z-task-1916cdaa1fe4-result/run.md. Artifact hashes, original source
+  baseline/accepted tests/implementation commit lineage, ignored raw-file privacy and
+  null model/native-session attribution verified. Repeated confirmed import preserved all
+  144 portable/local files, with no second Run or scientific object. Original source
+  HEAD, clean status and all 56 tracked file hashes remain unchanged.
+- Earlier 18 real A/B/C actions and later reference-only child derivation passed. Final
+  integrated-main CLI created fresh workspace session c878d21db8994983 in isolated profile
+  toulmin-wo-acceptance, cwd Weekly-Projects, with saved workspace-write/records grants.
+  Context b646b72ef89e409081b8ae58f25ed06d uses the MAIN interpreter; its actual receipt
+  was read back. Native recovered WO-FRESH-RECOVERY-20261118, exact saved next step,
+  imported result cc3d395, original source baseline 553e09c and null model/session fields
+  from only the three named records. One-time updater Skip and normal per-command host
+  acknowledgment were needed; no global configuration or permission defaults changed.
+- WO3–WO5 technical criteria checked off. Researcher usability ruling remains explicitly
+  pending, as does legacy O's separate provider-specific acceptance (this native trial used
+  Codex). Native provider ID is unavailable from AoE: this verifies fresh file restoration,
+  not opaque native-conversation resume. technical-derived is an explicit disposable
+  test child, not an adopted scientific direction; no research ruling was made.
+- Next: restore and verify the original user TODO diff, leave the final acknowledged Weekly
+  session usable, and obtain researcher usability feedback. No push. Root session
+  01a192fa-a22e-7531-86d7-7f1fe4c99753; external supervision ledger retains all trial evidence.
+
 ## 2026-11-18 — Manual independent-review instructions
 
 - Researcher chose to perform the blocked step manually. Rechecked actual Chief task
@@ -130,6 +179,605 @@
 - Next: supervise incremental WO3–WO5 implementation, meaningful extra tests, full checks,
   independent review and local integration; root-owned Weekly Projects trials remain pending.
   Original user TODO diff preserved. Ongoing execution; session ID unavailable, no push.
+
+## 2026-11-18 — R6 test-first Chief lifecycle imports corrected; all checks pass
+
+- **Verified:** shared L3 application/chief_contract.py distinguishes frozen source
+  base_branch from Chief's mutable accepted-test scope base. An advanced base requires
+  matching immutable base_branch, complete matching contract, explicit test_first/build
+  transition, retained portable protections, and available full-commit ancestor lineage.
+  Missing/ambiguous/conflicting/unrelated lineage, changed checks/goal/repo and weakened or
+  malformed protections refuse with FormatError. Result HEAD must descend from scope base.
+- Scoped task reconciliation/import use that validator without changing frozen submission,
+  SourcePin, original contract, host/Chief-home/command checks, source baseline or result
+  attribution. Commit/diff summaries still begin at ORIGINAL source baseline, retaining
+  accepted-test and implementation commits. Normal nonterminal tasks now reach the intended
+  done/abandoned refusal; validation never starts checks, a worker or scientific approval.
+- Test-first 81f3404: **12 intended failures / 34 controls** before runtime changes
+  (/tmp/wo-r6-red.log). **78 focused PASS** (/tmp/wo-r6-focused.log), including all 46 new
+  cases, original engineering tests, WO4 tasks and R2 attribution. Workspace/project v2
+  done/abandoned import/replay, reconciliation and six nonterminal CLI scenarios pass.
+  Separate real temporary Git worktrees model accepted-test/build commits; source HEAD
+  stays frozen, preview bytes unchanged and no second fake Chief new occurs.
+- Legacy assessment: O4 v1 engineering import had the same false base equality and now
+  shares advanced-base validation with unchanged paths/schema/Run/session attribution.
+  Existing legacy tests exposed historical reported tool/command attribution independent
+  of launcher config; retain that only on unchanged-base legacy records. Advanced records
+  require the complete contract; v2 always retains strict frozen-field authority. Sparse
+  older Chief metadata remains compatible at the unchanged known baseline; unproven
+  lineage refuses without repair. No original test/assertion/support state was changed.
+- Separate legacy application/build_import.py (Spec/claim/G4 route) already allows an
+  advanced base, but its commit/diff summaries start at mutable task.base, potentially
+  excluding approved-test commits. Inspected and reported; left its historical research
+  behavior unchanged because R6 corrects engineering import, not scientific adjudication.
+- **All six registered commands exit 0:** locked offline dev+tui sync; unmodified COMPLETE
+  checker; Ruff check; Ruff format (270 files); mypy (126 modules); toulmin --help.
+  COMPLETE: **2,202 unique nodes / eight passing shards**, every node assigned exactly once;
+  .chief/regression-2342004 and /tmp/wo-r6-complete.log. No filters/xfail/checker modifications
+  or type/lint ignores. R1–R5/D1 and old CLI/architecture/data-integrity remain green.
+  Private-socket runtime cases use unique disposable sockets/fake providers only.
+- Approved old blobs unchanged: WO5 9c30504a5b35bfef94dd4f28632cf58e9c648349 and legacy
+  unit 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. Frozen contract and L1/L2 unchanged;
+  no migration, main/other-worker/global/source/session changes, merge or push. Specified
+  live Chief task.json and Chief source were read ONLY; no real Chief/model was executed.
+- Next: stop for Chief independent review and root's live retry/import after terminal Chief
+  state. Claude review remains OAuth-blocked, not a verdict; technical tests are not
+  researcher usability/scientific acceptance. Remaining live/human criteria stay pending.
+  Session unavailable; root owns live state, completion/review decisions and integration.
+
+## 2026-11-18 — R6 Chief test-approval lifecycle regressions (red first)
+
+- Root reports result preview rejects a normal test-first engineering build because Chief
+  advances mutable task.base to accepted-test HEAD and extends protections. Read Chief's
+  approve_tests/prepare_new_task/start_task implementations and the specified live task.json
+  **read only**: original base_branch remains 553e09c..., base is 42d196a..., phase build.
+  No live Chief task/source/session/config was modified or executed. Session unavailable.
+- New tests/acceptance/test_wo_chief_lifecycle.py models that transition using real temporary
+  Git worker worktrees/accepted-test and helper commits with fake Chief creation/state only.
+  Original source HEAD remains frozen. **Verified RED: 12 intended failures / 34 controls
+  pass**, /tmp/wo-r6-red.log. Cases cover workspace/project v2 import/replay/reconciliation,
+  done/abandoned versus nonterminal gating, immutable conflicts/missing/ambiguous/unrelated
+  lineage, changed authority/weak protections, sparse older records, and legacy O4 imports.
+- Decision: advanced scope base requires a matching immutable source baseline, normal
+  test-first/build lifecycle and Git ancestry; protected additions must retain originals.
+  Preserve original baseline in submission/contract/pin/commit summaries. Missing provenance
+  refuses without rewriting data; no blanket contract-validation removal. Commit tests first.
+- Legacy O4 engineering import has the same equality defect and will share the bounded
+  correction with unchanged v1 data paths. Separate legacy Spec build import already allows
+  advanced base but uses mutable base for summaries; report this existing limitation while
+  preserving its research/G4 path. Independent review awaits Claude login; root owns live
+  trials. No approved original tests/support, frozen contract, main, global settings, merge
+  or push changed. Next: minimal fix and full registered checks, then stop for Chief review.
+
+## 2026-11-18 — R5 exact decision discovery corrected; registered checks pass
+
+- **Verified:** decide classifies onboarding/context-change candidates using each protocol's
+  declared DIRECTORY.fullmatch before reading seal, receipt or packet dependencies. Valid
+  task-context and aoe-context archives no longer produce false missing-seal errors. Genuine
+  exactly named incomplete/damaged packets retain normal dependency/seal/schema diagnostics;
+  valid context changes remain offered. Only cli/decide.py runtime changes; no L1/L2 or
+  format, transaction, permissions, data paths or archival writes changed. Session unavailable.
+- Test-first 8b1e2da records seven intended failures and one passing incomplete-packet
+  control before runtime changes. All eight new CLI cases now pass; focused old decide,
+  onboarding, workspace task and R4 real-adapter suites: **73 PASS** (/tmp/wo-r5-focused.log).
+  Real task/context generation and decision preview/skip run with fake native service and
+  private Chief state only. Source and records snapshots prove discovery/skip is read-only.
+- **All six registered commands exit 0:** locked offline dev+tui sync, unmodified COMPLETE
+  checker, Ruff check, Ruff format (268 files), mypy (125 modules), and toulmin --help.
+  COMPLETE: **2,156 unique nodes, all eight shards PASS**, every node assigned once with
+  no filtering, xfail or checker edits. Logs: .chief/regression-1957312 and
+  /tmp/wo-r5-complete.log. Permitted private-socket tests use unique disposable tmux
+  sockets/fake demo providers only. R1–R4/D1, old CLI/architecture/data-integrity remain green.
+- Only one new test file; all original protected assertions/fixtures/support unchanged.
+  Approved hashes rechecked: WO5 9c30504a5b35bfef94dd4f28632cf58e9c648349; legacy unit
+  3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. Frozen contract unchanged. Live recipe records
+  the classification correction without deleting, resealing or relabeling actual archives.
+- Next: stop for Chief independent review and root's R4 retry/R5 live recheck. Claude review
+  awaits researcher OAuth login, not a code verdict. Root's live task submission observation
+  is technical evidence; researcher usability and remaining live validation stay pending.
+  No real research roots/source/profiles/sessions/global settings/other workers, main,
+  integration, merge or push touched. Runtime fix and progress are committed together.
+
+## 2026-11-18 — R5 decide archive classification regression (red first)
+
+- Read supervisor R5 in full. Root reports real workspace decide prints false missing-seal
+  diagnostics for a valid task-context inventory before its correct task preview; submission
+  succeeded. Discovery broadly matches *-context-* and reads seal before the declared
+  protocol grammar. Runtime remains 4c28869 during this test-first checkpoint.
+- Added only tests/acceptance/test_wo_decide_packet_discovery.py. Real draft task creates
+  inventory/pins; real native context generation uses fake native service; real decide CLI
+  inventories/previews/skips with private Chief state and a forbidden-new sentinel. No real
+  native/model/Chief, live research roots, source, sessions or global settings accessed.
+- **Verified RED: 7 intended failures / 1 passing control**, /tmp/wo-r5-red.log. Cases
+  require quiet interactive/noninteractive discovery for both valid archive families, exact
+  diagnostics for missing seal/packet, tampering and wrong kind, and a valid context change
+  still offered. Standalone exactly named incomplete change retains its existing diagnosis.
+- Decision: use existing declared protocol regexes before dependency reads, preserve all
+  seal/receipt/schema validation and report genuine damage. No blanket missing-seal catch.
+  Commit tests before fix; then affected/full registered checks and stop for independent
+  review. Root owns ongoing live tests/R4 retry; Claude review awaits OAuth login. Technical
+  evidence is not researcher usability acceptance. Session unavailable; no merge/push/main.
+
+## 2026-11-18 — R4 real workspace launch corrected; registered checks pass
+
+- **Verified:** the real AoE adapter now permits explicit workspace Codex workspace-write
+  and inherit with an existing separate records directory. It retains printable title,
+  supported agent/mode and existing-directory validation; canonical equal/nested workspace
+  code/records grants refuse before transport. Project/Claude behavior remains compatible.
+  Only adapters/aoe.py runtime changes; no L1/L2, native policy/binding schema, global
+  configuration, trust/approval defaults or scientific behavior changed. Session unavailable.
+- Test-first commit 177c870 records four intended R4 failures and 20 passing controls before
+  correction. Its 24 fake-command-only real-adapter cases now pass. Focused launch-policy/
+  permission/real-adapter suite: **84 PASS**, /tmp/wo-r4-focused.log. Actual create/show/
+  readiness/send and workspace CLI/policy/context execute; no provider/AoE/Chief is run.
+- Pending v4 prelaunch state retries through existing explicit --new-session: no candidate
+  permits one add and archives failed bytes; an existing matching creation recovers its ID
+  without another add. Repeat open preserves stored args and sends no duplicate context.
+  The live recipe documents exact retry and inspection forms; root owns its real execution.
+- **All six registered commands exit 0:** locked offline dev+tui sync; COMPLETE unmodified
+  checker; Ruff check; Ruff format (267 files); mypy (125 modules); toulmin --help.
+  COMPLETE: **2,148 unique nodes, all eight shards PASS**, each node assigned once, no
+  filtering/xfail/checker edits. Logs: .chief/regression-1795802 and /tmp/wo-r4-complete.log.
+  Permitted private-socket tests use unique /tmp/toulmin-native-test-* sockets and fake
+  provider demos only. R1–R3/D1 and old CLI/architecture/data-integrity tests remain green.
+- Both approved protected blobs still exactly match: WO5 test 9c30504a5b35bfef94dd4f28632cf58e9c648349;
+  legacy unit test 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d. No old tests/assertions/support
+  or frozen contract modified. Preserve the historical c69 vs current 3c audit above.
+- Next: stop for Chief independent review and root's native retry/live trials. Claude review
+  awaits researcher OAuth login, not a code verdict. Root's reported 18 real A/B/C actions
+  and unchanged original source are technical observations; native real retry and researcher
+  usability acceptance remain pending. No main/live research/profile/session/global changes,
+  other-worker operations, integration, merge or push were performed.
+
+## 2026-11-18 — R4 real adapter regression, failing before correction
+
+- Root's live R4 on 092510d reopens native launch completion: source-backed workspace
+  Codex fails prelaunch because real AoEClient.create rejects project=None when a
+  sandbox is explicit. Read supervisor R4 in full. Root separately reports 18 real
+  A/B/C CLI operations passed with original source preserved; not researcher acceptance.
+- Added only tests/acceptance/test_wo_real_aoe_workspace.py. Actual create/show/readiness/
+  send, CLI routing, scoped policy and binding/context run above fake command transport.
+  No real AoE/model/Chief/global config or research data. Existing tests unchanged.
+- **Verified RED: 4 intended failures / 20 passing controls**, /tmp/wo-r4-red.log:
+  direct workspace-write/inherit, CLI workspace-write and known prelaunch retry fail
+  with the live diagnostic. Controls cover explicit inherit, uncertain creation recovery,
+  title/agent/mode/directory validation and project/Claude compatibility. Tests inspect
+  exact persisted native arguments, single creation, context delivery and failed history.
+- Decision: preserve explicit --new-session recovery and fail closed for equal/nested
+  workspace code/records grants; retain project/Claude behavior and protected assertions.
+  Next: commit these tests before runtime fix, then affected/full registered checks.
+  Independent Claude review blocked by OAuth login; root owns login/live trials. Session
+  unavailable. No merge/push/main or live profile/session/research/global modifications.
+
+## 2026-11-18 — Protected approval audit distinction (no code changes)
+
+- Latest Decision names unit-test blob c69b043a58e9e58e2a96eb1a5e596d38cb94f4c3 as
+  approved. **Verified current file instead remains at previously explicitly approved
+  3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d**, unchanged since bc3fd01. The newly named
+  blob is b90b519's multiline fixture-signature state, before required Ruff formatting.
+- Read both complete blobs and confirmed identical module ASTs; exact bytes differ only
+  by joining the approved fixture signature onto one line. WO5 compatibility-test hash
+  9c30504a5b35bfef94dd4f28632cf58e9c648349 still matches. Preserve both approval audits;
+  no test/runtime/frozen-contract or Chief approval metadata changed. Further edits still
+  require renewed approval. Existing 2,124-pass runtime/check evidence remains applicable.
+- Next: Chief reconcile its protected-state record with the already approved current
+  blob, then complete independent review. No code tests repeated for this documentation-
+  only audit; hash/AST/exact-diff and whitespace checked. Root live/human remains pending.
+  Session unavailable; no main/global/research/session changes, merge or push.
+
+## 2026-11-18 — Exact protected test states approved and verified
+
+- Subsequent Chief delivery reaffirms the same approved WO5 compatibility-test blob;
+  rechecked and matching. No runtime/test changes or additional permission granted.
+  Existing independent-review/live-trial boundary and prior approval audit remain intact.
+
+- Explicit user/Chief Decision approves the current Git blob states:
+  tests/acceptance/test_wo5_compatibility.py = 9c30504a5b35bfef94dd4f28632cf58e9c648349;
+  tests/unit/test_onboarding.py = 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d.
+  **Verified both hashes match** using git hash-object. This includes the normalized
+  signature-only fixture state; previous exact amendment/AST/SHA256 audit is preserved.
+- Further edits to these files require renewed approval; other protected changes remain
+  unapproved unless separately authorized. No tests, runtime, frozen contract or Chief
+  approval metadata changed in this turn. This is state approval, not scientific/human
+  acceptance or a final independent runtime verdict. Session ID unavailable.
+- Existing runtime delivery bc3fd01 retains the recorded 2,124/2,124 COMPLETE and all
+  registered-check passes. No code tests repeated for this approval-record-only update;
+  inspected hash/diff evidence and whitespace. Latest supervisor notes contain no new
+  finding beyond the already fixed R1–R3/D1/common all-format rebind boundary.
+- Next: Chief independent review, then root-owned live trials/local integration. Live/
+  researcher usability remains pending; no main, research/global/session change or push.
+
+## 2026-11-18 — All-format rebind guard completed and registered checks pass
+
+- Status: **Verified: v1 and v2 confirmed rebind use the same operational writer boundary;
+  every registered command exits 0.** No catalog-version exemption or managed-only fallback
+  remains. WO3 technical criteria close; WO4 remains technically complete. WO5's code and
+  automated matrix are complete, but final Chief review/root live/human criteria remain open.
+  This is neither scientific approval nor researcher-usability acceptance. Session unavailable.
+- Exact approved test-first audit: b90b519 applies the e921721 patch before runtime changes
+  (SHA256 d0fe1b7c98ec398e4fb2dcc6de5d00fa223aff09c4cfbf26fb695cc3dc68c557), with four
+  intended failures and three passes including the affected legacy test. New-file preview/
+  offline/lifecycle cases committed separately at 4552aa0 before the fix (1 failed/5 passed).
+  No original assertion is removed or weakened. The two approved existing-fixture injections
+  remain the only behavioral changes to original tests; all other tests/support stay intact.
+- The exact approved legacy signature was multiline and failed Ruff formatting. Normalized
+  ONLY its already approved parameter-list layout to one line. Asserted the entire module
+  AST is identical and the bytes equal that exact signature-only replacement. Exact applied
+  state remains at b90b519; normalized state and SHA audit are preserved in
+  .chief/wo-v1-fixture-format-audit.json for Chief's separate protected-state approval:
+  before f7c556db10f24d2d4a4318420c1a681c8605ce5fd78554386c7c1c6bdc800ac6,
+  after 2c96e4eff8080f48c00a36ed3a17f38277ca65831ac1639d64a9985624a86842.
+  There is no additional fixture behavior or assertion change and no format/lint exemption.
+- Common guard holds only selected-source old/new path/inode locks, then the root writer
+  lock, and queries all profiles. Unknown inventory or matching unknown lifecycle refuses;
+  known archived/trashed sessions and unrelated writers do not block distinct rebinds.
+  V1 catalogs, formats, project roles and logical identities stay byte-identical; successful
+  bind changes only the named local mapping. Preview returns before native client creation;
+  offline status with saved native bindings likewise makes no native call or workspace write.
+- Directly read source/runtime files beyond truncated diffs: inspection, source resolution/
+  bind/locks, R1 typed portable validation, R2 operational header/raw import identity, R3
+  generic applied receipts, archived effects and handoff discovery/revalidation. R1–R3 and
+  approved D1 remain green. No scientific or scope rules were redesigned.
+- Actual focused verification: **78 passed** (/tmp/wo-v1-final-focused.log), covering the
+  affected legacy unit case, all approved v1/v2 guards, preview/offline sentinels, unknown/
+  archived lifecycle and all previous R1–R3/D1 regressions. No real AoE/model/Chief runs;
+  fake client boundaries include every legitimate successful-bind case.
+- Unchanged registered COMPLETE: **2,124 unique nodes assigned exactly once**, all eight
+  shards exit 0; .chief/regression-1455294/{manifest,results}.json and shard logs,
+  /tmp/wo-v1-complete.log. No checker edits, filtering, skip/xfail or test weakening.
+  Permitted socket access is limited to the previously proven private temporary tmux
+  fixture sockets/fake Codex/demo workers. Runtime behavior was frozen during the run;
+  the fixture signature-only format normalization preserves the verified AST exactly.
+- All other exact registered commands exit 0 using UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (266 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help` (/tmp/wo-v1-help.log).
+  COMPLETE used `run --locked --extra tui python
+  /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Generated framework/init/released-digest subset: **6 passed**. Canonical/packaged current
+  guidance and frozen-spec copies match; all historical release digests are retained.
+- Updated actual generated onboarding/protocol/live guidance to remove the obsolete v1
+  exemption/pending-fixture warnings. Historical proposals, failed logs and protected audit
+  commits remain available. No main/global settings/real research data/session or other
+  worker changed; no merge/push. Root owns final trials and local integration.
+- Next: end turn for Chief independent review/protected-state approval, then root-owned
+  live A/B/C/native context/ack/restart/handoff/engineering trials. Live/human remain NOT RUN.
+
+## 2026-11-18 — Binding observation and legacy lifecycle regression checkpoint
+
+- Added only tests/acceptance/test_wo_binding_observation.py for the explicit remaining
+  requirements. Preview and offline status are tested for both catalogs after opening a
+  fake native binding, then replacing every native constructor with a failing sentinel;
+  all workspace bytes must remain unchanged. No real native/model/Chief executes.
+- Before runtime fix: **1 failed / 5 passed** (/tmp/wo-v1-observation-red.log). Unknown v1
+  lifecycle incorrectly permits bind; archived v1 control and all four file-only reads
+  pass. This complements the exact approved six-case amendment committed as b90b519.
+- Next: remove the shared guard's catalog exception and legacy branch, retaining existing
+  locking and preview early return; then verify affected/R1–R3/full registered checks.
+  No further original-test/support changes, session unavailable, live/human still pending.
+
+## 2026-11-18 — Approved v1 rebind test amendment, before runtime fix
+
+- Explicit delegated-supervisor Decision approves exactly the amendment at e921721,
+  SHA256 d0fe1b7c98ec398e4fb2dcc6de5d00fa223aff09c4cfbf26fb695cc3dc68c557.
+  Applied only the allowed monkeypatch/fake read-only AoE constructor to the original
+  successful-bind unit case, preserving every assertion; added the six approved cases.
+- Verified **4 failed / 3 passed** (six new cases plus affected legacy test), before any
+  runtime fix: /tmp/wo-v1-approved-red.log. Intended failures are old/new/moved-inode/
+  unknown v1 inventory; unrelated/none and the original successful case pass.
+- Read runtime files directly, including source binding, portable validation, operational
+  identity attribution, receipt validation/discovery; read the updated supervisor notes.
+  Next: commit tests first, remove the version exemption without changing v1 data, verify
+  preview/offline purity, rerun all registered checks and return for independent review.
+  No additional original-test/support edits or real tools/research data/global changes.
+  Root owns all live/human trials; session ID unavailable.
+
+## 2026-11-18 — Final v1 rebind audit / further protected-fixture request
+
+- **Verified:** R1–R3/D1 and v2 guard fixes are committed at 56e60bf; registered checks pass
+  (2,112 cases). A final v1 audit found the all-profile guard still has a legacy managed-only
+  branch (`all_profiles=catalog.schema_version == 2`). Preserving v1 data does not justify
+  silently exempting those rebinds from the shared old/new-checkout safety rule. WO3 is
+  reopened for this concrete remaining gap; WO5 remains open. Earlier technical closure
+  was premature for that full scope, though the reported registered results are accurate.
+- Disposable fake-only v1 cases prove **four expected failures**: unmanaged old/new/moved
+  old inode writers and unknown inventory currently allow bind. **Two controls pass**:
+  an unrelated source writer and no writers permit a rebind while retaining exact v1
+  catalog bytes/project roles. Evidence: /tmp/wo-v1-bind-red.log. No real AoE/model/Chief.
+- Removing the exception would invoke AoE in protected existing unit test
+  tests/unit/test_onboarding.py::test_clone_without_local_paths_has_inventory_and_requires_bind,
+  which currently has no fake client. The latest user Decision expressly requires proposing
+  any further fixture change; the worker has NOT edited that test or bypassed this gate.
+- Concrete unapplied amendment: docs/workspace-onboarding-v1-bind-test-amendment.patch.
+  It injects only monkeypatch plus an empty fake all-profile adapter into that successful
+  legacy case, retains every original assertion, and adds six independent v1 safety/data
+  preservation cases in a NEW file. `git apply --unidiff-zero --check` passes. Existing
+  successful-bind fixture amendment at 0678367 remains the only original-test change.
+- Next after explicit supervisor approval: apply this exact patch, commit failing tests,
+  remove the catalog-version exception/legacy guard branch, enforce the same selected-source
+  path/saved-inode/all-profile check for both catalog formats, then rerun focused and full
+  registered checks. Never upgrade/normalize v1 data, broaden scope or touch real projects.
+- All other authorized review work is committed; clean runtime, no merge/push/main/global
+  writes. Root live/human and independent final review remain pending. Session unavailable.
+
+## 2026-11-18 — WO3–WO5 supervisor fixes and complete technical validation
+
+- Status: **Verified: all provided review findings and selected-source rebind are fixed;
+  every registered command exits 0.** WO3 technical criteria close again; WO4 remains
+  technically complete. WO5 implementation/automated compatibility are complete, while its
+  root-owned live journeys and researcher usability criterion remain open. This is not an
+  independent final Chief verdict or researcher acceptance. Session ID unavailable.
+- Approval/audit: exact user-approved amendment committed as 0678367 BEFORE guard fixes
+  (four failing new cases, existing success control passed). Additional required new-file
+  regressions committed as 20269a7 / 26283cc before runtime fixes. The sole original-test
+  diff is the approved fake native/monkeypatch injection in the successful bind case; every
+  original assertion/support file and the frozen contract remain unchanged otherwise.
+- Rebind checks all profiles under only selected-source old/new checkout and root locks,
+  comparing canonical paths AND the saved old filesystem identity. Unknown inventory or
+  matching unknown lifecycle refuses. Unmanaged old/new/moved-inode writers are caught;
+  an unrelated source's writer and archived sessions do not unnecessarily block. Other
+  source entries/associations and v1 data/adapter behavior remain intact.
+- R1: explicit discriminator type checks prevent unhashable-list use; new portable scope
+  failures are FormatError without altering Scope's legacy API. Adjacent parser audit and
+  regressions also enforce strict integer versions for frozen submissions/rehashed v4
+  manifests/receipts. Malformed CLI inputs refuse without writes, repair or tracebacks.
+- R2: root operational Run.session_id is null when the current Chief adapter reports only
+  an AoE ID. That exact AoE attribution remains in import.json and private task facts;
+  legacy project Run/session attribution is unchanged. No native/model identity invented.
+- R3: all five workspace-owned v2 receipt families support generic handoff citation,
+  uncited discovery, apply revalidation and fresh source-backed context restoration with
+  confirmed changes preserved. Validate exact seal/receipt/effects/owned child receipt;
+  rejected, forged, changed or later damaged receipt inputs refuse. Historical target
+  changes remain legitimate; no read-time recovery/migration or v1 semantic change.
+- D1 explicitly approved by supervisor: opaque v1 identities stay readable byte-for-byte,
+  opt-in unrepresentable upgrade refuses with actionable v1 guidance, no identity rewrite.
+- Actual verification: **65 new review/rebind cases passed**, including positive unrelated/
+  archived controls and post-preview/post-apply handoff damage checks
+  (/tmp/wo-supervisor-final-focused.log). Earlier combined acceptance + legacy handoff,
+  change, onboarding and task selection: **302 passed** (/tmp/wo-supervisor-targeted-all.log).
+- Unchanged registered COMPLETE: **2,112 unique collected nodes assigned exactly once**, all
+  eight shards passed, exit 0; .chief/regression-1271248/{manifest,results}.json and shard
+  logs, /tmp/wo-review-complete.log. Runtime/docs were frozen during this run. The checker
+  was neither edited nor filtered; no xfail/skip/test assertion weakening was introduced.
+  Permitted socket access was used only for the previously proven unique temporary tmux
+  sockets with fake Codex/demo workers. No real AoE/model/Chief ran in the new tests.
+- All other exact registered commands exit 0 with UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (264 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help` (/tmp/wo-review-help.log).
+  COMPLETE used `run --locked --extra tui python
+  /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Focused generated-template/init/released-digest checks: **6 passed**; six canonical/
+  packaged framework copies were also compared byte-for-byte. Released hashes retain
+  every historical digest and add only the current synchronized templates.
+- Current English docs/framework/live recipe now describe the fixed behavior; obsolete
+  pending-rebind warnings are removed. Historical failed/rejected evidence and the approved
+  patch remain for audit. Root's review notes are read and addressed, not silently rewritten.
+- Next: Chief independent final recheck of this delivery, then root's separately authorized
+  A/B/C/native context/ack/restart/handoff/workspace-engineering trials using
+  docs/workspace-onboarding-acceptance.md. Live/human rows remain NOT RUN here. No main,
+  former worker/session, research data, global setting, merge or push was touched.
+
+## 2026-11-18 — Additional review regressions and field-access correction
+
+- Added new-file regressions for unknown vs archived selected-checkout lifecycle, receipt
+  damage between handoff preview/apply and after an applied handoff, and approved D1's
+  opaque-v1 read/refusal/no-byte-rewrite behavior. Before fixes, unknown lifecycle was
+  **1 failed/1 control passed** (/tmp/wo-bind-lifecycle-red.log); D1's refusal lacked
+  actionable v1 guidance (**1 failed**, /tmp/wo-opaque-upgrade-red.log).
+- Corrected only the new handoff tests' access to existing HandoffRecord.draft.confirmed_changes;
+  the earlier six AttributeError failures were test-authoring errors, not new format fields
+  or a reason to remove receipt assertions. Original protected tests/support are unchanged
+  after approved 0678367. Test additions/corrections precede the runtime-fix commit.
+- Current working-tree fixes pass **65 new cases** (/tmp/wo-supervisor-final-focused.log).
+  The earlier combined acceptance/legacy handoff/change/onboarding/task selection passed
+  **302 cases** (/tmp/wo-supervisor-targeted-all.log). The unchanged COMPLETE checker is
+  running on the combined final runtime/docs; no claim of final completion yet.
+- Next: finish registered checks, commit fixes and evidence, and return for Chief's final
+  independent review. Root owns all live/human trials. Session ID unavailable.
+
+## 2026-11-18 — Supervisor R1–R3 and rebind-scope regression checkpoint
+
+- Added four NEW test files only, as explicitly requested: unrelated managed/unmanaged
+  source writer control; malformed inventory/source pin/scope and rehashed v4 version
+  inputs; operational Run identity vs retained raw Chief provenance; all five v2 receipt
+  families in handoff/discovery, rejected/tampered refusal and real fake-native restoration.
+- Verified **20 failed, 36 passed** before runtime fixes (56 new cases, no setup/collection
+  errors; /tmp/wo-supervisor-regressions-red.log). Inventory's public wrapper already catches
+  the reported list-kind error, but adjacent scope parsers raise ValueError rather than
+  FormatError; the audit also exposed float versions accepted as integers in manifest/
+  receipt/submission validation. These strict-format regressions intentionally stay red.
+- Existing unrelated source's managed writer currently over-blocks bind; root operational
+  Run currently relabels the AoE session ID; valid v2 receipts cannot be cited/discovered.
+  Every original test/assertion/support stays unchanged beyond the exact approved amendment.
+- Next: implement guards/domain validation/identity separation/v2 receipt integration,
+  then repeat focused and registered checks. No live or human acceptance is claimed.
+  Session ID unavailable; only isolated branch/disposable fixtures/fake tools are used.
+
+## 2026-11-18 — Approved rebind test amendment (red checkpoint)
+
+- Explicit supervisor/user Decision approved exactly the patch committed at 9f22095.
+  Applied SHA256 7fc9f04e3e7097f1dfd2e9c6951393bf95e1fb55564a5a78362aed356a0c1b05:
+  one existing successful-bind case receives only fake native/monkeypatch fixtures and
+  the adapter constructor; all assertions are unchanged. Added the four proposed cases.
+- Verified **4 failed, 1 passed** (/tmp/wo-bind-approved-red.log): unmanaged old/new/moved
+  old inode writers and unknown all-profile state still permit bind, the intended gap.
+  No runtime change precedes this commit; tests use only local Git fixtures/fake AoE.
+- Read supervisor review in full. Next: add meaningful new-file regressions and address
+  rebind scoping/unrelated writers plus R1 malformed portable types, R2 native-vs-AoE
+  attribution and R3 v2 receipt handoff/discovery/restoration. D1 opaque-v1 refusal is
+  approved. No additional existing test/support edits authorized. Live/human pending.
+  Session ID unavailable; no main, research data, real workers, global settings or push.
+
+## 2026-11-18 — WO5 derivation/guidance and final technical checkpoint
+
+- Status: **Verified: implementation across WO3–WO5 is present and every registered
+  check passes; one additional source-rebind safety gap remains open.** WO3 is reopened,
+  WO4's approved fake-service criteria pass, and WO5 remains open for this follow-up plus
+  root-owned live and researcher acceptance. Earlier implementation entries are technical
+  checkpoints, not a claim of full frozen-contract completion. Session ID unavailable.
+- WO5 reviewed derivation links explicitly selected existing workspace sources and pinned
+  confirmed context to one independent child. It inherits no working choice by default,
+  moves no history/code and starts no native writer. Legacy source-free creation remains.
+  Updated the actual generated workspace AGENTS, project context guide, packaged framework
+  contracts/current onboarding/live recipe, README and English user guide. Old onboarding
+  guide retained as docs/onboarding-v1.md; historical released digests remain accepted.
+- Final unchanged COMPLETE checker: .chief/regression-1047158, **2,047 unique nodes assigned
+  exactly once to eight successful shards**, exit 0; all runtime was frozen for this run.
+  Earlier successful complete runs: -932929 and -990127. Approved tests/support and the
+  frozen specification are byte-identical to 33d4f44. No filtering/xfail/checker edits.
+  Final generated-template checks: **6 passed** (/tmp/wo-final-packaging.log). Follow-up
+  approved acceptance/source/removal run: **154 passed** (/tmp/wo-last-targeted.log).
+- Other registered checks all exited 0, using UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (259 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help`. Full checker used `run --locked --extra tui
+  python /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Private-socket access was explicitly permitted after proving unique temporary sockets
+  and fake Codex/demo workers; no real subscribed model/Chief worker was run.
+- Additional disposable evidence: /tmp/wo-extra-checks-final.log passes six scenario groups
+  (real B packet scoped v4 ack, C exact mapping bytes, exact overview catalog pins,
+  missing uncertain Chief creation, project-v2 task import/replay, notebook serialization).
+  These are implementation experiments, never independent or researcher acceptance.
+- **Known gap and protected-test gate:** frozen contract :171–178 requires source bind to
+  refuse live writers at old/new checkout; current application/sources.py:_bound_writer_guard
+  checks this root's managed bindings only. Native launch checks all profiles, but rebind
+  can miss unmanaged other-profile sessions and a renamed old inode. Four disposable
+  scenarios prove the gap (/tmp/wo-bind-proposal-red.log, all expected RED). The successful
+  approved bind case at tests/acceptance/test_wo5_compatibility.py:286 has no fake native
+  fixture; an unconditional external inventory would invoke a real AoE command there.
+  User explicitly protects approved tests/support, so the worker has not changed them or
+  silently weakened that requirement. Concrete proposal is committed as
+  docs/workspace-onboarding-bind-test-amendment.patch: inject the existing fake native
+  client at the adapter boundary in that case, keep every assertion, and add four
+  independent fake-only rebind cases.
+  After explicit Chief approval, apply with `git apply --unidiff-zero` (no changes to
+  protected files have been made), commit failing tests, then implement
+  the all-profile/canonical-path/saved-inode fail-closed guard and repeat registered checks.
+- Root/Chief next action: approve that narrow test/support amendment and conduct independent
+  cross-model review. Root then owns live A/B/C/native ack/restart/handoff/engineering trials
+  using docs/workspace-onboarding-acceptance.md. All live/human rows remain NOT RUN here.
+  No push/merge, global settings, actual research data or former worker/session was touched.
+
+## 2026-11-18 — WO4 workspace-native context and engineering implementation
+
+- Status: **Verified technical implementation**; WO3 commit 76b3f0b is the preceding
+  source/intake layer. Workspace source-backed conversations use existing AoE supervision,
+  source/checkout/cwd pins and strict native v4 bindings. Portable scoped snapshots stay
+  under runs; local manifests, launch paths and receipt metadata stay ignored under .aoe.
+  Tokens, exact manifests, scope, identity and current fingerprints are checked on ack.
+  Same-checkout refresh, archived explicit replacement and scoped restoration retain history;
+  child creation never redirects a workspace conversation. Old v1/v2/v3 bindings keep their
+  established versions/paths and offline reads write nothing.
+- Extended application/native_policy.py rather than introducing a second permission store.
+  Workspace choices coexist with old project-only policy files. Permission selection remains
+  outside locks, followed by directory/source/policy/profile/session revalidation and ordered
+  checkout/root/child/binding coordination. Conflicting path/inode writers across profiles
+  refuse. No global configuration, permission bypass, trust acceptance or scientific grant
+  is performed. Source registration/selection/permission remain independent.
+- Scoped task v2 draft/preview/decide freezes exact scope/catalog/definition/observation/
+  baseline and local Chief export before the external boundary. Unknown creation outcomes
+  reconcile the original ID/contract without another new call; raw failed output is retained.
+  Confirmed imports create a root operational run.md without formal IDs, or an ordinary
+  project v1 execution Run for project v2 requests. Portable hashes and ignored raw artifacts
+  remain distinct. Replay is idempotent; worker output is never scientific acceptance.
+- Workspace status/map/source list report local availability and bounded snapshot freshness.
+  `workspace note --input ENTRY` validates the required provenance/section shape and appends
+  under the root writer lock without rewriting historical bytes or touching child notebooks.
+  New traversal time/output/count/byte budgets and failed Git-discovery diagnostics preserve
+  historical v1 identity behavior while avoiding clean state after failed observations.
+- Actual evidence: 154 approved acceptance/source/removal checks passed; disposable script
+  /tmp/wo-extra-checks-final.log confirms real B packet → workspace/child v4 ack, C exact
+  noncanonical mapping preservation, noncanonical catalog understanding pins, unknown Chief
+  creation with missing task and retained raw output, project v2 submission/import/replay,
+  and notebook append/lock behavior. No real provider/Chief worker ran. Ruff check/format,
+  mypy 125 modules and locked CLI help passed. The unchanged COMPLETE checker has already
+  passed 2,047/2,047 twice; a final frozen-runtime run is ongoing. Tests/support unchanged.
+- Next: WO5 derivation CLI/generated guides/documentation and final evidence. Independent
+  Chief cross-model review and root-owned live/human trials remain pending, not self-approved.
+
+## 2026-11-18 — WO3 reviewed workspace-first intake implementation
+
+- Status: **Verified technical implementation** of strict source catalog v2 and reviewed
+  A/B/C intake, source selection, understanding and opt-in conversion. Explicit user
+  Decision approved all seven acceptance files at 33d4f44; they remain byte-identical.
+  Narrow baseline repair 497c0c1 was cherry-picked first as 5cdb704, with the six old
+  packaging/digest/init checks passing. No arbitrary main changes were incorporated.
+- Source definitions/associations, exact catalog/definition/snapshot pins and bounded
+  observations are distinct from local checkout mappings and write permissions. V1
+  catalog read/write stays unchanged. C preserves old roles/children/root charter and
+  overview bytes; exact-path/inode reuse changes no existing local mapping bytes.
+- Sealed outer packets own privately prepared v1 child creations. Ownership is visible
+  with the child archive before the outer seal. Apply authenticates exact inputs and
+  semantic before/after effects, then reuses the v1 journal/two-receipt publication.
+  Rejection, stale/tampered/resealed inputs, replay, global recovery prechecks and
+  incomplete-child guards are covered. Reads perform no initialization or recovery.
+- Evidence on the combined implementation tree: all 132 approved cases passed; registered
+  COMPLETE .chief/regression-932929 and .chief/regression-990127 each ran all 2,047 nodes
+  once and passed with permitted private-socket access. Five earlier socket failures were
+  sandbox EPERM at unique temporary sockets using fake Codex/demo workers, not product
+  failures. 154 follow-up acceptance/source/removal cases passed. Final delivery checks
+  continue after the WO4/WO5 commits; these counts are technical evidence, not live or
+  researcher acceptance. Mypy 125 modules and Ruff check/format pass. Session unavailable.
+- Compatibility edge for supervisor review: contract identity constraint at
+  docs/workspace-onboarding-contract.md:78 requires kind:64-hex, while its conversion
+  rule at :1131 preserves stored identity and the released v1 reader accepts opaque
+  nonempty identities (core/sources.py:33). Bounded fail-closed handling retains those
+  opaque values indefinitely on v1 and refuses only their opt-in unrepresentable upgrade;
+  it neither invents a new identity nor writes an invalid v2 definition. Normal legacy
+  identities produced by the original inspector convert without change.
+- Next: commit native workspace context/permission and scoped engineering integration
+  (WO4), then reviewed derivation/templates/docs/compatibility guidance (WO5). Root owns
+  all live journeys and researcher rulings; independent Chief review remains pending.
+
+## 2026-11-18 — WO3–WO5 test-first acceptance proposal (awaiting approval)
+
+- Status: **Verified: 132 acceptance nodes collected and exercised; implementation has
+  not started.** This new Chief worker starts at integrated d2ebbe4. Read the frozen
+  WO2 contract in full, design/current onboarding and relevant formats/protocols,
+  source/publication/native/permission/task code and existing tests. Session ID unavailable.
+- Added only tests/acceptance/ and this record. Four scenario modules plus independent
+  fixtures/support cover reviewed A/B/C, exact overview/catalog/source pins, old-child
+  preservation, ownership, rejection/stale/tampered/resealed packets, journal fault points,
+  recovery global prechecks, workspace v4 context/ack/privacy, native scope/permission/
+  writer coordination, scoped Chief export/import, later derivation and legacy formats.
+  Existing tests/support, runtime, templates, TODO R10/R11 and other worktrees untouched.
+- Actual checks: locked offline dev+tui sync, Ruff check, Ruff format check, mypy
+  (117 source files), CLI help and diff whitespace checks pass. Final acceptance run:
+  **105 failed, 16 passed, 11 setup errors**; setup errors are assertions on the missing
+  workspace task CLI, not import/collection errors. Unsupported workspace CLI forms/v2
+  reader behavior keep the new feature scenarios red. This is intentional test-first
+  evidence, not completed implementation or usability acceptance.
+- Registered COMPLETE checker ran every collected node once, unchanged: final run
+  **2,047 nodes, 1,923 passed, 113 failed, 11 errors**, exit 1. Its 8 legacy failures are
+  5 private-socket sandbox denials plus 3 pre-existing template/release-digest drift cases.
+  Verified native tests use unique TemporaryDirectory tmux -S sockets and fake Codex
+  executables; prototypes use the demo agent. Reran only those 5 with permitted socket
+  access: **5 passed**. No real subscribed model or Chief worker was invoked.
+- Baseline defect for the build phase: docs/workspace-formats.md gained the WO2
+  cross-reference but the packaged framework copy/released digests were not synchronized.
+  Failing existing nodes are test_init_creates_workspace_only_state_without_child_or_model,
+  test_packaged_framework_contracts_match_canonical_documents[workspace-formats.md], and
+  test_released_digests_cover_every_shipped_copy. They are left unchanged at this gate;
+  synchronize generated guidance under WO5 after approval, without weakening tests.
+- Evidence: ignored .chief/regression-226/{manifest,results}.json and shard logs;
+  /tmp/wo-acceptance-approved-candidate.log, /tmp/wo-private-socket-recheck.log and
+  /tmp/wo-existing-template-drift.log. Final small fixture correction allows the existing
+  projects/.gitkeep while asserting zero child directories; the acceptance run was repeated.
+- Decisions: independent v2 serialization and real fixture hashes avoid depending on new
+  production serializers; fake native/Chief services prevent live side effects. No scientific,
+  migration or scope decision was taken. WO3/WO4/WO5 checkboxes remain open. Root-owned live
+  trials and researcher usability ruling remain NOT RUN/PENDING.
+- Next: explicit supervisor approval of tests/acceptance/ before any feature code. Then
+  implement WO3 → WO4 → WO5 incrementally, resolve legacy template drift, run all registered
+  checks, address independent Chief review and deliver the root's separate live-trial recipe.
+  No push/merge or actual research-data/native-session changes.
 
 ## 2026-11-18 — Repair WO2 released-contract baseline drift
 

@@ -1,279 +1,256 @@
-# Existing projects and source directories
+# Existing repositories: workspace-first onboarding
 
-**Current implementation and accepted next design.** The commands below describe the
-released project-scoped onboarding behavior. On 2026-11-18 the researcher approved
-[workspace-first onboarding](workspace-onboarding-design.md): intake and understanding
-belong to the workspace. The accepted design supports new workspace only, new workspace
-plus one explicitly requested project, and a new project in a selected existing workspace.
-These design changes are not implemented and do not modify existing workspace/project data.
+A repository is a body of work, not automatically a research question. Keep its code
+in place and create a separate records workspace. Overall understanding and shared
+logical sources belong to the workspace; projects are optional independent goals with
+explicit scope and acceptance criteria. Discussion, maintenance and ordinary engineering
+need no placeholder child, Claim, Spec or research gate.
 
-Onboarding creates an independent research workspace linked to local code or
-project directories. It does not move, copy, initialize Git in, or change those
-source directories. Git and ordinary directories are supported. The new research
-child starts in `explore`, with an initial Brief and no Claim or Decision.
+## Three explicit modes
 
 ```sh
-toulmin onboard /path/to/project --root /path/to/research --project prototype --init
-toulmin decide --root /path/to/research
-toulmin open prototype --root /path/to/research
+# A: new workspace only; zero projects
+ toulmin onboard /code/service --root /records/service-research --init
+# B: new workspace plus exactly one explicitly requested project
+ toulmin onboard /code/service --root /records/service-research --init \
+   --project latency --project-input /drafts/latency.md
+# C: new project in an explicitly selected EXISTING workspace; checked reuse
+ toulmin onboard /code/service --root /records/existing --project latency \
+   --project-input /drafts/latency.md --source-id source-main
 ```
 
-`--init` explicitly authorizes the existing workspace initializer when the chosen
-research root is missing or empty. An unrelated nonempty directory is refused.
-For an existing research workspace, omit `--init`. Research and source directories
-must be distinct and must not contain one another; source directory symlinks are
-refused. No native session starts until the researcher separately opens it.
+The leading spaces are typography. `--root` is mandatory for intake; cwd, registry,
+source name and native history never select it. `--init` permits only a missing/empty
+root or `.git` alone. It refuses an initialized or unrelated nonempty root. Without
+`--init`, select an existing workspace and a new `--project`; requesting an existing,
+empty, corrupt or staged child name refuses. There is no continue-existing fallback.
+Opening an existing project is `toulmin open NAME --root ROOT`.
 
-The first command prepares a sealed onboarding packet under root `runs/`; the
-researcher applies or rejects the whole packet in `decide`. Child creation reuses
-the existing project-creation contract and receipt. The generated underlying
-creation cannot be applied independently: its source association and research
-context belong to the same reviewed publication. Interruptions retain the existing
-workspace journal; reapply the same decision to finish. An unexpected edit stops
-recovery and preserves the journal rather than repairing or overwriting the edit.
+Each command inspects the source read-only and shows a sealed root packet. No source
+scripts, hooks, model, native session, copy, move or scientific ruling runs during
+intake. Review its exact inventories, uncertainty, proposed overview, source roles,
+child framing and diffs, then use `toulmin decide --workspace --root ROOT` in your own
+terminal. Explicit initialization remains if you reject; source registration, confirmed
+understanding and children appear only after apply. Intake itself grants no write access.
 
-## Source catalog and local paths
+`--project-input` is the unchanged v1 project-creation input (workspace-formats section 9).
+Its project name must agree; included/excluded scope and the initial Brief's minimal
+validation experiment frame acceptance. Omitting this input for an explicit requested
+child retains the provisional compatibility framing, shown in full for review. Omitting
+`--project` creates no child; neither a sole child nor source basename supplies one.
 
-`sources.toml` is tracked, additive workspace data, with this version-1 shape:
+## Understanding and source roles
 
-```toml
-schema_version = 1
-
-[[sources]]
-id = "source-example"
-project = "prototype"
-kind = "git"
-role = "working"
-identity = "git:ROOT-COMMIT-LIST-SHA256"
-```
-
-`kind` is `git` or `directory`; `role` is `working` or `reference`. Each
-`(id, project)` association is unique. Multiple projects may share the same source
-ID, provided its kind and identity agree. Each project has at most one working
-source. Source IDs do not encode source paths. Git identity hashes the repository's
-root commit list, allowing later commits and dirty working trees; repositories
-need at least one commit. A separate clone can also receive a separate logical
-source ID, for example when used as a distinct reference or development direction.
-
-Absolute paths and filesystem identities exist only in ignored
-`tools/sources.local.toml`:
-
-```toml
-schema_version = 1
-
-[bindings]
-
-[bindings.source-example]
-path = "/this/machine/project"
-filesystem = "DEVICE:INODE"
-```
-
-On another machine, or after moving/replacing a source directory, bind it explicitly:
+`WORKSPACE.md` stays the 40-line confirmed charter. Root `overview.md` is a separately
+receipted structural checkpoint: Structure, Entry points, Current behavior, Checks and
+Known gaps, with exact source pins, coverage and limits. Root `runs/notebook.md` is an
+append-only unconfirmed working log, never formal Evidence or a complete transcript.
+Corrections append a new dated entry rather than rewriting prior observations. Prepare
+one entry using the contract's timestamp/title, Source/snapshot, Author/model/native
+session, Coverage, Limits, Observation and Next measurement shape, then append under
+the workspace writer lock:
 
 ```sh
-toulmin source list --root /path/to/research
-toulmin source bind source-example /new/local/path --root /path/to/research
+toulmin workspace note --root ROOT --input ENTRY.md
 ```
 
-Binding verifies the identity and non-overlap rules and changes only local mapping
-data. Missing or replaced paths produce actionable errors; they never silently
-fall back to a different checkout. A non-Git source has an initial bounded textual
-content fingerprint, which an explicit rebind must reproduce. Ordinary opens check
-its stored filesystem identity rather than requiring its contents to remain
-unchanged. A changed non-Git directory therefore remains usable in place, while a
-move/rebind after content changes may require restoring its original fingerprint
-or onboarding a new source explicitly. Empty or text-free non-Git directories have
-weaker content identities; the stored local filesystem identity still detects
-replacement of the bound folder.
+Historical hand-written notes remain readable as opaque Markdown.
 
-## Read-only discovery and its limits
-
-Onboarding archives a bounded inventory and selected text files, never executes
-source scripts, and preserves dirty and untracked source files. It skips source
-symlinks, conventional secret/credential files, generated/dependency directories,
-ignored files, nonregular files, binary content and large text files. Conventional
-name checks are a practical exclusion rule, not a secret scanner; review the
-packet's archived inventory before confirmation.
-
-The inventory is limited to 400 files, 512,000 textual bytes and 32,000 bytes per
-text file. Directory traversal and Git command output are separately bounded.
-Inventory records include observed Git HEAD/status when available, file digests,
-coverage and truncation. A missing inventory item does not establish absence.
-These are onboarding snapshots, not a live synchronization service or formal
-Evidence. Confirmed inventory files are available as historical context in native
-project sessions. No source absolute path is saved into tracked packet images;
-sealed pending local-binding images stay in ignored `tools/*.local.toml` files.
-
-## Reference and working directions
-
-The initial source is working unless an existing target is selected:
+A/B prepare a provisional workspace overview if none is supplied. Use `--workspace-overview
+FILE` for its body, and optional `--charter-input FILE` for reviewed charter fields. In A,
+`--overview FILE` aliases the workspace body. For an explicit child in B/C, the old
+`--overview FILE` still means child overview; `--project-overview FILE` is its alias.
+C never changes unrelated root charter/overview bytes; it archives a provisional note.
+Later understanding is a separate operation:
 
 ```sh
-toulmin onboard /old/prototype --work-at /new/direction \
-  --root /path/to/research --project prototype
+toulmin draft overview --workspace --root ROOT
+# Fill its body, then inspect exactly the sources named here:
+toulmin overview --workspace --input FILE --source source-main \
+  --rationale "Reviewed current structure and known gaps" --root ROOT
+toulmin decide --workspace --root ROOT
 ```
 
-This links `/old/prototype` as reference and `/new/direction` as working. It does
-not create or populate the target. Add later directions through another reviewed
-source-association packet:
+New catalogs use v2 definitions and scope associations. Each source is registered once
+at workspace scope; projects reference it. Working/reference selects cwd, not permissions.
+No working selection is valid portable state, but a scope with references cannot launch
+at an arbitrary reference or fall back to the records directory. With no associations,
+source-free sessions retain the records-root behavior.
+
+Confirmed source rebind, for v1 and v2 catalogs, checks live/unknown writers across every profile at the selected
+source's old/new canonical checkout and saved old device/inode. An unrelated source's writer
+does not block a distinct rebind. Local coordination cannot isolate arbitrary external
+writers; selection, launch permission and rebind remain separate actions. Preview and
+`aoe status --offline` read files without constructing a native client, even when a saved
+binding exists. V1 catalogs, source identities and project roles are not converted by bind.
+
+A/B initially select SOURCE working at workspace and requested-child scope. `--work-at
+TARGET` instead selects TARGET working and SOURCE reference, using existing non-overlapping
+directories only. In C, it sets these roles only for the NEW child. Newly registered
+sources get workspace references; old workspace working selection (including absence),
+old child roles/files and unrelated root context stay unchanged.
 
 ```sh
-toulmin source add /new/direction --project prototype --working \
-  --rationale "Continue implementation in the new direction" --root /path/to/research
-toulmin decide --root /path/to/research
+toulmin source list --workspace --root ROOT
+toulmin source add /code/fork --workspace --register-source source-fork \
+  --rationale "A deliberate separate checkout" --root ROOT
+toulmin decide --workspace --root ROOT
+toulmin source working --workspace source-fork --rationale "Continue here" --root ROOT
+toulmin decide --workspace --root ROOT
 ```
 
-Omit `--working` to add a reference. Adding a new working source demotes existing
-working associations in that project to reference, after confirmation. To choose
-among already associated sources:
+Use `--source-id ID` for exact checked reuse or `--register-source ID` for a distinct
+checkout, with corresponding `--working-source-id`/`--register-working-source` for
+`--work-at`. Matching upstream names alone never merge identities. Saved path and device/
+inode collisions, nested roots, symlinks, traversal and Git subdirectories refuse.
+Missing/stale mappings require explicit binding; intake never silently rebinds:
 
 ```sh
-toulmin source working prototype source-example "Return to the original checkout" \
-  --root /path/to/research
-toulmin decide --root /path/to/research
+toulmin source bind source-main /new/local/checkout --root ROOT       # preview only
+toulmin source bind source-main /new/local/checkout --root ROOT --confirm
 ```
 
-These policies do not copy, synchronize or delete files and are not filesystem
-access controls. Follow each source repository's own instructions when editing.
+Git identity retains the v1 root-commit-list algorithm; HEAD/dirty files are observations.
+An ordinary directory keeps its initial anchor identity during in-place use. A moved or
+replaced edited directory must reproduce its original anchors to bind the old ID. If it
+cannot, preserve old provenance, independently prepare a distinct path AND device/inode,
+register a reviewed new source as reference, then separately propose its working selection.
+A retained old inode or saved-path collision still refuses; Toulmin never copies, re-anchors
+or removes the old definition/binding to bypass this boundary.
 
-## Structural overview
+Discovery remains bounded: 400 files, 512,000 read bytes, 32,000 bytes per text file and
+3,200 candidates; escaped inventories/images are capped at 1,000,000 bytes. Credential
+filename patterns, symlinks, generated/ignored/dependency material and nonregular files
+are excluded. Binary/oversize entries may have size only. These filters are not a secret
+scanner; omissions do not establish absence, and dirty snapshots are not complete trees.
 
-An optional confirmed `projects/NAME/overview.md` holds structural understanding:
-components, entry points, current implementation, checks, known gaps and links to
-code or documents. Goal and constraints remain in `PROJECT.md`; next steps remain
-under the existing handoff protocol. `--overview FILE` proposes an initial overview
-within onboarding. Later overview updates are reviewed separately, with frozen
-before/after images and researcher receipts; optional Goal/Constraints changes are
-published atomically in the same decision. Stages and scientific rulings cannot
-be changed through an overview proposal. The proposal archive retains its exact
-history and rejects stale targets.
-
-## Compatibility and validation status
-
-All files are additive. Existing workspaces without `sources.toml` keep their
-legacy behavior. Existing object, Brief, charter and creation schemas are unchanged;
-no migration script is required. The source catalog and local bindings have strict
-version-1 validation; malformed files are reported without silent repair. Existing
-workspace ignore rules already cover `tools/*.local.toml` and the publication
-journal. Do not manually add local mapping or pending local-image files to Git.
-
-Temporary-fixture automated tests cover inventory safety, dirty preservation,
-reviewed creation, source sharing, missing paths, explicit rebind, stale/tampered
-packets, interruption/recovery, overview history and source-direction changes.
-These tests are technical evidence, not researcher usability acceptance or a live
-provider acceptance ruling.
-
-## Native sessions and migration records
-
-A linked project opens directly at its working source; Toulmin supplies the research
-workspace with the native CLI's additional-directory option. Existing native permissions
-remain in force unless the researcher explicitly selects the project-local Codex
-workspace-write launch policy below. A source session uses a v3 binding: v2 fields plus `cwd`, `source_id`,
-`source_identity` and `cwd_identity` (filesystem device/inode). Old v1/v2 sessions keep
-their old shape when no working source is selected. Changing the source or replacing the
-checkout requires an explicit session replacement; refresh never silently redirects it.
-Cross-profile live-session checks prevent Toulmin from starting a second writer on the
-same checkout. This is coordination, not filesystem isolation.
-
-### Codex permissions for code and research records
-
-The first **new** external-source Codex session offers a one-time choice in your
-interactive terminal. It names both directories: the working source (native cwd)
-and the research workspace (`--add-dir`). Answering yes saves `workspace-write`,
-requesting write access to both; no or Enter saves `inherit`, preserving native
-settings. Canceling the question creates neither a policy nor a session.
-The question holds no workspace or checkout lock. Before saving or launching,
-Toulmin reacquires the locks and rechecks the binding/session, source catalog,
-directory identities and local policy. If another operation changed them while
-you were choosing, this open refuses without overwriting that operation's choice
-or creating a duplicate session; retry `open` against the current state.
-
-Without an interactive terminal, an unknown or stale choice stops before launch
-and prints the two paths and these explicit options:
+## Conversations and local permissions
 
 ```sh
-toulmin open prototype --root /path/to/research --agent codex \
-  --codex-sandbox workspace-write
-# Or retain native settings, including restrictive settings that may reject --add-dir:
-toulmin open prototype --root /path/to/research --agent codex \
-  --codex-sandbox inherit
+toulmin open --workspace --root ROOT
+# For a new external-source Codex scope without a terminal, explicitly choose once:
+toulmin open --workspace --root ROOT --codex-sandbox workspace-write
+# Or preserve native settings:
+toulmin open --workspace --root ROOT --codex-sandbox inherit
 ```
 
-Both options also work with `toulmin aoe open`. Once selected, omit the flag:
-`toulmin open prototype --root /path/to/research`. Reusing an existing binding
-keeps its actual native arguments, including manually configured ones. An explicit
-permission flag on a bound session is refused: a saved preference does not prove
-what permissions that existing session has. To select another launch policy,
-inspect and archive the old session yourself in AoE, then explicitly replace it:
+The existing permission mechanism now supports workspace scope in the same ignored
+`tools/native.local.toml`: old project-only files remain v1; adding a workspace intent
+uses v2 with an explicit workspace table and retained project choices. Choices never
+transfer between scopes. Registration, native folder trust, permissions, Chief kickoff
+and scientific acceptance are separate authorizations. No global Codex/AoE settings,
+full-access flag or trust autoaccept is added. The interactive choice holds no locks;
+checkout/root/scope state is revalidated under ordered locks before any save/launch.
+
+Source-backed new/replacement sessions on v2 catalogs use native binding v4. Portable
+tracked context snapshots exclude local paths; ignored scope `.aoe/contexts/TOKEN/`
+holds local.json, manifest.json and the context-read receipt. Read both the delivered
+context and the announced local.json, then run its exact ack command. Submitted is not
+acknowledged; acknowledged is not scientific approval. Old v1/v2/v3 bindings, manifests
+and archives stay in their original formats/locations, with same-version explicit refresh.
+
+Changing selection, checkout identity or records location never redirects an existing
+session. Inspect/archive the old session, then explicitly `open --new-session` or scoped
+`aoe bind --replace`. Old contexts and replaced v4 bindings remain archived. Missing/
+uncertain cross-profile session state refuses a new writer; a live writer at the same
+path or device/inode conflicts across scopes/profiles. This local coordination cannot
+isolate arbitrary external or cross-machine writers. Native trust/update prompts require
+your action; no broader-access retry is attempted. Resolve them, run the printed scoped
+`aoe refresh` command, then check acknowledgment separately.
+
+Explicit `--workspace` wins in open/status/map/draft. Bare open from a child's records
+directory retains child inference only with cwd root discovery; explicit-root open without
+a project stays workspace. Bare map retains its existing records-directory inference,
+including with explicit root. Bare status stays workspace. A linked source checkout,
+sole child or history never supplies a child argument.
+
+## Workspace engineering and later projects
 
 ```sh
-toulmin open prototype --root /path/to/research --agent codex \
-  --new-session --codex-sandbox workspace-write
+toulmin draft task --workspace --source source-main --name parser-helper --root ROOT
+# Fill Goal/Scope, checks, protection, budget and launcher choices in the returned FILE.
+toulmin task preview --workspace FILE --root ROOT
+toulmin decide --workspace --root ROOT
+# After Chief reports done/abandoned; this first command only previews:
+toulmin task import --workspace FILE --root ROOT
+toulmin task import --workspace FILE --root ROOT --confirm --confirmed-by ACTOR
 ```
 
-Replacing a live session is refused. With no permission flag, `--new-session` uses
-the saved choice for that project and directory pair. An opted-in launch forwards
-`--sandbox workspace-write --add-dir /path/to/research` through AoE's persisted
-`--extra-args`. AoE retains these arguments for subsequent native resume/restart;
-Toulmin does not restart or reconfigure an existing session to change permissions.
-The source cwd is never redirected. Sibling projects do not inherit this choice.
+V2 task requests pin scope, source definition/catalog, bounded inventory and full baseline
+commit. They contain no absolute repo path; the ignored local export supplies that only
+at Chief launch. A clean Git source and matching pin/baseline are required before submission.
+An explicitly named reference source is allowed and does not change native working selection.
+An applying outcome and exact frozen export precede `chief new`; retry reconciles the SAME
+ID, home, host, repo, base and contract. An uncertain attempted launch without a visible
+matching task stays applying for inspection; it never blindly creates a second task.
+Submission adds no scheduler or automatic kickoff. Resolve Chief's native trust prompt
+and use its existing kickoff/watch supervision.
 
-Choices are local execution settings in ignored `tools/native.local.toml`, outside
-formal research objects and context archives. For example, the CLI generates:
+Workspace imports create an operational `runs/...-task-...-result/run.md`, with no root
+formal Run IDs. Failed/abandoned output and raw provenance remain archived; machine-path
+bearing raw artifacts stay ignored under `.aoe/task-results/`. Portable records retain
+hashes and local-availability limits. Project v2 imports use ordinary project Run IDs;
+legacy project v1 task/import semantics remain supported. No import merges, pushes,
+executes checks, creates scientific Evidence or changes gates. Worker results are not
+independent acceptance.
 
-```toml
-schema_version = 1
+Later derive one reviewed child without repeating intake or moving history/code:
 
-[projects.prototype]
-sandbox = "workspace-write" # or "inherit"
-records_root = "/path/to/research"
-records_identity = "DEVICE:INODE"
-source_id = "source-example"
-source_identity = "git:ROOT-COMMIT-LIST-SHA256"
-cwd = "/path/to/code"
-cwd_identity = "DEVICE:INODE"
+```sh
+toulmin project propose throughput --input runs/drafts/project-throughput.md \
+  --source source-main --working-source source-main --root ROOT
+toulmin decide --workspace --root ROOT
+# A separate explicit open; creating the child starts no writer:
+toulmin open throughput --root ROOT
 ```
 
-Prefer the CLI to construct these identity fields. Moving or replacing either
-directory, or selecting another working source, makes the saved choice stale;
-review the displayed paths and choose again explicitly or in the terminal. Existing
-source and binding guards still require explicit session replacement. Malformed,
-unknown-version and symlinked policy files are refused without repair or overwrite.
-Correct an invalid file before retrying. Do not commit or share this machine-local
-file; existing `tools/*.local.toml` ignore rules already cover it.
+Without `--working-source`, every named source is reference; the workspace selection is
+never inherited. Without source flags, legacy unlinked child creation remains unchanged.
+A creation input can explicitly carry root overview.md by its source reference/digest;
+child contexts restore that frozen understanding, never a sibling history or root notebook.
 
-This changes no global Codex or AoE settings, approval policy, trust entries or
-research rulings. Native trust/update prompts still require your input. Managed
-restrictions can refuse `workspace-write`; Toulmin reports the refusal, including
-errors above blank rows in a dead pane, and never retries with broader access.
-Inspect the native/managed configuration before another explicit replacement.
-Startup and attaching are not context delivery: resolve prompts yourself, then run
-the printed `toulmin aoe refresh` command and check the context-read receipt separately.
+## Decisions, recovery and compatibility
 
-Claude, non-source sessions and v1/v2/v3 binding formats remain compatible. Existing
-bindings need no migration. Direct Python application callers retain inherited
-native behavior when no policy or choice callback exists; a saved policy is applied
-only when creating a session. Automated fixtures cover policy/recovery behavior;
-installed-provider resume/restart and researcher usability acceptance remain pending.
+Noninteractive decide lists pending items and writes no decisions. The unified queue
+remains available; `--workspace` filters root publications/tasks and `--project NAME`
+filters an existing child. No bulk yes, pipe-driven approval or environment default is
+added for new v2 packets. Authorized operators can approve exactly one reviewed seal:
 
-Use `toulmin draft overview NAME`, fill the draft, and run the printed `toulmin overview`
-proposal command. Confirm it with `decide`. An applied overview and source snapshot are
-restored with the applied handoff; the latest 8 KiB of notebook text is labeled unconfirmed
-and explicitly marked when truncated. The source card shows observed Git state separately
-from the catalog's version. Archived source inventories remain historical snapshots.
+```sh
+toulmin workspace apply PACKET --expect-seal SHA --confirmed-by ACTOR --confirm --root ROOT
+toulmin workspace reject PACKET --expect-seal SHA --confirmed-by ACTOR \
+  --reason "Revise scope" --confirm --root ROOT
+```
 
-`migration draft NAME` creates an editable batch description under runs/drafts. Record
-source/target IDs and versions, selected items, differences, check outputs and the outcome
-(`passed`, `failed` or `partial`). `migration record NAME --input FILE` previews it;
-`--confirm --confirmed-by NAME` publishes an immutable receipt keyed by the input digest.
-Repetition does not duplicate the receipt. It neither runs checks nor grants a verified
-Evidence grade, and it never copies or deletes source material.
+Without confirmation, apply previews without writes. The v1 `workspace apply/reject
+--draft PACKET` forms remain supported. A declared actor is authorization provenance,
+not authentication or a researcher usability ruling.
 
-The implementation trial on 2026-11-17 created disposable Codex and Claude AoE sessions at
-the correct external directories. Codex exited because its effective permission settings
-refused `--add-dir`; Claude awaited its native folder-trust choice. Neither provider trial
-reached context acknowledgment or a development/handoff cycle. No trust prompts were
-accepted automatically and no permission defaults were changed. Both test sessions were
-moved to AoE trash; full native usability acceptance remains pending. For Codex, use the
-project-local `--codex-sandbox workspace-write` choice above on a new/replacement launch; for
-Claude, review its folder trust prompt in AoE before refreshing the prepared context.
+Publication reuses v1 child creation/receipts and the existing forward-only journal.
+Child archive plus ownership marker become visible together, then the outer seal; a
+missing/damaged marker cannot bypass sealed ownership. Before journal commit, no confirmed
+target changes. After commit, replay the exact apply to finish the approved images with
+the original actor/time. During the journal, the child is unusable and source-backed
+writers refuse. Reads never recover. Unexpected staged/published files or bytes matching
+neither before nor after stop all further writes and preserve the journal/images.
+Replay after later legitimate changes never restores older target bytes.
+
+V1 catalogs remain readable/writable on their old project path. Workspace source work
+or C stops at v1 and points to a separate opt-in operation:
+
+```sh
+toulmin source upgrade --root ROOT          # proposal, never automatic conversion
+toulmin decide --workspace --root ROOT
+```
+
+Conversion preserves exact legacy bytes in its sealed packet, old projects/roles/local
+mapping, and adds workspace references only. Pending v1 source packets must be decided
+first. Unknown/damaged active formats fail explicitly and never fall back to legacy
+artifacts. Opaque legacy identities remain usable under v1; a value not representable
+by strict v2 definitions refuses conversion rather than rewriting its provenance.
+No mandatory migration or automatic downgrade is introduced.
+
+Automated fake-service checks are technical evidence. Live A/B/C/native/engineering
+journeys belong to the supervisor and remain separate from researcher usability
+acceptance. See the frozen workspace-onboarding-contract.md for exact schemas and
+workspace-onboarding-acceptance.md for the pending live trial recipe.

@@ -8,6 +8,7 @@ opening the child is a separate, retryable step.
 
 import os
 import uuid
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -44,6 +45,7 @@ from toulmin.core.workspace_journal import (
     read_intent,
     remove_completed,
 )
+from toulmin.core.workspace_onboarding import PACKET_DIR as OUTER
 from toulmin.protocols.workspace_change import (
     HANDOFF_DIR,
     _pin,
@@ -92,13 +94,18 @@ def propose(
     input_path: str,
     now: datetime | None = None,
     token: str | None = None,
+    *,
+    owner: str | None = None,
+    locked: bool = False,
 ) -> CreationOutcome:
     """Freeze one sealed creation packet; no project directory is created."""
     repository = _repository(root)
     relative = _relative(repository, input_path)
     if CREATION_DIR.fullmatch(relative.removesuffix("/packet.md")):
         raise FormatError(f"{relative}: this is already a packet; preview it with project create")
-    if not relative.startswith("runs/drafts/"):
+    if not relative.startswith("runs/drafts/") and not (
+        owner is not None and relative.startswith(owner + "/")
+    ):
         raise FormatError(f"{relative}: input: a creation input lives in root runs/drafts/")
     data = repository.path(relative, "file").read_bytes()
     if len(data) > MAX_BYTES:
@@ -112,7 +119,7 @@ def propose(
     moment = (now or datetime.now(UTC)).astimezone(UTC)
     token = token or uuid.uuid4().hex
     directory = f"runs/{moment.strftime('%Y%m%dT%H%M%SZ')}-project-{token}"
-    with handoff_mutex(repository.root):
+    with nullcontext() if locked else handoff_mutex(repository.root):
         if pending(repository):
             raise FormatError("an incomplete workspace publication exists; finish it first")
         if value.supersedes is not None:
@@ -145,6 +152,12 @@ def propose(
             utc_text(moment), value, relative, digest(data), sources, pins, targets, lines
         )
         files = {"packet.md": packet, "input.md": data, **snapshots}
+        if owner is not None:
+            from toulmin.core.workspace_onboarding import PACKET_DIR as OUTER
+
+            if not OUTER.fullmatch(owner):
+                raise FormatError("invalid enclosing workspace packet")
+            files["onboarding"] = owner.encode()
         files.update({target.after: after for target, after in targets})
         publish_sealed(repository, directory, files, digest(packet), ".creation-prepare-")
     return CreationOutcome("proposed", load(repository.root, directory))
@@ -310,7 +323,14 @@ def _create(
     intent = read_intent(repository) if pending(repository) else None
     loaded = load(repository.root, value)
     _named(loaded, name)
-    if loaded.packet.input_path.startswith("runs/drafts/onboard-"):
+    from toulmin.core.workspace_onboarding import owners
+
+    if (
+        owners(repository, loaded.directory)
+        or repository.path(f"{loaded.directory}/onboarding").exists()
+        or loaded.packet.input_path.startswith("runs/drafts/onboard-")
+        or OUTER.fullmatch(loaded.packet.input_path.rsplit("/", 1)[0])
+    ):
         raise FormatError(
             f"{loaded.directory}: this creation belongs to a complete onboarding packet; "
             "review and apply it through toulmin decide, so sources and context are linked together"
@@ -429,6 +449,14 @@ def reject(
     with handoff_mutex(repository.root):
         loaded = load(repository.root, value)
         _named(loaded, name)
+        from toulmin.core.workspace_onboarding import owners
+
+        if (
+            OUTER.fullmatch(loaded.packet.input_path.rsplit("/", 1)[0])
+            or owners(repository, loaded.directory)
+            or repository.path(f"{loaded.directory}/onboarding").exists()
+        ):
+            raise FormatError("creation belongs to a complete onboarding packet; decide its owner")
         record = f"{loaded.directory}/packet.md"
         receipt = receipt_for(repository, loaded.directory, loaded.seal)
         if pending(repository) and read_intent(repository).record == record:

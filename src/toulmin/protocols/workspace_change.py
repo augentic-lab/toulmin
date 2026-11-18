@@ -608,7 +608,22 @@ def applied_receipt(root: Path, value: str) -> Receipt:
     if not value.endswith("/receipt.md"):
         raise FormatError(f"{value}: expected a packet receipt path")
     repository = Repository(root)
-    loaded = load(repository.root, value.removesuffix("/receipt.md"))
+    directory = value.removesuffix("/receipt.md")
+    from toulmin.core.workspace_onboarding import PACKET_DIR as OUTER
+
+    if OUTER.fullmatch(directory):
+        from toulmin.protocols import workspace_onboarding
+
+        # Only the sealed v2 envelope grants workspace ownership. Old project-only
+        # onboarding packets sharing a path family never gain it by filename alone.
+        loaded_v2 = workspace_onboarding.load(root, directory, local_optional=True)
+        receipt = receipt_for(repository, directory, loaded_v2.seal)
+        if receipt is None or receipt.disposition != "applied":
+            state = "absent" if receipt is None else receipt.disposition
+            raise FormatError(f"{value}: expected an applied receipt; found {state}")
+        workspace_onboarding.validate_disposed(repository, loaded_v2, receipt)
+        return receipt
+    loaded = load(repository.root, directory)
     receipt = _receipt(repository, loaded)
     if receipt is None or receipt.disposition != "applied":
         state = "absent" if receipt is None else receipt.disposition

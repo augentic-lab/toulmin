@@ -199,11 +199,11 @@ def _chief_tasks(root: Path, projects: tuple[str, ...]) -> tuple[list[Task], lis
     except (OSError, ValueError) as error:
         client = None
         config_error = str(error)
-    for project in projects:
+    for project in (None, *projects):
         try:
             from toulmin.application.engineering_tasks import engineering_task_ids
 
-            facts = build_facts(root, project)
+            facts = build_facts(root, project) if project is not None else ()
             task_ids = {fact.task_id for fact in facts if fact.task_id is not None}
             task_ids.update(engineering_task_ids(root, project))
         except (OSError, ValueError) as error:

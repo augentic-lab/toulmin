@@ -250,7 +250,9 @@ def _execute(
                     # Keep the original error visible if recovery metadata is also corrupt.
                     pass
             _recovery(root, project, selected)
-        raise typer.Exit(1) from error
+        from toulmin.application.sources import SourceSelectionRequired
+
+        raise typer.Exit(2 if isinstance(error, SourceSelectionRequired) else 1) from error
 
 
 Agent = Annotated[
@@ -291,7 +293,7 @@ CodexSandbox = Annotated[
     typer.Option(
         "--codex-sandbox",
         callback=_validate_codex_sandbox,
-        help="Save this external-source project's native Codex choice: workspace-write "
+        help="Save this external-source scope's native Codex choice: workspace-write "
         "(code and records writable) or inherit (keep native settings). Changing an "
         "existing session requires archived replacement with --new-session.",
     ),
@@ -305,22 +307,22 @@ def _interactive() -> bool:
 def _choose_codex_sandbox(root: Path, source: ResolvedSource, stale: bool) -> str:
     if stale:
         typer.echo("Saved native launch policy is stale: source checkout or records root changed.")
-    typer.echo("Native Codex project launch permissions:")
+    typer.echo("Native Codex scoped launch permissions:")
     typer.echo(f"Code directory (native cwd): {source.path}")
     typer.echo(f"Research records directory (--add-dir): {root.absolute()}")
     typer.echo(
-        "workspace-write requests write access to both directories for this project. "
+        "workspace-write requests write access to both directories for this scope. "
         "Native trust prompts, approvals and managed restrictions still apply. "
         "Choose inherit to keep native settings; restrictive settings may refuse --add-dir."
     )
     if not _interactive():
         raise FormatError(
             "No interactive terminal: explicitly choose --codex-sandbox workspace-write "
-            f"or --codex-sandbox inherit. The project-local choice is saved in {root / LOCAL}"
+            f"or --codex-sandbox inherit. The scope-local choice is saved in {root / LOCAL}"
         )
     return (
         "workspace-write"
-        if typer.confirm("Save workspace-write for this project? (No saves inherit)", default=False)
+        if typer.confirm("Save workspace-write for this scope? (No saves inherit)", default=False)
         else "inherit"
     )
 
@@ -367,10 +369,6 @@ def open_scope(
             validate_mode(codex_sandbox)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--codex-sandbox") from error
-        if project is None:
-            raise typer.BadParameter(
-                "select an external-source project", param_hint="--codex-sandbox"
-            )
     fallback = default_agent()
 
     def launch(service: AoEWorkspace) -> WorkspaceView:

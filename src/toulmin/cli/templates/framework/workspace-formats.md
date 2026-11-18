@@ -1235,3 +1235,20 @@ archive or binding migration occurs. Old Chief configurations keep working. Stat
 already tolerate missing resource data while validating its description, and that behavior
 is preserved. Apply and pin checks still refuse unavailable or different material; neither
 a missing file nor a changed digest is silently accepted as the pinned data.
+
+## WO3–WO5 — Source-backed workspace records
+
+The implemented workspace-first source/understanding/task/native additions are specified in
+[workspace-onboarding-contract.md](workspace-onboarding-contract.md). This additive contract
+keeps the v1 creation, receipt, charter and journal formats above; no root formal object
+namespace is introduced. New catalogs separate immutable definitions from scope associations,
+and conversion from v1 is separately proposed/reviewed with exact legacy bytes retained.
+Current commands, local native v4 metadata and compatibility/recovery are described in
+[onboarding.md](onboarding.md). The frozen WO2 document's historical NOT RUN labels are not
+live acceptance claims; see current development evidence and the separately pending trial.
+
+V1 workspace receipt fields remain unchanged. Applied workspace-owned v2 envelopes may use
+onboard, understanding, source, derive or catalog archive families in receipt references;
+legacy proposal references retain their meaning. Handoff citation/discovery checks the
+exact sealed envelope, receipt and archived effects, including owned child receipts.
+A filename alone does not make an old project-only transaction a workspace confirmation.

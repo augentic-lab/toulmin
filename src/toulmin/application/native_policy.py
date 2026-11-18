@@ -64,7 +64,7 @@ def validate_mode(value: str) -> None:
         raise FormatError("--codex-sandbox: expected workspace-write or inherit")
 
 
-def load(repository: Repository) -> dict[str, LaunchPolicy]:
+def load(repository: Repository) -> dict[str | None, LaunchPolicy]:
     path = repository.path(LOCAL)
     if not path.exists():
         return {}
@@ -73,21 +73,27 @@ def load(repository: Repository) -> dict[str, LaunchPolicy]:
         if path.stat().st_size > 1_000_000:
             raise ValueError("configuration exceeds 1 MB")
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-        if (
-            set(data) != {"schema_version", "projects"}
-            or type(data["schema_version"]) is not int
-            or data["schema_version"] != 1
-            or not isinstance(data["projects"], dict)
-        ):
-            raise ValueError("expected schema_version = 1 and a projects table")
-        result = {}
+        version = data.get("schema_version")
+        if type(version) is not int or version not in {1, 2}:
+            raise ValueError("expected native launch policy version 1 or 2")
+        if set(data) != (
+            {"schema_version", "projects"}
+            if version == 1
+            else {"schema_version", "projects", "workspace"}
+        ) or not isinstance(data["projects"], dict):
+            raise ValueError("invalid scoped launch policy fields")
+        result: dict[str | None, LaunchPolicy] = {}
         fields = set(LaunchPolicy.__dataclass_fields__)
         for project, item in data["projects"].items():
             validate_project_name(project)
             if not isinstance(item, dict) or set(item) != fields:
                 raise ValueError(f"invalid fields for project {project}")
-            policy = LaunchPolicy(**item)
-            result[project] = policy
+            result[project] = LaunchPolicy(**item)
+        if version == 2:
+            item = data["workspace"]
+            if not isinstance(item, dict) or set(item) != fields:
+                raise ValueError("invalid workspace launch intent")
+            result[None] = LaunchPolicy(**item)
         return result
     except (ValueError, UnicodeError) as error:
         raise FormatError(
@@ -96,17 +102,25 @@ def load(repository: Repository) -> dict[str, LaunchPolicy]:
         ) from error
 
 
-def save(repository: Repository, project: str, policy: LaunchPolicy) -> None:
+def save(repository: Repository, project: str | None, policy: LaunchPolicy) -> None:
     """Call under the workspace binding lock; preserve other projects' choices."""
-    validate_project_name(project)
+    if project is not None:
+        validate_project_name(project)
     policies = load(repository)
     policies[project] = policy
-    lines = ["schema_version = 1", "", "[projects]"]
-    for name, item in sorted(policies.items()):
+    version = 2 if None in policies else 1
+    lines = [f"schema_version = {version}", "", "[projects]"]
+    for name, item in sorted(((name, item) for name, item in policies.items() if name is not None)):
         lines.extend(("", f"[projects.{json.dumps(name)}]"))
         lines.extend(
             f"{key} = {json.dumps(value, ensure_ascii=False)}"
             for key, value in asdict(item).items()
+        )
+    if None in policies:
+        lines.extend(("", "[workspace]"))
+        lines.extend(
+            f"{key} = {json.dumps(value, ensure_ascii=False)}"
+            for key, value in asdict(policies[None]).items()
         )
     repository.path("tools", "directory")
     path = repository.path(LOCAL)

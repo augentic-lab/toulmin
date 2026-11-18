@@ -206,6 +206,19 @@ def workspace_status(root: Path, setup: Mapping[str, bytes]) -> WorkspaceReport:
             history = _history(repository, journal, errors)
             handoffs = _handoff_drafts(repository, journal, history, errors)
         _misplaced(repository, errors)
+        try:
+            from toulmin.core.sources import LOCAL, parse_bindings, read_source_catalog
+
+            read_source_catalog(repository.root, staged=incomplete_child(repository))
+            local = repository.path(LOCAL)
+            if local.exists():
+                parse_bindings(repository.path(LOCAL, "file").read_bytes())
+            if journal is None:
+                from toulmin.protocols.workspace_onboarding import confirmed_overview
+
+                confirmed_overview(repository.root)
+        except (OSError, ValueError) as error:
+            errors.append(str(error))
     return WorkspaceReport(
         report,
         charter,
@@ -421,6 +434,43 @@ def _proposals(
         elif relative in successors:
             disposition = "superseded"
         result.append(Proposal(relative, kinds[relative], disposition))
+    from toulmin.core.workspace_onboarding import PACKET_DIR as OUTER
+    from toulmin.protocols.workspace_change import receipt_for
+    from toulmin.protocols.workspace_onboarding import load, validate_disposed
+
+    for path in sorted(folder.iterdir()):
+        relative = f"runs/{path.name}"
+        if not OUTER.fullmatch(relative):
+            continue
+        # v1 onboarding shares the historical path family; exact version dispatch.
+        packet_path = repository.path(f"{relative}/packet.md")
+        if packet_path.exists():
+            import json
+
+            try:
+                data = json.loads(packet_path.read_bytes())
+                if data.get("schema_version") == 1:
+                    continue
+            except (ValueError, AttributeError):
+                pass
+        try:
+            if not repository.path(f"{relative}/seal").exists():
+                raise FormatError(
+                    f"{relative}: incomplete preparation, no seal; preserve and prepare anew"
+                )
+            loaded = load(repository.root, relative, local_optional=True)
+            receipt = receipt_for(repository, relative, loaded.seal)
+            if relative == pending_record:
+                disposition = "incomplete"
+            elif receipt is not None:
+                validate_disposed(repository, loaded, receipt)
+                disposition = receipt.disposition
+            else:
+                disposition = "pending"
+            result.append(Proposal(relative, "onboarding", disposition))
+        except (OSError, ValueError) as error:
+            errors.append(str(error))
+            result.append(Proposal(relative, "onboarding", "invalid"))
     return tuple(result)
 
 
@@ -451,13 +501,25 @@ def _receipted(
         if record.disposition != "applied" or expected is None:
             raise ValueError(f"{receipt} did not publish {target}")
         directory = receipt.removesuffix("/receipt.md")
-        packet = decode(repository.path(f"{directory}/packet.md", "file").read_bytes())
-        image = next(
-            item["after"]
-            for item in packet.header.get("targets", [])
-            if isinstance(item, dict) and item.get("path") == target
-        )
-        after = repository.path(f"{directory}/{image}", "file").read_bytes()
+        raw_packet = repository.path(f"{directory}/packet.md", "file").read_bytes()
+        if raw_packet.startswith(b"{"):
+            from toulmin.protocols.workspace_change import applied_receipt
+            from toulmin.protocols.workspace_onboarding import load
+
+            applied_receipt(repository.root, receipt)
+            loaded = load(repository.root, directory, local_optional=True)
+            image_spec = next(item for item in loaded.data["images"] if item["path"] == target)
+            after = repository.path(image_spec["after_image"], "file").read_bytes()
+            packet = None
+        else:
+            packet = decode(raw_packet)
+        if packet is not None:
+            image = next(
+                item["after"]
+                for item in packet.header.get("targets", [])
+                if isinstance(item, dict) and item.get("path") == target
+            )
+            after = repository.path(f"{directory}/{image}", "file").read_bytes()
         current = repository.path(target, "file").read_bytes()
     except (OSError, ValueError, StopIteration) as error:
         errors.append(f"{target}: receipt {receipt}: {error or 'after image not listed'}")

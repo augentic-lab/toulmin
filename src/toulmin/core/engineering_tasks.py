@@ -130,6 +130,10 @@ class TaskImport:
 
 
 def render_task_import(record: TaskImport) -> bytes:
+    from toulmin.core.scoped_tasks import ScopedImport, render_import
+
+    if isinstance(record, ScopedImport):
+        return render_import(record)
     return (
         json.dumps(
             {"schema_version": 1, "kind": "task-import", **asdict(record)},
@@ -141,6 +145,14 @@ def render_task_import(record: TaskImport) -> bytes:
 
 
 def parse_task_import(data: bytes, location: str) -> TaskImport:
+    from toulmin.core.scoped_tasks import parse_import
+
+    try:
+        probe = json.loads(data)
+    except (ValueError, UnicodeError) as error:
+        raise FormatError(f"{location}: task import: {error}") from error
+    if isinstance(probe, dict) and probe.get("schema_version") == 2:
+        return parse_import(data, location)
     try:
         raw = json.loads(data)
         names = {item.name for item in fields(TaskImport)}
