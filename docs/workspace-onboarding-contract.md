@@ -98,12 +98,18 @@ open retains the existing records-root cwd behavior. Multiple references are fin
 multiple working entries are invalid, not an invitation to pick the first.
 
 Mode A/B initially selects SOURCE as workspace working; B selects the same source
-for its new child. `--work-at TARGET` instead associates SOURCE as reference and
-TARGET as working in both relevant new scopes. Both directories must already exist.
-In C, the child gets the requested working/reference selection, but the workspace's
-existing working selection is unchanged. A newly registered definition gets a
-workspace **reference** association in C; reuse does not change its workspace role.
-The researcher can separately propose a workspace working-source change.
+for its new child. With `--work-at TARGET`, A instead selects SOURCE as reference
+and TARGET as working at workspace scope; B makes that selection at both workspace
+and new-child scope. Both directories must already exist.
+
+In C with `--work-at TARGET`, the new child gets TARGET as **working** and SOURCE
+as **reference**. At workspace scope, each newly registered source (SOURCE and/or
+TARGET) gets only a **reference** association; each reused source retains its
+existing workspace role. Preserve the workspace working selection exactly,
+including no working selection if none existed. C without `--work-at` gives its
+new child SOURCE as working under the same workspace preservation rule. Neither
+form changes old child associations. The researcher can separately propose a
+workspace working-source change.
 
 Canonical writes sort definitions by ID and associations by `(kind, project-or-empty,
 source)`. A C publication may reserialize the catalog, but must preserve every
@@ -271,7 +277,7 @@ claim scientific support. Source definitions and files remain the source of trut
 | `kind` | `workspace-overview` |
 | `scope` | Workspace Scope only |
 | `revision` | Integer >= 1, increment by exactly one from prior overview |
-| `receipt` | Enclosing applied receipt path |
+| `receipt` | Deterministic root-relative `<outer-packet>/receipt.md`, fixed before sealing the overview after-image |
 | `source` | Operational Author mapping defined below |
 | `recorded_at` | UTC timestamp of proposal preparation, not confirmation time |
 | `coverage` | Nonempty string describing inspected material and truncation |
@@ -288,10 +294,19 @@ Body requires exactly level-two `Structure`, `Entry points`, `Current behavior`,
 `Checks`, and `Known gaps`, in that order, all nonempty. Other level-two headings
 are invalid; subordinate headings are allowed. Code references in prose use source
 ID plus relative path and observed revision; local absolute paths are excluded.
-Overview max 1,000,000 bytes. Its hash and exact before/after images are sealed;
-its receipt is published in the same journal. No header status is necessary:
-only a valid matching applied receipt makes it confirmed. A manually placed file
-with no valid receipt is reported as unconfirmed/damaged and is not resident truth.
+Overview max 1,000,000 bytes. Its `receipt` value is determined from the reserved
+outer packet directory as `<outer-packet>/receipt.md` during preparation, before
+apply. That exact path is already present in the overview after-image whose bytes
+and hash are sealed by the outer packet; apply does not fill or rewrite it later.
+The receipt itself is published in the same journal at that reserved path. A path
+reference to this future file creates no receipt-content digest cycle.
+
+No header status is necessary: the overview is confirmed only with a valid matching
+**applied** receipt whose record/record_sha256 identify that outer packet/seal and
+whose results include this overview path/after-image hash. Before apply, merely
+naming the deterministic receipt path confers no confirmation. A missing,
+rejected or mismatched receipt leaves the candidate overview unconfirmed; a
+manually placed or damaged file is reported accordingly and is not resident truth.
 
 A's `--overview FILE` (or `--workspace-overview FILE`) and B's
 `--workspace-overview FILE` supply the workspace **body**; the preparer attaches source pins,
@@ -401,9 +416,10 @@ Onboard `SOURCE` is required. `--root ROOT` is required for onboarding, includin
 C: no registry/cwd/native-history fallback selects its target. `--init` chooses a
 new workspace (A/B) and permits only missing/empty roots, or `.git` alone; an already
 initialized workspace is refused with instruction to omit `--init` for C. No
-project and no `--init` on an existing workspace is a usage error: later workspace
-sources use `source add --workspace`, not a fourth intake mode. Empty initialized
-workspaces with zero children are valid C targets.
+project and no `--init` on an existing initialized workspace is a usage error
+(exit 2, no writes): later workspace sources use `source add --workspace`, not a
+fourth intake mode. Empty initialized workspaces with zero children are valid C
+targets.
 
 `--project NAME` is optional only with `--init`. It always means a **new** child,
 never continue an old one. Duplicate name refuses even if the old child is corrupt,
@@ -427,9 +443,14 @@ use new **`--workspace-overview FILE`** for B's workspace body. For A,
 This deliberate alias rule preserves explicit-child commands without silently
 reassigning their supplied text to workspace scope.
 
-`--work-at PATH` keeps its current meaning: SOURCE becomes reference, PATH is the
-working source; neither is created/copied. `--source-id ID` selects checked reuse
-of SOURCE; `--register-source ID` requests new registration; these flags conflict.
+`--work-at TARGET` uses existing directories only; neither is created/copied.
+In A it makes TARGET working and SOURCE reference at workspace scope; in B it does
+so at workspace and new-child scope. In C it affects the **new child** selection:
+TARGET working, SOURCE reference. C adds only workspace reference associations for
+newly registered SOURCE/TARGET definitions and preserves all reused workspace
+roles and the workspace working selection, including its absence. It never changes
+old child selections. `--source-id ID` selects checked reuse of SOURCE;
+`--register-source ID` requests new registration; these flags conflict.
 For a second path `--work-at`, use corresponding `--working-source-id ID` or
 `--register-working-source ID`; no positional guess. Without flags, reuse only an
 exact checked checkout; otherwise generate one new ID. Missing/stale bindings or
@@ -518,7 +539,8 @@ one actionable next step, without secret contents. No new retry/repair runs on r
 
 | Condition | Exit / required effect |
 | --- | --- |
-| Missing `--root` for intake, absent project in C, conflicting flags, unsafe project/source syntax | 2; no initialization or packet |
+| Missing `--root` for intake, conflicting flags, unsafe project/source syntax | 2; no initialization or packet |
+| Existing initialized workspace with neither `--project` nor `--init` in onboard | 2; no packet, child, registration or writes; use `source add --workspace` for later workspace sources |
 | Missing/ambiguous discovery root or registry name | 2; require root/path; noninteractive never picks |
 | Missing/empty intake root without `--init`; existing root with `--init`; nonempty unrelated root | 1; no overwrite; `--init` cannot authorize unrelated content |
 | Source path missing, source/workspace overlap, two-source overlap, symlink, reused checkout under new ID | 1; no packet or source writes |
@@ -1489,18 +1511,18 @@ excluding explicitly volatile ignored operational files.
 | W03-Cmany / WO3 | W with two healthy children; C reuse under new name; hash old trees before/after | Exactly one added child; both old trees byte-identical; no changed old roles; root context unchanged | NOT RUN |
 | W03-Cnew / WO3 | Existing W; new non-overlapping repo checkout T; C with register-source; apply(P) | One new definition/workspace reference/new child working association; old workspace working selection unchanged; no source copies | NOT RUN |
 | W03-dup / WO3 | C requests an existing, corrupt, empty or staged child name (parameterized) | Exit 1 before packet; no source/local/child edits; no continue-existing fallback | NOT RUN |
-| W03-root / WO3 | Missing root flag, ambiguous registry, unrelated nonempty W, existing W with init, empty W without init | Correct 2/1 exits per table; no accidental initialization/overwrite/source edits | NOT RUN |
+| W03-root / WO3 | Missing root flag, ambiguous registry, unrelated nonempty W, existing W with init, empty W without init; also `onboard S --root W` with existing initialized W and neither --project nor --init | The initialized-W/no-project/no-init case exits 2 with no packet, child, registration or writes; remaining cases use 2/1 per Errors table; no accidental initialization/overwrite/source edits | NOT RUN |
 | W03-source / WO3 | Parent/child overlaps, path symlink, Git subdirectory, alias device/inode under another ID | Exit 1; source bytes untouched; no sealed proposal claiming valid registration | NOT RUN |
 | W03-identity / WO3 | Same upstream/different roots; equal roots/different checkouts; missing mapping; explicit mismatched ID | No upstream-only merge; checked exact reuse only; distinct registration allowed; missing bind/mismatch refuses | NOT RUN |
 | W03-directory-recovery / WO3 | Edited/moved directory whose old anchors no longer match: bind old ID; register new ID at distinct path/device-inode as reference; apply; separately select working/apply; retry same-path and retained-inode variants | Old bind mismatch refuses; reviewed new definition/current anchors and two separate decisions succeed only at noncolliding location; old provenance preserved; same-path/old-inode collisions refuse; no re-anchor, copy or implicit child change | NOT RUN |
 | W03-preparation-owner / WO3 | B/C/derive: interrupt after inventories, private v1 seal, public marker+child archive, and outer seal; then change/delete/redirect marker or attempt direct child create | No unowned sealed child becomes visible; outer-sealed marker input/precondition and creation reference validate; orphan/inconsistent ownership refuses; deleting marker never bypasses sealed outer ownership; no digest cycle | NOT RUN |
-| W03-work-at / WO3 | A/B/C with non-overlapping SOURCE and TARGET, plus equal/nested invalid variants | Correct reference/working associations for new scopes; C old workspace working unchanged; invalid variants fail | NOT RUN |
+| W03-work-at / WO3 | A/B/C with non-overlapping SOURCE and TARGET, including C registration/reuse combinations and existing/no workspace working selection; equal/nested invalid variants | A workspace and B workspace/new child: TARGET working, SOURCE reference; C new child: TARGET working, SOURCE reference; C newly registered sources get workspace reference only, reused workspace roles/old child selections stay unchanged, and workspace working selection (or absence) is preserved; invalid variants fail | NOT RUN |
 | W03-tamper / WO3 | Edit seal, input, inventory, after image or creation ownership marker after preview | Exit 1; no publication; bytes retained for inspection | NOT RUN |
 | W03-stale / WO3 | After preview edit catalog/charter/read overview/source HEAD/dirty bytes or replace checkout | First confirmed apply refuses; no partial targets; new proposal required | NOT RUN |
 | W03-crash / WO3 | Inject crash before journal, after journal, during stage, after child rename, between catalog/local writes, before/after receipts, before retirement; replay exact apply | Before commit no effects; after commit recovery forwards identical images; child cannot open while journal exists; one final child/receipt | NOT RUN |
 | W03-edit-recovery / WO3 | Crash mid-publication; add unexpected staged/published child file or edit target to neither image; retry | No further writes after global precheck; journal/all images retained; explicit actionable refusal | NOT RUN |
 | W03-race / WO3 | Two packets share catalog before digest, or concurrent duplicate child creation; apply from coordinated fixture threads/processes | One serial success; other stale/conflict; no merged invisible preview changes or usable partial child | NOT RUN |
-| W03-overview / WO3 | A generated/supplied overview then separate update, reject and apply; C note only; test 40/41-line charter | Coverage/limits/pins retained; revision only advances on apply; C never updates root overview/charter; charter limit enforced | NOT RUN |
+| W03-overview / WO3 | A generated/supplied overview then separate update, reject and apply; inspect sealed after-image before apply; missing/rejected/mismatched receipt variants; C note only; test 40/41-line charter | After-image already has deterministic outer-packet/receipt.md path and is not rewritten on apply; only matching applied receipt confirms candidate; reject keeps prior overview; coverage/limits/pins retained, revision only advances on apply; C never updates root overview/charter; charter limit enforced | NOT RUN |
 | W03-schema / WO3 | Parse valid A/B/C TOML and malformed/unknown/duplicate/cross-scope cases above | Exact version/key/type/uniqueness errors; no automatic repair; canonical writes preserve semantics | NOT RUN |
 | W04-zero / WO4 | A W with no children; fake native open/status/map/draft --workspace | Selected source cwd, useful understanding/notes/work actions; no missing Claim/gate demand or sentinel child | NOT RUN |
 | W04-scope / WO4 | Zero/one/multiple children; explicit --workspace in open/status/map/draft from child records cwd (where present); bare entry at W root or explicit-root open from linked checkout | Explicit workspace always wins; workspace-root entry stays workspace; external source/sole child/history never selects a child; missing root refuses | NOT RUN |

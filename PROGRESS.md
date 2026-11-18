@@ -1,5 +1,31 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO2 second-review contract clarifications
+
+- Clarified C with --work-at in source-catalog rules, CLI and W03-work-at: the new
+  child selects TARGET working / SOURCE reference; newly registered sources get
+  workspace reference associations only, reused workspace roles and old child
+  selections remain unchanged, and workspace working selection/absence is preserved.
+- Enumerated onboard with an existing initialized workspace and neither --project
+  nor --init as exit 2 with no writes in CLI/Errors and W03-root. This is the existing
+  intended usage-error boundary, not an additional intake mode.
+- Defined overview receipt as deterministic <outer-packet>/receipt.md, already in
+  the after-image sealed before apply; apply does not fill or rewrite it. Only a
+  matching applied receipt for the packet/seal and overview result hash confirms
+  the candidate. W03-overview includes preparation and invalid-receipt assertions.
+- Checked consistency across ownership rules, CLI, publication/receipt protocol,
+  examples and acceptance matrix. No accepted decisions reopened or runtime changed;
+  WO2 remains pending independent semantic review and researcher acceptance, and
+  WO3–WO5 implementation/live cases remain NOT RUN. Permission task untouched.
+- Checks run: required external doc checker and git diff --check passed. Existing
+  document syntax checks parsed 1 JSON, 6 TOML, 1 YAML and 2 Markdown front-matter
+  examples; 7 local fragment links resolved. Illustrative hashes remain unverified.
+  These checks establish syntax/references/scope, not semantic approval or runtime
+  behavior. Code tests intentionally skipped for this documentation-only scope.
+- Session ID unavailable; no blockers or new business decision. Next: independent
+  review of the clarified specification. Local documentation commit only; no real
+  workspace/session/source actions, push or merge.
+
 ## 2026-11-18 — WO2 supervisor review revisions
 
 - Revised docs/workspace-onboarding-contract.md within documentation-only scope.
