@@ -98,7 +98,8 @@ def test_an_object_draft_is_created_only_when_applied(populated):
     assert relative not in state.draft_files
     result = run(populated, "s\n")
     assert "Object draft: " + relative in result.stdout
-    assert "Would create: projects/demo/claims/C-002.md" in result.stdout
+    assert "New Claim · core mechanism" in result.stdout
+    assert "Effect    creates C-002 (proposed); nothing else changes" in result.stdout
     assert snapshot(populated) == before  # preview and skip write nothing
     result = run(populated, "a\n")
     assert result.exit_code == 0, result.output
@@ -144,8 +145,8 @@ def test_a_ruling_uses_the_decision_proposal_applied_before_it(populated):
     result = run(populated, "a\na\n")
     assert result.exit_code == 0, result.output
     assert result.stdout.index("Object draft") < result.stdout.index("Ruling proposal")
-    assert "Ruling on: O-001 (open -> answered)" in result.stdout
-    assert "Decision: D-002" in result.stdout and "Adds to sections: Response" in result.stdout
+    assert "Ruling · O-001: open → answered" in result.stdout
+    assert "Effect    status open → answered; adds Response; backed by D-002" in result.stdout
     assert "Created: D-002" in result.stdout and "Ruled: O-001" in result.stdout
     ruled = decode((populated / "projects/demo/objections/O-001.md").read_bytes())
     assert ruled.header["status"] == "answered" and "D-002" in ruled.header["decisions"]
@@ -217,17 +218,33 @@ def test_a_second_decider_cannot_apply_the_same_proposal(populated):
 # UX6: summary-first previews.
 
 
-def test_decide_shows_a_summary_and_v_shows_all_before_applying(populated):
+def test_decide_shows_what_changes_and_v_shows_all_before_applying(populated):
     put(populated, "claim-20261105T100000Z.md", CLAIM)
     result = run(populated, "v\na\n")
     assert result.exit_code == 0, result.output
     summary, _, full = result.stdout.partition("[a]pply / [r]eject / [s]kip / [v]iew all / [q]uit")
-    assert "  type mechanism · importance core · status proposed" in summary
-    assert "  Statement: SRPT reduces tail latency under bursty arrivals." in summary
-    assert "(v views all of it)" in summary
+    assert "  1  New Claim · core mechanism  (demo)" in summary  # the opening overview
+    assert "── [1/1] New Claim · core mechanism ─" in summary
+    assert "Statement SRPT reduces tail latency under bursty arrivals." in summary
+    assert "Effect    creates C-002 (proposed); nothing else changes" in summary
     assert "## Scope" not in summary and "Single GPU serving." not in summary
     assert "## Scope\nSingle GPU serving." in full  # v printed every line
     assert "Created: C-" in full
+
+
+def test_a_ruling_shows_the_objection_it_answers(populated):
+    decision = (
+        "---\nschema_version: 1\nstatus: active\nsource: {kind: human, actor: Agent}\n"
+        "related: [O-001]\n---\n## Context\nc\n\n## Choice\nAnswer it.\n\n"
+        "## Rejected alternatives\nr\n\n## Rationale\nr\n"
+    )
+    put(populated, "decision-20261105T100000Z-answer.md", decision)
+    put(populated, "ruling-20261105T100001Z-answer.md", ruling())
+    result = run(populated, "s\ns\n")
+    ruling_screen = result.stdout.split("[2/2]")[1]
+    assert "O-001     (major · open · on C-001) " in ruling_screen
+    assert "Response  The drift experiment covers the drifting workload." in ruling_screen
+    assert "Why       The drift run answers it." in ruling_screen
 
 
 def test_full_flag_prints_proposals_without_the_view_choice(populated):
@@ -249,3 +266,19 @@ def test_summary_of_a_ruling_names_its_response_and_why():
     assert found.main == ("Response", "The drift experiment covers the drifting workload.")
     assert found.why == "The drift run answers it."
     assert proposal_summary("no front matter\n").facts == ()
+
+
+def test_decide_colours_headers_and_effects_only_on_a_terminal(monkeypatch):
+    from toulmin.cli import decide
+    from toulmin.protocols.proposal_view import ProposalView, Row
+
+    view = ProposalView(
+        "New Claim", (Row("Statement", "S.", main=True), Row("Effect", "creates C-2"))
+    )
+    monkeypatch.setattr(decide, "colour_enabled", lambda: False)
+    plain = decide.header("[1/2]", "New Claim", "demo", 40)
+    assert plain.startswith("── [1/2] New Claim ─") and plain.endswith(" demo") and len(plain) == 40
+    assert "\x1b[" not in "".join(decide.view_lines(view, 60))
+    monkeypatch.setattr(decide, "colour_enabled", lambda: True)
+    assert "\x1b[1m[1/2] New Claim\x1b[0m" in decide.header("[1/2]", "New Claim", "demo", 40)
+    assert "\x1b[32mcreates C-2\x1b[0m" in "".join(decide.view_lines(view, 60))

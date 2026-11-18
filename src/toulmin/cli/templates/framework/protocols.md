@@ -1498,3 +1498,23 @@ state under the existing lock, so another bind/refresh/send cannot be overwritte
 L3-only lifecycle change; no schema or L1/L2 rule changes. Receipt semantics remain
 acknowledgment, not comprehension or research approval. Explicit refresh remains recovery
 for timeout, no-attach and uncertain delivery. No independent review behavior changes.
+
+## Readable decide, first batch (2026-11-18)
+
+Authorized with "可以，而且最好也添加颜色和分块的效果" (decisions E1–E6 of
+`~/notes/toulmin/decide-readability-diagnosis.md`, first batch: object drafts, rulings, Brief
+and stage proposals, the opening overview, colour and blocks). `protocols/proposal_view.py`
+(L2, read-only) turns a proposal preview into a title and labelled rows: the object a ruling
+answers or a draft targets (its own Content or Statement), the proposal's main text, an
+Effect line derived from the preview (created ID, status change or "stays", added sections,
+links, backing Decision, related objects) and Why. decide prints, per item, a rule header
+`── [i/n] title ─── project`, the file path (dim), then the rows; on a terminal rows wrap with
+the main text limited to six lines and context to three (`v` shows the rest), and off a
+terminal each row stays one uncut line. Problems drop the workspace's absolute prefix and end
+with the way out (reject with a reason, or ask the agent to fix the draft). An opening
+overview numbers every item with its title and project. Colour (terminal only, NO_COLOR
+respected): bold titles and labels, dim rules and paths, green effects and applied results,
+yellow rejections, red problems and errors. Other item kinds get the same header and keep
+their previews (second batch). Application, digests, outcomes and confirmation semantics are
+unchanged. Group actions in the overview remain part of the second batch.
+

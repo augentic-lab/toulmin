@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import sys
+import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
@@ -23,6 +24,7 @@ from toulmin.cli import workspace as workspace_cli
 from toulmin.cli.aoe import handoff_preview, handoff_result
 from toulmin.cli.initialize import workspace_setup
 from toulmin.cli.settings import ACTOR_HINT, resolve_actor, root_option
+from toulmin.cli.terminal import colour_enabled, interactive, paint
 from toulmin.core.atomic import digest
 from toulmin.core.codec import decode
 from toulmin.core.handoffs import validate_handoff
@@ -38,6 +40,7 @@ from toulmin.protocols.build_import import read_record
 from toulmin.protocols.handoff import apply_handoff
 from toulmin.protocols.labels import short_label
 from toulmin.protocols.proposal_summary import proposal_summary
+from toulmin.protocols.proposal_view import ProposalView, plain_problem, proposal_view
 from toulmin.protocols.research_map import AGENT, YOU
 from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
@@ -297,7 +300,7 @@ def _interactive() -> bool:
 
 
 def _ask(choices: str, words: dict[str, str] = WORDS, default: str = "s") -> str:
-    text = " / ".join(f"[{letter}]{words[letter][1:]}" for letter in choices)
+    text = " / ".join(f"[{styled(letter, 'bold')}]{words[letter][1:]}" for letter in choices)
     while True:
         answer = str(typer.prompt(text, default=default)).strip().lower()
         letter = answer[:1]
@@ -346,6 +349,7 @@ class Run:
     staged: set[str] = field(default_factory=set)  # projects whose stage was ruled (H5)
     notes: dict[str, list[str]] = field(default_factory=dict)  # per project, in order (R3)
     full: bool = False  # UX6: print every proposal in full instead of its summary
+    position: str = ""  # "[2/5]" of the item being shown, for its header
 
     def _note(self, project: str, text: str) -> None:
         self.notes.setdefault(project, []).append(text)
@@ -589,7 +593,7 @@ class Run:
         if shown.problems and shown.problems[0].startswith("already "):
             typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
             return True
-        _show_proposal(shown, item.project, full=self.full)
+        _show_proposal(self.root, shown, item.project, self.position, full=self.full)
         if shown.interrupted:
             choices = "sq" if shown.problems else "asq"
         else:
@@ -604,7 +608,7 @@ class Run:
                 self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
             )
             verb = {"ruling": "Ruled", "brief": "Updated", "stage": "Stage ruled"}
-            typer.echo(f"{verb.get(item.kind, 'Created')}: {done.result}")
+            typer.echo(styled(f"{verb.get(item.kind, 'Created')}: {done.result}", "green"))
             typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
             self.applied += 1
             self._note(item.project, f"applied {_name(item.path)} ({done.result})")
@@ -617,7 +621,9 @@ class Run:
             project_proposals.reject(
                 self.root, item.project, item.path, self.actor, reason, shown.sha256
             )
-            typer.echo(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}")
+            typer.echo(
+                styled(f"Rejected; outcome: {project_proposals.outcome_path(item.path)}", "yellow")
+            )
             self.rejected += 1
             self._note(item.project, f"rejected {_name(item.path)}")
         return choice != "q"
@@ -1184,8 +1190,82 @@ def summary_lines(text: str, width: int) -> list[str]:
     return lines or ["  (no summary; press v to view all)"]
 
 
-def _show_proposal(shown: project_proposals.Preview, project: str, *, full: bool = True) -> None:
-    typer.echo(f"Project: {project}")
+MAIN_LINES = 6  # the proposal's own text before "v" is needed (E2)
+CONTEXT_LINES = 3  # the object it answers or targets (E3)
+COLUMN = 10  # label column, as on the project card
+
+
+def styled(text: str, *styles: str) -> str:
+    """Colour only on a terminal with NO_COLOR unset (UX5); otherwise the text unchanged."""
+    return paint(text, *styles) if text and colour_enabled() else text
+
+
+def header(position: str, title: str, project: str | None, width: int) -> str:
+    """One rule per item: ``── [2/5] New Claim · core problem ───── project``."""
+    left = f"── {position} {title} ".replace("  ", " ")
+    right = f" {project}" if project else ""
+    fill = max(width - len(left) - len(right), 3)
+    if not colour_enabled():
+        return left + "─" * fill + right
+    return (
+        paint("── ", "dim")
+        + paint(f"{position} {title}".strip(), "bold")
+        + " "
+        + paint("─" * fill, "dim")
+        + right
+    )
+
+
+def view_lines(view: ProposalView, width: int) -> list[str]:
+    """Labelled rows: context, the proposal's content, its effect and why (E1–E3)."""
+    lines: list[str] = []
+    room = max(width - COLUMN, 20)
+    shaped = interactive()  # off a terminal each row stays one exact, uncut line
+    for row in view.rows:
+        limit = MAIN_LINES if row.main else CONTEXT_LINES if row.label != "Effect" else 4
+        body = textwrap.wrap(row.text, room, break_on_hyphens=False) if shaped else [row.text]
+        body = body or [""]
+        if len(body) > limit:
+            body = body[:limit]
+            tail = " … (v)"
+            body[-1] = short_label(body[-1] + " …", room - len(tail)).rstrip("…").rstrip() + tail
+        label = row.label
+        if len(label) >= COLUMN:
+            lines.append(styled(label, "bold"))
+            label = ""
+        colour = ("green",) if row.label == "Effect" else ()
+        for index, text in enumerate(body):
+            head = label.ljust(COLUMN) if index == 0 else " " * COLUMN
+            lines.append(styled(head, "bold") + (styled(text, *colour) if colour else text))
+    return lines
+
+
+def problem_lines(root: Path, problems: tuple[str, ...], width: int) -> list[str]:
+    """Problems in plain words with the way out (E6)."""
+    lines: list[str] = []
+    for problem in problems:
+        text = "Problem: " + plain_problem(root, problem)
+        shaped = textwrap.wrap(text, width, subsequent_indent="  ") if interactive() else [text]
+        lines += [styled(line, "red") for line in shaped]
+    if problems:
+        lines.append("  It cannot be applied as written: reject it with a reason, or ask the agent")
+        lines.append("  to fix the draft and decide it again.")
+    return lines
+
+
+def _show_proposal(
+    root: Path,
+    shown: project_proposals.Preview,
+    project: str,
+    position: str = "",
+    *,
+    full: bool = True,
+) -> None:
+    width = terminal_width()
+    view = proposal_view(root, project, shown)
+    room = max(width - len(position) - len(project) - 12, 20)
+    typer.echo(header(position, short_label(view.title, room), project, width))
+    typer.echo(styled(f"{LABEL[item_kind(shown.kind)]}: {shown.path}", "dim"))
     if shown.interrupted:
         typer.echo("An earlier application of this proposal started but did not finish.")
         if shown.recovered is not None:
@@ -1195,36 +1275,35 @@ def _show_proposal(shown: project_proposals.Preview, project: str, *, full: bool
             )
         else:
             typer.echo("Nothing it would have produced was found; apply runs it now.")
-    if (
-        shown.kind not in {"ruling", "brief", "stage"}
-        and shown.target is not None
-        and shown.recovered is None
-    ):
-        typer.echo(f"Would create: {shown.target} (the ID is assigned when applied)")
     if shown.done:
         typer.echo("Already ruled before the interruption: " + ", ".join(shown.done))
-    changes = shown.changes or ((shown.change,) if shown.change is not None else ())
-    for change in changes:
-        line = f"Ruling on: {change.object_id}"
-        if change.status != change.previous_status:
-            line += f" ({change.previous_status} -> {change.status})"
-        typer.echo(line)
-    if changes:
-        change = changes[0]
-        if change.decision is not None:
-            typer.echo(f"Decision: {change.decision}")
-        if change.sections:
-            each = " (each object)" if len(changes) > 1 else ""
-            typer.echo("Adds to sections: " + ", ".join(change.sections) + each)
-        if change.links:
-            typer.echo("Sets: " + "; ".join(change.links))
-    typer.echo("")
     if full:
+        if (
+            shown.kind not in {"ruling", "brief", "stage"}
+            and shown.target is not None
+            and shown.recovered is None
+        ):
+            typer.echo(f"Would create: {shown.target} (the ID is assigned when applied)")
+        changes = shown.changes or ((shown.change,) if shown.change is not None else ())
+        for change in changes:
+            line = f"Ruling on: {change.object_id}"
+            if change.status != change.previous_status:
+                line += f" ({change.previous_status} -> {change.status})"
+            typer.echo(line)
+        if changes:
+            change = changes[0]
+            if change.decision is not None:
+                typer.echo(f"Decision: {change.decision}")
+            if change.sections:
+                each = " (each object)" if len(changes) > 1 else ""
+                typer.echo("Adds to sections: " + ", ".join(change.sections) + each)
+            if change.links:
+                typer.echo("Sets: " + "; ".join(change.links))
+        typer.echo("")
         typer.echo(shown.text.rstrip("\n"))
     else:
-        for line in summary_lines(shown.text, terminal_width()):
+        for line in view_lines(view, width):
             typer.echo(line)
-        typer.echo("  (v views all of it)")
     typer.echo("")
     stage = shown.stage
     if stage is not None and not shown.problems and shown.recovered is None:
@@ -1243,10 +1322,45 @@ def _show_proposal(shown: project_proposals.Preview, project: str, *, full: bool
         for line in shown.diff:
             typer.echo(f"  {line}")
         typer.echo("")
-    for problem in shown.problems:
-        typer.echo(f"Problem: {problem}")
-    if shown.kind in {"ruling", "brief", "stage"}:
+    for line in problem_lines(root, shown.problems, width):
+        typer.echo(line)
+    if full and shown.kind in {"ruling", "brief", "stage"}:
         typer.echo("The Why section is shown to you only; it is not written to the target.")
+
+
+def item_kind(kind: str) -> str:
+    """The decide item kind of a proposal kind: object drafts share one."""
+    return kind if kind in {"ruling", "brief", "stage"} else "object"
+
+
+def agenda_title(root: Path, item: Item) -> str:
+    """One line per item for the opening overview (E4)."""
+    if item.project is not None and item.kind in {"object", "ruling", "brief", "stage"}:
+        try:
+            shown = project_proposals.preview(root, item.project, item.path)
+            if shown.problems and shown.problems[0].startswith("already "):
+                return f"{LABEL[item.kind]} (no longer pending)"
+            title = proposal_view(root, item.project, shown).title
+            return title + (" — cannot be applied as written" if shown.problems else "")
+        except (OSError, ValueError):
+            return item.description
+    name = item.path.rsplit("/", 1)[-1] if item.kind != "build-verify" else item.path
+    return f"{LABEL[item.kind]} · {name}" if item.kind != "build-verify" else item.description
+
+
+def agenda(root: Path, items: list[Item], width: int) -> list[str]:
+    """The opening overview: every item numbered as it will be shown, with its project."""
+    counts: dict[str, int] = {}
+    for item in items:
+        counts[LABEL[item.kind]] = counts.get(LABEL[item.kind], 0) + 1
+    lines = ["  " + " · ".join(f"{name} {count}" for name, count in counts.items())]
+    digits = len(str(len(items)))
+    for number, item in enumerate(items, 1):
+        where = f"  ({item.project})" if item.project else "  (workspace)"
+        lead = f"  {str(number).rjust(digits)}  "
+        room = max(width - len(lead) - len(where), 20)
+        lines.append(lead + short_label(agenda_title(root, item), room) + styled(where, "dim"))
+    return lines
 
 
 def decide_command(
@@ -1329,7 +1443,9 @@ def decide_command(
     who = resolve_actor(actor)
     if who is None:
         raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
-    typer.echo(f"Deciding as: {who}. Skip leaves an item pending.")
+    for line in agenda(root, list(found.items), terminal_width()):
+        typer.echo(line)
+    typer.echo(f"Deciding as: {who}. Skip leaves an item pending; v shows an item in full.")
     run = Run(root, who, full=full)
     remaining = 0
     queue = list(found.items)
@@ -1339,13 +1455,18 @@ def decide_command(
         item = queue.pop(0)
         index += 1
         offered.add((item.kind, item.spec or item.path, item.project))
-        typer.echo(f"\n[{index}/{index + len(queue)}] {item.description}")
+        run.position = f"[{index}/{index + len(queue)}]"
+        typer.echo("")
+        if item.kind not in {"object", "ruling", "brief", "stage"}:
+            title = "Verify" if item.kind == "build-verify" else LABEL[item.kind]
+            typer.echo(header(run.position, title, item.project, terminal_width()))
+            typer.echo(styled(item.description, "dim"))
         try:
             if not run.decide(item):
                 remaining = len(queue)
                 break
         except (OSError, ValueError) as error:
-            typer.echo(f"Error: {error}", err=True)
+            typer.echo(styled(f"Error: {plain_problem(root, str(error))}", "red"), err=True)
             typer.echo("This item is unchanged and stays pending.")
             run.failed += 1
         if run.rescan:

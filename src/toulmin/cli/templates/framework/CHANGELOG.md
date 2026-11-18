@@ -1,5 +1,9 @@
 # Framework changes
 
+- Readable decide (2026-11-18): an opening overview, one block per proposal (what it is,
+  what it answers, what applying changes, why), plain problems and terminal colour.
+  Application is unchanged.
+
 - AC1 startup context (2026-11-18): an unsent context retries while open --attach
   is active (up to three minutes), after you resolve native menus. No menu autoaccept,
   implicit resend or fabricated read receipt. Explicit refresh remains recovery.

@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-18 — Readable decide, first batch (E1–E6)
+
+- Decision: after a decide replay showed path-titled, cut summaries, the researcher accepted E1–E6 (`~/notes/toulmin/decide-readability-diagnosis.md`) and authorized the first batch with colour and blocks ("可以，而且最好也添加颜色和分块的效果").
+- Change: `protocols/proposal_view.py` (L2, read-only) builds a title and labelled rows (answered/targeted object, main text, Effect from the preview, Why) for object drafts, rulings, Brief and stage proposals. decide prints an opening numbered overview, a rule header per item (`── [i/n] title ─── project`) with the file path dimmed, wrapped rows (main text 6 lines, context 3, `v` for the rest; uncut single lines off a terminal), plain problems with the way out, and terminal-only colour. Other item kinds get the header and keep their previews. Application, digests and outcomes unchanged.
+- Agent-run check (not acceptance): replay of five historical rkey-lifecycle proposals on a job-tmp copy in a 100-column pseudo-terminal.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2422 passed (layout assertions updated; new tests for ruling context, overview/effect rows and terminal-only colour).
+- Pending: second batch (intake, review, workspace items, handoffs, group actions in the overview, no-op intake not queued); the researcher's own reading.
+- Session ID: unavailable.
+
 ## 2026-11-18 — AC1 automatic startup context recovery while attached
 
 - Researcher requested automatic Toulmin-context reading for new open sessions. Existing

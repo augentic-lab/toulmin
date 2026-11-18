@@ -167,7 +167,7 @@ def test_a_second_handoff_is_superseded_by_the_one_just_applied(root):
     }
     result = run(root, "a\n", "--confirmed-by", "Tianchi YU")
     assert result.exit_code == 0, result.output
-    shown = re.findall(r"\] Workspace handoff: (\S+)", result.output)
+    shown = re.findall(r"^Workspace handoff: (\S+)", result.output, re.M)
     assert set(shown) == drafts  # same-second drafts have no fixed order
     assert "Superseded by the workspace handoff applied in this run; skipped." in result.output
     record = next((root / "sessions").glob("*.md")).read_text()

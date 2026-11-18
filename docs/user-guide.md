@@ -41,10 +41,14 @@ per Claim (✓ supported or ready to rule, ? fatal/major doubts open, · no veri
 yet), the main open doubts grouped by Claim, what waits in `decide` and up to three next moves.
 `toulmin map NAME --full` shows the gates, the whole argument tree and sources.
 
-`toulmin decide` shows each proposal as a short summary (its key facts, the first sentence of
-its main section and of its Why). Press `v` to read all of it before you decide; a build
-request's summary lists the checks that will run as you, and `v` adds the worker's full goal.
-`toulmin decide --full` prints everything, as before.
+`toulmin decide` opens with a numbered overview of everything waiting. Each object draft,
+ruling, Brief or stage proposal then gets its own block: a title saying what it is ("New Claim ·
+core problem", "Response to O-027", "Ruling · O-004: open → answered"), the object it answers
+or targets, its own text (up to six lines), an Effect line saying exactly what applying
+changes, and its Why. Press `v` to read all of it before you decide; a build request's summary
+lists the checks that will run as you, and `v` adds the worker's full goal. Problems say why
+an item cannot be applied and what to do. In a terminal, headers, effects and problems are
+coloured (`NO_COLOR=1` turns colour off). `toulmin decide --full` prints everything, as before.
 
 In a terminal, Toulmin colours marks and severities (fatal and major stand out, minor is dim);
 set `NO_COLOR=1` to turn colour off. `toulmin status` describes each Claim in words ("proposed ·
