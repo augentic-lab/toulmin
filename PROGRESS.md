@@ -1,5 +1,36 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO2 supervisor review revisions
+
+- Revised docs/workspace-onboarding-contract.md within documentation-only scope.
+  Inferred from code: bare open infers a child only from its records directory with
+  cwd root discovery; map also has records-directory inference, while bare status
+  already shows workspace. Preserved those baseline differences, explicit-root open
+  behavior and explicit --workspace override. Removed the proposed convenience break;
+  A/B/C intake still never supplies an omitted project from source/sole child/history.
+- The original contract already described the directory-anchor limitation and the
+  reviewed new-ID option. Added explicit recovery steps: register a distinct path/
+  device-inode as a reference, confirm, then separately select working and confirm.
+  Retain old provenance and reject same-path/saved-inode collisions; no re-anchor,
+  silent rebind/unbind, source copy or automatic old-child change is introduced.
+- Preserved JSON-in-packet.md with its existing discovery/receipt/journal compatibility
+  reason. Numbered preparation: archive inventories, privately seal v1 creation,
+  attach/publish marker with that archive, then seal the outer envelope. Outer-sealed
+  inputs/preconditions authenticate marker bytes; creation pins the child seal.
+  Ownership discovery cannot skip a sealed owner because its marker is damaged.
+- Confirmed illustrative digests were already globally unverified; added a bold warning
+  immediately above the A JSON envelope. Added/updated NOT RUN entry-compatibility,
+  directory-recovery and preparation/ownership acceptance cases. WO2 stays pending
+  independent review and researcher acceptance; WO3–WO5 remain unimplemented/NOT RUN.
+- Checks run: required external doc checker passed; git diff --check passed. Document
+  syntax checks parsed 1 JSON, 6 TOML, 1 YAML and 2 Markdown front-matter examples;
+  7 local fragment links resolved. Digests were not recomputed. These are syntax/
+  reference/scope checks, not semantic approval or runtime evidence. No code tests,
+  real workspaces, source edits, sessions or permission-task files touched.
+- Session ID unavailable; no blockers or new business decision. Next: another independent
+  Chief semantic review of the revised specification, then researcher ruling. Local
+  documentation commit only; no push or merge.
+
 ## 2026-11-18 — WO2 workspace onboarding contract specification
 
 - Delivered docs/workspace-onboarding-contract.md for the accepted A/B/C intake modes:

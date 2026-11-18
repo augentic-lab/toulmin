@@ -171,6 +171,49 @@ its initial anchor identity; changed content in a moved directory cannot be sile
 blessed. Restore the original anchors or register a new source after review. Rebind
 never moves files, changes scope selections or redirects an existing native session.
 
+### Directory recovery without re-anchoring
+
+Legitimate directory edits can make the original anchors impossible to reproduce
+at a moved/replaced location. WO2 adds no re-anchor, identity-edit or collision
+bypass operation. Preserve the original definition, binding and archived pins as
+historical provenance; use a reviewed new source and explicit selection instead:
+
+1. Identify the old source ID and archived snapshot, and inspect the intended new
+   location read-only. If it still occupies the exact original bound path and
+   device/inode, ordinary in-place use under the old ID remains valid; no rebind
+   is needed just because its text changed. If rebind is needed and the original
+   anchors differ, `source bind OLD_ID PATH` must refuse.
+2. Choose a new ID and a genuinely separate, non-overlapping location whose path
+   **and** device/inode do not collide with any saved local binding. An edited
+   directory already moved/recreated at such a location can be used directly.
+   Propose `toulmin source add PATH --workspace --register-source NEW_ID
+   --rationale TEXT --root ROOT`, omitting `--working`. The rationale must link
+   the old ID/snapshot and explain the legitimate edits; the new registration
+   records its current anchors and inventory, not a rewritten old identity.
+3. Review and apply that source-change packet in `toulmin decide --workspace
+   --root ROOT`. It adds the new definition, local binding and workspace reference
+   association; the old working selection and all old provenance stay unchanged.
+4. Propose `toulmin source working --workspace NEW_ID --rationale TEXT --root ROOT`,
+   then separately review/apply it in decide. This demotes only the workspace's
+   previous working association to reference. For a child that also needs the new
+   source, separately review its source-add/reuse association and its existing
+   `source working NAME NEW_ID RATIONALE` proposal; no old child changes implicitly.
+5. Inspect stale native bindings and use an explicit same-scope new/replacement
+   session if opening at the new source is wanted. Selection never redirects a
+   live session, widens permissions or changes old source snapshots.
+
+**Collision boundary:** registration under a new ID at the same saved path or
+filesystem identity still refuses, even when the old path is now missing or its
+anchors changed. A move retaining the old device/inode is not automatically a new
+checkout for this purpose. `--register-source` cannot bypass that guard. In that
+case the researcher must either restore the original anchors and explicitly bind
+the old ID, or independently prepare a distinct non-overlapping directory with a
+different filesystem identity before step 2. Toulmin does not create/copy that
+directory, clear the old binding, or infer a new identity. No source/file operation
+is performed by this WO2 specification.
+
+### Machine-local files
+
 Ignore `tools/*.local.toml`, `.aoe/`, publication prepare/pending/completed paths and
 `projects/.creating-*/` under existing ignore policy. Pending local image files use
 `tools/wo-<packet-token>-before.local.toml` and
@@ -426,17 +469,33 @@ on request in the input; it never relocates workspace notes or copies code.
 | Task preview/import | `toulmin task preview --workspace FILE --root ROOT`; `toulmin task import --workspace FILE --root ROOT` (import previews; `--confirm --confirmed-by ACTOR` applies) |
 | New session after source change | Existing scoped `aoe open ... --new-session` / `aoe bind ... --replace` forms; `--workspace` explicitly selects workspace |
 
-Open/status/map/draft/overview/task without a project choose workspace. This also
-holds with zero, one or many children and when invoked inside a child's records
-directory; previous convenience child-cwd inference in bare `open` is intentionally
-removed for the new workspace-first entry. Explicit project arguments and low-level
-legacy `aoe` forms remain supported. Conflicting `--workspace` and project selectors
-are exit 2. Root resolution for non-intake commands retains nearest-workbench
-search and explicit `--root`/`--in NAME_OR_PATH` precedence where those forms exist;
-`--root` and `--in` conflict. A source checkout is not a records root. If discovery
-finds no root, show a terminal picker only for an interactive `open`; no sole-known-
-workspace auto-selection. Noninteractive missing/ambiguous roots refuse without
-writing; `--in` name collision requires a full path. Status never initializes.
+Preserve the existing records-directory convenience: bare `toulmin open` from
+`ROOT/projects/NAME/` or below selects that child when the root is discovered from
+cwd and neither a project nor explicit `--root`/`--in` is given. Bare `open` at the
+workspace root stays workspace, regardless of zero, one or many children. Explicit
+`--workspace` always selects workspace and suppresses child-directory inference,
+including with root discovery. Explicit `open --root ROOT` or `--in` without a
+project also selects workspace, preserving current explicit-root behavior.
+
+At the recorded baseline, bare `status` already selects workspace even inside a
+child records directory; it does **not** share bare `open`'s inference. Preserve
+that behavior. Bare `map` retains its existing child-record-directory inference
+when cwd lies inside the resolved root's child, including with explicit `--root`;
+`map --workspace` suppresses it. Draft/overview/task workspace forms without a
+project choose workspace. These are command-specific scope rules, not a general
+inference from source location, a sole child or native history. Intake without
+`--project` still creates no child. Explicit project arguments and low-level
+legacy `aoe` forms remain supported. No removal of the existing bare-open
+convenience is proposed or awaiting a new business decision in WO2.
+
+Conflicting `--workspace` and project selectors are exit 2. Root resolution for
+non-intake commands retains nearest-workbench search and explicit
+`--root`/`--in NAME_OR_PATH` precedence where those forms exist; `--root` and `--in`
+conflict. A linked source checkout never selects a child through its association.
+If discovery finds no root, show a terminal picker only for an interactive `open`;
+no sole-known-workspace auto-selection. Noninteractive missing/ambiguous roots
+refuse without writing; `--in` name collision requires a full path. Status never
+initializes.
 
 Workspace decide includes C/new-child packets because those are workspace
 publications, not decisions of a nonexistent child. A later workspace overview proposal requires one or more repeated `--source ID`
@@ -496,17 +555,24 @@ or terminal EOF supplies approval. Existing v1 apply/reject command forms remain
 
 New root packets live at `runs/<YYYYMMDDTHHMMSSZ>-<kind>-<32hex>/` where kind is
 `onboard`, `understanding`, `source`, `derive`, or `catalog`. Mutable inputs stay in
-`runs/drafts/`. Packets contain `packet.md` (**JSON**, matching the current onboarding
-filename convention), `seal` (64-hex SHA-256 of exact packet bytes, followed by LF), `before/N`, `after/N`,
+`runs/drafts/`. New outer packets contain `packet.md` encoded as **JSON**, `seal`
+(64-hex SHA-256 of exact packet bytes, followed by LF), `before/N`, `after/N`,
 `inventory/ID.json` where applicable, and immutable `notes.md` if needed. Receipt is
 `receipt.md` after disposition. No mutable queue index or manual catalog is added.
+
+Keep JSON-in-`packet.md` deliberately: current onboarding/context-change packets
+already use that filename for JSON, and existing discovery, receipt references and
+journal records use its path. Renaming it would add a path compatibility change
+without changing the protocol. Readers dispatch by packet family and declared
+version, not by the `.md` suffix: this v2 outer envelope uses a JSON parser; the
+unchanged v1 **child creation** `packet.md` uses the restricted YAML/Markdown
+parser. Neither reader tries the other syntax as an automatic repair/fallback.
 
 JSON canonicalization for new packet bytes: sorted keys, two-space indent,
 `ensure_ascii=true`, one final LF. Every key in the following table is required;
 there are no extension keys. Preparing an archive without its final valid seal
-never queues an operation; incomplete preparation is reported as such. This permits
-archiving inventories before deriving a v1 creation packet from them, then attaching
-its ownership marker and finally publishing the outer sealed envelope.
+never queues an operation; incomplete preparation is reported as such. The numbered
+preparation sequence below defines how a child and its ownership are sealed.
 
 | Key | Type / constraint |
 | --- | --- |
@@ -571,14 +637,60 @@ Allowed targets by operation:
 | child-derive | New child files/provenance and catalog associations; unchanged definitions, local mapping, root overview and charter |
 | catalog-upgrade | Active catalog only; legacy bytes are a sealed packet artifact as specified in Compatibility; no old scope selections or other data changes |
 
-For B/C/derive, enclosing packet owns child creation. The v1 creation directory has
-an `onboarding` marker naming the enclosing directory; the generic queue never
-offers it separately. Its input/targets and receipt retain their existing v1
-schemas in [workspace formats §9](workspace-formats.md#9-child-creation-input--packet--project--receipt).
-Create the marker before publishing the outer packet; an orphan owned creation is
-reported and never separately applied. No mutable marker may redirect a sealed
-creation to a different transaction. An existing completed independent child
-creation cannot be retroactively wrapped in onboarding.
+### Preparation order and authenticated ownership
+
+For B/C/derive, enclosing packet owns child creation. Its input/targets and receipt
+retain their existing v1 schemas in
+[workspace formats §9](workspace-formats.md#9-child-creation-input--packet--project--receipt).
+Prepare in this order under the workspace writer lock, without publishing any
+confirmed source, overview or child:
+
+1. Reserve the final outer directory and v1 creation directory names. Archive the
+   bounded inventories, notes and external inputs under the outer directory,
+   leaving it **unsealed**. Inventory/source references in the child input name
+   those immutable archived paths/digests, never the future outer seal.
+2. Build the v1 creation input, target images, `packet.md` and its normal v1 seal
+   in a private preparation directory. Its final logical creation path is already
+   known. The v1 seal covers its own packet/input/target/source hashes under the
+   unchanged contract; it does not include the ownership marker or outer digest.
+3. Write `onboarding` inside the private creation directory. Its exact UTF-8 bytes
+   are the reserved outer root-relative directory name, **without a trailing LF**,
+   preserving the existing marker representation. Publish the v1 archive and
+   marker together by one directory rename, so a standalone sealed creation is
+   never briefly visible without its marker. A crash now leaves an orphan owned
+   creation, which queues/direct child commands report and refuse to apply alone.
+4. Construct the outer v2 envelope: `creation.path`/`creation.seal` pin the child
+   packet. Add the marker's final root-relative path and exact SHA-256 to **both**
+   `inputs` and `preconditions`. Complete and hash all other input/image entries.
+   Finally write outer `packet.md` and publish its valid outer `seal` last. Only
+   this complete outer packet is offered for researcher apply/reject.
+
+A and non-child operations omit steps 2–3 and have null `creation`; they still
+archive observations before publishing the final outer seal. Private preparation
+uses the existing ignored workspace prepare directories; incomplete preparation
+is reported, not auto-applied or repaired by readers.
+
+The **outer seal** authenticates the marker hash in inputs/preconditions and the
+child seal in `creation`. At first apply, the marker must match both its pinned
+bytes and this outer directory; recovery validates those same sealed dependencies
+before any writes. There is no digest cycle: reserved directory-name bytes →
+marker hash; inventories → v1 child seal; these independent hashes → outer seal.
+Neither the marker nor v1 child packet contains the outer seal.
+
+The generic queue and direct child-create path must also scan sealed outer
+ownership references before applying any otherwise standalone v1 creation.
+Ownership discovery first verifies the outer envelope's own bytes/seal and reads
+its `creation` reference, independently of marker validation. A missing/changed
+marker or child-seal mismatch then blocks application; it cannot cause the reader
+to skip that outer owner as though no owner existed.
+Deleting or redirecting a marker cannot make an already owned child independently
+applicable: the sealed outer `creation` reference still owns it. Missing/mismatched
+marker, multiple outer owners, or an orphan marker whose outer seal is absent is
+an explicit integrity/incomplete-preparation refusal, not a different owner or a
+new application route. Completed/rejected outer records retain ownership; a new
+attempt requires a fresh child packet. An existing completed independent child
+creation cannot be retroactively wrapped in onboarding. These are byte-integrity
+checks, not authentication against an actor who rewrites and reseals all records.
 
 ### Preview, disposition and receipt
 
@@ -949,7 +1061,7 @@ explicit project and the existing research protocols.
 | Project creation v1 / onboarding v1 / context-change v1 | Exact original target/receipt/seal semantics | Existing pending packets can finish under v1; enclosing v2 creations remain v1 with ownership marker |
 | Workspace/project proposals and receipts | Existing versions unchanged, scope from record/location | Never rewrite history to v2; no read-time recovery |
 | Workspace/project handoffs | Existing v1 applied records, charter limits and ID/reference rules | Existing handoff application; no moving workspace history into a child |
-| Explicit project commands | Existing onboarding/open/status/draft/decide-related forms remain supported | New optional scope forms are additive; the bare-open cwd inference change is explicit above |
+| Explicit project commands and bare entry | Existing explicit-child forms remain supported; bare open/map infer only from a child records directory under their current rules; bare status remains workspace | Preserve the current convenience, explicit-root open behavior and explicit --workspace override; no source-cwd/sole-child/history inference or unrelated breaking scope change |
 | Task request/import v1 | Existing project-only semantics and formal Run IDs | Continue unchanged for legacy project tasks; new workspace tasks must use scoped v2 |
 
 Readers never initialize, migrate, recover journals, prune mappings, upgrade
@@ -960,6 +1072,14 @@ explicit old project reads remain possible where they do not rely on the damaged
 shared data. Source-backed launches fail rather than bypass damaged shared state.
 A future reader must retain the original v1 identity algorithm and opaque old
 source provenance even if a later algorithm is added.
+
+At the recorded baseline, bare `open` infers the child from its records directory
+when using cwd root discovery; bare `status` already shows workspace state there.
+`map` has its own existing records-directory inference. WO2 preserves these
+command-specific differences and adds an explicit workspace override, keeping the
+three intake modes independent of existing entry convenience.
+The [bare-entry examples](#bare-entry-compatibility) and W05-entry-compat case
+below cover this boundary independently of A/B/C intake.
 
 ### Reviewed opt-in catalog conversion
 
@@ -1006,6 +1126,29 @@ Every repeated 64-hex hash, 40-hex commit, device/inode, time, path and token be
 and recompute every dependent digest/seal before apply; placeholder hashes are
 schema-shaped examples only. Invalid examples are syntactically valid TOML/YAML
 so a parser can distinguish schema errors from serialization errors.
+
+### Bare-entry compatibility
+
+These future compatibility assertions preserve baseline command-specific selection;
+they are not claims that a runtime trial was executed. Let W be a valid records
+root and latency one of its children (zero/one/multiple-child variants are covered
+in the acceptance matrix). No shell command below initializes or chooses a source.
+
+| Cwd and command | Expected scope |
+| --- | --- |
+| W; `toulmin open` | Workspace, even with one child |
+| W/projects/latency or below; `toulmin open` | Project latency via existing records-directory inference |
+| W/projects/latency; `toulmin open --root W` | Workspace, preserving explicit-root open behavior |
+| W/projects/latency; `toulmin open --workspace` | Workspace, explicit override |
+| W/projects/latency; `toulmin status` | Workspace, as at the baseline; no child inference |
+| W/projects/latency; `toulmin map` | Project latency via its existing records-directory rule |
+| W/projects/latency; `toulmin map --workspace --root W` | Workspace, explicit override |
+| An external linked source checkout; `toulmin open --root W` | Workspace, never the source's sole/last-associated child |
+
+Without a resolvable records root, the external-source case requires explicit
+selection as in CLI; source names/native history supply neither root nor project.
+Intake with no `--project` still creates zero children; no bare-entry convenience
+can supply an omitted intake project.
 
 ### A — New workspace only
 
@@ -1177,6 +1320,11 @@ refuses and asks for explicit bind; it cannot transfer that identity's old bindi
 
 ### Exact illustrative A envelope
 
+**Every digest in the JSON below is illustrative and unverified, including its
+catalog, definition, snapshot and image hashes.** They were not recomputed from
+fixture bytes. Copying/parsing this JSON does not make it apply-ready; an executable
+fixture must generate its referenced bytes and recompute all hashes and the seal.
+
 This JSON demonstrates the entire v2 envelope with a minimal proposed overview.
 For compactness `inputs` is empty (generated from the source inventory, no external
 input); there is no child/charter change. Before hashes are null only for actually
@@ -1344,6 +1492,8 @@ excluding explicitly volatile ignored operational files.
 | W03-root / WO3 | Missing root flag, ambiguous registry, unrelated nonempty W, existing W with init, empty W without init | Correct 2/1 exits per table; no accidental initialization/overwrite/source edits | NOT RUN |
 | W03-source / WO3 | Parent/child overlaps, path symlink, Git subdirectory, alias device/inode under another ID | Exit 1; source bytes untouched; no sealed proposal claiming valid registration | NOT RUN |
 | W03-identity / WO3 | Same upstream/different roots; equal roots/different checkouts; missing mapping; explicit mismatched ID | No upstream-only merge; checked exact reuse only; distinct registration allowed; missing bind/mismatch refuses | NOT RUN |
+| W03-directory-recovery / WO3 | Edited/moved directory whose old anchors no longer match: bind old ID; register new ID at distinct path/device-inode as reference; apply; separately select working/apply; retry same-path and retained-inode variants | Old bind mismatch refuses; reviewed new definition/current anchors and two separate decisions succeed only at noncolliding location; old provenance preserved; same-path/old-inode collisions refuse; no re-anchor, copy or implicit child change | NOT RUN |
+| W03-preparation-owner / WO3 | B/C/derive: interrupt after inventories, private v1 seal, public marker+child archive, and outer seal; then change/delete/redirect marker or attempt direct child create | No unowned sealed child becomes visible; outer-sealed marker input/precondition and creation reference validate; orphan/inconsistent ownership refuses; deleting marker never bypasses sealed outer ownership; no digest cycle | NOT RUN |
 | W03-work-at / WO3 | A/B/C with non-overlapping SOURCE and TARGET, plus equal/nested invalid variants | Correct reference/working associations for new scopes; C old workspace working unchanged; invalid variants fail | NOT RUN |
 | W03-tamper / WO3 | Edit seal, input, inventory, after image or creation ownership marker after preview | Exit 1; no publication; bytes retained for inspection | NOT RUN |
 | W03-stale / WO3 | After preview edit catalog/charter/read overview/source HEAD/dirty bytes or replace checkout | First confirmed apply refuses; no partial targets; new proposal required | NOT RUN |
@@ -1353,7 +1503,7 @@ excluding explicitly volatile ignored operational files.
 | W03-overview / WO3 | A generated/supplied overview then separate update, reject and apply; C note only; test 40/41-line charter | Coverage/limits/pins retained; revision only advances on apply; C never updates root overview/charter; charter limit enforced | NOT RUN |
 | W03-schema / WO3 | Parse valid A/B/C TOML and malformed/unknown/duplicate/cross-scope cases above | Exact version/key/type/uniqueness errors; no automatic repair; canonical writes preserve semantics | NOT RUN |
 | W04-zero / WO4 | A W with no children; fake native open/status/map/draft --workspace | Selected source cwd, useful understanding/notes/work actions; no missing Claim/gate demand or sentinel child | NOT RUN |
-| W04-scope / WO4 | Zero/one/multiple children; omit project in open/status/draft from child cwd or linked checkout | Workspace only if root resolves; missing root refuses; never infer child; explicit child remains supported | NOT RUN |
+| W04-scope / WO4 | Zero/one/multiple children; explicit --workspace in open/status/map/draft from child records cwd (where present); bare entry at W root or explicit-root open from linked checkout | Explicit workspace always wins; workspace-root entry stays workspace; external source/sole child/history never selects a child; missing root refuses | NOT RUN |
 | W04-v4 / WO4 | Fake source-backed workspace/project open, prepare/send/ack at valid pins; swap token/scope/cwd/manifest | Binding/manifest/ack v4 agree; wrong pins refuse; no falsely acknowledged delivery | NOT RUN |
 | W04-stale / WO4 | Change source selection/mapping/checkout or move W after bind; refresh/recover | Stale notice/refusal; old session never redirected; explicit new/replacement at same requested scope; history preserved | NOT RUN |
 | W04-writers / WO4 | Fake live writers across scopes/profiles at same path/device-inode; concurrent launch; lookup failure | Second writer refuses; serialized launch check; uncertainty refuses launch; no action sent to existing session | NOT RUN |
@@ -1362,6 +1512,7 @@ excluding explicitly volatile ignored operational files.
 | W04-task / WO4 | Fill workspace v2 task, fake confirm/export; change pin/baseline/checks/config; simulate uncertain new | No Claim/Spec needed; frozen exact source/commit/scope/export; changes refuse; recovery queries same ID, no duplicate task/kickoff | NOT RUN |
 | W04-import / WO4 | Fake done/abandoned task; preview/confirm import twice; crash between record/Run/applied; tamper artifact | One operational workspace run.md, no formal root IDs; exact pins/artifacts/result; failed state preserved; replay idempotent; no scientific promotion | NOT RUN |
 | W05-derive / WO5 | A W with notes/overview and shared sources; later project propose with source/working flags; reject then new proposal/apply | Reviewed child only; references existing definitions/context; workspace history/source tree untouched; no automatic working inheritance/launch | NOT RUN |
+| W05-entry-compat / WO5 | W with zero/one/multiple children: run bare open/status/map at W and inside each existing child records directory; repeat open with explicit root/--workspace, map with --workspace, and explicit-root open from external source | Preserve baseline bare-open discovered-root child inference and bare-map records-directory inference; bare status remains workspace; explicit --workspace always workspace; explicit-root open without project stays workspace; no source-cwd/sole-child/history inference | NOT RUN |
 | W05-v1 / WO5 | Existing valid source catalog/local mapping v1, native v1/v2/v3, project overviews/proposals/receipts/handoffs; open/status/explicit child commands | Original read semantics and byte-identical old files; no read conversion or root/project reassignment; old archives validate | NOT RUN |
 | W05-upgrade / WO5 | V1 workspace; propose upgrade, reject; propose/apply; crash/recover; include pending v1 source packet variant | Opt-in only; exact legacy artifact/digest; definitions dedup by ID; old child roles/trees/local bytes unchanged; workspace references only; pending conflict refuses | NOT RUN |
 | W05-forward / WO5 | Unknown catalog/local/binding/overview versions and damaged active v2 with valid old artifact | Explicit invalid-data diagnostics; no partial parse or fallback to legacy; unrelated old child inspection still possible | NOT RUN |
