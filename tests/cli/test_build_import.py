@@ -415,7 +415,7 @@ def test_map_cli_and_aoe_card_inject_current_task_state(chief_env):
     assert "Chief task demo-s001" in result.stdout and "running; review pass" in result.stdout
     assert "running; review pass" in render_state(scope_state(root, "demo"))
     expected = "Chief task demo-s001 is running for S-001; keep `chief watch` running"
-    assert expected in result.stdout
+    assert expected in " ".join(result.stdout.split())  # the card wraps moves at word boundaries
     assert expected in {move.text for move in scope_state(root, "demo").moves}
     assert snapshot(root) == before
 

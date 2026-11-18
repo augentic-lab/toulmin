@@ -5,6 +5,7 @@ recomputes the map only when that metadata changes.
 """
 
 import os
+import re
 import shutil
 import sys
 import textwrap
@@ -19,6 +20,8 @@ from toulmin.cli.initialize import workspace_setup
 from toulmin.core.identifiers import ObjectId
 from toulmin.core.project import STAGES
 from toulmin.core.repository import Repository
+from toulmin.protocols.labels import short_label
+from toulmin.protocols.project_card import ProjectCard
 from toulmin.protocols.research_map import AGENT, YOU, Node, ResearchMap
 from toulmin.protocols.status import GateReadiness, unheld
 from toulmin.protocols.workspace_state import RootState, workspace_status
@@ -50,7 +53,7 @@ def width_of(text: str) -> int:
 
 
 def fit(text: str, width: int) -> str:
-    """Cut a line to the display width, marking the cut."""
+    """Cut a line to the display width at a word boundary, marking the cut."""
     if width_of(text) <= width:
         return text
     kept, used = [], 0
@@ -60,11 +63,23 @@ def fit(text: str, width: int) -> str:
             break
         kept.append(char)
         used += size
-    return "".join(kept) + "..."
+    line = "".join(kept)
+    if not text[len(line)].isspace():
+        space = line.rfind(" ")
+        if space >= len(line) * 2 // 3:  # keep at least two thirds of the room
+            line = line[:space]
+    return line.rstrip(" ,;:") + "..."
 
 
 def wrap(text: str, width: int, indent: str) -> list[str]:
-    return textwrap.wrap(text, max(width, 20), subsequent_indent=indent) or [""]
+    # Hyphenated names (rkey-lifecycle) and IDs (C-001) must never be split across lines.
+    return textwrap.wrap(
+        text,
+        max(width, 20),
+        subsequent_indent=indent,
+        break_on_hyphens=False,
+        break_long_words=False,
+    ) or [""]
 
 
 def track(stage: str | None, width: int, glyphs: Glyphs) -> str:
@@ -217,6 +232,193 @@ def render_project(
                 width,
                 "  ",
             )
+    return "\n".join(lines) + "\n"
+
+
+CARD_CLAIMS = 6
+CARD_DOUBTS = 3
+CARD_WAITING = 3
+LABEL = 10  # width of the left column: "Question  "
+REFERENCE_RUN = re.compile(
+    r"[A-Z]-[0-9]{3,}(?: \([a-z]+\))?(?:, (?:and )?[A-Z]-[0-9]{3,}(?: \([a-z]+\))?)+"
+)
+STATE_NOTE = {
+    "ready": "ready to rule supported",
+    "unsupported": "no verified Evidence yet",
+    "refuted": "refuted",
+}
+
+
+def compress_references(text: str, keep: int = 3) -> str:
+    """Shorten long ID lists ("O-001 (major), O-002 (major), ...") to the first few."""
+
+    def shorten(match: re.Match[str]) -> str:
+        items = [item.removeprefix("and ") for item in match.group(0).split(", ")]
+        if len(items) <= keep + 1:
+            return match.group(0)
+        return ", ".join(items[:keep]) + f" and {len(items) - keep} more"
+
+    return REFERENCE_RUN.sub(shorten, text)
+
+
+def _marks(glyphs: Glyphs) -> dict[str, str]:
+    if glyphs.ascii:
+        return {
+            "held": "+",
+            "ready": "+",
+            "contested": "?",
+            "unsupported": ".",
+            "refuted": "x",
+            "recheck": "!",
+        }
+    return {
+        "held": "✓",
+        "ready": "✓",
+        "contested": "?",
+        "unsupported": "·",
+        "refuted": "✗",
+        "recheck": "!",
+    }
+
+
+def _row(title: str, text: str) -> str:
+    return f"{title:<{LABEL}}{text}"
+
+
+def _counts(counts: tuple[tuple[str, int], ...]) -> str:
+    return ", ".join(f"{count} {severity}" for severity, count in counts)
+
+
+def _labelled(head: str, text: str, note: str, width: int, ascii_only: bool) -> str:
+    """``head`` + a label sized to what is left + ``note``, on one line."""
+    tail = f"  ({note})" if note else ""
+    room = width - LABEL - width_of(head) - width_of(tail) - 1
+    if room < 16:  # too narrow for a useful label: the note matters more
+        return fit(head + tail, width - LABEL)
+    return head + " " + short_label(text, room, "..." if ascii_only else "…") + tail
+
+
+def render_card(
+    card: ProjectCard,
+    waiting: list[decide.Item],
+    width: int,
+    glyphs: Glyphs,
+    refreshed: str | None = None,
+) -> str:
+    """The project card: current answer, doubts, what waits and what is next (UX3)."""
+    head = f"{card.project} {glyphs.dot} {card.stage or 'stage unknown'}"
+    if card.invalid:
+        head += "  (data INVALID: partial view; see --full)"
+    if refreshed:
+        pad = width - width_of(head) - width_of(f"refreshed {refreshed}")
+        head += " " * max(pad, 2) + f"refreshed {refreshed}"
+    lines = [head]
+    inner = width - LABEL
+    for warning in card.warnings:
+        lines += [
+            _row("WARNING" if index == 0 else "", line)
+            for index, line in enumerate(wrap(warning, inner, ""))
+        ]
+    if card.question:
+        question = wrap(card.question, inner, "")
+        if len(question) > 2:
+            question = [question[0], fit(" ".join(question[1:]), inner)]
+        lines += [
+            _row("Question" if index == 0 else "", line) for index, line in enumerate(question)
+        ]
+
+    marks = _marks(glyphs)
+    if not card.answer:
+        lines.append(_row("Answer", "no Claims yet; promote a result when one is worth keeping"))
+    for index, item in enumerate(card.answer[:CARD_CLAIMS]):
+        if item.state == "held":
+            note = item.stored
+        elif item.state == "contested":
+            open_ = [
+                f"{n} {name}" for n, name in ((item.fatal, "fatal"), (item.major, "major")) if n
+            ]
+            note = (", ".join(open_) + " open") if open_ else "only minor doubts open"
+        elif item.state == "recheck":
+            note = f"stored {item.stored}, conditions no longer met"
+        else:
+            note = STATE_NOTE[item.state]
+        line = _labelled(
+            f"{marks[item.state]} {item.claim}", item.statement, note, width, glyphs.ascii
+        )
+        lines.append(_row("Answer" if index == 0 else "", line))
+    if len(card.answer) > CARD_CLAIMS:
+        lines.append(_row("", f"... {len(card.answer) - CARD_CLAIMS} more Claims (--full)"))
+
+    for index, group in enumerate(card.doubts[:CARD_DOUBTS]):
+        title = "Doubts" if index == 0 else ""
+        if group.current is not None:
+            text = (
+                f"{group.target} (old wording of {group.current}): {_counts(group.counts)} "
+                "still open; answer or settle them"
+            )
+            lines.append(_row(title, fit(text, inner)))
+            continue
+        head = f"{group.target} {_counts(group.counts)}: {group.first[0]}"
+        lines.append(_row(title, _labelled(head, group.example, "", width, glyphs.ascii)))
+    if len(card.doubts) > CARD_DOUBTS:
+        rest = sum(sum(count for _, count in group.counts) for group in card.doubts[CARD_DOUBTS:])
+        lines.append(
+            _row("", f"... {rest} more open on {len(card.doubts) - CARD_DOUBTS} other Claim(s)")
+        )
+    if not card.doubts and card.answer:
+        lines.append(_row("Doubts", "no open Objections"))
+
+    for index, build in enumerate(card.builds):
+        body = wrap(build, inner, "  ")
+        lines += [
+            _row("Chief" if index == 0 and part == 0 else "", line)
+            for part, line in enumerate(body)
+        ]
+    if not waiting:
+        lines.append(_row("Waiting", "nothing in toulmin decide"))
+    else:
+        names = [
+            f"{decide.LABEL.get(item.kind, item.kind)} {item.path.rsplit('/', 1)[-1]}"
+            for item in waiting[:CARD_WAITING]
+        ]
+        more = f" and {len(waiting) - CARD_WAITING} more" if len(waiting) > CARD_WAITING else ""
+        lines.append(
+            _row(
+                "Waiting",
+                fit(f"{len(waiting)} in toulmin decide: " + "; ".join(names) + more, inner),
+            )
+        )
+
+    for number, move in enumerate(card.moves, start=1):
+        who = {YOU: "you", AGENT: "agent"}.get(move.actor, "either")
+        first = f"{number} {who:<6} "
+        text = compress_references(move.text)
+        body = wrap(first + text, inner, " " * len(first))
+        if len(body) > 2:
+            body = [body[0], fit(" ".join(body[1:]), inner)]
+        lines += [
+            _row("Next" if number == 1 and index == 0 else "", line)
+            for index, line in enumerate(body)
+        ]
+    if not card.moves:
+        lines.append(_row("Next", "no suggestion; continue from the project question"))
+
+    if card.recorded_next_step:
+        when = f"handoff {card.recorded_on}" if card.recorded_on else "PROJECT.md"
+        stale = (
+            f"; names superseded {', '.join(card.stale_references)}, may be out of date"
+            if card.stale_references
+            else ""
+        )
+        note = f"from {when}{stale}"
+        lines.append(_row("Recorded", fit(short_label(card.recorded_next_step, 200), inner)))
+        lines.append(_row("", fit(f"({note})", inner)))
+    lines.append(
+        _row(
+            "More",
+            fit(f"toulmin map {card.project} --full  (gates, argument tree, sources)", inner),
+        )
+    )
     return "\n".join(lines) + "\n"
 
 

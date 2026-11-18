@@ -1354,3 +1354,25 @@ Automated technical evidence and live/human acceptance remain separate; the supe
   legitimately changed targets or recover/migrate on read. Project-only legacy receipts
   gain no workspace authority from their filename. Rejected/tampered receipts cannot be
   cited; applied handoff restoration retains confirmed changes rather than omitting them.
+
+## UX2–UX3 — Short labels, terminal width and the project card (2026-11-18)
+
+Authorized with design decisions D1–D6 ("按你的建议，全部接受，开始 UX2 和 UX3";
+`~/notes/toulmin/reading-experience-design.md`). Display only: no file format, gate, rule
+table or decide change, and the agent's state card is unchanged.
+
+- UX2: `protocols/labels.py` shortens object text beside its ID (whole text, else first
+  sentence, else cut at a word boundary; wide characters count two columns). Map lines are
+  cut at word boundaries and never wrapped inside hyphenated names. `status` and the AoE
+  status/open screens wrap each line to the terminal width only when stdout is a terminal;
+  piped output, tests and agents keep exact lines.
+- UX3: `protocols/project_card.py` (L2) derives the project card from files: the PROJECT.md
+  Goal, each current Claim's state (held, ready to rule supported, contested by open
+  fatal/major Objections, no verified Evidence, refuted, or stored supported/accepted without
+  the conditions), open Objections grouped by the Claim wording they target (a superseded
+  wording is named with its successor), the map's moves, and the recorded next step with its
+  handoff date and any superseded Claims it still names. `toulmin map` shows the card by
+  default; `--full` (and `--claim`) show the earlier view. `toulmin open` shows the card for a
+  project scope, falling back to the full state view when data is invalid. Reason for the L2
+  addition: the researcher could not see the current answer among gates and the full tree.
+

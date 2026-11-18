@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-18 — UX2 short labels and terminal width, UX3 project card
+
+- Decision: the researcher accepted UX1 D1–D6 and authorized UX2 and UX3 ("按你的建议，全部接受，开始 UX2 和 UX3").
+- UX2: `protocols/labels.py` (whole text, first sentence, or a word-boundary cut; wide characters count two columns); map lines cut at word boundaries and never wrapped inside hyphenated names; `cli/terminal.py` wraps `status` and the AoE status/open screens to the terminal width only when stdout is a terminal.
+- UX3: `protocols/project_card.py` derives the card (Goal, per-Claim state, open Objections grouped by targeted wording with superseded wordings named, Chief tasks, stage-past-gate warnings, waiting items, moves with compressed ID lists, recorded next step with handoff date and stale superseded references). `toulmin map` shows it by default (`--full`/`--claim` keep the earlier view); `toulmin open` shows it for project scope and falls back to the state view on invalid data. Agent state card, formats, gates and rule table unchanged.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2210 passed. The first full run failed 3 tests because the card omitted Chief task state, Chief read errors and stage warnings; the card now shows them. Read-only previews of `toulmin map rkey-lifecycle` at 60/100/120 columns and `status -v` in a pseudo-terminal (90 columns) on the real workspace.
+- Pending: the researcher's own reading of the card on real projects; UX4–UX6 require separate authorization.
+- Session ID: unavailable.
+
 ## 2026-11-18 — UX1 reading-experience design (documentation only)
 
 - Decision: the researcher found Toulmin's terminal views hard to read and agreed to a design that merges the reading fixes with P1's living document ("是的，我同意").

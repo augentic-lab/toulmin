@@ -26,6 +26,7 @@ from toulmin.cli.settings import (
     resolve_actor,
     root_option,
 )
+from toulmin.cli.terminal import sayer
 from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import validate_project_name
 from toulmin.protocols import workspace_handoff as workspace_handoffs
@@ -135,6 +136,26 @@ def _size(value: int) -> str:
     return f"{value / 1e6:.2f}M" if value >= 1e6 else f"{value / 1e3:.1f}k"
 
 
+def _card(root: Path, project: str) -> str | None:
+    """The project card (UX3) for ``open``; None falls back to the full state view."""
+    from toulmin.application.build import project_map
+    from toulmin.cli import decide
+    from toulmin.cli import research_map as view
+    from toulmin.protocols.project_card import project_card
+
+    try:
+        report = project_map(root, project)
+        if report.errors:
+            return None  # the state view lists the errors in full
+        waiting = [item for item in decide.inventory(root).items if item.project == project]
+        glyphs = view.Glyphs(view.ascii_default())
+        return view.render_card(
+            project_card(root, project, report), waiting, view.terminal_width(), glyphs
+        )
+    except (OSError, ValueError):
+        return None
+
+
 def _present(
     view: WorkspaceView,
     root: Path,
@@ -142,45 +163,44 @@ def _present(
     *,
     bound_only: bool = False,
     offline: bool = False,
+    card: bool = False,
 ) -> None:
-    typer.echo(f"Root: {root.absolute()}")
-    typer.echo("Scope: " + ("Workspace" if project is None else f"Project: {project}") + "\n")
-    typer.echo(render_scope(view.research), nl=False)
-    typer.echo("\nBINDING")
+    say = sayer()
+    say(f"Root: {root.absolute()}")
+    say("Scope: " + ("Workspace" if project is None else f"Project: {project}") + "\n")
+    shown = _card(root, project) if card and project is not None else None
+    say(shown or render_scope(view.research), nl=False)
+    say("\nBINDING")
     binding = view.binding
     if binding is None:
-        typer.echo("No saved binding.")
+        say("No saved binding.")
     else:
-        typer.echo(
+        say(
             f"Profile: {binding.profile} | agent: {binding.agent} | "
             f"session: {binding.session_id or 'unresolved'}"
         )
         if binding.title:
-            typer.echo(f"Title: {binding.title} | binding version {binding.version}")
-        typer.echo(_model_line(view.model, binding.agent))
+            say(f"Title: {binding.title} | binding version {binding.version}")
+        say(_model_line(view.model, binding.agent))
         if view.usage is not None:
-            typer.echo(_usage_line(view.usage))
+            say(_usage_line(view.usage))
         if view.session is not None:
-            typer.echo(
-                f"Session state: {view.session.state} | status: {view.session.status or 'unknown'}"
-            )
-    typer.echo(f"\nCONTEXT\n{view.context_status}")
+            say(f"Session state: {view.session.state} | status: {view.session.status or 'unknown'}")
+    say(f"\nCONTEXT\n{view.context_status}")
     if binding is not None:
-        typer.echo(f"Delivery: {binding.delivery}")
-    typer.echo("Submitted is not acknowledged. A context-read receipt is not research approval.")
+        say(f"Delivery: {binding.delivery}")
+    say("Submitted is not acknowledged. A context-read receipt is not research approval.")
     if view.context_path is not None:
-        typer.echo(f"Read context: {view.context_path}")
-        typer.echo(
-            "After reading it and the listed snapshots, run its context-read receipt command."
-        )
+        say(f"Read context: {view.context_path}")
+        say("After reading it and the listed snapshots, run its context-read receipt command.")
     if bound_only:
-        typer.echo("Binding prepares files only; no message was sent to the native session.")
+        say("Binding prepares files only; no message was sent to the native session.")
     if view.diagnostics:
-        typer.echo("\nDIAGNOSTICS")
+        say("\nDIAGNOSTICS")
         for message in view.diagnostics:
-            typer.echo(message)
+            say(message)
     if _undelivered(view, bound_only):
-        typer.echo(
+        say(
             "\nCONTEXT NOT DELIVERED: the native agent has not been sent its research context "
             "and works from AGENTS.md alone until it is."
         )
@@ -193,8 +213,8 @@ def _present(
     ):
         _recovery(root, project, binding.profile)
     elif view.context_status.startswith("stale"):
-        typer.echo("Refresh the saved context:")
-        typer.echo(_refresh_command(root, project, binding.profile if binding else None))
+        say("Refresh the saved context:")
+        say(_refresh_command(root, project, binding.profile if binding else None))
 
 
 def _execute(
@@ -208,6 +228,7 @@ def _execute(
     attach: bool = False,
     bound_only: bool = False,
     recovery_on_error: bool = False,
+    card: bool = False,
 ) -> None:
     workspace = None
     try:
@@ -216,7 +237,7 @@ def _execute(
         if json_output:
             typer.echo(json.dumps(asdict(view), indent=2, sort_keys=True, default=str))
         else:
-            _present(view, root, project, bound_only=bound_only, offline=offline)
+            _present(view, root, project, bound_only=bound_only, offline=offline, card=card)
         if view.research.errors or view.context_status.startswith("invalid"):
             raise typer.Exit(1)
         if attach:
@@ -392,6 +413,7 @@ def open_scope(
         launch,
         attach=default_attach() if attach is None else attach,
         recovery_on_error=True,
+        card=True,
     )
 
 

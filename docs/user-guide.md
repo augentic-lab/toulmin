@@ -30,6 +30,11 @@ counterarguments, kill criteria, smallest validating experiment), all still hypo
 Keep two terminals: the agent session (in AoE), where you think and work, and your own
 terminal for `toulmin decide`, `toulmin map NAME` and `toulmin commit`.
 
+`toulmin map NAME` (and `toulmin open NAME`) shows the project card: the question, one line
+per Claim (✓ supported or ready to rule, ? fatal/major doubts open, · no verified Evidence
+yet), the main open doubts grouped by Claim, what waits in `decide` and up to three next moves.
+`toulmin map NAME --full` shows the gates, the whole argument tree and sources.
+
 ## 3. The working loop
 
 ```text

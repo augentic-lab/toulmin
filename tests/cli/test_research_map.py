@@ -6,11 +6,14 @@ from typer.testing import CliRunner
 
 from toulmin.cli import research_map as view
 from toulmin.cli.app import app
+from toulmin.protocols.labels import short_label
+from toulmin.protocols.project_card import AnswerLine, DoubtGroup, ProjectCard, project_card
 from toulmin.protocols.research_map import (
     AGENT,
     EITHER,
     YOU,
     Facts,
+    Move,
     next_moves,
     research_map,
 )
@@ -24,8 +27,9 @@ DRAFTS = (
 )
 
 
-def run(root, *arguments, columns=80):
-    args = ["map", *arguments, "--root", str(root)]
+def run(root, *arguments, columns=80, card=False):
+    """The earlier full view by default; ``card=True`` shows the UX3 project card."""
+    args = ["map", *arguments, "--root", str(root), *([] if card else ["--full"])]
     return CliRunner().invoke(app, args, env={"COLUMNS": str(columns)})
 
 
@@ -175,7 +179,7 @@ def test_the_project_follows_the_current_directory(populated, monkeypatch):
     monkeypatch.chdir(populated / "projects/demo/claims")
     result = CliRunner().invoke(app, ["map"], env={"COLUMNS": "80"})
     assert result.exit_code == 0, result.output
-    assert result.stdout.startswith("demo\n")
+    assert result.stdout.startswith("demo · explore\n")  # the card is the default (UX3)
 
 
 def test_workspace_scope_lists_projects(populated):
@@ -203,3 +207,98 @@ def test_watch_redraws_only_when_files_change(populated):
         (populated / "projects/demo/objections/O-001.md").read_text() + "\n"
     )
     assert view.signature(folder) != before
+
+
+# UX2/UX3: short labels and the project card.
+
+
+def test_short_labels_keep_words_and_prefer_the_first_sentence():
+    text = "The load is unspecified. Without a trace the magnitude cannot be judged."
+    assert short_label(text, 80) == text
+    assert short_label(text, 30) == "The load is unspecified."
+    assert short_label("rkey-lifecycle registrations reuse a fixed pool", 25) == "rkey-lifecycle…"
+    assert (
+        short_label("A summary already cut by status...", 60) == "A summary already cut by status…"
+    )
+    assert short_label("延迟没有说明。没有跟踪就无法判断规模。", 16) == "延迟没有说明。"
+    assert all(len(short_label("x" * 50, n, "...")) <= n for n in (5, 12, 30))
+
+
+def test_long_reference_lists_are_compressed():
+    text = "Respond to O-001 (major), O-002 (major), O-003 (minor), O-004 (minor), O-005 (minor)."
+    assert view.compress_references(text) == (
+        "Respond to O-001 (major), O-002 (major), O-003 (minor) and 2 more."
+    )
+    assert view.compress_references("Rule C-003, C-005.") == "Rule C-003, C-005."
+
+
+def test_card_is_the_default_and_fits_one_screen(populated):
+    result = run(populated, "demo", columns=100, card=True)
+    assert result.exit_code == 0, result.output
+    lines = result.stdout.splitlines()
+    assert lines[0] == "demo · explore"
+    assert lines[1].startswith("Question  ")
+    assert any(line.startswith("Answer    ") and "C-001" in line for line in lines)
+    assert any(line.startswith("Next      1 ") for line in lines)
+    assert lines[-1] == "More      toulmin map demo --full  (gates, argument tree, sources)"
+    assert "G1 ->" not in result.stdout and "Argument" not in result.stdout
+    assert len(lines) <= 25 and all(view.width_of(line) <= 100 for line in lines)
+
+
+def test_card_reads_the_goal_and_classifies_claims(populated):
+    card = project_card(populated, "demo", research_map(populated, "demo"))
+    goal = (populated / "projects/demo/PROJECT.md").read_text().split("## Goal", 1)[1]
+    assert card.question == " ".join(goal.strip().split("\n\n", 1)[0].split())
+    assert [item.claim for item in card.answer] == ["C-001"]
+    assert card.answer[0].state in {"ready", "contested", "unsupported", "held"}
+
+
+def _card(**changes):
+    values = dict(
+        project="rkey",
+        stage="critique",
+        question="How long does an rkey stay valid after deregistration?",
+        answer=(
+            AnswerLine(
+                "C-005", "ready", "proposed", "Deregistered keys are not rejected.", 2, 0, 0
+            ),
+            AnswerLine("C-002", "contested", "proposed", "Collisions are about 1/256.", 1, 1, 4),
+            AnswerLine("C-004", "unsupported", "proposed", "The study is new.", 0, 0, 0),
+        ),
+        doubts=(
+            DoubtGroup("C-001", "C-005", (("major", 9), ("minor", 1)), ("O-001",), "Old."),
+            DoubtGroup("C-002", None, (("major", 5),), ("O-007", "O-012"), "Only a condition."),
+        ),
+        moves=(
+            Move(
+                AGENT,
+                "Draft responses: " + ", ".join(f"O-0{n:02} (major)" for n in range(1, 9)),
+                "",
+            ),
+        ),
+        recorded_next_step="Inspect C-001 through C-004.",
+        recorded_on="2026-11-12",
+        stale_references=("C-001",),
+        invalid=False,
+    )
+    values.update(changes)
+    return ProjectCard(**values)
+
+
+def test_card_rendering_marks_states_old_wording_and_stale_steps():
+    text = view.render_card(_card(), [], 100, view.Glyphs(False))
+    assert (
+        "Answer    ✓ C-005 Deregistered keys are not rejected.  (ready to rule supported)" in text
+    )
+    assert "? C-002 Collisions are about 1/256.  (1 fatal, 4 major open)" in text
+    assert "· C-004 The study is new.  (no verified Evidence yet)" in text
+    assert "Doubts    C-001 (old wording of C-005): 9 major, 1 minor still open" in text
+    assert "C-002 5 major: O-007 Only a condition." in text
+    assert "O-001 (major), O-002 (major), O-003 (major) and 5 more" in text
+    assert "Waiting   nothing in toulmin decide" in text
+    assert "(from handoff 2026-11-12; names superseded C-001, may be out of date)" in text
+    ascii_text = view.render_card(_card(), [], 40, view.Glyphs(True))
+    assert "+ C-005" in ascii_text and "✓" not in ascii_text and "…" not in ascii_text
+    assert all(view.width_of(line) <= 40 for line in ascii_text.splitlines())
+    empty = view.render_card(_card(answer=(), doubts=(), moves=()), [], 80, view.Glyphs(False))
+    assert "Answer    no Claims yet" in empty and "Next      no suggestion" in empty

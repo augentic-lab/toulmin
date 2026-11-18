@@ -1,5 +1,9 @@
 # Framework changes
 
+- Project card (2026-11-18): `toulmin map` and `toulmin open` lead with a derived project
+  card (question, Claim states, grouped doubts, waiting items, next moves); `map --full` keeps
+  the earlier view. Labels cut at word boundaries; terminal-only wrapping. No format change.
+
 - Existing-project onboarding (2026-11-17, O1–O5): additive source catalogs/local bindings,
   reviewed onboarding and overview/source-change packets, engineering task requests and
   ordinary execution imports, and migration assessment receipts. Native source sessions

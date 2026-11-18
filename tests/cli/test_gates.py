@@ -235,8 +235,12 @@ def test_a_stage_past_unheld_gates_is_warned_everywhere_and_never_changed(popula
     assert moves[0].actor == "you" and moves[0].text.startswith("The stage done is past G1")
     card = render_state(research_state(populated, "demo"))
     assert "WARNING: Stage done is past G4 (enters accept)" in card
-    shown = CliRunner().invoke(app, ["map", "demo", "--root", str(populated)])
+    shown = CliRunner().invoke(app, ["map", "demo", "--root", str(populated), "--full"])
     assert "G5 -> done  0/1  (behind the stage, NOT held)" in shown.stdout
+    card = CliRunner().invoke(
+        app, ["map", "demo", "--root", str(populated)], env={"COLUMNS": "200"}
+    )
+    assert "WARNING   Stage done is past G5 (enters done), which does not hold" in card.stdout
     after = {path: path.read_bytes() for path in Path(populated).rglob("*") if path.is_file()}
     assert after == before
 

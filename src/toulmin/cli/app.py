@@ -21,6 +21,7 @@ from toulmin.cli.project import app as project_app
 from toulmin.cli.registry import note as register_workspace
 from toulmin.cli.settings import ACTOR_HINT, ACTOR_VARIABLE, resolve_actor, root_option
 from toulmin.cli.task import app as task_app
+from toulmin.cli.terminal import sayer
 from toulmin.cli.workspace import app as workspace_app
 from toulmin.cli.workspaces import app as workspaces_app
 from toulmin.core.identifiers import ObjectKind, validate_project_name
@@ -948,12 +949,20 @@ def show_map(
     claim: Annotated[
         str | None, typer.Option("--claim", help="Show only this Claim's subtree.")
     ] = None,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Gates, the whole argument tree and sources, not the card."),
+    ] = False,
     ascii_only: Annotated[
         bool,
         typer.Option("--ascii", help="ASCII marks only (default when the terminal is not UTF-8)."),
     ] = False,
 ) -> None:
-    """Show where the project is and what can happen next, from files only (V2)."""
+    """Show the project card: current answer, doubts, what waits and what is next (UX3).
+
+    --full shows the earlier view (gates, the whole argument tree, sources); --claim shows one
+    Claim's subtree. Everything is derived from files only.
+    """
     import time
 
     from toulmin.application.build import project_map
@@ -985,7 +994,13 @@ def show_map(
                 return view.render_workspace(root, width, glyphs, refreshed), True
             report = project_map(root, project)
             waiting = [item for item in decide.inventory(root).items if item.project == project]
-            text = view.render_project(report, waiting, width, glyphs, refreshed, chosen)
+            if full or chosen is not None:
+                text = view.render_project(report, waiting, width, glyphs, refreshed, chosen)
+            else:
+                from toulmin.protocols.project_card import project_card
+
+                card = project_card(root, project, report)
+                text = view.render_card(card, waiting, width, glyphs, refreshed)
             return text, not report.errors
         except (OSError, ValueError) as error:
             return f"Error: {error}\n", False
@@ -1026,6 +1041,7 @@ def show_status(
     ] = False,
 ) -> None:
     """Show stored state without changing files. Without PROJECT, show the workspace."""
+    say = sayer()
     if project is not None and workspace:
         raise typer.BadParameter("give PROJECT or --workspace, not both", param_hint="--workspace")
     if project is None:
@@ -1040,66 +1056,66 @@ def show_status(
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
-    typer.echo(
+    say(
         f"Project: {report.project}\nStage: {report.stage or 'unknown'}\n"
         f"Next step: {report.next_step or 'unknown'}"
     )
     if verbose:
-        typer.echo(f"Last handoff: {report.last_handoff or 'none'}")
-    typer.echo(
+        say(f"Last handoff: {report.last_handoff or 'none'}")
+    say(
         "Data: valid (project files and direct references)"
         if not report.errors
         else "Data: INVALID; conditions unknown (partial view)"
     )
-    typer.echo("Claims:" + ("" if report.claims else " none"))
+    say("Claims:" + ("" if report.claims else " none"))
 
     def flag(value: bool | None) -> str:
         return "unknown" if value is None else "yes" if value else "no"
 
     for claim in report.claims:
-        typer.echo(
+        say(
             f"  {claim.object_id} | stored={claim.stored_status} | "
             f"verified_support={claim.verified_support_count} | "
             f"open_objection={flag(claim.has_open_objection)} | "
             f"eligible_supported={flag(claim.eligible_for_supported)}"
         )
         if verbose and claim.summary:
-            typer.echo(f"      {claim.summary}")
+            say(f"      {claim.summary}")
     if report.superseded:
-        typer.echo("Superseded:")
+        say("Superseded:")
     for revised in report.superseded:
-        typer.echo("  " + " -> ".join(str(item) for item in revised.chain))
+        say("  " + " -> ".join(str(item) for item in revised.chain))
         if verbose and revised.summary:
-            typer.echo(f"      {revised.summary}")
-    typer.echo("Open objections:" + ("" if report.open_objections else " none"))
+            say(f"      {revised.summary}")
+    say("Open objections:" + ("" if report.open_objections else " none"))
     for objection in report.open_objections:
-        typer.echo(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
+        say(f"  {objection.object_id} | {objection.severity} | target={objection.target}")
         if verbose and objection.summary:
-            typer.echo(f"      {objection.summary}")
+            say(f"      {objection.summary}")
     if verbose:
-        typer.echo("Settled objections:" + ("" if report.settled_objections else " none"))
+        say("Settled objections:" + ("" if report.settled_objections else " none"))
     for settled in report.settled_objections if verbose else ():
         by = f" | by {', '.join(settled.decisions)}" if settled.decisions else ""
-        typer.echo(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
+        say(f"  {settled.object_id} | {settled.status} | target={settled.target}{by}")
         if settled.summary:
-            typer.echo(f"      {settled.summary}")
+            say(f"      {settled.summary}")
     if report.gates:
-        typer.echo("Gates (readiness from files; the stage changes only by your ruling):")
+        say("Gates (readiness from files; the stage changes only by your ruling):")
     for gate in report.gates:
         state = "unknown (data invalid)" if gate.met is None else "met" if gate.met else "not met"
         later = not verbose and not upcoming(report.stage, gate)
-        typer.echo(f"  {gate.gate} -> {gate.enters}: {state}" + (" (later)" if later else ""))
+        say(f"  {gate.gate} -> {gate.enters}: {state}" + (" (later)" if later else ""))
         for item in () if later else gate.items:
             detail = f": {item.detail}" if item.detail else ""
-            typer.echo(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
+            say(f"    [{'x' if item.met else ' '}] {item.label}{detail}")
     for warning in report.stage_warnings:
-        typer.echo(f"Warning: {warning}")
+        say(f"Warning: {warning}")
     from toulmin.application.workspace_sync import git_state, sync_notices
 
     if git_report := git_state(root):
-        typer.echo(git_report.line())
+        say(git_report.line())
     for notice in (*report.notices, *sync_notices(root)):
-        typer.echo(f"Notice: {notice}")
+        say(f"Notice: {notice}")
     for message in report.errors:
         typer.echo(f"Error: {message}", err=True)
     if report.errors:
@@ -1107,13 +1123,14 @@ def show_status(
 
 
 def _workspace_status(root: Path, verbose: bool) -> None:
+    say = sayer()
     try:
         report = workspace_status(root, workspace_setup())
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)
         raise typer.Exit(1) from error
     state = report.root.state
-    typer.echo(f"Root: {report.root.root}\nScope: Workspace")
+    say(f"Root: {report.root.root}\nScope: Workspace")
     if state not in {RootState.WORKSPACE, RootState.LEGACY}:
         message = {
             RootState.MISSING: "directory does not exist; `toulmin init ROOT` creates a workspace",
@@ -1122,7 +1139,7 @@ def _workspace_status(root: Path, verbose: bool) -> None:
             RootState.UNRELATED: "not a Toulmin workbench; nothing was initialized",
         }[state]
         for notice in report.notices:
-            typer.echo(f"Notice: {notice}")
+            say(f"Notice: {notice}")
         typer.echo(f"Error: {report.root.root}: {message}", err=True)
         hint = project_hint(report.root.root)
         if hint is not None:
@@ -1133,60 +1150,60 @@ def _workspace_status(root: Path, verbose: bool) -> None:
         raise typer.Exit(1)
     charter = report.charter
     if state == RootState.LEGACY:
-        typer.echo("Workspace state: not configured (existing workbench; projects remain valid)")
+        say("Workspace state: not configured (existing workbench; projects remain valid)")
     elif charter is not None:
-        typer.echo(f"Workspace: {charter.name}")
-        typer.echo(f"Charter revision: {charter.revision}")
+        say(f"Workspace: {charter.name}")
+        say(f"Charter revision: {charter.revision}")
         sections = dict(charter.sections)
-        typer.echo(
+        say(
             "Direction: "
             + (" ".join(sections["Direction"].split()) if "Direction" in sections else
                "No confirmed direction yet")
         )  # fmt: skip
         for heading in ("Constraints", "Focus"):
             if heading in sections:
-                typer.echo(f"{heading}: " + " ".join(sections[heading].split()))
-        typer.echo(f"Recorded next step: {charter.next_step or 'none'}")
+                say(f"{heading}: " + " ".join(sections[heading].split()))
+        say(f"Recorded next step: {charter.next_step or 'none'}")
         latest = report.history[0] if report.history else None
-        typer.echo(
+        say(
             "Last handoff: "
             + (f"sessions/{latest.filename} (applied by {latest.record.applied_by} at "
                f"{latest.record.applied_at})" if latest else
                f"sessions/{charter.last_handoff} (invalid; see errors)" if charter.last_handoff
                else "none (no applied workspace handoff)")
         )  # fmt: skip
-    typer.echo("Projects:" + ("" if report.children else " none"))
+    say("Projects:" + ("" if report.children else " none"))
     for child in report.children:
         stage = child.stage or (
             CREATION_INCOMPLETE if child.error == CREATION_INCOMPLETE else "unknown (invalid data)"
         )
-        typer.echo(f"  {child.name} | stage={stage}")
+        say(f"  {child.name} | stage={stage}")
     if state == RootState.WORKSPACE:
-        typer.echo("Proposals:" + ("" if report.proposals else " none"))
+        say("Proposals:" + ("" if report.proposals else " none"))
         for proposal in report.proposals:
             if verbose or proposal.disposition in {"pending", "incomplete", "invalid"}:
-                typer.echo(f"  {proposal.path} | {proposal.kind} | {proposal.disposition}")
+                say(f"  {proposal.path} | {proposal.kind} | {proposal.disposition}")
         hidden = sum(
             proposal.disposition in {"applied", "rejected", "superseded"}
             for proposal in report.proposals
         )
         if hidden and not verbose:
-            typer.echo(f"  ({hidden} applied, rejected or superseded; --verbose lists them)")
+            say(f"  ({hidden} applied, rejected or superseded; --verbose lists them)")
         shown = [h for h in report.handoffs if verbose or h.disposition != "applied"]
-        typer.echo("Handoff drafts:" + ("" if report.handoffs else " none"))
+        say("Handoff drafts:" + ("" if report.handoffs else " none"))
         for item in shown:
-            typer.echo(f"  {item.path} | {item.disposition}")
+            say(f"  {item.path} | {item.disposition}")
         if len(shown) < len(report.handoffs):
-            typer.echo(f"  ({len(report.handoffs) - len(shown)} applied; --verbose lists them)")
-        typer.echo("Resources:" + ("" if report.resources else " none"))
+            say(f"  ({len(report.handoffs) - len(shown)} applied; --verbose lists them)")
+        say("Resources:" + ("" if report.resources else " none"))
         for resource in report.resources:
-            typer.echo(
+            say(
                 f"  {resource.name} | invalid data" if resource.error else
                 f"  {resource.name} | {resource.status} | revision {resource.revision} | "
                 f"{resource.title}"
             )  # fmt: skip
     else:
-        typer.echo(
+        say(
             "Next: project commands keep working; preview adoption with "
             f"`toulmin workspace adopt {report.root.root}`"
         )
@@ -1195,28 +1212,28 @@ def _workspace_status(root: Path, verbose: bool) -> None:
     try:
         catalog = read_source_catalog(root)
         if catalog.definitions:
-            typer.echo("Sources:")
+            say("Sources:")
             from toulmin.application.sources import scope_source_reports
 
             for line in scope_source_reports(root, None):
-                typer.echo(f"  {line}")
-            typer.echo(
+                say(f"  {line}")
+            say(
                 "Understanding: overview.md is a reviewed "
                 "checkpoint; runs/notebook.md is unconfirmed."
             )
-            typer.echo(
+            say(
                 "Work: draft task --workspace --source ID for "
                 "bounded engineering; no Claim/Spec/gate required."
             )
     except (OSError, ValueError):
         pass  # The structured read-only report above includes invalid source diagnostics.
-    typer.echo("Data: valid" if not report.errors else "Data: INVALID (partial view)")
+    say("Data: valid" if not report.errors else "Data: INVALID (partial view)")
     from toulmin.application.workspace_sync import git_state, sync_notices
 
     if git_report := git_state(root):
-        typer.echo(git_report.line())
+        say(git_report.line())
     for notice in (*report.notices, *sync_notices(root)):
-        typer.echo(f"Notice: {notice}")
+        say(f"Notice: {notice}")
     for message in report.errors:
         typer.echo(f"Error: {message}", err=True)
     if report.errors:
