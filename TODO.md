@@ -483,6 +483,9 @@ The separate Chief permission task is unchanged.
   multiple children, registered/new sources, duplicate project names and ambiguous scopes;
   A needs no sentinel child; old v1 catalogs and v1/v2/v3 bindings have unchanged-read paths;
   existing data needs no mandatory migration.
+  Specification delivered: [WO2 contract](docs/workspace-onboarding-contract.md), including
+  exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
+  Chief review and researcher specification acceptance remain pending; WO2 stays unchecked.
 - [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;

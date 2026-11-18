@@ -1,5 +1,34 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO2 workspace onboarding contract specification
+
+- Delivered docs/workspace-onboarding-contract.md for the accepted A/B/C intake modes:
+  exact source catalog v2 definitions/associations, unchanged local mapping v1,
+  workspace overview/notebook and source pins, scoped future CLI, sealed packets,
+  receipts, journal publication/recovery, native v4 contexts and bounded engineering
+  task/export/result records. This is a future implementation specification, not
+  released behavior. No runtime, source, test, dependency or current usage files changed.
+- Preserved v1 catalog and v1/v2/v3 binding read paths, old project overview/creation/
+  receipt/handoff contracts and explicit-child command semantics. An explicit reviewed
+  catalog conversion preserves exact legacy bytes and old project selections; no
+  automatic or mandatory migration. C cannot write old children or root charter/overview.
+- Added allowed design/formats cross-references and WO2-only TODO delivery note. WO2
+  remains unchecked pending independent Chief review and researcher specification
+  acceptance. WO3–WO5 implementation/trial cases remain NOT RUN. The separate permission
+  worker is untouched: WO4 consumes its eventual explicit scope-aware mechanism; storage/
+  version alignment and workspace support must be reviewed after that delivery.
+- Checks actually run: required external /tmp/toulmin-wo2-doc-check.py passed (sections,
+  relative files, TOML syntax, allowed-file scope and whitespace). Additional document
+  serialization/reference inspection parsed the JSON envelope and two front-matter
+  examples and resolved six fragment links. These checks do not prove schema semantics,
+  design completeness, runtime behavior or usability. Code tests intentionally skipped
+  for this documentation-only task; no real AoE/model/Chief sessions or data conversions.
+- Decisions: keep source registration separate from write permission; preserve the old
+  project --overview alias; distinguish workspace operational run.md from formal project
+  Runs; retain the existing journal schema and reviewed, recoverable child publication.
+  No unresolved business choice or execution blocker. Session ID unavailable. Next:
+  independent Chief semantic review, then researcher WO2 ruling; no push or merge.
+
 ## 2026-11-18 — Concurrency assessment for WO and the Chief permission task
 
 - Researcher reported test approval and asked whether new onboarding development conflicts
