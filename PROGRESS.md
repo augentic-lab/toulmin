@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO2 accepted and integrated as the WO3–WO5 specification
+
+- Accepted WO2 final 7e7c1b0 after three independent review rounds (final claude/sonnet
+  PASS), doc checks and supervisor verification. Clarified C source roles, deterministic
+  overview receipts, directory recovery and non-circular child ownership; preserved
+  existing bare open/map convenience instead of an unrelated breaking behavior change.
+- Recorded delegated technical acceptance in TODO/design/contract. This does not invent
+  researcher usability/scientific acceptance. WO3–WO5 remain unimplemented/NOT RUN.
+- Integrated the documentation branch after the verified permission merge. Preserved both
+  PROGRESS histories; no runtime/test bytes changed during this documentation merge.
+  Relative links, examples and diff inspected; no duplicate code test run for doc-only merge.
+- Next: create a new Chief worker from this combined commit for all WO3–WO5, with root
+  handling routine approvals and final disposable Weekly Projects trials. Original TODO
+  edits will be restored immediately after the merge. Session ID unavailable; no push.
+
 ## 2026-11-18 — Permission foundation verified and merged under supervision
 
 - Accepted Chief task o3-general-codex-permission-co after 4407f66, addressing the
@@ -60,6 +75,91 @@
 - Validation: actual task creation/kickoff/native activity and main documentation diff check.
   No code tests for delegation-only records. Existing TODO edits retained. Session ID
   unavailable; local commit only, no push. Next: review WO2 specification when delivered.
+## 2026-11-18 — WO2 second-review contract clarifications
+
+- Clarified C with --work-at in source-catalog rules, CLI and W03-work-at: the new
+  child selects TARGET working / SOURCE reference; newly registered sources get
+  workspace reference associations only, reused workspace roles and old child
+  selections remain unchanged, and workspace working selection/absence is preserved.
+- Enumerated onboard with an existing initialized workspace and neither --project
+  nor --init as exit 2 with no writes in CLI/Errors and W03-root. This is the existing
+  intended usage-error boundary, not an additional intake mode.
+- Defined overview receipt as deterministic <outer-packet>/receipt.md, already in
+  the after-image sealed before apply; apply does not fill or rewrite it. Only a
+  matching applied receipt for the packet/seal and overview result hash confirms
+  the candidate. W03-overview includes preparation and invalid-receipt assertions.
+- Checked consistency across ownership rules, CLI, publication/receipt protocol,
+  examples and acceptance matrix. No accepted decisions reopened or runtime changed;
+  WO2 remains pending independent semantic review and researcher acceptance, and
+  WO3–WO5 implementation/live cases remain NOT RUN. Permission task untouched.
+- Checks run: required external doc checker and git diff --check passed. Existing
+  document syntax checks parsed 1 JSON, 6 TOML, 1 YAML and 2 Markdown front-matter
+  examples; 7 local fragment links resolved. Illustrative hashes remain unverified.
+  These checks establish syntax/references/scope, not semantic approval or runtime
+  behavior. Code tests intentionally skipped for this documentation-only scope.
+- Session ID unavailable; no blockers or new business decision. Next: independent
+  review of the clarified specification. Local documentation commit only; no real
+  workspace/session/source actions, push or merge.
+
+## 2026-11-18 — WO2 supervisor review revisions
+
+- Revised docs/workspace-onboarding-contract.md within documentation-only scope.
+  Inferred from code: bare open infers a child only from its records directory with
+  cwd root discovery; map also has records-directory inference, while bare status
+  already shows workspace. Preserved those baseline differences, explicit-root open
+  behavior and explicit --workspace override. Removed the proposed convenience break;
+  A/B/C intake still never supplies an omitted project from source/sole child/history.
+- The original contract already described the directory-anchor limitation and the
+  reviewed new-ID option. Added explicit recovery steps: register a distinct path/
+  device-inode as a reference, confirm, then separately select working and confirm.
+  Retain old provenance and reject same-path/saved-inode collisions; no re-anchor,
+  silent rebind/unbind, source copy or automatic old-child change is introduced.
+- Preserved JSON-in-packet.md with its existing discovery/receipt/journal compatibility
+  reason. Numbered preparation: archive inventories, privately seal v1 creation,
+  attach/publish marker with that archive, then seal the outer envelope. Outer-sealed
+  inputs/preconditions authenticate marker bytes; creation pins the child seal.
+  Ownership discovery cannot skip a sealed owner because its marker is damaged.
+- Confirmed illustrative digests were already globally unverified; added a bold warning
+  immediately above the A JSON envelope. Added/updated NOT RUN entry-compatibility,
+  directory-recovery and preparation/ownership acceptance cases. WO2 stays pending
+  independent review and researcher acceptance; WO3–WO5 remain unimplemented/NOT RUN.
+- Checks run: required external doc checker passed; git diff --check passed. Document
+  syntax checks parsed 1 JSON, 6 TOML, 1 YAML and 2 Markdown front-matter examples;
+  7 local fragment links resolved. Digests were not recomputed. These are syntax/
+  reference/scope checks, not semantic approval or runtime evidence. No code tests,
+  real workspaces, source edits, sessions or permission-task files touched.
+- Session ID unavailable; no blockers or new business decision. Next: another independent
+  Chief semantic review of the revised specification, then researcher ruling. Local
+  documentation commit only; no push or merge.
+
+## 2026-11-18 — WO2 workspace onboarding contract specification
+
+- Delivered docs/workspace-onboarding-contract.md for the accepted A/B/C intake modes:
+  exact source catalog v2 definitions/associations, unchanged local mapping v1,
+  workspace overview/notebook and source pins, scoped future CLI, sealed packets,
+  receipts, journal publication/recovery, native v4 contexts and bounded engineering
+  task/export/result records. This is a future implementation specification, not
+  released behavior. No runtime, source, test, dependency or current usage files changed.
+- Preserved v1 catalog and v1/v2/v3 binding read paths, old project overview/creation/
+  receipt/handoff contracts and explicit-child command semantics. An explicit reviewed
+  catalog conversion preserves exact legacy bytes and old project selections; no
+  automatic or mandatory migration. C cannot write old children or root charter/overview.
+- Added allowed design/formats cross-references and WO2-only TODO delivery note. WO2
+  remains unchecked pending independent Chief review and researcher specification
+  acceptance. WO3–WO5 implementation/trial cases remain NOT RUN. The separate permission
+  worker is untouched: WO4 consumes its eventual explicit scope-aware mechanism; storage/
+  version alignment and workspace support must be reviewed after that delivery.
+- Checks actually run: required external /tmp/toulmin-wo2-doc-check.py passed (sections,
+  relative files, TOML syntax, allowed-file scope and whitespace). Additional document
+  serialization/reference inspection parsed the JSON envelope and two front-matter
+  examples and resolved six fragment links. These checks do not prove schema semantics,
+  design completeness, runtime behavior or usability. Code tests intentionally skipped
+  for this documentation-only task; no real AoE/model/Chief sessions or data conversions.
+- Decisions: keep source registration separate from write permission; preserve the old
+  project --overview alias; distinguish workspace operational run.md from formal project
+  Runs; retain the existing journal schema and reviewed, recoverable child publication.
+  No unresolved business choice or execution blocker. Session ID unavailable. Next:
+  independent Chief semantic review, then researcher WO2 ruling; no push or merge.
 
 ## 2026-11-18 — Concurrency assessment for WO and the Chief permission task
 

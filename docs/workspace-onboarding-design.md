@@ -5,7 +5,10 @@ This supersedes O's mandatory initial-child assumption for future development.
 The accepted refinement supports three explicit intake modes; workspace ownership
 does not require postponing a requested project until a later session.
 The current executable behavior remains documented in [onboarding.md](onboarding.md).
-Implementation, exact serialized contracts and live acceptance are not completed.
+Exact contracts are frozen in the
+[WO2 implementation specification](workspace-onboarding-contract.md), accepted for
+implementation by the researcher-delegated supervisor after independent review.
+WO3–WO5 development is authorized; runtime implementation and live acceptance are pending.
 
 ## Accepted purpose and user journey
 
@@ -32,7 +35,8 @@ Workspace selection and project creation are independent explicit choices:
 Mode A is the project-free path when no child is requested. B is a first-class path,
 not a deprecated compatibility shortcut. C never creates another workspace or selects a
 workspace from ambiguous native/session history. An unrelated nonempty records directory
-is still refused. Exact CLI flags and serialized forms are to be frozen in WO2.
+is still refused. Exact proposed CLI flags and serialized forms are specified in
+[the WO2 contract](workspace-onboarding-contract.md); they are not released behavior.
 
 ### Shared preparation and confirmation
 
@@ -130,6 +134,8 @@ Reuse its eventual permission mechanism through an explicit scope-aware extensio
 ## Planned work and executable acceptance scenarios
 
 All implementation checks below are NOT RUN; task tracking is in TODO.md (WO1–WO5).
+WO2's [contract and detailed acceptance matrix](workspace-onboarding-contract.md#acceptance-matrix)
+passed independent review and were accepted by the delegated supervisor for implementation.
 
 - WO2: freeze contracts and a matrix covering A/B/C, registered/unregistered sources,
   zero/multiple existing children, duplicate names, ambiguity and old-format readers.

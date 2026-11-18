@@ -481,11 +481,15 @@ weekly-projects-research workspace for final trials; original source data must b
 
 - [x] WO1 — Record accepted A/B/C modes, ownership, workflow, confirmation and compatibility
   boundaries. Distinguish current executable behavior from the accepted design.
-- [ ] WO2 — Freeze versioned source definitions/scope associations, workspace understanding,
+- [x] WO2 — Freeze versioned source definitions/scope associations, workspace understanding,
   onboarding/child/task contracts and CLI forms for A/B/C. Acceptance: matrix covers zero/
   multiple children, registered/new sources, duplicate project names and ambiguous scopes;
   A needs no sentinel child; old v1 catalogs and v1/v2/v3 bindings have unchanged-read paths;
   existing data needs no mandatory migration.
+  Specification delivered: [WO2 contract](docs/workspace-onboarding-contract.md), including
+  exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
+  Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
+  for implementation on 2026-11-18. Runtime/live cases remain pending.
 - [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
