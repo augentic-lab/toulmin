@@ -151,6 +151,16 @@ scanner; omissions do not establish absence, and dirty snapshots are not complet
 
 ## Conversations and local permissions
 
+`toulmin open` automatically sends a request to read its context and frozen snapshots,
+then record the context-read receipt. No manual opening prompt is needed. With `--attach`,
+a still-unsent context is retried for up to three minutes while you resolve native startup
+menus. This watcher belongs to that one command and stops on detach; no extra terminal or
+permanent watcher is created. It never selects trust/update/permission options for you.
+Submitted, sending, uncertain and acknowledged messages are never automatically resent.
+On timeout or uncertain delivery, inspect the session and use the printed refresh recovery.
+Without attach, resolve menus in AoE and run refresh explicitly. A receipt is a model
+acknowledgment, not proof of comprehension or scientific approval.
+
 ```sh
 toulmin open --workspace --root ROOT
 # For a new external-source Codex scope without a terminal, explicitly choose once:

@@ -2,6 +2,7 @@
 
 import json
 import shlex
+import threading
 from dataclasses import replace
 
 import pytest
@@ -237,6 +238,49 @@ def test_undelivered_context_is_loud_and_repeated_after_attach(
         fake_service.result, binding=replace(binding, delivery="submitted")
     )
     assert "CONTEXT NOT DELIVERED" not in invoke(workbench, "open", "demo").output
+
+
+def test_context_retries_while_attached_and_does_not_repeat_stale_warning(
+    workbench, fake_service, monkeypatch
+):
+    from toulmin.application import attached_context
+
+    binding = replace(fake_service.result.binding, delivery="prepared")
+    fake_service.result = replace(fake_service.result, binding=binding, context_status="prepared")
+    submitted = threading.Event()
+
+    def refresh(self, *, expected, cancelled):
+        assert expected == binding
+        assert not cancelled()
+        self.calls.append(("automatic refresh",))
+        self.result = replace(
+            self.result, binding=replace(binding, delivery="submitted"), context_status="submitted"
+        )
+        submitted.set()
+        return self.result
+
+    class Client:
+        def __init__(self, profile):
+            pass
+
+        def ready(self, session_id):
+            return True, "researcher resolved startup menu"
+
+        def attach(self, session_id):
+            assert submitted.wait(2), "context was not delivered while attached"
+            return 0
+
+    monkeypatch.setattr(
+        fake_service, "bound_session", lambda self: self.result.binding, raising=False
+    )
+    monkeypatch.setattr(fake_service, "refresh", refresh)
+    monkeypatch.setattr(aoe, "AoEClient", Client)
+    monkeypatch.setattr(attached_context, "POLL_SECONDS", 0.001)
+    result = invoke(workbench, "open", "demo", "--attach")
+    assert result.exit_code == 0, result.output
+    assert fake_service.calls.count(("automatic refresh",)) == 1
+    assert "Toulmin will retry" in result.output
+    assert "Context still not delivered" not in result.output
 
 
 def test_online_failure_is_friendly_and_recovery_uses_recorded_profile(workbench, fake_service):

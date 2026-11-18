@@ -1,5 +1,9 @@
 # Framework changes
 
+- AC1 startup context (2026-11-18): an unsent context retries while open --attach
+  is active (up to three minutes), after you resolve native menus. No menu autoaccept,
+  implicit resend or fabricated read receipt. Explicit refresh remains recovery.
+
 - MI1 monorepo intake (2026-11-18): ordered literal --include/--exclude inspection,
   persisted Git definition revision 2 and bounded filename streaming. Old definitions
   retain bytes/hashes; old readers reject revision 2. Identity/cwd/permissions unchanged.

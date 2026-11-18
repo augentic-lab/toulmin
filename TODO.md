@@ -547,3 +547,12 @@ workspace for final trials; original source data is preserved.
 - [ ] MI1 researcher confirmation — Review and apply the sealed source/charter/overview
   packet in ~/workspace/npu-race-research; then open its workspace session. No receipt
   or scientific approval is inferred from preparation or automated tests.
+
+
+### AC — Automatic native context loading (2026-11-18)
+
+- [x] AC1 — The researcher requested automatic Toulmin-context reading at each new session.
+  Existing delivery already requests read + receipt; add bounded attached recovery after
+  startup menus, with no menu autoaccept, implicit resend or acknowledgment fabrication.
+  Verify readiness/cancellation/rebinding/races, workspace/project compatibility and CLI
+  wiring with fake sessions. No real model invocation or current-session interruption.

@@ -921,7 +921,12 @@ class AoEWorkspace:
         return binding
 
     def _dispatch(
-        self, client: AoEClient, *, expected_token: str | None, resend: bool = False
+        self,
+        client: AoEClient,
+        *,
+        expected_token: str | None,
+        resend: bool = False,
+        cancelled: Callable[[], bool] | None = None,
     ) -> None:
         with self._lock():
             binding = self._read()
@@ -947,6 +952,8 @@ class AoEWorkspace:
                 raise FormatError("Native conversation changed before delivery; run refresh again")
             if self._state().fingerprint != binding.fingerprint:
                 raise FormatError("Research changed before delivery; run refresh again")
+            if cancelled is not None and cancelled():
+                return  # Readiness/state observations may have outlasted native attach.
             binding = replace(
                 binding, delivery="sending", message="Delivery started; receipt pending"
             )
@@ -1464,17 +1471,31 @@ class AoEWorkspace:
             and item.title == (binding.title or f"Toulmin: {self.project}")
         ]
 
-    def refresh(self, *, resend: bool = False) -> WorkspaceView:
+    def refresh(
+        self,
+        *,
+        resend: bool = False,
+        expected: Binding | None = None,
+        cancelled: Callable[[], bool] | None = None,
+    ) -> WorkspaceView:
         with self._lock():
             binding = self._read()
             if not binding or not binding.session_id:
                 raise FormatError("No bound session; bind or open first")
+            if expected is not None and (
+                expected.delivery != "prepared"
+                or binding.session_id != expected.session_id
+                or binding.profile != expected.profile
+                or binding.token != expected.token
+                or binding.delivery != "prepared"
+            ):
+                raise FormatError("Startup context changed; automatic delivery stopped")
             client = self._client(binding)
             session = client.show(binding.session_id)
             self._check_session(session, binding)
             binding = self._sync_identity(binding, session)
             binding = self._context(binding, self._state())
-        self._dispatch(client, expected_token=binding.token, resend=resend)
+        self._dispatch(client, expected_token=binding.token, resend=resend, cancelled=cancelled)
         return self.status()
 
     def bound_session(self) -> Binding | None:

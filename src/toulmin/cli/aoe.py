@@ -14,6 +14,7 @@ import typer
 from toulmin.adapters.aoe import AoEClient, AoEError
 from toulmin.adapters.provider_logs import ModelReport, SessionUsage
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
+from toulmin.application.attached_context import AttachedContext
 from toulmin.application.native_policy import LOCAL, validate_mode
 from toulmin.application.sources import ResolvedSource
 from toulmin.cli.settings import (
@@ -254,7 +255,19 @@ def _execute(
             ):
                 raise AoEError("Cannot attach: no verified live bound session")
             client = workspace.client or AoEClient(binding.profile)
-            code = client.attach(session.id)
+            if binding.delivery == "prepared" and binding.context:
+                typer.echo(
+                    "Startup context is waiting. Resolve native prompts; Toulmin will retry "
+                    "once ready while attached (up to 3 minutes)."
+                )
+            with AttachedContext(workspace, client, view) as context:
+                code = client.attach(session.id)
+            if context.latest is not None:
+                view = context.latest
+            elif context.thread is not None:
+                # Another refresh/read receipt may have completed while attached.
+                # Re-read files before repeating an obsolete delivery warning.
+                view = workspace.status(check_session=False)
             if _undelivered(view, bound_only):
                 # Attaching replaced the screen that carried the warning (R7).
                 typer.echo("Context still not delivered. When the native prompt is ready, run:")

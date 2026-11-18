@@ -1483,3 +1483,18 @@ MI1 boundary checks: filename enumeration clears inherited Git pathspec switches
 selection stays literal. Legacy source-change packets accept only v1 catalogs and
 cannot downgrade v2 definitions or discard inspection policy; legacy overview updates
 remain compatible. No permission or source-selection authority is added.
+
+## AC1: automatic startup context retry while attached
+
+Reason: open already dispatches a read-context/snapshots/receipt request, but a native
+startup menu can block it before attach. The same open --attach command now runs a
+bounded in-process watcher (three minutes, no separate terminal/daemon) for a prepared,
+unsent context. The researcher resolves the menu; readiness checks still reject menus,
+typed input, busy/unstable screens and unsupported prompts. Detach cancels later refresh.
+The watcher never selects native options, modifies native/global settings, creates a
+session, acknowledges on the agent's behalf or retries sending/submitted/uncertain/
+acknowledged delivery. A guarded refresh revalidates session/profile/token and prepared
+state under the existing lock, so another bind/refresh/send cannot be overwritten.
+L3-only lifecycle change; no schema or L1/L2 rule changes. Receipt semantics remain
+acknowledgment, not comprehension or research approval. Explicit refresh remains recovery
+for timeout, no-attach and uncertain delivery. No independent review behavior changes.

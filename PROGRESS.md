@@ -1,5 +1,33 @@
 # Toulmin development progress
 
+## 2026-11-18 — AC1 automatic startup context recovery while attached
+
+- Researcher requested automatic Toulmin-context reading for new open sessions. Existing
+  dispatch already asks the agent to read context/snapshots and run its receipt command;
+  the gap was recovering an unsent context after a native startup menu blocked delivery.
+- Added a bounded in-process watcher during open --attach (three minutes, no new terminal
+  or persistent watcher). After the researcher resolves menus, readiness checks permit a
+  guarded refresh. Session/profile/token/prepared-state checks prevent replacement races;
+  cancellation/deadline is checked before marking dispatch started. Detach stops retries.
+- Never autoaccept trust/update/permission menus, resend sending/submitted/uncertain/acked
+  messages, fabricate acknowledgments or alter review/research confirmation. Late native
+  identity is handled through the existing refresh path. Pending/uncertain delivery keeps
+  explicit recovery; no-attach retains explicit refresh after unresolved startup prompts.
+- Verified 83 targeted lifecycle/CLI/native tests on temporary fake sessions; all 2,420
+  collected tests ran once across eight shards in isolated /tmp/toulmin-ac1 and passed.
+  Locked offline dev+tui sync, Ruff lint/format, mypy (136 modules), CLI help and whitespace
+  checks passed. Logs: /tmp/toulmin-ac1-validation/final-1795032153.
+- Isolation: another session is editing decide/proposal_view and related docs/tests. AC1
+  was validated against b914348 with only this task's files. Shared documentation commits
+  stage only AC1 hunks; all other edits/staged work are excluded and preserved. This is
+  not a claim that the other session's uncommitted UI work passed our full suite.
+- Real workspace observation: saved NPU binding was prepared after a CLI-update refusal;
+  a later read-only live probe reported running. It was not interrupted/refreshed and no
+  real model message/session or scientific state was created. Live human acceptance of
+  the new attached watcher remains unverified; receipt still means acknowledgment only.
+- Next: use open --attach for startup recovery; explicit refresh remains the fallback.
+  No schema migration, real provider trial or push. Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — MI1 bounded monorepo intake and NPU workspace preparation
 
 - Researcher authorized the minimal Git-root/component inventory adaptation, then Mode A

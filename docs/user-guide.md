@@ -30,6 +30,12 @@ counterarguments, kill criteria, smallest validating experiment), all still hypo
 Keep two terminals: the agent session (in AoE), where you think and work, and your own
 terminal for `toulmin decide`, `toulmin map NAME` and `toulmin commit`.
 
+New sessions automatically receive a request to read the Toulmin context and record a
+receipt. You can start discussing after that introduction; no pasted bootstrap prompt is
+required. If a native startup menu blocks delivery during `open --attach`, resolve the
+menu and Toulmin retries while attached for up to three minutes. It never chooses trust
+or permissions for you; unresolved/uncertain delivery keeps an explicit refresh fallback.
+
 `toulmin map NAME` (and `toulmin open NAME`) shows the project card: the question, one line
 per Claim (✓ supported or ready to rule, ? fatal/major doubts open, · no verified Evidence
 yet), the main open doubts grouped by Claim, what waits in `decide` and up to three next moves.
