@@ -13,8 +13,10 @@ from toulmin.application.sources import (
     SourceSelectionRequired,
     checkout_conflicts,
     checkout_locks,
+    filesystem_identity,
     inspect_source_v2,
     resolve_source,
+    validate_directory,
 )
 from toulmin.core import workspace_journal as journal
 from toulmin.core.atomic import digest, handoff_mutex
@@ -29,6 +31,7 @@ from toulmin.core.scope import WORKSPACE, Scope
 from toulmin.core.sources import (
     CATALOG,
     LOCAL,
+    InspectionPolicy,
     SourceAssociation,
     SourceCatalog,
     SourceDefinition,
@@ -69,8 +72,20 @@ def _source(
     at: str,
     source_id: str | None,
     register: str | None,
+    inspection: InspectionPolicy | None = None,
 ) -> tuple[SourceDefinition, SourceInspection, str]:
-    inspected = inspect_source_v2(root, path, observed_at=at)
+    path = validate_directory(root, path)
+    checkout = (str(path), filesystem_identity(path))
+    known = (
+        catalog.definition(source_id)
+        if source_id
+        else next((d for d in catalog.definitions if bindings.get(d.id) == checkout), None)
+    )
+    if known is not None:
+        if inspection is not None and inspection != known.inspection:
+            raise FormatError("inspection selection differs from immutable registered definition")
+        inspection = known.inspection
+    inspected = inspect_source_v2(root, path, observed_at=at, inspection=inspection)
     if source_id and register:
         raise FormatError("source reuse and registration flags conflict")
     matched = [
@@ -92,10 +107,11 @@ def _source(
             raise FormatError(f"checkout already belongs to {matched[0].id}; reuse its ID")
         definition = SourceDefinition(
             register,
-            1,
+            2 if inspection is not None else 1,
             inspected.kind,
             "git-roots-v1" if inspected.kind == "git" else "directory-anchors-v1",
             inspected.identity,
+            inspection,
         )
     elif matched:
         if len(matched) != 1:
@@ -125,10 +141,11 @@ def _source(
             raise FormatError("generated source ID collision; retry")
         definition = SourceDefinition(
             generated,
-            1,
+            2 if inspection is not None else 1,
             inspected.kind,
             "git-roots-v1" if inspected.kind == "git" else "directory-anchors-v1",
             inspected.identity,
+            inspection,
         )
     reuse = definition in catalog.definitions
     checkout_conflicts(bindings, definition.id, inspected.path, inspected.filesystem)
@@ -301,7 +318,10 @@ def prepare(
     working_source: str | None = None,
     working: bool = False,
     rationale: str = "Review bounded intake and explicit scope choices",
+    inspection: InspectionPolicy | None = None,
 ) -> protocol.Outcome:
+    if inspection is not None and (source is None or work_at is not None):
+        raise FormatError("explicit inspection selection requires SOURCE without --work-at")
     repository, before_catalog, bindings = _base(root)
     old_catalog = _bytes(repository, CATALOG)
     old_local = _bytes(repository, LOCAL)
@@ -324,7 +344,7 @@ def prepare(
     catalog = before_catalog
     observations = []
     if source is not None:
-        first = _source(root, source, catalog, bindings, at, source_id, register_source)
+        first = _source(root, source, catalog, bindings, at, source_id, register_source, inspection)
         observations.append(first)
         definition, observed, action = first
         if action == "register":
@@ -380,13 +400,14 @@ def prepare(
                 continue
             resolved = resolve_source(root, None, source_name)
             definition = catalog.definition(source_name)
-            inspection = inspect_source_v2(
+            source_observation = inspect_source_v2(
                 root,
                 resolved.path,
                 observed_at=at,
                 identity=definition.identity if definition.kind == "directory" else None,
+                inspection=definition.inspection,
             )
-            observations.append((definition, inspection, "reuse"))
+            observations.append((definition, source_observation, "reuse"))
             if operation == "child-derive":
                 catalog = _associate(
                     catalog,
@@ -567,6 +588,7 @@ def apply(
                 frozen = repository.path(f"{loaded.directory}/{item['path']}", "file").read_bytes()
                 observation = json.loads(frozen)
                 path, filesystem = bindings[item["source"]]
+                definition = protocol.catalog_after(root, loaded).definition(item["source"])
                 current = inspect_source_v2(
                     root,
                     Path(path),
@@ -574,6 +596,7 @@ def apply(
                     identity=observation["identity"]
                     if observation["kind"] == "directory"
                     else None,
+                    inspection=definition.inspection,
                 )
                 if current.filesystem != filesystem or current.inventory != frozen:
                     raise FormatError(

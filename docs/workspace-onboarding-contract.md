@@ -72,7 +72,7 @@ Each `definitions` entry has exactly these keys:
 | Key | Type / constraint |
 | --- | --- |
 | `id` | Source ID, unique in this workspace |
-| `definition_revision` | Integer 1 in this version; immutable after publication |
+| `definition_revision` | 1 for the original fields; MI1 also supports Git-only 2 with inspection (addendum below); immutable after publication |
 | `kind` | `git` or `directory` |
 | `identity_method` | `git-roots-v1` for Git; `directory-anchors-v1` for ordinary directories |
 | `identity` | `git:` or `directory:` followed by 64-hex, consistent with kind/method |
@@ -1551,3 +1551,24 @@ completeness, security/isolation or usability. Chief's independent review must
 assess cross-section consistency, recoverability, permission integration assumptions
 and compatibility before researcher acceptance. WO3–WO5 runtime implementation,
 any live model/AoE/Chief trial and real-data conversion remain outside this delivery.
+
+## MI1 addendum: component inventory policies (2026-11-18)
+
+The researcher authorized bounded monorepo onboarding. The schema-2 source catalog
+also accepts Git-only definition revision 2: exactly the revision-1 keys plus
+`inspection = { include = [literal ordered relative prefixes], exclude = [prefixes] }`.
+Revision 1 keeps exactly its existing keys, hash and rendering. The optional policy is
+part of the canonical definition hash for revision 2, and the definition stays immutable.
+All selected paths are nonempty normalized portable literal file/directory prefixes;
+include is nonempty/unique/nonoverlapping, exclude is unique, each has at most 32 paths
+of at most 1,024 characters. Reject absolute/dot/traversal, wildcard/magic, backslash,
+control and symlink paths; L3 checks existence. Omitted flags inherit; mismatch refuses.
+
+Inventory schema 2 remains exact. Coverage records ordered include/exclude selection,
+while the pinned source definition supplies machine replay. Approval rescans use the
+sealed after-image definition; later overview, native context and task scans use the
+registered policy. Native cwd and task repo remain the Git root and global cleanliness
+is not filtered. Bounded NUL filename streaming replaces full-list capture; time,
+3,200 candidate and 2,000,000 filename-byte limits disclose truncation and reap Git.
+Old data needs no migration; older software rejects revision 2 explicitly. See
+[MI1 scope, compatibility and acceptance](monorepo-onboarding.md).

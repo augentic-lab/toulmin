@@ -41,6 +41,31 @@ child retains the provisional compatibility framing, shown in full for review. O
 
 ## Understanding and source roles
 
+### Large repositories and component-focused inspection (MI1)
+
+Always pass the Git root as SOURCE. To inventory a component, add repeated literal
+`--include PATH` prefixes in priority order and optional `--exclude PATH` prefixes:
+
+```sh
+toulmin onboard /code/monorepo --root /records/component-research --init \
+  --include component/README.md --include component/src --include component/tests \
+  --exclude component/tests/generated
+```
+
+Paths must exist inside SOURCE; they are not globs or Git pathspec expressions. The
+immutable revision-2 source definition retains this policy for later observations,
+overview updates, native context and task checks. Omitted flags inherit the registered
+policy; explicitly different flags refuse. Old revision-1 definitions/hashes stay valid.
+Older Toulmin readers reject revision-2 definitions and must be upgraded before opening
+these records. New fields do not rewrite existing workspaces or archived snapshots.
+
+Selection bounds inventory only: source identity, native cwd, Chief repo and global
+Git cleanliness remain rooted at the whole repository. Include priority and truncation
+are recorded; large filenames are streamed under fixed budgets. This does not copy code,
+select a branch, create a child or restrict write permissions. Explicit inspection flags
+with `--work-at`, directory sources and exclude-only selections are refused in this slice.
+See [scope and acceptance](monorepo-onboarding.md).
+
 `WORKSPACE.md` stays the 40-line confirmed charter. Root `overview.md` is a separately
 receipted structural checkpoint: Structure, Entry points, Current behavior, Checks and
 Known gaps, with exact source pins, coverage and limits. Root `runs/notebook.md` is an

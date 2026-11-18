@@ -238,6 +238,12 @@ def _catalogs(
     return before, before
 
 
+def catalog_after(root: Path, loaded: Loaded) -> SourceCatalog:
+    """The sealed catalog selection for L3 source revalidation before publication."""
+    repository = Repository(root)
+    return _catalogs(repository, loaded, images(repository, loaded))[1]
+
+
 def load(root: Path, value: str, *, local_optional: bool = False) -> Loaded:
     repository = Repository(root)
     loaded = load_envelope(repository, value)

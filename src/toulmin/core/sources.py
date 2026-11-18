@@ -7,7 +7,7 @@ identities belong exclusively to tools/sources.local.toml.
 import json
 import re
 import tomllib
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 from toulmin.core.atomic import digest
@@ -149,17 +149,84 @@ def render_bindings(bindings: dict[str, tuple[str, str]]) -> bytes:
 
 
 @dataclass(frozen=True)
+class InspectionPolicy:
+    """Ordered literal source-relative prefixes; filesystem checks belong to L3."""
+
+    include: tuple[str, ...]
+    exclude: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for name, paths in (("include", self.include), ("exclude", self.exclude)):
+            if type(paths) is not tuple or len(paths) > 32 or (name == "include" and not paths):
+                bounds = "1–32" if name == "include" else "0–32"
+                raise FormatError(f"inspection.{name}: expected {bounds} immutable prefixes")
+            seen: set[str] = set()
+            for path in paths:
+                if (
+                    not isinstance(path, str)
+                    or not path.strip()
+                    or len(path) > 1024
+                    or path.startswith("/")
+                    or any(part in {"", ".", ".."} for part in path.split("/"))
+                    or any(c in path for c in "\\:*?[]")
+                    or any(
+                        ord(c) < 32 or 127 <= ord(c) <= 159 or 0xD800 <= ord(c) <= 0xDFFF
+                        for c in path
+                    )
+                ):
+                    raise FormatError(
+                        f"inspection.{name}: expected literal portable relative prefix"
+                    )
+                if path in seen:
+                    raise FormatError(f"inspection.{name}: duplicate prefix {path!r}")
+                if name == "include" and any(
+                    path.startswith(other + "/") or other.startswith(path + "/") for other in seen
+                ):
+                    # Overlaps make caller ordering misleading and consume enumeration budget twice.
+                    raise FormatError("inspection.include: overlapping prefixes are redundant")
+                seen.add(path)
+
+    def to_data(self) -> dict[str, list[str]]:
+        return {"include": list(self.include), "exclude": list(self.exclude)}
+
+    @classmethod
+    def from_data(cls, value: object) -> "InspectionPolicy":
+        if not isinstance(value, dict) or set(value) != {"include", "exclude"}:
+            raise FormatError("inspection: expected exactly include and exclude arrays")
+        if any(not isinstance(value[key], list) for key in ("include", "exclude")):
+            raise FormatError("inspection: expected include and exclude arrays")
+        return cls(tuple(value["include"]), tuple(value["exclude"]))
+
+
+@dataclass(frozen=True)
 class SourceDefinition:
     id: str
     definition_revision: int
     kind: str
     identity_method: str
     identity: str
+    inspection: InspectionPolicy | None = None
 
     @property
     def sha256(self) -> str:
-        data = json.dumps(asdict(self), sort_keys=True, ensure_ascii=True, separators=(",", ":"))
+        data = json.dumps(
+            definition_data(self), sort_keys=True, ensure_ascii=True, separators=(",", ":")
+        )
         return digest((data + "\n").encode())
+
+
+def definition_data(definition: SourceDefinition) -> dict[str, object]:
+    """Keep historical revision-1 hashes and rendered fields unchanged."""
+    value: dict[str, object] = {
+        "id": definition.id,
+        "definition_revision": definition.definition_revision,
+        "kind": definition.kind,
+        "identity_method": definition.identity_method,
+        "identity": definition.identity,
+    }
+    if definition.inspection is not None:
+        value["inspection"] = definition.inspection.to_data()
+    return value
 
 
 @dataclass(frozen=True)
@@ -234,9 +301,13 @@ def parse_source_catalog(data: bytes) -> SourceCatalog:
         parsed_definitions = []
         ids = set()
         for item in value["definitions"]:
-            if not isinstance(item, dict) or set(item) != set(
-                SourceDefinition.__dataclass_fields__
-            ):
+            fields = {"id", "definition_revision", "kind", "identity_method", "identity"}
+            if not isinstance(item, dict):
+                raise ValueError("invalid definition fields")
+            revision = item.get("definition_revision")
+            if type(revision) is not int or revision not in {1, 2}:
+                raise ValueError("invalid definition revision")
+            if set(item) != (fields | {"inspection"} if revision == 2 else fields):
                 raise ValueError("invalid definition fields")
             if (
                 not isinstance(item["id"], str)
@@ -246,10 +317,9 @@ def parse_source_catalog(data: bytes) -> SourceCatalog:
                 raise ValueError("invalid or duplicate source ID")
             kind = item["kind"]
             if (
-                type(item["definition_revision"]) is not int
-                or item["definition_revision"] != 1
-                or not isinstance(kind, str)
+                not isinstance(kind, str)
                 or kind not in {"git", "directory"}
+                or (revision == 2 and kind != "git")
                 or item["identity_method"]
                 != ("git-roots-v1" if kind == "git" else "directory-anchors-v1")
                 or not isinstance(item["identity"], str)
@@ -257,7 +327,16 @@ def parse_source_catalog(data: bytes) -> SourceCatalog:
             ):
                 raise ValueError("invalid definition revision, kind, identity method or identity")
             ids.add(item["id"])
-            parsed_definitions.append(SourceDefinition(**item))
+            parsed_definitions.append(
+                SourceDefinition(
+                    item["id"],
+                    revision,
+                    kind,
+                    item["identity_method"],
+                    item["identity"],
+                    InspectionPolicy.from_data(item["inspection"]) if revision == 2 else None,
+                )
+            )
         parsed_associations = []
         pairs = set()
         working = set()
@@ -306,7 +385,16 @@ def render_source_catalog(catalog: SourceCatalog) -> bytes:
         lines.append("associations = []")
     for definition in sorted(catalog.definitions, key=lambda item: item.id):
         lines.extend(("", "[[definitions]]"))
-        lines.extend(f"{key} = {json.dumps(value)}" for key, value in asdict(definition).items())
+        for key, value in definition_data(definition).items():
+            if key == "inspection":
+                assert definition.inspection is not None
+                policy = ", ".join(
+                    f"{name} = {json.dumps(paths, ensure_ascii=False)}"
+                    for name, paths in definition.inspection.to_data().items()
+                )
+                lines.append(f"inspection = {{ {policy} }}")
+            else:
+                lines.append(f"{key} = {json.dumps(value)}")
     for association in sorted(
         catalog.associations, key=lambda a: (a.scope.kind, a.scope.project or "", a.source)
     ):

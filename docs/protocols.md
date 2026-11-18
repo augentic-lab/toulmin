@@ -1466,3 +1466,20 @@ their first context. Each existing bound project session therefore shows stale o
 this update. Workspace contexts are unchanged. Reason for this L3 change: a refresh
 after the R2/WO5 guide edits reused an 11-16 context carrying the older guide.
 
+## MI1: bounded component inspection with Git-root identity
+
+Reason: a large monorepo may contain one research tool; complete filename capture
+can exceed the command limit before its component appears. Ordered literal include/
+exclude prefixes now live in immutable Git source definition revision 2. Existing
+revision-1 fields, rendering and hashes remain unchanged; no data migration required.
+Inventory/gate/object/native/task schemas are unchanged. Old readers reject revision 2.
+L2 exposes the sealed after-image catalog for L3 pre-publication source revalidation,
+so a focused intake is approved using the exact policy it previewed. Other observations
+inherit the registered definition; global task cleanliness still covers the whole repo.
+No source path, permission, native cwd, branch, model or scientific conclusion changes
+with inspection selection. See [monorepo onboarding](monorepo-onboarding.md).
+
+MI1 boundary checks: filename enumeration clears inherited Git pathspec switches so
+selection stays literal. Legacy source-change packets accept only v1 catalogs and
+cannot downgrade v2 definitions or discard inspection policy; legacy overview updates
+remain compatible. No permission or source-selection authority is added.

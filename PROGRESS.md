@@ -1,5 +1,41 @@
 # Toulmin development progress
 
+## 2026-11-18 — MI1 bounded monorepo intake and NPU workspace preparation
+
+- Researcher authorized the minimal Git-root/component inventory adaptation, then Mode A
+  preparation for ~/workspace/npu-race-research. Scope/acceptance: docs/monorepo-onboarding.md.
+  Original source: ~/workspace/Ascend-NPU-Memory-Exploits; focus: DefenceTools/symbolic_executor.
+- Added immutable Git source definition revision 2 with ordered literal include/exclude
+  prefixes. Revision-1 fields/rendering/hashes remain unchanged; no old data migration.
+  Older readers reject revision 2. Existing source/overview/task/native schemas are retained.
+- Bounded NUL filename streaming replaces full-list capture, with process cleanup, explicit
+  truncation and existing file/text limits. Git identity, native cwd and task repo remain
+  the actual root. Git pathspec environment switches cannot change selection semantics.
+- Sealed approval, overview updates, source freshness, native context and task snapshots
+  retain the same policy; omitted flags inherit and mismatched policies refuse. Source
+  rebinds retain policy too. Whole-repository task cleanliness is not filtered. Legacy source
+  packets cannot downgrade v2 catalogs/policies; legacy overview compatibility remains.
+- Checks so far: 244 affected compatibility/feature tests passed; later boundary-focused
+  tests 26 and legacy/task/intake tests 43 passed. Ruff lint/format and mypy (134 modules)
+  passed. Final full regression: 2,405 collected nodes ran once across eight shards, all
+  passed. Locked offline dev+tui sync, Ruff lint/format, mypy and CLI help passed. Logs:
+  /tmp/toulmin-mi1-validation/verified-1795030520.
+- Verified real read-only preflight at a55dcbb3/new-design: 400 selected files, 511,965 text
+  bytes, 666,525-byte archive, explicit truncation, and original root Git identity retained.
+  Source branch/status unchanged. No source scripts, tests, hardware or model sessions ran.
+- Real workspace initialized: ~/workspace/npu-race-research; Mode A packet prepared at
+  runs/20261118T193831Z-onboard-8e192128a160418994315f766631d9ad (seal
+  bbf37d4f55e83c27361a6321e6bd74ad85e8b45ae37b2ef36a73861bf72893da).
+  Source registration/charter/overview remain unconfirmed; no receipt, children or native
+  sessions. Proposed charter has 16 lines. Initial harness counted projects/.gitkeep;
+  directory-only verification correctly confirms zero children, with no product change.
+  NPU static race analysis is the long-term scope; reusable tools primary, papers secondary;
+  Ascend is the current validation platform. No automatic children or formal Claims.
+- Next: researcher reviews/applies the single pending packet with toulmin decide --workspace
+  --root ~/workspace/npu-race-research, then opens its workspace session. Publication stays
+  researcher-confirmed under that workspace AGENTS.md. No push authorized.
+  Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — Guide freshness in project context fingerprints
 
 - Decision: "按你的建议，把 guide 算进指纹" after a refresh of rkey-lifecycle reused an 11-16 context whose guide.md predated the WO5 guide edits.

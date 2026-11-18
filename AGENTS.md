@@ -108,6 +108,8 @@ Implement the skeleton in T1–T5 order, completing one task per session and lea
 
 2026-11-17: The researcher approved implementation of O1–O5: existing-project onboarding into a separate research workspace, reviewed project understanding, native sessions in linked code repositories, Claim-free engineering delegation, and guided rebuilding with preserved origins. This is the current authorized task; older scope pauses do not restrict it. Maintain compatibility and distinguish automated verification from live usability acceptance.
 
+2026-11-18: The researcher authorized MI1 minimal monorepo onboarding (Git-root identity with persisted component inspection and bounded filename enumeration), followed by Mode A preparation at ~/workspace/npu-race-research. Keep the original Ascend repository/branches unchanged; source and overview publication still requires review of the exact packet. No TaPS refactor, new analysis engine or evaluation campaign is authorized by MI1.
+
 ## Project goals and scope
 
 - Toulmin is a project-based research workbench for a single systems researcher. Open files preserve the claim–evidence–objection network and its full provenance.

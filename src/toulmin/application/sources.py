@@ -13,12 +13,14 @@ from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
 
+from toulmin.application.git_inventory import git_paths, selection_paths
 from toulmin.core.atomic import digest, handoff_mutex, write_atomic
 from toulmin.core.documents import FormatError
 from toulmin.core.repository import Repository
 from toulmin.core.sources import (
     CATALOG,
     LOCAL,
+    InspectionPolicy,
     parse_bindings,
     read_source_catalog,
     render_bindings,
@@ -81,6 +83,7 @@ class ResolvedSource:
     path: Path
     version: str
     identity: str
+    inspection: InspectionPolicy | None = None
 
 
 @dataclass(frozen=True)
@@ -150,27 +153,38 @@ def _sensitive(name: str) -> bool:
     return any(fnmatch.fnmatch(name.lower(), pattern) for pattern in SENSITIVE)
 
 
-def inspect_source(root: Path, path: Path, *, _deadline: float | None = None) -> SourceInspection:
+def inspect_source(
+    root: Path,
+    path: Path,
+    *,
+    _deadline: float | None = None,
+    inspection: InspectionPolicy | None = None,
+) -> SourceInspection:
     path = validate_directory(root, path)
     top = _git(path, "rev-parse", "--show-toplevel")
-    if _deadline is not None and os.path.lexists(path / ".git") and not top:
+    git_marker = os.path.lexists(path / ".git") or any(
+        (parent / ".git").is_file() or (parent / ".git" / "HEAD").is_file()
+        for parent in path.parents
+    )
+    if not top and git_marker:
         raise FormatError(f"{path}: Git discovery unavailable; never reinterpret it as a directory")
     if top and Path(top).resolve() != path:
         raise FormatError(f"{path}: select the Git repository root {top}")
+    if inspection is not None and not top:
+        raise FormatError("inspection selection currently requires a Git repository root")
+    selection_paths(path, inspection)
     kind = "git" if top else "directory"
     roots = _git(path, "rev-list", "--max-parents=0", "HEAD") if top else None
     if top and not roots:
         raise FormatError("Git sources need at least one commit for a stable repository identity")
     identity = "git:" + digest((roots or "").encode()) if top else ""
-    git_files = (
-        _git(path, "ls-files", "--cached", "--others", "--exclude-standard", "-z") if top else None
-    )
+    listing = git_paths(path, inspection, _deadline or time.monotonic() + 8) if top else None
     # Keep traversal bounded independently of the number of source files.
-    candidates = git_files.split("\0") if git_files is not None else None
+    candidates = listing.paths if listing is not None else None
     files: list[dict[str, str | int]] = []
     read_bytes = 0
     examined = 0
-    truncated = False
+    truncated = listing.truncated if listing is not None else False
     anchors = []
 
     def expired() -> bool:
@@ -291,7 +305,13 @@ def inspect_source(root: Path, path: Path, *, _deadline: float | None = None) ->
                 "truncated": truncated,
                 "read_bytes": read_bytes,
                 "limits": {"files": MAX_FILES, "bytes": MAX_READ_BYTES},
-                "coverage": "bounded read-only inventory; omissions are not evidence of absence",
+                "coverage": "bounded read-only inventory; omissions are not evidence of absence"
+                + (
+                    "; ordered literal include/exclude selection: "
+                    + json.dumps(inspection.to_data(), ensure_ascii=True, sort_keys=True)
+                    if inspection is not None
+                    else ""
+                ),
             },
             indent=2,
             ensure_ascii=True,
@@ -344,6 +364,7 @@ def resolve_source(root: Path, project: str | None, source_id: str) -> ResolvedS
         path,
         digest(repo.path(CATALOG, "file").read_bytes()),
         definition.identity,
+        definition.inspection,
     )
 
 
@@ -382,7 +403,7 @@ def bind_source(
     repo = Repository(root)
     catalog = read_source_catalog(root)
     definition = catalog.definition(source_id)
-    inspected = inspect_source(root, path)
+    inspected = inspect_source(root, path, inspection=definition.inspection)
     if (inspected.kind, inspected.identity) != (definition.kind, definition.identity):
         raise FormatError(
             f"{source_id}: source identity mismatch; original directory/repository "
@@ -405,6 +426,7 @@ def bind_source(
         inspected.path,
         digest(repo.path(CATALOG, "file").read_bytes()),
         definition.identity,
+        definition.inspection,
     )
     if not confirmed:
         return result
@@ -419,7 +441,7 @@ def bind_source(
             root
         ) != catalog:
             raise FormatError("source mapping/catalog changed during bind preview; retry")
-        current = inspect_source(root, path)
+        current = inspect_source(root, path, inspection=definition.inspection)
         if (current.kind, current.identity, current.filesystem) != (
             inspected.kind,
             inspected.identity,
@@ -463,7 +485,12 @@ def _bound_writer_guard(checkouts: tuple[tuple[str, str], ...]) -> None:
 
 
 def inspect_source_v2(
-    root: Path, path: Path, *, observed_at: str | None = None, identity: str | None = None
+    root: Path,
+    path: Path,
+    *,
+    observed_at: str | None = None,
+    identity: str | None = None,
+    inspection: InspectionPolicy | None = None,
 ) -> SourceInspection:
     """Version observations keep the v1 logical identity algorithm unchanged."""
     from dataclasses import replace
@@ -474,7 +501,7 @@ def inspect_source_v2(
 
     # The v1 reader/identity path keeps its historical default. New observations
     # additionally bound traversal time; each read-only Git command has its own timeout.
-    inspected = inspect_source(root, path, _deadline=time.monotonic() + 8)
+    inspected = inspect_source(root, path, _deadline=time.monotonic() + 8, inspection=inspection)
     value = json.loads(inspected.inventory)
     if value["kind"] == "git" and (value["head"] is None or value["status"] is None):
         raise FormatError(f"{path}: Git observation unavailable; inspect locally and retry")
@@ -489,6 +516,11 @@ def inspect_source_v2(
             "traversal budget: 8 seconds; Git commands: 8 seconds and bounded output each",
         ],
     )
+    if inspection is not None:
+        value["exclusions"].append(
+            "Ordered literal selection limits inventory only, not permissions; "
+            "Git filenames bounded to 3,200 candidates and 2,000,000 bytes"
+        )
     if any("\ufffd" in item.get("text", "") for item in value["files"]):
         value["exclusions"].append("Selected UTF-8 display is lossy; hashes cover original bytes")
     raw = canonical(value)
@@ -566,11 +598,21 @@ def scope_source_reports(root: Path, project: str | None) -> tuple[str, ...]:
                     resolved.path,
                     observed_at=previous["observed_at"],
                     identity=definition.identity if definition.kind == "directory" else None,
+                    inspection=definition.inspection,
                 )
                 observed = inventory(current.inventory, source_id)
                 changed = any(
                     previous[key] != observed[key]
-                    for key in ("identity", "head", "status", "files", "truncated", "read_bytes")
+                    for key in (
+                        "identity",
+                        "head",
+                        "status",
+                        "files",
+                        "truncated",
+                        "read_bytes",
+                        "coverage",
+                        "exclusions",
+                    )
                 )
                 detail += (
                     " | changed since confirmed snapshot; consider a reviewed "

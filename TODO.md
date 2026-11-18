@@ -531,3 +531,19 @@ workspace for final trials; original source data is preserved.
   on usability. Agent-run technical trials and independent code review are complete;
   neither is a substitute for this ruling. Legacy O's provider-specific manual acceptance
   remains separate; the live native trial here used Codex.
+
+
+### MI — Minimal monorepo onboarding (2026-11-18)
+
+- [x] MI1 — Implemented and verified: preserve Git-root identity while inspecting ordered literal component
+  prefixes, bound large filename enumeration, and persist policy through approval/overview/
+  native/task observations. Preserve old definition hashes/data and existing A/B/C behavior.
+  Scope and executable acceptance: docs/monorepo-onboarding.md. No branch automation,
+  source copying, architecture changes in TaPS or real evaluation/model campaign.
+- [x] MI1 real workspace preparation — Mode A prepared at ~/workspace/npu-race-research for the original
+  Ascend repository, focused on DefenceTools/symbolic_executor; zero child projects. Exact
+  source/charter/overview packet awaits researcher confirmation before formal publication.
+
+- [ ] MI1 researcher confirmation — Review and apply the sealed source/charter/overview
+  packet in ~/workspace/npu-race-research; then open its workspace session. No receipt
+  or scientific approval is inferred from preparation or automated tests.

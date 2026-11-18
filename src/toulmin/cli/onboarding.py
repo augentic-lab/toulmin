@@ -7,13 +7,18 @@ from typing import Annotated
 import typer
 
 from toulmin.application import workspace_onboarding as onboarding
-from toulmin.application.sources import SourceSelectionRequired, bind_source, validate_directory
+from toulmin.application.sources import (
+    SourceSelectionRequired,
+    bind_source,
+    inspect_source,
+    validate_directory,
+)
 from toulmin.cli.initialize import initialize_workspace
 from toulmin.cli.settings import root_option
 from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import validate_project_name
 from toulmin.core.scope import Scope
-from toulmin.core.sources import SOURCE_ID, read_source_catalog
+from toulmin.core.sources import SOURCE_ID, InspectionPolicy, read_source_catalog
 from toulmin.protocols import workspace_onboarding as packets
 from toulmin.protocols.context_change import propose_overview, propose_source_role
 
@@ -71,6 +76,19 @@ def onboard_command(
     register_source: str | None = None,
     working_source_id: str | None = None,
     register_working_source: str | None = None,
+    include: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--include",
+            help="Literal source-relative file/directory to inventory; repeat in priority order.",
+        ),
+    ] = None,
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--exclude", help="Literal source-relative prefix to omit; requires --include."
+        ),
+    ] = None,
 ) -> None:
     """A: new workspace only; B: plus one child; C: new child in selected workspace.
 
@@ -102,7 +120,17 @@ def onboard_command(
     if work_at is None and (working_source_id or register_working_source):
         raise typer.BadParameter("working source ID requires --work-at TARGET")
     try:
+        inspection = (
+            InspectionPolicy(tuple(include or ()), tuple(exclude or ()))
+            if include is not None or exclude is not None
+            else None
+        )
+        if inspection is not None and work_at is not None:
+            raise FormatError("explicit inspection selection cannot be combined with --work-at")
         selected = validate_directory(root, source)
+        if inspection is not None:
+            # Reject bad/nonexistent/symlink selections before init leaves a records root.
+            inspect_source(root, selected, inspection=inspection)
         if work_at:
             target = validate_directory(root, work_at)
             if (
@@ -140,6 +168,7 @@ def onboard_command(
             register_source=register_source,
             working_source_id=working_source_id,
             register_working_source=register_working_source,
+            inspection=inspection,
         )
         _show(root, result)
     except (OSError, ValueError) as error:

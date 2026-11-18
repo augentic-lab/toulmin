@@ -1,5 +1,9 @@
 # Framework changes
 
+- MI1 monorepo intake (2026-11-18): ordered literal --include/--exclude inspection,
+  persisted Git definition revision 2 and bounded filename streaming. Old definitions
+  retain bytes/hashes; old readers reject revision 2. Identity/cwd/permissions unchanged.
+
 - Guide freshness (2026-11-18): an updated agent guide makes project contexts stale, so
   `toulmin aoe refresh NAME` delivers it. Existing project sessions show stale once.
 

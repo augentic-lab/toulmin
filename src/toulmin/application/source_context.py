@@ -60,6 +60,9 @@ Source availability, working selection, native permission/trust, Chief kickoff a
 scientific acceptance are separate choices. A source registration grants no write access.
 Use the ignored local.json for the actual records root, selected cwd and ack command.
 Relative records paths below belong to the records workspace, never native source cwd.
+An inspection policy limits archived observations, not write permissions or native cwd.
+Use the confirmed overview for the research focus and run component commands explicitly
+relative to the selected Git root; omitted files are not evidence of absence.
 
 Work question first: offer the smallest next measurement and append unconfirmed
 observations via toulmin workspace note --input ENTRY --root ROOT (root writer lock).
@@ -96,6 +99,7 @@ def fingerprint(service: AoEWorkspace, resident: str) -> str:
         source.path,
         observed_at="2000-01-01T00:00:00Z",
         identity=definition.identity if definition.kind == "directory" else None,
+        inspection=definition.inspection,
     )
     policy = native_policy.load(service.repository).get(service.project)
     # Existing sessions retain actual launch semantics. A matching persisted intent is

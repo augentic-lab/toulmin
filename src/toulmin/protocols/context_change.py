@@ -25,7 +25,7 @@ from toulmin.core.sources import (
     LOCAL,
     Source,
     parse_bindings,
-    parse_catalog,
+    parse_catalog_v1,
     read_catalog,
     render_bindings,
     render_catalog,
@@ -264,8 +264,10 @@ def _validate_images(project: str, kind: str, images: list[Image]) -> None:
     catalog = next((i for i in images if i.path == CATALOG), None)
     if catalog is None:
         raise ValueError("source catalog target required")
-    old_sources = parse_catalog(catalog.before) if catalog.before is not None else ()
-    new_sources = parse_catalog(catalog.after)
+    # Legacy source packets cannot project a v2 catalog to v1 and lose workspace
+    # ownership, definitions or their inspection policies. Use reviewed v2 packets.
+    old_sources = parse_catalog_v1(catalog.before) if catalog.before is not None else ()
+    new_sources = parse_catalog_v1(catalog.after)
     before_map = {(i.source_id, i.project): i for i in old_sources}
     after_map = {(i.source_id, i.project): i for i in new_sources}
     if not before_map.keys() <= after_map.keys():

@@ -71,7 +71,7 @@ def write_draft(root: Path, scope: Scope, source: str, *, name: str | None = Non
         raise FormatError("Chief tasks require a Git source; directory work remains interactive")
     catalog = read_source_catalog(root)
     definition = catalog.definition(source)
-    observation = inspect_source_v2(root, resolved.path)
+    observation = inspect_source_v2(root, resolved.path, inspection=definition.inspection)
     observed = inventory(observation.inventory, source)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     token = uuid4().hex
@@ -314,7 +314,12 @@ def prepare(root: Path, scope: Scope, value: str) -> Prepared:
             raise FormatError(
                 "repository has uncommitted changes; commit/stash before task submission"
             )
-        current = inspect_source_v2(root, resolved.path, observed_at=observed["observed_at"])
+        current = inspect_source_v2(
+            root,
+            resolved.path,
+            observed_at=observed["observed_at"],
+            inspection=definition.inspection,
+        )
         if current.inventory != snapshot:
             raise FormatError("task source observations changed; prepare a new draft")
     return Prepared(
