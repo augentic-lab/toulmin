@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — Preliminary native probe failure and restored CLI installation
+
+- During WO3–WO5 test preparation, a disposable legacy fixture verified real AoE stores
+  --sandbox workspace-write --add-dir. A subsequent AoE restart unexpectedly entered
+  Codex's updater before folder trust; the attempted Escape handling was not a verified
+  skip. This probe is incomplete/failed, not a passed provider-resume test.
+- Native updater added @openai/codex 0.169.1 under AoE's ACP Node prefix, shadowing the
+  unchanged original .npm-global 0.167.0 installation. Removed only that newly created
+  package; command resolution and codex --version returned to .npm-global 0.167.0.
+  Running WO3–WO5 worker was not stopped/restarted. Exact restart/menu trigger unverified.
+- Archived only probe session d167fca1269347cd and forgot its /tmp workspace registry entry;
+  preserved source bytes, fixture and evidence. No trust choice accepted or real research
+  workspace changed. Ledger: ~/notes/toulmin/wo-supervision-20261118/report.md and probe JSON.
+- Consulted official Codex sample configuration: per-invocation check_for_update_on_startup
+  can disable update checks for a controlled final test profile without editing global
+  defaults. This is a test-harness option, not a new Toulmin permission behavior.
+- Next remains WO3–WO5 test approval/implementation, then final Weekly Projects trials.
+  Documentation-only record; no code tests rerun. Original TODO edits preserved; ongoing
+  execution, session ID unavailable, local commit only and no push.
+
 ## 2026-11-18 — WO3–WO5 worker started from accepted combined baseline
 
 - Permission merge 1cd2175 and accepted WO2 merge d2ebbe4 are integrated locally. Main
