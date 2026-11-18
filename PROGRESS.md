@@ -1,5 +1,29 @@
 # Toulmin development progress
 
+## 2026-11-18 — R6 Chief test-approval lifecycle regressions (red first)
+
+- Root reports result preview rejects a normal test-first engineering build because Chief
+  advances mutable task.base to accepted-test HEAD and extends protections. Read Chief's
+  approve_tests/prepare_new_task/start_task implementations and the specified live task.json
+  **read only**: original base_branch remains 553e09c..., base is 42d196a..., phase build.
+  No live Chief task/source/session/config was modified or executed. Session unavailable.
+- New tests/acceptance/test_wo_chief_lifecycle.py models that transition using real temporary
+  Git worker worktrees/accepted-test and helper commits with fake Chief creation/state only.
+  Original source HEAD remains frozen. **Verified RED: 12 intended failures / 34 controls
+  pass**, /tmp/wo-r6-red.log. Cases cover workspace/project v2 import/replay/reconciliation,
+  done/abandoned versus nonterminal gating, immutable conflicts/missing/ambiguous/unrelated
+  lineage, changed authority/weak protections, sparse older records, and legacy O4 imports.
+- Decision: advanced scope base requires a matching immutable source baseline, normal
+  test-first/build lifecycle and Git ancestry; protected additions must retain originals.
+  Preserve original baseline in submission/contract/pin/commit summaries. Missing provenance
+  refuses without rewriting data; no blanket contract-validation removal. Commit tests first.
+- Legacy O4 engineering import has the same equality defect and will share the bounded
+  correction with unchanged v1 data paths. Separate legacy Spec build import already allows
+  advanced base but uses mutable base for summaries; report this existing limitation while
+  preserving its research/G4 path. Independent review awaits Claude login; root owns live
+  trials. No approved original tests/support, frozen contract, main, global settings, merge
+  or push changed. Next: minimal fix and full registered checks, then stop for Chief review.
+
 ## 2026-11-18 — R5 exact decision discovery corrected; registered checks pass
 
 - **Verified:** decide classifies onboarding/context-change candidates using each protocol's
