@@ -1,5 +1,30 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 worker started from accepted combined baseline
+
+- Permission merge 1cd2175 and accepted WO2 merge d2ebbe4 are integrated locally. Main
+  merge verification passed all 1,915 nodes once, Ruff lint/format, mypy (117 modules),
+  locked sync and CLI help. Both foundation tasks are closed/archived after independent
+  claude/sonnet PASS reviews. User's original TODO R10/R11 diff restored exactly, excluding
+  only changed base blob IDs; no unrelated edits entered merge commits.
+- Created Chief task wo3-wo5-workspace-first-onboar from d2ebbe47c30ce1f4938da8e0b89f291afaffe37f,
+  branch chief/wo3-wo5-workspace-first-onboar and isolated worktree
+  /home/tianchi/workspace/toulmin-worktrees/wo3-wo5-workspace-first-onboarding-and-continued-work.
+  Worker session 6d3b7f419f354d9a, GPT-6.1-Sol high; test-first, protected tests,
+  30-round/8-hour budget. Targeted kickoff confirmed running/test phase after skipping
+  only its optional Codex update. No upgrade/trust/global setting changes.
+- Contract: ~/notes/toulmin/wo-supervision-20261118/wo3-wo5-chief-contract.json. Implement
+  frozen A/B/C intake, scoped registry/understanding, source-backed workspace native
+  context/permissions, workspace engineering and later derivation, with compatibility,
+  templates/docs and full checks. Reuse integrated native policy; no competing mechanism.
+- Root owns routine test approvals, independent review/integration and final disposable
+  weekly-projects-research trials. Worker uses temporary/fake fixtures and must not touch
+  real research roots/sessions or original Weekly-Projects source. Runtime/live acceptance
+  remains pending. Durable ledger and check/review artifacts are in the notes directory.
+- Execution remains ongoing: monitor tests, approve only meaningful bounded changes, then
+  verify implementation and complete live A/B/C/recovery/handoff/task scenarios. Session
+  ID unavailable; this record committed locally, no push.
+
 ## 2026-11-18 — WO2 accepted and integrated as the WO3–WO5 specification
 
 - Accepted WO2 final 7e7c1b0 after three independent review rounds (final claude/sonnet
