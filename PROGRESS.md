@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — R10/R11 merged into main
+
+- Deferred integration completed after the researcher confirmed UX work was committed.
+  Rechecked main clean at 7a97bbe, committed the fully verified combined version as
+  c038593, then fast-forwarded main to it without overwriting/stashing any other edits.
+  Original R10/R11 (69ddc3e), UX6 integration (82f5e4f) and UX4/UX5 history are retained.
+- Verified combined version: 2,301 collected tests passed once across eight shards;
+  locked offline dev+tui sync, Ruff check/format, mypy (133 modules) and CLI help passed.
+  Targeted merge coverage: 54 passed. Framework copies and both parents' released hashes
+  checked. Durable logs: ~/notes/toulmin/r10-r11-20261118/integrated-final-1795014075/.
+- On main, locked offline dev+tui sync passed; top-level/review/draft/decide/map help ran,
+  exposing profile/synthesizer, full preview and provenance options. Python imports resolve
+  to this main checkout. Code/tests/docs/TODO match the verified integration exactly.
+- This closing commit changes only progress documentation; no additional full test rerun
+  needed. No real research workspace, provider/account settings, paid review or remote
+  Git state changed. No push. Real model cost/quality and researcher usability are unverified.
+- Next: researcher may try the continuous critique workflow and opt-in profiles using
+  docs/review-profiles.md; empirical calibration remains separately authorized in TODO.
+  Blockers: none. Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — R10/R11 final integration with UX4–UX6
 
 - Researcher reported the other session had committed, allowing the deferred integration.
