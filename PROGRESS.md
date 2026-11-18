@@ -1,5 +1,41 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 final checked delivery; external review awaiting authorization
+
+- Feature branch chief/wo3-wo5-workspace-first-onboar is clean at d4c74ac. R6 test-first
+  81f3404 reproduced 12 failures/34 controls; correction preserves immutable source lineage
+  through Chief's approved-test base/protection updates. All 78 related cases pass. Root
+  reran the actual Weekly request: frozen contract reconciles, nonterminal import refuses
+  correctly, and all 135 portable/local research files remain byte-identical.
+- Chief independently executed the six registered commands against the final commit:
+  **6/6 PASS**, including all **2,202 unique tests**, one assignment each across eight
+  passing shards (.chief/regression-2405772), Ruff lint/format, mypy 126 modules, locked
+  offline sync and help. Worker regression 2342004 independently has the same node total.
+  Final code is not merged into main and has no independent review verdict.
+- Real disposable helper delivery cc3d395 passes all eight approved tests on Python3.7.5;
+  root ran its read-only CLI against original Weekly-Projects and obtained six expected
+  week directories. Original tests, protected files and all 56 original source hashes,
+  HEAD and status are unchanged. Task remains open pending independent review; no result
+  import or automatic source merge was performed.
+- Fresh-file restoration, exact handoff marker/next step, unconfirmed notebook append,
+  later reference-only child derivation, native restart grant persistence and explicit
+  refreshed context receipt were verified. This does not establish native-conversation
+  resume: AoE still reports provider ID unavailable for this external-source binding.
+- Blocking condition: minimal Claude request confirms expired nonrenewable OAuth. More
+  importantly, automatic approval review REJECTED the final Toulmin-to-Anthropic review
+  command because explicit authorization to send this unpublished code to that third-party
+  destination is missing. Requested that precise authorization and researcher login; no
+  answer yet. Do not retry by another execution path. Set ONLY this completed feature
+  task's autonomy from suggest to observe, recording the reason, to prevent automatic
+  retry until authorized; other tasks/watch/settings and all approval records unchanged.
+- Next after explicit destination authorization and claude auth login: restore the saved
+  task autonomy; independently review feature/helper, resolve findings, close accepted
+  helper and import/replay its result, then integrate accepted feature locally and rerun
+  main checks plus final Weekly restoration with the main interpreter. Preserve the
+  original user's byte-identical eight-line TODO diff. No push; technical evidence is not
+  researcher usability or scientific acceptance. Root session 01a192fa-a22e-7531-86d7-7f1fe4c99753.
+  Complete evidence and recovery ledger: ~/notes/toulmin/wo-supervision-20261118/.
+
 ## 2026-11-18 — WO3–WO5 real trials and independent-review blocker
 
 - Worker head 8ce7450 includes R1–R3 corrections, all-profile source-rebind writer guards,
