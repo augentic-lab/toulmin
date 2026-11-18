@@ -3,6 +3,7 @@
 import json
 import os
 import shlex
+import sys
 from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
@@ -13,6 +14,8 @@ import typer
 from toulmin.adapters.aoe import AoEClient, AoEError
 from toulmin.adapters.provider_logs import ModelReport, SessionUsage
 from toulmin.application.aoe import AoEWorkspace, WorkspaceView, render_scope
+from toulmin.application.native_policy import LOCAL, validate_mode
+from toulmin.application.sources import ResolvedSource
 from toulmin.cli.settings import (
     ACTOR_HINT,
     AGENTS,
@@ -23,6 +26,7 @@ from toulmin.cli.settings import (
     resolve_actor,
     root_option,
 )
+from toulmin.core.documents import FormatError
 from toulmin.core.identifiers import validate_project_name
 from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
@@ -273,6 +277,54 @@ Attach = Annotated[
 ]
 
 
+def _validate_codex_sandbox(value: str | None) -> str | None:
+    if value is not None:
+        try:
+            validate_mode(value)
+        except ValueError as error:
+            raise typer.BadParameter(str(error)) from error
+    return value
+
+
+CodexSandbox = Annotated[
+    str | None,
+    typer.Option(
+        "--codex-sandbox",
+        callback=_validate_codex_sandbox,
+        help="Save this external-source project's native Codex choice: workspace-write "
+        "(code and records writable) or inherit (keep native settings). Changing an "
+        "existing session requires archived replacement with --new-session.",
+    ),
+]
+
+
+def _interactive() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _choose_codex_sandbox(root: Path, source: ResolvedSource, stale: bool) -> str:
+    if stale:
+        typer.echo("Saved native launch policy is stale: source checkout or records root changed.")
+    typer.echo("Native Codex project launch permissions:")
+    typer.echo(f"Code directory (native cwd): {source.path}")
+    typer.echo(f"Research records directory (--add-dir): {root.absolute()}")
+    typer.echo(
+        "workspace-write requests write access to both directories for this project. "
+        "Native trust prompts, approvals and managed restrictions still apply. "
+        "Choose inherit to keep native settings; restrictive settings may refuse --add-dir."
+    )
+    if not _interactive():
+        raise FormatError(
+            "No interactive terminal: explicitly choose --codex-sandbox workspace-write "
+            f"or --codex-sandbox inherit. The project-local choice is saved in {root / LOCAL}"
+        )
+    return (
+        "workspace-write"
+        if typer.confirm("Save workspace-write for this project? (No saves inherit)", default=False)
+        else "inherit"
+    )
+
+
 @app.command("open")
 def open_workspace(
     project: Project = None,
@@ -282,10 +334,19 @@ def open_workspace(
     agent: Agent = None,
     new_session: NewSession = False,
     attach: Attach = None,
+    codex_sandbox: CodexSandbox = None,
 ) -> None:
     """Open or recover one research session, with checked context delivery."""
     project = _select(project, workspace)
-    open_scope(root, project, profile, agent, new_session=new_session, attach=attach)
+    open_scope(
+        root,
+        project,
+        profile,
+        agent,
+        new_session=new_session,
+        attach=attach,
+        codex_sandbox=codex_sandbox,
+    )
 
 
 def open_scope(
@@ -296,16 +357,41 @@ def open_scope(
     *,
     new_session: bool = False,
     attach: bool | None = None,
+    codex_sandbox: str | None = None,
 ) -> None:
     """Shared by ``aoe open`` and ``toulmin open``: flags first, then preferences."""
     if agent is not None and agent not in AGENTS:
         raise typer.BadParameter("expected codex or claude", param_hint="--agent")
+    if codex_sandbox is not None:
+        try:
+            validate_mode(codex_sandbox)
+        except ValueError as error:
+            raise typer.BadParameter(str(error), param_hint="--codex-sandbox") from error
+        if project is None:
+            raise typer.BadParameter(
+                "select an external-source project", param_hint="--codex-sandbox"
+            )
     fallback = default_agent()
+
+    def launch(service: AoEWorkspace) -> WorkspaceView:
+        # Legacy/non-source calls keep their original application interface and behavior.
+        if codex_sandbox is not None or (root / "sources.toml").exists():
+            return service.open(
+                agent,
+                new_session=new_session,
+                fallback_agent=fallback,
+                codex_sandbox=codex_sandbox,
+                choose_codex_sandbox=lambda source, stale: _choose_codex_sandbox(
+                    root, source, stale
+                ),
+            )
+        return service.open(agent, new_session=new_session, fallback_agent=fallback)
+
     _execute(
         root,
         project,
         profile,
-        lambda service: service.open(agent, new_session=new_session, fallback_agent=fallback),
+        launch,
         attach=default_attach() if attach is None else attach,
         recovery_on_error=True,
     )

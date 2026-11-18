@@ -9,6 +9,7 @@ import shlex
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from contextlib import AbstractContextManager, ExitStack
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
@@ -22,6 +23,7 @@ from toulmin.adapters.provider_logs import (
     reported_model,
     reported_usage,
 )
+from toulmin.application import native_policy
 from toulmin.application.build import external_states
 from toulmin.application.sources import ResolvedSource, filesystem_identity, resolve_working_source
 from toulmin.application.workspace_sync import git_state, sync_notices
@@ -81,6 +83,15 @@ V1_FIELDS = (
 )
 V2_FIELDS = ("scope", "title", *(name for name in V1_FIELDS if name != "project"))
 V3_FIELDS = (*V2_FIELDS, "cwd", "source_id", "source_identity", "cwd_identity")
+
+
+@dataclass(frozen=True)
+class _LaunchObservation:
+    source: ResolvedSource
+    directories: native_policy.LaunchPolicy
+    inputs: tuple[tuple[str, bytes | None], ...]
+    profile: str
+    sessions: tuple[tuple[str, AoESession], ...]
 
 
 @dataclass(frozen=True)
@@ -959,6 +970,8 @@ class AoEWorkspace:
         *,
         new_session: bool = False,
         fallback_agent: str = "codex",
+        codex_sandbox: str | None = None,
+        choose_codex_sandbox: Callable[[ResolvedSource, bool], str] | None = None,
     ) -> WorkspaceView:
         """Reuse the bound session, or create one with ``agent``.
 
@@ -969,30 +982,25 @@ class AoEWorkspace:
             raise FormatError("Native agent must be codex or claude")
         if fallback_agent not in {"codex", "claude"}:
             raise FormatError("Native agent must be codex or claude")
+        if codex_sandbox is not None:
+            native_policy.validate_mode(codex_sandbox)
+        choice = None
+        if codex_sandbox is None and choose_codex_sandbox is not None:
+            choice = self._choose_launch_policy(
+                agent, new_session, fallback_agent, choose_codex_sandbox
+            )
+            if choice is not None:
+                _, codex_sandbox = choice
         with self._lock():
+            if choice is not None:
+                self._revalidate_launch_choice(choice[0])
             state = self._state()
             binding = self._read()
             client = self._client(binding)
             self._unique(client.profile, "")
             replaced = binding
             created = False
-            if binding and binding.session_id and new_session:
-                available = client.list_sessions()
-                old = next((item for item in available if item.id == binding.session_id), None)
-                if old is not None and old.state == "live":
-                    raise FormatError(
-                        "Existing session is live; archive it in AoE before replacement"
-                    )
-                binding = None
-            if (
-                binding
-                and binding.session_id is None
-                and new_session
-                and not self._creation_candidates(client, binding)
-            ):
-                # A launch that left no matching session can be retried explicitly
-                # (F06); any candidate still requires inspection, never a duplicate.
-                binding = None
+            binding = self._opening_binding(binding, client, new_session)
             if binding is None:
                 agent = agent or (replaced.agent if replaced else fallback_agent)
                 available = client.list_sessions()
@@ -1004,18 +1012,27 @@ class AoEWorkspace:
                     known_ids=tuple(item.id for item in available),
                     message="Session creation started; do not create a duplicate",
                 )
+                sandbox = self._launch_policy(
+                    binding, codex_sandbox, require_choice=choose_codex_sandbox is not None
+                )
+                self._checkout_available(client)
                 self._save(binding)
                 try:
                     if binding.version == 1:
                         assert self.project is not None
                         session = client.create(self.root, self.project, agent)
                     elif binding.version == 3:
+                        # Only opted-in launches add a sandbox argument. Keeping it out
+                        # of the binding preserves v1/v2/v3 and manually configured AoE
+                        # sessions. AoE persists --extra-args for resume/restart.
+                        options = {"codex_sandbox": sandbox} if sandbox == "workspace-write" else {}
                         session = client.create(
-                            self._cwd(),
+                            Path(binding.cwd) if binding.cwd else self.root,
                             self.project,
                             agent,
                             title=binding.title,
                             add_directory=self.root,
+                            **options,
                         )
                     else:
                         session = client.create(self.root, self.project, agent, title=binding.title)
@@ -1027,7 +1044,9 @@ class AoEWorkspace:
                 binding = replace(binding, session_id=session.id, message="Session created")
                 self._save(binding)
                 created = True
-            elif binding.session_id is None:
+            else:
+                self._check_reused_policy(binding, codex_sandbox)
+            if binding.session_id is None:
                 candidates = self._creation_candidates(client, binding)
                 if len(candidates) != 1:
                     retry = (
@@ -1055,6 +1074,190 @@ class AoEWorkspace:
             self._await_startup(client, binding.session_id)
         self._dispatch(client, expected_token=binding.token)
         return self.status()
+
+    def _opening_binding(
+        self, binding: Binding | None, client: AoEClient, new_session: bool
+    ) -> Binding | None:
+        """Read-only replacement eligibility, shared by observation and publication."""
+        if binding and binding.session_id and new_session:
+            old = next((s for s in client.list_sessions() if s.id == binding.session_id), None)
+            if old is not None and old.state == "live":
+                raise FormatError("Existing session is live; archive it in AoE before replacement")
+            return None
+        if (
+            binding
+            and binding.session_id is None
+            and new_session
+            and not self._creation_candidates(client, binding)
+        ):
+            # Retry only when the unresolved launch left no candidate (F06).
+            return None
+        return binding
+
+    def _choose_launch_policy(
+        self,
+        agent: str | None,
+        new_session: bool,
+        fallback_agent: str,
+        choose: Callable[[ResolvedSource, bool], str],
+    ) -> tuple[_LaunchObservation, str] | None:
+        with self._lock():
+            binding = self._read()
+            client = self._client(binding)
+            if self._opening_binding(binding, client, new_session) is not None:
+                return None
+            selected = agent or (binding.agent if binding else fallback_agent)
+            source = self._source()
+            if selected != "codex" or source is None or self.project is None:
+                return None
+            inputs = self._launch_inputs()
+            if self._read() != binding or self._source() != source:
+                raise FormatError(
+                    "Native launch inputs changed while observing permissions; retry open"
+                )
+            saved = native_policy.load(self.repository).get(self.project)
+            if saved is not None and saved.matches(self.root, source):
+                return None
+            self._unique(client.profile, "")
+            self._checkout_available(client)
+            observed = self._launch_observation(binding, client, source)
+            if observed.inputs != inputs:
+                raise FormatError(
+                    "Native launch files changed while observing permissions; retry open"
+                )
+        # Both the workspace binding and checkout flocks are released here. Nothing
+        # has been published, so another open/decision can finish while the user thinks.
+        requested = choose(source, saved is not None)
+        native_policy.validate_mode(requested)
+        return observed, requested
+
+    def _launch_inputs(self) -> tuple[tuple[str, bytes | None], ...]:
+        paths = (
+            self.binding_relative,
+            "sources.toml",
+            "tools/sources.local.toml",
+            native_policy.LOCAL,
+        )
+        inputs = []
+        for relative in paths:
+            path = self.repository.path(relative)
+            image = self.repository.path(relative, "file").read_bytes() if path.exists() else None
+            inputs.append((relative, image))
+        return tuple(inputs)
+
+    def _launch_observation(
+        self, binding: Binding | None, client: AoEClient, source: ResolvedSource
+    ) -> _LaunchObservation:
+        inputs = self._launch_inputs()
+        sessions = {
+            (profile, session.id): session
+            for profile, session in client.list_all_sessions()
+            if session.path.resolve() == source.path.resolve()
+        }
+        if binding and binding.session_id:
+            for session in client.list_sessions():
+                if session.id == binding.session_id:
+                    sessions[(client.profile, session.id)] = session
+        return _LaunchObservation(
+            source,
+            native_policy.LaunchPolicy.choice("inherit", self.root, source),
+            inputs,
+            client.profile,
+            tuple((profile, sessions[profile, sid]) for profile, sid in sorted(sessions)),
+        )
+
+    def _revalidate_launch_choice(self, observed: _LaunchObservation) -> None:
+        # Recheck existing Repository guarantees after the unlocked interval; never
+        # resolve a replacement symlink into a newly authorized records root.
+        Repository(self.root)
+        if filesystem_identity(self.root) != observed.directories.records_identity:
+            raise FormatError(
+                "Research records directory changed while choosing launch permissions"
+            )
+        source = self._source()
+        if (
+            source is None
+            or source != observed.source
+            or not observed.directories.matches(self.root, source)
+        ):
+            raise FormatError("Working source changed while choosing launch permissions")
+        binding = self._read()
+        current = self._launch_observation(binding, self._client(binding), source)
+        if current != observed:
+            raise FormatError(
+                "Native launch state changed while choosing permissions; retry open to review "
+                "the current state. This choice was not saved or launched"
+            )
+
+    def _check_reused_policy(self, binding: Binding, requested: str | None) -> None:
+        if requested is None:
+            # Reuse never reads or rewrites native launch settings, even for old/manual
+            # sessions whose args Toulmin has never inspected.
+            return
+        source = self._source()
+        if binding.agent != "codex" or source is None or self.project is None:
+            raise FormatError("--codex-sandbox requires an external-source Codex project session")
+        # A local preference is not proof of the args of an existing/manual session.
+        # Even a repeated flag cannot be represented as changing that session's policy.
+        raise FormatError(
+            "Existing session permissions are preserved. Omit --codex-sandbox to reuse it; "
+            "to select launch permissions, archive it in AoE, then open --new-session "
+            "--codex-sandbox " + requested
+        )
+
+    def _launch_policy(
+        self,
+        binding: Binding,
+        requested: str | None,
+        *,
+        require_choice: bool,
+    ) -> str | None:
+        source = self._source()
+        if binding.agent != "codex" or source is None or self.project is None:
+            if requested is not None:
+                raise FormatError(
+                    "--codex-sandbox requires an external-source Codex project session"
+                )
+            return None
+        self._check_launch_source(binding, source)
+        observed = native_policy.LaunchPolicy.choice("inherit", self.root, source)
+        saved = native_policy.load(self.repository).get(self.project)
+        matches = saved is not None and saved.matches(self.root, source)
+        if requested is None and matches:
+            assert saved is not None
+            return saved.sandbox
+        if requested is None:
+            if saved is not None or require_choice:
+                raise FormatError(
+                    "Native launch policy is stale or changed during open; retry open to "
+                    "choose --codex-sandbox workspace-write or inherit"
+                )
+            # Compatibility for direct application callers: no implicit opt-in.
+            return None
+        policy = replace(observed, sandbox=requested)
+        current_source = self._source()
+        self._check_launch_source(binding, current_source)
+        assert current_source is not None
+        if not policy.matches(self.root, current_source):
+            raise FormatError(
+                "Research records directory changed while choosing launch permissions; "
+                "retry open and review --codex-sandbox for the current directories"
+            )
+        native_policy.save(self.repository, self.project, policy)
+        return policy.sandbox
+
+    def _check_launch_source(self, binding: Binding, source: ResolvedSource | None) -> None:
+        if (
+            source is None
+            or binding.cwd != str(source.path.resolve())
+            or binding.source_id != source.source_id
+            or binding.source_identity != source.identity
+            or binding.cwd_identity != filesystem_identity(source.path)
+        ):
+            raise FormatError(
+                "Working source changed while choosing launch permissions; retry open "
+                "and review --codex-sandbox for the current code and records directories"
+            )
 
     def _await_startup(self, client: AoEClient, session_id: str) -> None:
         """Poll a new session until it can take input, outside the binding lock.

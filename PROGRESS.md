@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — Permission foundation verified and merged under supervision
+
+- Accepted Chief task o3-general-codex-permission-co after 4407f66, addressing the
+  lock-held interactive prompt with unlocked observation/choice and locked revalidation.
+  Approved acceptance tests remained unchanged. Independent claude/sonnet review PASS
+  at 4407f66; native restart/resume persistence still needs the planned live trial.
+- Chief 6/6 checks pass. Resolved merge changes runtime/tests identically to the reviewed
+  branch; main integration then passed all 1,915 collected tests across eight shards,
+  locked sync, Ruff lint/format, mypy (117 modules) and CLI help.
+- Adapted only this task's full-regression check to an all-collected-node parallel runner:
+  Chief's 300s limit had timed out serial pytest despite its 1,899-test pass. The runner
+  preserves every node once and logs manifests/results; no tests were dropped/weakened.
+- WO2 at 7e7c1b0 also passed doc checks and independent review after compatibility/recovery
+  clarifications, and its worker is closed. Next merge that frozen contract and delegate
+  WO3–WO5 from the combined baseline. Both finished worker sessions are archived.
+- PROGRESS's concurrent append conflict resolved by preserving both histories. Original
+  TODO R10/R11 changes are backed up separately and will be restored after integration.
+  Evidence/review cards: ~/notes/toulmin/wo-supervision-20261118/. No push or real workspace
+  reset performed yet; this supervised execution remains ongoing. Session ID unavailable.
+
 ## 2026-11-18 — Supervision through WO3–WO5 and disposable live acceptance authorized
 
 - Researcher authorized monitoring both Chief workers, routine approvals, acceptance and
@@ -169,6 +189,116 @@
 - Validation: actual Chief creation/tick output, native worker acknowledgment and diff check.
   No runtime code changed, so no code tests rerun. Existing TODO edits retained. Session ID
   unavailable; this delegation record committed locally, no push. Next: Chief test proposal.
+## 2026-11-18 — O3 supervisor follow-up: unlocked permission choice
+
+- Supervisor authorized this correction before independent delivery review. The two
+  approved acceptance files/support and TODO.md remain unchanged; no live research
+  workspace, native session, global configuration or main working tree was operated on.
+- Permission selection now observes state under the existing locks, releases both
+  workspace and checkout flocks before invoking the chooser, then reacquires and
+  revalidates before publication. Observations include exact binding/catalog/local-map/
+  policy images, selected source and cwd identity, records-root identity, AoE profile,
+  checkout sessions across profiles and any previously bound session. Changes refuse
+  without consuming the stale choice, overwriting another choice or creating a writer.
+- Creation/replacement eligibility is shared across both phases. Losing a saved policy
+  during open refuses instead of falling back to inheritance. Existing-session reuse
+  and new Claude sessions do not reinterpret Codex settings or invoke its chooser.
+- Verified/refuted the path concern: Repository already makes roots absolute, forbids
+  '..' and rejects component symlinks. Relative/absolute and symlink regressions passed
+  before this fix and still pass; normalization semantics are unchanged. The unlocked
+  interval rechecks the same Repository guarantees and filesystem identity.
+- Dead-pane diagnostics now select the most recent matching native error from history;
+  managed-refusal and healthy-composer behavior remain unchanged. Onboarding docs explain
+  unlocked selection and safe refusal when another operation changes the observed state.
+- New regression file: tests/unit/test_native_prompt_concurrency.py (16 cases). Initial
+  tests reproduced 10 failures and 2 passes before implementation. Final focused choice/
+  integrity/approved suite: 81 passed (18.57s), including cross-process acquisition of
+  both flocks, concurrent open/policy publication, source/catalog/checkout/root changes,
+  session revival, unbound writers and compatibility. Broader intermediate suite: 287
+  passed. Offline sync, Ruff lint/format, mypy (117 modules), CLI help and diff checks pass.
+- The supervisor's registered full check passed: all 1,915 collected nodes assigned
+  exactly once across eight isolated shards, all exit 0 (longest shard 115.59s).
+  Manifest/results: .chief/regression-77994/; output .chief/supervisor-complete-final.log.
+  The runner is unchanged; no checks weakened. Earlier follow-up run: 1,913 nodes passed.
+  Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. Next: independent supervisor review;
+  native trust/usability acceptance remains separate. No push or merge.
+
+## 2026-11-18 — O3 general Codex launch policy and recovery (build)
+
+- The researcher explicitly approved both acceptance-test files and authorized build.
+  Implementation stays in Chief's isolated worktree; approved tests and support are
+  unchanged. No main-checkout files or preexisting TODO/R11 changes are included.
+- Added `--codex-sandbox workspace-write|inherit` to both open entry points. A new
+  external-source Codex session explains code and records directories and offers a
+  default-no terminal choice. Unknown noninteractive choices stop with explicit options;
+  canceling creates no policy or session. Invalid/inapplicable flags fail before init.
+- Ignored tools/native.local.toml holds versioned project-local execution choices,
+  atomically published under the existing binding lock. Choices pin source identity,
+  cwd and both directory filesystem identities; stale/corrupt/symlinked settings refuse
+  without repair. Changes during the prompt are refused and launch uses the frozen cwd.
+  Other projects' choices and all formal research files remain separate.
+- Confirmed new/replacement launches forward `--sandbox workspace-write --add-dir ROOT`
+  in AoE's saved extra arguments. Inherit adds no sandbox override. Reuse never changes
+  session arguments or v1/v2/v3 binding formats. An explicit flag on a bound session is
+  refused; omit it to reuse or explicitly archive/replace. No native restart is triggered.
+- Native launch failures stop startup polling and retain actionable local-policy recovery,
+  including managed-policy errors above dead-pane padding. Claude retains its own native
+  flags/diagnostics. Managed restrictions are not bypassed; startup/attach never imply
+  context delivery, acknowledgment or research approval. README/onboarding document usage,
+  compatibility, ignored local storage and manual recovery.
+- Verification so far: all 41 approved cases pass; 24 new implementation integrity cases
+  are separate from protected tests. Related suite: 268 passed; final affected entry/choice
+  suite: 93 passed. Locked offline dev/TUI sync, Ruff lint/format, mypy (117 modules),
+  installed CLI help and diff checks pass. Full required suite: 1,899 passed in 756.99
+  seconds, with private-socket access for the existing fixture-only tmux tests; no real
+  provider session used. Installed CLI subprocess preflight also passed with a fake AoE
+  executable and isolated homes/config.
+- Fresh detached worktree /tmp/toulmin-o3-fresh-0IRHby at implementation commit dd82c89:
+  locked offline dev/TUI install, installed CLI help and real CLI subprocess smoke passed.
+  Disposable fake AoE verified unknown-policy refusal, quoted paths, persisted opt-in,
+  reuse, simulated restart identity, replacement with saved args, live policy-change
+  refusal and explicit inheritance. Source bytes/native-config canary stayed unchanged;
+  submitted context had no acknowledgment. Fixtures: /tmp/toulmin-o3-installed-cli-eds1tgyy;
+  worker ledger: .chief/build-fresh-cli.log and .chief/verify_fresh_cli.py. Both worktrees
+  were clean before this progress-only update; no source change followed the full suite.
+- No real provider session, trust prompt, live AoE/research workspace, global Codex/AoE
+  configuration or main working tree changed. Tests are technical evidence; Chief's
+  independent cross-model delivery review and researcher/native usability acceptance
+  remain separate. Next: Chief's independent delivery review; native trust and researcher
+  usability acceptance stay pending. Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. No push.
+
+## 2026-11-18 — O3 general Codex permissions: acceptance-test phase
+
+- Delegated task in Chief's isolated worktree, starting clean at
+  a6cfeaff407bd081ad77c25da0d632b13e0fdcd3. This phase adds tests only; implementation
+  requires explicit approval of the acceptance tests. TODO acceptance items remain open.
+- Proposed review surface: `open` and `aoe open --codex-sandbox workspace-write|inherit`,
+  with versioned project-local execution settings in ignored `tools/native.local.toml`.
+  Unknown noninteractive choices refuse with both paths and explicit options; an interactive
+  default-no choice retains native settings. Grants cannot transfer to another checkout or
+  records root. Existing native session permissions are never silently rewritten.
+- Added 41 cases in tests/cli/test_native_permissions.py and
+  tests/unit/test_native_permission_diagnostics.py: persisted opt-in/opt-out, separate
+  projects, replacement, simulated AoE resume/restart, v1/v2/v3 compatibility, Claude,
+  quoted paths, invalid/stale/symlinked settings, uncertain creation, trust/managed-policy
+  refusals and padded dead panes. Real CLI/application/adapter code runs over fake AoE
+  transport; disposable home canaries and source snapshots check for unintended writes.
+- Verified focused baseline: 30 expected failures and 11 passes (final run: 6.15 seconds). Failures
+  expose absent permission selection/configuration and incomplete launch recovery guidance.
+  Locked offline dev/TUI sync, Ruff lint/format, mypy (116 modules) and installed CLI help
+  pass. Existing affected regression tests: 160 passed (7.17 seconds). Full requested
+  suite: 1,840 passed, 35 failed (766.45 seconds); 30 failures are the new acceptance
+  cases, and five existing prototype/runtime tests could not open their private tmux
+  sockets in the sandbox (Operation not permitted). Both affected files passed with
+  socket access: 3 + 11 tests, using simulated/fake providers and private temporary sockets.
+  The suite intentionally remains red until approved implementation; this is not a claim
+  that the task's final all-green condition has been met.
+- Checked local Codex help and the official CLI reference for `--sandbox` and `--add-dir`:
+  https://developers.openai.com/codex/cli/reference/ . No native session was launched.
+  Live trust, managed-policy compatibility and context acknowledgment remain unaccepted;
+  simulated restarts are technical evidence only. No global config, main-checkout files,
+  researcher sessions or real research workspaces changed. Session:
+  01a1ebde-842e-7163-8675-2167a6cfb01f. Next: explicit acceptance-test approval, then build.
 
 ## 2026-11-18 — O3 Codex launch recovery and dead-pane diagnostics
 

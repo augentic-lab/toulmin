@@ -645,5 +645,10 @@ toulmin open my-project --root /path/to/research
 only reads the source and prepares a reviewed packet. Claims are optional; ordinary
 engineering work can use `toulmin draft task`. For a new direction, `--work-at TARGET`
 selects another existing code directory while keeping the original as a reference.
+For a new external-source Codex session, `open` offers a project-local permission choice
+for code and records (default: inherit native settings). Noninteractive callers must
+explicitly select `--codex-sandbox workspace-write` or `--codex-sandbox inherit` once.
+Existing sessions keep their permissions; changing them requires an archived replacement
+with `--new-session`. Global Codex/AoE settings and native trust prompts are unchanged.
 See [existing-project onboarding](docs/onboarding.md) and the
 [working loop](docs/user-guide.md#existing-projects-and-gradual-rebuilding).

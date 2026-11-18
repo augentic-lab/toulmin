@@ -13,7 +13,7 @@ from typing import Annotated
 
 import typer
 
-from toulmin.cli.aoe import Agent, Attach, NewSession, Profile, open_scope
+from toulmin.cli.aoe import Agent, Attach, CodexSandbox, NewSession, Profile, open_scope
 from toulmin.cli.decide import inventory
 from toulmin.cli.initialize import initialize_workspace, workspace_setup
 from toulmin.cli.registry import Known, normal, note, registry_path
@@ -189,6 +189,7 @@ def open_research(
     agent: Agent = None,
     new_session: NewSession = False,
     attach: Attach = None,
+    codex_sandbox: CodexSandbox = None,
 ) -> None:
     """Open the workspace session, or a child's, from wherever you are.
 
@@ -212,6 +213,13 @@ def open_research(
         raise _fail(f"current directory unavailable: {error}") from error
     target = root if root is not None else (find_workbench(here) or here)
     base, state = _classify(target)
+    if (
+        codex_sandbox is not None
+        and project is None
+        and (root is not None or _child(here, base) is None)
+    ):
+        # Reject an inapplicable permission choice before offering initialization.
+        raise typer.BadParameter("select an external-source project", param_hint="--codex-sandbox")
     unfound = {RootState.MISSING, RootState.EMPTY, RootState.INCOMPLETE, RootState.UNRELATED}
     if state in unfound and root is None and project is None:
         items = listing()
@@ -240,7 +248,18 @@ def open_research(
         raise typer.Exit(1)
     note(base)
     _pending(base)
-    open_scope(base, project, profile, agent, new_session=new_session, attach=attach)
+    if codex_sandbox is None:
+        open_scope(base, project, profile, agent, new_session=new_session, attach=attach)
+    else:
+        open_scope(
+            base,
+            project,
+            profile,
+            agent,
+            new_session=new_session,
+            attach=attach,
+            codex_sandbox=codex_sandbox,
+        )
 
 
 @config_app.command("show")

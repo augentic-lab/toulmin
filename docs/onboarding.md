@@ -167,12 +167,94 @@ provider acceptance ruling.
 
 A linked project opens directly at its working source; Toulmin supplies the research
 workspace with the native CLI's additional-directory option. Existing native permissions
-remain in force. A source session uses a v3 binding: v2 fields plus `cwd`, `source_id`,
+remain in force unless the researcher explicitly selects the project-local Codex
+workspace-write launch policy below. A source session uses a v3 binding: v2 fields plus `cwd`, `source_id`,
 `source_identity` and `cwd_identity` (filesystem device/inode). Old v1/v2 sessions keep
 their old shape when no working source is selected. Changing the source or replacing the
 checkout requires an explicit session replacement; refresh never silently redirects it.
 Cross-profile live-session checks prevent Toulmin from starting a second writer on the
 same checkout. This is coordination, not filesystem isolation.
+
+### Codex permissions for code and research records
+
+The first **new** external-source Codex session offers a one-time choice in your
+interactive terminal. It names both directories: the working source (native cwd)
+and the research workspace (`--add-dir`). Answering yes saves `workspace-write`,
+requesting write access to both; no or Enter saves `inherit`, preserving native
+settings. Canceling the question creates neither a policy nor a session.
+The question holds no workspace or checkout lock. Before saving or launching,
+Toulmin reacquires the locks and rechecks the binding/session, source catalog,
+directory identities and local policy. If another operation changed them while
+you were choosing, this open refuses without overwriting that operation's choice
+or creating a duplicate session; retry `open` against the current state.
+
+Without an interactive terminal, an unknown or stale choice stops before launch
+and prints the two paths and these explicit options:
+
+```sh
+toulmin open prototype --root /path/to/research --agent codex \
+  --codex-sandbox workspace-write
+# Or retain native settings, including restrictive settings that may reject --add-dir:
+toulmin open prototype --root /path/to/research --agent codex \
+  --codex-sandbox inherit
+```
+
+Both options also work with `toulmin aoe open`. Once selected, omit the flag:
+`toulmin open prototype --root /path/to/research`. Reusing an existing binding
+keeps its actual native arguments, including manually configured ones. An explicit
+permission flag on a bound session is refused: a saved preference does not prove
+what permissions that existing session has. To select another launch policy,
+inspect and archive the old session yourself in AoE, then explicitly replace it:
+
+```sh
+toulmin open prototype --root /path/to/research --agent codex \
+  --new-session --codex-sandbox workspace-write
+```
+
+Replacing a live session is refused. With no permission flag, `--new-session` uses
+the saved choice for that project and directory pair. An opted-in launch forwards
+`--sandbox workspace-write --add-dir /path/to/research` through AoE's persisted
+`--extra-args`. AoE retains these arguments for subsequent native resume/restart;
+Toulmin does not restart or reconfigure an existing session to change permissions.
+The source cwd is never redirected. Sibling projects do not inherit this choice.
+
+Choices are local execution settings in ignored `tools/native.local.toml`, outside
+formal research objects and context archives. For example, the CLI generates:
+
+```toml
+schema_version = 1
+
+[projects.prototype]
+sandbox = "workspace-write" # or "inherit"
+records_root = "/path/to/research"
+records_identity = "DEVICE:INODE"
+source_id = "source-example"
+source_identity = "git:ROOT-COMMIT-LIST-SHA256"
+cwd = "/path/to/code"
+cwd_identity = "DEVICE:INODE"
+```
+
+Prefer the CLI to construct these identity fields. Moving or replacing either
+directory, or selecting another working source, makes the saved choice stale;
+review the displayed paths and choose again explicitly or in the terminal. Existing
+source and binding guards still require explicit session replacement. Malformed,
+unknown-version and symlinked policy files are refused without repair or overwrite.
+Correct an invalid file before retrying. Do not commit or share this machine-local
+file; existing `tools/*.local.toml` ignore rules already cover it.
+
+This changes no global Codex or AoE settings, approval policy, trust entries or
+research rulings. Native trust/update prompts still require your input. Managed
+restrictions can refuse `workspace-write`; Toulmin reports the refusal, including
+errors above blank rows in a dead pane, and never retries with broader access.
+Inspect the native/managed configuration before another explicit replacement.
+Startup and attaching are not context delivery: resolve prompts yourself, then run
+the printed `toulmin aoe refresh` command and check the context-read receipt separately.
+
+Claude, non-source sessions and v1/v2/v3 binding formats remain compatible. Existing
+bindings need no migration. Direct Python application callers retain inherited
+native behavior when no policy or choice callback exists; a saved policy is applied
+only when creating a session. Automated fixtures cover policy/recovery behavior;
+installed-provider resume/restart and researcher usability acceptance remain pending.
 
 Use `toulmin draft overview NAME`, fill the draft, and run the printed `toulmin overview`
 proposal command. Confirm it with `decide`. An applied overview and source snapshot are
@@ -192,6 +274,6 @@ the correct external directories. Codex exited because its effective permission 
 refused `--add-dir`; Claude awaited its native folder-trust choice. Neither provider trial
 reached context acknowledgment or a development/handoff cycle. No trust prompts were
 accepted automatically and no permission defaults were changed. Both test sessions were
-moved to AoE trash; full native usability acceptance remains pending. For Codex, explicitly
-choose a compatible per-session permission mode (workspace-write) before retrying; for
+moved to AoE trash; full native usability acceptance remains pending. For Codex, use the
+project-local `--codex-sandbox workspace-write` choice above on a new/replacement launch; for
 Claude, review its folder trust prompt in AoE before refreshing the prepared context.
