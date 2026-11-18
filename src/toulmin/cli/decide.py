@@ -8,10 +8,11 @@ confirming command, this relies on being run by the researcher, not by an agent.
 
 import json
 import re
+import shutil
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -35,6 +36,8 @@ from toulmin.protocols import workspace_handoff as workspace_handoffs
 from toulmin.protocols.build import build_facts, import_records, verification_facts
 from toulmin.protocols.build_import import read_record
 from toulmin.protocols.handoff import apply_handoff
+from toulmin.protocols.labels import short_label
+from toulmin.protocols.proposal_summary import proposal_summary
 from toulmin.protocols.research_map import AGENT, YOU
 from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
@@ -57,7 +60,7 @@ LABEL = {
     "build-verify": "Verify",
     "project-handoff": "Project handoff",
 }
-WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit"}
+WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit", "v": "view all"}
 YES_NO = {"y": "yes", "n": "no"}
 NOTICE_ITEMS = 8  # a notice is one line; longer lists end with "and N more"
 # Per draft label of an intake recommendation (H4).
@@ -342,6 +345,7 @@ class Run:
     touched: set[str] = field(default_factory=set)  # projects whose handoff was applied
     staged: set[str] = field(default_factory=set)  # projects whose stage was ruled (H5)
     notes: dict[str, list[str]] = field(default_factory=dict)  # per project, in order (R3)
+    full: bool = False  # UX6: print every proposal in full instead of its summary
 
     def _note(self, project: str, text: str) -> None:
         self.notes.setdefault(project, []).append(text)
@@ -585,12 +589,16 @@ class Run:
         if shown.problems and shown.problems[0].startswith("already "):
             typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
             return True
-        _show_proposal(shown, item.project)
+        _show_proposal(shown, item.project, full=self.full)
         if shown.interrupted:
             choices = "sq" if shown.problems else "asq"
         else:
             choices = "rsq" if shown.problems else "arsq"
-        choice = self._choose(choices)
+        choice = self._choose(choices if self.full else choices[:-1] + "vq")
+        while choice == "v":
+            typer.echo(shown.text.rstrip("\n"))
+            typer.echo("")
+            choice = self._choose(choices)
         if choice == "a":
             done = project_proposals.apply(
                 self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
@@ -810,7 +818,10 @@ class Run:
             typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
             return True
         typer.echo(f"Project: {item.project}")
-        typer.echo(shown.text.rstrip("\n"))
+        if self.full:
+            typer.echo(shown.text.rstrip("\n"))
+        else:
+            typer.echo("\n".join(summary_lines(shown.text, terminal_width())))
         plan = shown.build
         if plan is not None:
             typer.echo(f"Chief task: {plan.task_id}")
@@ -825,8 +836,13 @@ class Run:
                     f"Worker launch command: {plan.request.command} "
                     f"(instead of Chief's default for {plan.request.tool})"
                 )
-            typer.echo("Full frozen Chief contract:")
-            typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
+            if self.full:
+                typer.echo("Full frozen Chief contract:")
+                typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
+            else:
+                typer.echo("Frozen Chief contract (v views all of it, with the worker's goal):")
+                for line in contract_lines(plan.contract):
+                    typer.echo(line)
             if plan.note is not None:
                 typer.echo(f"Note: {plan.note}")
             if plan.checks_match:
@@ -860,7 +876,13 @@ class Run:
             if shown.interrupted
             else ("rsq" if prepared.problems else "arsq")
         )
-        choice = self._choose(choices)
+        choice = self._choose(choices if self.full else choices[:-1] + "vq")
+        while choice == "v":
+            typer.echo(shown.text.rstrip("\n"))
+            if plan is not None:
+                typer.echo("Full frozen Chief contract:")
+                typer.echo(json.dumps(plan.contract, ensure_ascii=False, indent=2))
+            choice = self._choose(choices)
         if choice == "a":
             done = apply_build(
                 self.root,
@@ -1129,7 +1151,40 @@ def _wrap_up(run: Run, notify: bool | None) -> None:
         )
 
 
-def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
+def terminal_width() -> int:
+    return max(shutil.get_terminal_size((80, 24)).columns, 40)
+
+
+def contract_lines(contract: dict[str, Any]) -> list[str]:
+    """The contract fields a researcher checks before code runs as them; goal stays behind v."""
+    lines = [
+        f"  {key}: {contract[key]}"
+        for key in ("name", "repo", "tool", "command")
+        if key in contract
+    ]
+    lines.append(f"  checks ({len(contract.get('checks', []))}, run as you on apply and verify):")
+    lines += [f"    {check}" for check in contract.get("checks", [])]
+    for key in ("protected", "budget", "test_first", "base_branch"):
+        if key in contract:
+            lines.append(f"  {key}: {json.dumps(contract[key], ensure_ascii=False)}")
+    return lines
+
+
+def summary_lines(text: str, width: int) -> list[str]:
+    """UX6: header facts, the main section and Why, each on one line, from the full text."""
+    found = proposal_summary(text)
+    lines = []
+    if found.facts:
+        facts = " · ".join(f"{key} {value}" for key, value in found.facts)
+        lines.append("  " + short_label(facts, max(width - 2, 20)))
+    for name, value in ((found.main or (None, None)), ("Why", found.why)):
+        if name and value:
+            head = f"  {name}: "
+            lines.append(head + short_label(value, max(width - len(head), 20)))
+    return lines or ["  (no summary; press v to view all)"]
+
+
+def _show_proposal(shown: project_proposals.Preview, project: str, *, full: bool = True) -> None:
     typer.echo(f"Project: {project}")
     if shown.interrupted:
         typer.echo("An earlier application of this proposal started but did not finish.")
@@ -1164,7 +1219,12 @@ def _show_proposal(shown: project_proposals.Preview, project: str) -> None:
         if change.links:
             typer.echo("Sets: " + "; ".join(change.links))
     typer.echo("")
-    typer.echo(shown.text.rstrip("\n"))
+    if full:
+        typer.echo(shown.text.rstrip("\n"))
+    else:
+        for line in summary_lines(shown.text, terminal_width()):
+            typer.echo(line)
+        typer.echo("  (v views all of it)")
     typer.echo("")
     stage = shown.stage
     if stage is not None and not shown.problems and shown.recovered is None:
@@ -1211,6 +1271,10 @@ def decide_command(
             show_default=False,
         ),
     ] = None,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Print each proposal in full instead of its summary."),
+    ] = False,
 ) -> None:
     """Decide everything awaiting you, one item at a time, in your own terminal.
 
@@ -1266,7 +1330,7 @@ def decide_command(
     if who is None:
         raise typer.BadParameter(f"required: {ACTOR_HINT}", param_hint="--confirmed-by")
     typer.echo(f"Deciding as: {who}. Skip leaves an item pending.")
-    run = Run(root, who)
+    run = Run(root, who, full=full)
     remaining = 0
     queue = list(found.items)
     offered: set[tuple[str, str, str | None]] = set()

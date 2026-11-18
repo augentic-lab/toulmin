@@ -1,5 +1,25 @@
 # Toulmin development progress
 
+## 2026-11-18 — R10/R11 integration with committed UX6
+
+- R10/R11 implementation committed as 69ddc3e. Integrated main's committed UX6 baseline
+  9cb1b05 into the isolated feature worktree; main still has another session's active
+  UX4/UX5 edits. Per researcher instruction, no main checkout edits/stash/merge or push.
+- Preserved UX6 summary-first previews, view-all/full mode and contract check visibility,
+  plus R10 continuity notices and R11 frozen review approval. Runtime merge was clean.
+  Resolved only additive progress/protocol/changelog conflicts by retaining both records;
+  packaged protocols match canonical text and published hashes are retained additively.
+- Verified: all 2,300 collected pytest nodes ran once across eight shards and passed;
+  dev+tui locked offline sync, Ruff lint/format, mypy (133 modules) and CLI help passed.
+  Targeted decide/profile/proposal/map tests: 194 passed. Template init/adoption checks:
+  64 passed after documentation merge normalization. Full logs:
+  /tmp/toulmin-r10-r11-validation/integrated-ux6-1795013119.
+- Durable evidence: ~/notes/toulmin/r10-r11-20261118/. Real research model quality/cost,
+  account access and researcher usability remain unverified. No paid reviews were run.
+- Next: once concurrent UX edits are committed, integrate that committed baseline in the
+  isolated worktree, validate, and merge the feature into clean main. No push authorized.
+  Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — R10/R11 continuous critique and explicit bounded review profiles
 
 - Authorization: researcher requested design then implementation of R10 and R11. Design:
@@ -36,6 +56,20 @@
   researcher acceptance. Session ID unavailable; not fabricated. No push authorized.
 - Next: commit this branch, integrate after concurrent UX work is committed, then verify the
   combined version. Real calibration remains a separately authorized follow-up in TODO.md.
+
+## 2026-11-18 — UX6 summary-first decide previews
+
+- Decision: the researcher authorized UX6 ("按你的建议，开始 UX6") and, afterwards, the remaining UX slices ("做完之后接着推进剩下的UX开发"; "好，测完继续做 UX4 和 UX5").
+- Change: `protocols/proposal_summary.py` (L2 text shaping); decide shows object drafts, rulings, Brief/stage proposals and build requests as a summary (short header facts, first paragraph of the main section and of Why); `v` ("view all") prints the full text and, for builds, the full frozen contract with the goal, then asks again. Build summaries always list name, repo, tool, command, every check, protected, budget, test_first. `decide --full` restores the full print. Application, digests and outcomes unchanged; other item kinds unchanged. README, user guide, protocols.md, CHANGELOG, packaged copy, released.json digest.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2214 passed (build tests run with --full; prompt-string assertions updated; new summary, v and --full tests).
+- Session ID: unavailable.
+
+## 2026-11-18 — Project card module rules
+
+- Decision: after reading the card the researcher asked for dividing lines to make it modular ("最好还可以增加分割线将其模块化").
+- Change: the card puts a full-width rule (ASCII `-`) under the title and between modules; More stays with Recorded. rkey-lifecycle's card grows from 21 to 27 lines; the test bound is 32.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2210 passed.
+- Session ID: unavailable.
 
 ## 2026-11-18 — UX2 short labels and terminal width, UX3 project card
 

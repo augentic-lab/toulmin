@@ -237,12 +237,17 @@ def test_card_is_the_default_and_fits_one_screen(populated):
     assert result.exit_code == 0, result.output
     lines = result.stdout.splitlines()
     assert lines[0] == "demo · explore"
-    assert lines[1].startswith("Question  ")
+    assert lines[1] == "─" * 100  # modules are separated by rules
+    assert lines[2].startswith("Question  ")
+    assert (
+        lines[lines.index(next(line for line in lines if line.startswith("Answer"))) - 1]
+        == "─" * 100
+    )
     assert any(line.startswith("Answer    ") and "C-001" in line for line in lines)
     assert any(line.startswith("Next      1 ") for line in lines)
     assert lines[-1] == "More      toulmin map demo --full  (gates, argument tree, sources)"
     assert "G1 ->" not in result.stdout and "Argument" not in result.stdout
-    assert len(lines) <= 25 and all(view.width_of(line) <= 100 for line in lines)
+    assert len(lines) <= 32 and all(view.width_of(line) <= 100 for line in lines)
 
 
 def test_card_reads_the_goal_and_classifies_claims(populated):
@@ -299,6 +304,7 @@ def test_card_rendering_marks_states_old_wording_and_stale_steps():
     assert "(from handoff 2026-11-12; names superseded C-001, may be out of date)" in text
     ascii_text = view.render_card(_card(), [], 40, view.Glyphs(True))
     assert "+ C-005" in ascii_text and "✓" not in ascii_text and "…" not in ascii_text
+    assert "-" * 40 in ascii_text.splitlines() and "─" not in ascii_text
     assert all(view.width_of(line) <= 40 for line in ascii_text.splitlines())
     empty = view.render_card(_card(answer=(), doubts=(), moves=()), [], 80, view.Glyphs(False))
     assert "Answer    no Claims yet" in empty and "Next      no suggestion" in empty

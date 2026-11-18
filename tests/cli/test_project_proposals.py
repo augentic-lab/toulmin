@@ -133,7 +133,7 @@ def test_an_invalid_draft_offers_no_apply_and_writes_nothing(populated):
     before = snapshot(populated)
     result = run(populated, "a\ns\n")
     assert "Problem: " in result.stdout and "initial states" in result.stdout
-    assert "Choose one of: reject, skip, quit" in result.stdout
+    assert "Choose one of: reject, skip, view all, quit" in result.stdout
     assert f"Not offered: {FOLDER}/notes.md: not named" in result.stdout
     assert snapshot(populated) == before
 
@@ -212,3 +212,40 @@ def test_a_second_decider_cannot_apply_the_same_proposal(populated):
     with pytest.raises(FormatError, match="already applied"):
         project_proposals.apply(populated, "demo", relative, "Researcher", sha, "a")
     assert not (populated / "projects/demo/claims/C-003.md").exists()
+
+
+# UX6: summary-first previews.
+
+
+def test_decide_shows_a_summary_and_v_shows_all_before_applying(populated):
+    put(populated, "claim-20261105T100000Z.md", CLAIM)
+    result = run(populated, "v\na\n")
+    assert result.exit_code == 0, result.output
+    summary, _, full = result.stdout.partition("[a]pply / [r]eject / [s]kip / [v]iew all / [q]uit")
+    assert "  type mechanism · importance core · status proposed" in summary
+    assert "  Statement: SRPT reduces tail latency under bursty arrivals." in summary
+    assert "(v views all of it)" in summary
+    assert "## Scope" not in summary and "Single GPU serving." not in summary
+    assert "## Scope\nSingle GPU serving." in full  # v printed every line
+    assert "Created: C-" in full
+
+
+def test_full_flag_prints_proposals_without_the_view_choice(populated):
+    put(populated, "ruling-20261105T100000Z.md", ruling())
+    result = CliRunner().invoke(
+        app,
+        ["decide", "--root", str(populated), "--confirmed-by", "Researcher", "--full"],
+        input="s\n",
+    )
+    assert "## Response\nThe drift experiment covers the drifting workload." in result.stdout
+    assert "[v]iew all" not in result.stdout
+
+
+def test_summary_of_a_ruling_names_its_response_and_why():
+    from toulmin.protocols.proposal_summary import proposal_summary
+
+    found = proposal_summary(ruling())
+    assert found.facts == (("object", "O-001"), ("status", "answered"))
+    assert found.main == ("Response", "The drift experiment covers the drifting workload.")
+    assert found.why == "The drift run answers it."
+    assert proposal_summary("no front matter\n").facts == ()

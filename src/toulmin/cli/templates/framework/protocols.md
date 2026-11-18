@@ -1393,6 +1393,9 @@ table or decide change, and the agent's state card is unchanged.
   addition: the researcher could not see the current answer among gates and the full tree.
 
 
+Module rules (2026-11-18, "最好还可以增加分割线将其模块化"): the card puts a full-width rule
+under its title and between modules; More stays with the recorded next step.
+
 ## R11: explicit review profiles and frozen round approval
 
 Reason: separate role coverage, requested model/effort, synthesis and total quota
@@ -1417,3 +1420,18 @@ is not inferred from a configured request. Malformed metadata is diagnosed by re
 profile calibration, with unknown durations/usage explicit and no automatic quality ranking.
 See [profile configuration and comparison](review-profiles.md) and
 [design/acceptance](review-workflow-design.md). No research workspace is edited on read.
+
+## UX6 — Summary-first decide previews (2026-11-18)
+
+Authorized with "按你的建议，开始 UX6" (design D6). For object drafts, rulings, Brief and
+stage proposals, and build requests, `toulmin decide` prints a summary derived from the exact
+previewed text by `protocols/proposal_summary.py` (L2, text only): short header facts, the
+first paragraph of the main section and of Why, each cut at a word boundary. The prompt gains
+`v` ("view all"), which prints the full text (and, for a build request, the full frozen
+contract with the worker's goal) and asks again. A build summary always lists the contract's
+name, repository, tool, launch command, every check (they run as the researcher on apply and
+verify), protected paths, budget and test_first. `decide --full` restores the full print
+without `v`. Applying still uses the previewed digest; nothing about application, rejection
+or the recorded outcome changes. Other item kinds (intake, review, workspace changes,
+creation, handoffs) keep their previews. Reason for the L2 addition: decide began every item
+with a page of text.

@@ -35,6 +35,11 @@ per Claim (✓ supported or ready to rule, ? fatal/major doubts open, · no veri
 yet), the main open doubts grouped by Claim, what waits in `decide` and up to three next moves.
 `toulmin map NAME --full` shows the gates, the whole argument tree and sources.
 
+`toulmin decide` shows each proposal as a short summary (its key facts, the first sentence of
+its main section and of its Why). Press `v` to read all of it before you decide; a build
+request's summary lists the checks that will run as you, and `v` adds the worker's full goal.
+`toulmin decide --full` prints everything, as before.
+
 ## 3. The working loop
 
 ```text
