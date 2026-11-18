@@ -1,5 +1,12 @@
 # Toulmin development progress
 
+## 2026-11-18 — Project card module rules
+
+- Decision: after reading the card the researcher asked for dividing lines to make it modular ("最好还可以增加分割线将其模块化").
+- Change: the card puts a full-width rule (ASCII `-`) under the title and between modules; More stays with Recorded. rkey-lifecycle's card grows from 21 to 27 lines; the test bound is 32.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2210 passed.
+- Session ID: unavailable.
+
 ## 2026-11-18 — UX2 short labels and terminal width, UX3 project card
 
 - Decision: the researcher accepted UX1 D1–D6 and authorized UX2 and UX3 ("按你的建议，全部接受，开始 UX2 和 UX3").

@@ -298,6 +298,17 @@ def _labelled(head: str, text: str, note: str, width: int, ascii_only: bool) -> 
     return head + " " + short_label(text, room, "..." if ascii_only else "…") + tail
 
 
+def _modules(lines: list[str], rule: str) -> list[str]:
+    """A rule under the title and between modules; More stays with the recorded step."""
+    out = [lines[0], rule]
+    for line in lines[1:]:
+        title = line[:LABEL].strip()
+        if title and title != "More" and out[-1] != rule:
+            out.append(rule)
+        out.append(line)
+    return out
+
+
 def render_card(
     card: ProjectCard,
     waiting: list[decide.Item],
@@ -419,7 +430,7 @@ def render_card(
             fit(f"toulmin map {card.project} --full  (gates, argument tree, sources)", inner),
         )
     )
-    return "\n".join(lines) + "\n"
+    return "\n".join(_modules(lines, glyphs.line * width)) + "\n"
 
 
 def render_workspace(root: Path, width: int, glyphs: Glyphs, refreshed: str | None = None) -> str:
