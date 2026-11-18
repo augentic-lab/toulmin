@@ -1,5 +1,18 @@
 # Toulmin development progress
 
+## 2026-11-18 — Binding observation and legacy lifecycle regression checkpoint
+
+- Added only tests/acceptance/test_wo_binding_observation.py for the explicit remaining
+  requirements. Preview and offline status are tested for both catalogs after opening a
+  fake native binding, then replacing every native constructor with a failing sentinel;
+  all workspace bytes must remain unchanged. No real native/model/Chief executes.
+- Before runtime fix: **1 failed / 5 passed** (/tmp/wo-v1-observation-red.log). Unknown v1
+  lifecycle incorrectly permits bind; archived v1 control and all four file-only reads
+  pass. This complements the exact approved six-case amendment committed as b90b519.
+- Next: remove the shared guard's catalog exception and legacy branch, retaining existing
+  locking and preview early return; then verify affected/R1–R3/full registered checks.
+  No further original-test/support changes, session unavailable, live/human still pending.
+
 ## 2026-11-18 — Approved v1 rebind test amendment, before runtime fix
 
 - Explicit delegated-supervisor Decision approves exactly the amendment at e921721,
