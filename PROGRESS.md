@@ -1,5 +1,48 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 test-first acceptance proposal (awaiting approval)
+
+- Status: **Verified: 132 acceptance nodes collected and exercised; implementation has
+  not started.** This new Chief worker starts at integrated d2ebbe4. Read the frozen
+  WO2 contract in full, design/current onboarding and relevant formats/protocols,
+  source/publication/native/permission/task code and existing tests. Session ID unavailable.
+- Added only tests/acceptance/ and this record. Four scenario modules plus independent
+  fixtures/support cover reviewed A/B/C, exact overview/catalog/source pins, old-child
+  preservation, ownership, rejection/stale/tampered/resealed packets, journal fault points,
+  recovery global prechecks, workspace v4 context/ack/privacy, native scope/permission/
+  writer coordination, scoped Chief export/import, later derivation and legacy formats.
+  Existing tests/support, runtime, templates, TODO R10/R11 and other worktrees untouched.
+- Actual checks: locked offline dev+tui sync, Ruff check, Ruff format check, mypy
+  (117 source files), CLI help and diff whitespace checks pass. Final acceptance run:
+  **105 failed, 16 passed, 11 setup errors**; setup errors are assertions on the missing
+  workspace task CLI, not import/collection errors. Unsupported workspace CLI forms/v2
+  reader behavior keep the new feature scenarios red. This is intentional test-first
+  evidence, not completed implementation or usability acceptance.
+- Registered COMPLETE checker ran every collected node once, unchanged: final run
+  **2,047 nodes, 1,923 passed, 113 failed, 11 errors**, exit 1. Its 8 legacy failures are
+  5 private-socket sandbox denials plus 3 pre-existing template/release-digest drift cases.
+  Verified native tests use unique TemporaryDirectory tmux -S sockets and fake Codex
+  executables; prototypes use the demo agent. Reran only those 5 with permitted socket
+  access: **5 passed**. No real subscribed model or Chief worker was invoked.
+- Baseline defect for the build phase: docs/workspace-formats.md gained the WO2
+  cross-reference but the packaged framework copy/released digests were not synchronized.
+  Failing existing nodes are test_init_creates_workspace_only_state_without_child_or_model,
+  test_packaged_framework_contracts_match_canonical_documents[workspace-formats.md], and
+  test_released_digests_cover_every_shipped_copy. They are left unchanged at this gate;
+  synchronize generated guidance under WO5 after approval, without weakening tests.
+- Evidence: ignored .chief/regression-226/{manifest,results}.json and shard logs;
+  /tmp/wo-acceptance-approved-candidate.log, /tmp/wo-private-socket-recheck.log and
+  /tmp/wo-existing-template-drift.log. Final small fixture correction allows the existing
+  projects/.gitkeep while asserting zero child directories; the acceptance run was repeated.
+- Decisions: independent v2 serialization and real fixture hashes avoid depending on new
+  production serializers; fake native/Chief services prevent live side effects. No scientific,
+  migration or scope decision was taken. WO3/WO4/WO5 checkboxes remain open. Root-owned live
+  trials and researcher usability ruling remain NOT RUN/PENDING.
+- Next: explicit supervisor approval of tests/acceptance/ before any feature code. Then
+  implement WO3 → WO4 → WO5 incrementally, resolve legacy template drift, run all registered
+  checks, address independent Chief review and deliver the root's separate live-trial recipe.
+  No push/merge or actual research-data/native-session changes.
+
 ## 2026-11-18 — WO2 accepted and integrated as the WO3–WO5 specification
 
 - Accepted WO2 final 7e7c1b0 after three independent review rounds (final claude/sonnet
