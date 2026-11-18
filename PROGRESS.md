@@ -1,5 +1,33 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 delivery checkpoints and supervised correction round
+
+- Worker committed WO3 as 76b3f0b, WO4 as 4df36db and WO5 as 9f22095. These are
+  isolated branch deliveries, not merged or independently accepted. Complete regression
+  ran all 2,047 nodes once per manifest and passed after the guide-size correction and
+  permitted private-socket reruns; Ruff, format, mypy (125 modules), help and six packaging
+  checks passed. Original tests/assertions were preserved at this checkpoint.
+- Supervision found R1 (malformed inventory raises TypeError, reproduced), R2 (workspace
+  operational Run relabels an AoE ID as native ID, inferred from code), and R3 (applied v2
+  onboarding receipt cannot be cited in workspace handoff, reproduced). Required fixes,
+  regression expectations and evidence are in the external
+  ~/notes/toulmin/wo-supervision-20261118/wo3-wo5-supervisor-review.md ledger.
+- Worker additionally found the cross-profile source-rebind gap. Independently ran its
+  proposed four fake-only cases: all four failed for the intended missing guard. Replied
+  to Chief decision :3 approving the exact committed test-amendment patch, preserving
+  all original assertions. Accepted the inspected protected state through decision :4;
+  its worker notice is queued by Chief. Broader edits to existing tests are not authorized.
+  R1–R3 were delivered with the initial approval; new regression files may be proposed.
+- Approved conservative handling of opaque legacy identities: preserve valid v1 bytes
+  and refuse an opt-in upgrade that cannot satisfy strict v2; never invent new identity.
+- Prepared private backup, isolated AoE/Chief test state, transparent per-launch update
+  override, separate local source clone and a real-CLI A/B/C driver. Final live journeys
+  remain NOT RUN. Original Weekly-Projects HEAD/status and all 56 tracked hashes match
+  the baseline. Researcher-authorized disposable root has not yet been rebuilt.
+- Next: review correction tests, full checks and independent Chief review; merge only
+  accepted delivery, preserve the original user TODO R10/R11 diff, then run live trials.
+  Root session: 01a192fa-a22e-7531-86d7-7f1fe4c99753. Work ongoing; no push.
+
 ## 2026-11-18 — WO3–WO5 acceptance tests approved; implementation underway
 
 - Reviewed test commit 33d4f44: 132 collected scenarios across WO3 intake/integrity,
