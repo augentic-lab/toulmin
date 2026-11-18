@@ -1,5 +1,23 @@
 # Toulmin development progress
 
+## 2026-11-18 — Exact protected test states approved and verified
+
+- Explicit user/Chief Decision approves the current Git blob states:
+  tests/acceptance/test_wo5_compatibility.py = 9c30504a5b35bfef94dd4f28632cf58e9c648349;
+  tests/unit/test_onboarding.py = 3c9d44c6f5e82b2ac83a7a1103b2e883801ee78d.
+  **Verified both hashes match** using git hash-object. This includes the normalized
+  signature-only fixture state; previous exact amendment/AST/SHA256 audit is preserved.
+- Further edits to these files require renewed approval; other protected changes remain
+  unapproved unless separately authorized. No tests, runtime, frozen contract or Chief
+  approval metadata changed in this turn. This is state approval, not scientific/human
+  acceptance or a final independent runtime verdict. Session ID unavailable.
+- Existing runtime delivery bc3fd01 retains the recorded 2,124/2,124 COMPLETE and all
+  registered-check passes. No code tests repeated for this approval-record-only update;
+  inspected hash/diff evidence and whitespace. Latest supervisor notes contain no new
+  finding beyond the already fixed R1–R3/D1/common all-format rebind boundary.
+- Next: Chief independent review, then root-owned live trials/local integration. Live/
+  researcher usability remains pending; no main, research/global/session change or push.
+
 ## 2026-11-18 — All-format rebind guard completed and registered checks pass
 
 - Status: **Verified: v1 and v2 confirmed rebind use the same operational writer boundary;
