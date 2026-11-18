@@ -503,8 +503,10 @@ def _receipted(
         directory = receipt.removesuffix("/receipt.md")
         raw_packet = repository.path(f"{directory}/packet.md", "file").read_bytes()
         if raw_packet.startswith(b"{"):
+            from toulmin.protocols.workspace_change import applied_receipt
             from toulmin.protocols.workspace_onboarding import load
 
+            applied_receipt(repository.root, receipt)
             loaded = load(repository.root, directory, local_optional=True)
             image_spec = next(item for item in loaded.data["images"] if item["path"] == target)
             after = repository.path(image_spec["after_image"], "file").read_bytes()

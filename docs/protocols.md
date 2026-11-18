@@ -1330,3 +1330,24 @@ meanings. Source upgrade is an explicit reviewed journal transaction; old opaque
 that cannot satisfy strict v2 refuse conversion rather than changing provenance.
 Automated technical evidence and live/human acceptance remain separate; the supervisor's
 [pending live recipe](workspace-onboarding-acceptance.md) is not an executed ruling.
+
+### WO supervisor integration corrections
+
+- New portable discriminators and versions validate their types before use. Scope parser
+  failures become domain errors at the new portable boundary; the older Scope API remains
+  compatible. Malformed input is refused without normalizing or rewriting its bytes.
+- Source rebind holds only the selected source's old/new checkout locks, then the root
+  lock, and checks all profiles by canonical path and saved old filesystem identity.
+  Unknown inventory or matching unknown lifecycle refuses; unrelated source writers do
+  not prevent a distinct rebind. Legacy v1 data/adapter behavior remains unchanged.
+- Workspace operational Run session_id is a reported native identity or null. The current
+  Chief adapter supplies only an AoE session ID, so that header stays null; import.json and
+  private task facts retain the original AoE attribution. Legacy project Run attribution
+  is unchanged. Tool/command remain separate from an unknown model identity.
+- L2 handoff receipt validation/discovery accepts declared workspace-owned v2 onboarding,
+  understanding, source, derivation and catalog-upgrade transactions in addition to v1
+  workspace changes. Validate the seal, receipt record/digest/disposition, archived effects
+  and owned child receipt where present. Do not compare historical results with today's
+  legitimately changed targets or recover/migrate on read. Project-only legacy receipts
+  gain no workspace authority from their filename. Rejected/tampered receipts cannot be
+  cited; applied handoff restoration retains confirmed changes rather than omitting them.

@@ -408,7 +408,10 @@ def bind_source(
     )
     if not confirmed:
         return result
-    lock_bindings = tuple([*bindings.values(), (str(inspected.path), inspected.filesystem)])
+    lock_bindings = tuple(
+        [item for item in (bindings.get(source_id),) if item is not None]
+        + [(str(inspected.path), inspected.filesystem)]
+    )
     with checkout_locks(lock_bindings), handoff_mutex(repo.root):
         if pending(repo):
             raise FormatError("workspace journal pending; finish the recorded operation first")
@@ -423,16 +426,48 @@ def bind_source(
             inspected.filesystem,
         ):
             raise FormatError("source identity changed during bind; retry")
-        _bound_writer_guard(repo, set(name for name, _ in lock_bindings))
+        _bound_writer_guard(repo, lock_bindings, all_profiles=catalog.schema_version == 2)
         bindings[source_id] = (str(inspected.path), inspected.filesystem)
         write_atomic(target, render_bindings(bindings), replace=target.exists())
     return result
 
 
-def _bound_writer_guard(repository: Repository, paths: set[str]) -> None:
-    """Local mutations reconcile managed bindings; launch still checks every profile."""
-    from toulmin.adapters.aoe import AoEClient
+def _bound_writer_guard(
+    repository: Repository,
+    checkouts: tuple[tuple[str, str], ...],
+    *,
+    all_profiles: bool,
+) -> None:
+    """Reconcile only the selected source's old/new checkout while their locks are held."""
+    from toulmin.adapters.aoe import AoEClient, AoEError
 
+    paths = {Path(name).resolve() for name, _ in checkouts}
+    identities = {identity for _, identity in checkouts}
+    if all_profiles:
+        try:
+            sessions = AoEClient().list_all_sessions()
+            conflicts = []
+            for profile, session in sessions:
+                if session.state in {"archived", "trashed"}:
+                    continue
+                # Unknown lifecycle is not proof that a matching checkout is idle.
+                same = session.path.resolve() in paths
+                if not same and session.path.is_dir():
+                    same = filesystem_identity(session.path) in identities
+                if same:
+                    conflicts.append(f"{profile}/{session.id}")
+        except (AoEError, OSError, ValueError) as error:
+            raise FormatError(
+                f"Cannot verify all-profile checkout writers; rebind refused: {error}"
+            ) from error
+        if conflicts:
+            raise FormatError(
+                "Selected source checkout has a possible native writer: "
+                + ", ".join(conflicts)
+                + "; archive it before binding. Other sources are unchanged"
+            )
+        return
+    # Legacy project-only operations keep their existing adapter boundary and data format.
     candidates = [
         repository.root / ".aoe/binding.json",
         *repository.root.glob("projects/*/.aoe/binding.json"),
@@ -442,7 +477,7 @@ def _bound_writer_guard(repository: Repository, paths: set[str]) -> None:
             continue
         relative = candidate.relative_to(repository.root).as_posix()
         raw = json.loads(repository.path(relative, "file").read_bytes())
-        if raw.get("cwd") in paths and raw.get("session_id"):
+        if raw.get("cwd") in {str(path) for path in paths} and raw.get("session_id"):
             session = AoEClient(raw["profile"]).show(raw["session_id"])
             if session.state == "live":
                 raise FormatError(

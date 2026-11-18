@@ -77,6 +77,11 @@ No working selection is valid portable state, but a scope with references cannot
 at an arbitrary reference or fall back to the records directory. With no associations,
 source-free sessions retain the records-root behavior.
 
+Confirmed v2 source rebind checks live/unknown writers across every profile at the selected
+source's old/new canonical checkout and saved old device/inode. An unrelated source's writer
+does not block a distinct rebind. Local coordination cannot isolate arbitrary external
+writers; selection, launch permission and rebind remain separate actions.
+
 A/B initially select SOURCE working at workspace and requested-child scope. `--work-at
 TARGET` instead selects TARGET working and SOURCE reference, using existing non-overlapping
 directories only. In C, it sets these roles only for the NEW child. Newly registered

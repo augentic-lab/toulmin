@@ -140,7 +140,8 @@ def operational_run(record: ScopedImport, archive: str) -> bytes:
         "source": {"kind": "human", "actor": record.actor},
         "role": "implementer",
         "model": None,
-        "session_id": record.session_id,
+        # Chief reports an AoE ID in import.json/task facts, not a native provider ID.
+        "session_id": None,
         "duration_seconds": None,
         "input_files": [record.request, archive.removesuffix("-result") + "/submission.json"],
         "output": archive,

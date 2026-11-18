@@ -635,6 +635,14 @@ def upgrade(root: Path) -> protocol.Outcome:
                 ),
             ),
         )
+        try:
+            after_catalog = render_source_catalog(new)
+        except FormatError as error:
+            raise FormatError(
+                "v1 source identity cannot be represented by strict v2. Keep the v1 "
+                "catalog active; its original provenance is unchanged. No identity "
+                "normalization or replacement is permitted: " + str(error)
+            ) from error
         legacy = f"{directory}/legacy/sources.v1.toml"
         data = {
             "schema_version": 2,
@@ -668,6 +676,6 @@ def upgrade(root: Path) -> protocol.Outcome:
             root,
             directory,
             data,
-            {CATALOG: render_source_catalog(new)},
+            {CATALOG: after_catalog},
             {"legacy/sources.v1.toml": raw},
         )

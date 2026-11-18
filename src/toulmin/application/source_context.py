@@ -303,7 +303,11 @@ def verify_context(service: AoEWorkspace, binding: Binding) -> None:
             (local / "manifest.json").relative_to(service.root).as_posix(), "file"
         ).read_bytes()
         manifest = json_data(raw, str(local / "manifest.json"))
-        if digest(raw) != binding.manifest_sha256 or set(manifest) != MANIFEST_KEYS:
+        if (
+            digest(raw) != binding.manifest_sha256
+            or set(manifest) != MANIFEST_KEYS
+            or type(manifest.get("schema_version")) is not int
+        ):
             raise FormatError("context manifest hash/fields changed")
         expected = {
             "schema_version": 4,
@@ -349,8 +353,10 @@ def verify_context(service: AoEWorkspace, binding: Binding) -> None:
                 )
             }
             expected_receipt["manifest_sha256"] = binding.manifest_sha256
-            if set(receipt) != ACK_KEYS or any(
-                receipt.get(key) != value for key, value in expected_receipt.items()
+            if (
+                type(receipt.get("schema_version")) is not int
+                or set(receipt) != ACK_KEYS
+                or any(receipt.get(key) != value for key, value in expected_receipt.items())
             ):
                 raise FormatError("context-read receipt does not match binding/manifest")
             utc(receipt["received_at"], "context receipt received_at")

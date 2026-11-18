@@ -11,15 +11,18 @@ inventory of Weekly-Projects, keep it as SOURCE reference and choose an already 
 non-overlapping disposable working fixture with --work-at. Never copy, edit or remove the
 original source as an intake effect. Root chooses the actual paths and isolated AoE profile.
 
-## Known technical follow-up before the live trial
+## Technical regression status
 
-Source rebind currently reconciles managed bindings only; an unmanaged live session in
-another profile, a moved old checkout inode, or unknown all-profile inventory can escape
-that local check. Native launch already checks all profiles. Four disposable proposed
-rebind cases are expected RED and must not be reported as passing compatibility evidence.
-A narrow approved-test amendment is awaiting Chief approval: add the existing fake native
-fixture to the successful-bind case, then add these four cases and strengthen the L3 guard.
-Do not call WO3/WO5 complete or begin a final live rebind trial before this is addressed.
+The approved fake-only rebind amendment is applied. Regression cases cover unmanaged
+writers at the selected source's old/new checkout, a moved old inode, unknown inventory/
+lifecycle, and an unrelated source's writer that must not block rebind. Bind checks only
+the selected source and preserves all other associations/local entries.
+
+Supervisor R1–R3 regressions cover malformed portable types/strict versions, unknown native
+identity in operational Runs, and every workspace v2 receipt family through confirmed
+handoff/discovery/restoration, including rejection and tampering. These automated results
+do not establish real provider behavior or researcher usability. Independent final Chief
+review and the live steps below remain separate pending evidence.
 
 ## A: understand and work with zero projects
 

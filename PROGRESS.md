@@ -1,5 +1,65 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 supervisor fixes and complete technical validation
+
+- Status: **Verified: all provided review findings and selected-source rebind are fixed;
+  every registered command exits 0.** WO3 technical criteria close again; WO4 remains
+  technically complete. WO5 implementation/automated compatibility are complete, while its
+  root-owned live journeys and researcher usability criterion remain open. This is not an
+  independent final Chief verdict or researcher acceptance. Session ID unavailable.
+- Approval/audit: exact user-approved amendment committed as 0678367 BEFORE guard fixes
+  (four failing new cases, existing success control passed). Additional required new-file
+  regressions committed as 20269a7 / 26283cc before runtime fixes. The sole original-test
+  diff is the approved fake native/monkeypatch injection in the successful bind case; every
+  original assertion/support file and the frozen contract remain unchanged otherwise.
+- Rebind checks all profiles under only selected-source old/new checkout and root locks,
+  comparing canonical paths AND the saved old filesystem identity. Unknown inventory or
+  matching unknown lifecycle refuses. Unmanaged old/new/moved-inode writers are caught;
+  an unrelated source's writer and archived sessions do not unnecessarily block. Other
+  source entries/associations and v1 data/adapter behavior remain intact.
+- R1: explicit discriminator type checks prevent unhashable-list use; new portable scope
+  failures are FormatError without altering Scope's legacy API. Adjacent parser audit and
+  regressions also enforce strict integer versions for frozen submissions/rehashed v4
+  manifests/receipts. Malformed CLI inputs refuse without writes, repair or tracebacks.
+- R2: root operational Run.session_id is null when the current Chief adapter reports only
+  an AoE ID. That exact AoE attribution remains in import.json and private task facts;
+  legacy project Run/session attribution is unchanged. No native/model identity invented.
+- R3: all five workspace-owned v2 receipt families support generic handoff citation,
+  uncited discovery, apply revalidation and fresh source-backed context restoration with
+  confirmed changes preserved. Validate exact seal/receipt/effects/owned child receipt;
+  rejected, forged, changed or later damaged receipt inputs refuse. Historical target
+  changes remain legitimate; no read-time recovery/migration or v1 semantic change.
+- D1 explicitly approved by supervisor: opaque v1 identities stay readable byte-for-byte,
+  opt-in unrepresentable upgrade refuses with actionable v1 guidance, no identity rewrite.
+- Actual verification: **65 new review/rebind cases passed**, including positive unrelated/
+  archived controls and post-preview/post-apply handoff damage checks
+  (/tmp/wo-supervisor-final-focused.log). Earlier combined acceptance + legacy handoff,
+  change, onboarding and task selection: **302 passed** (/tmp/wo-supervisor-targeted-all.log).
+- Unchanged registered COMPLETE: **2,112 unique collected nodes assigned exactly once**, all
+  eight shards passed, exit 0; .chief/regression-1271248/{manifest,results}.json and shard
+  logs, /tmp/wo-review-complete.log. Runtime/docs were frozen during this run. The checker
+  was neither edited nor filtered; no xfail/skip/test assertion weakening was introduced.
+  Permitted socket access was used only for the previously proven unique temporary tmux
+  sockets with fake Codex/demo workers. No real AoE/model/Chief ran in the new tests.
+- All other exact registered commands exit 0 with UV_CACHE_DIR=/tmp/toulmin-onboarding-uv-cache,
+  UV_PYTHON=/home/tianchi/workspace/toulmin/.tools/python/cpython-3.12.16-linux-aarch64-gnu/bin/python3.12,
+  UV_PYTHON_DOWNLOADS=never and /home/tianchi/workspace/toulmin/.tools/bin/uv:
+  `sync --locked --dev --extra tui --offline`; `run --locked ruff check .`;
+  `run --locked ruff format --check .` (264 files); `run --locked mypy src/toulmin`
+  (125 modules); `run --locked toulmin --help` (/tmp/wo-review-help.log).
+  COMPLETE used `run --locked --extra tui python
+  /home/tianchi/notes/toulmin/wo-supervision-20261118/toulmin-complete-regression-check.py`.
+  Focused generated-template/init/released-digest checks: **6 passed**; six canonical/
+  packaged framework copies were also compared byte-for-byte. Released hashes retain
+  every historical digest and add only the current synchronized templates.
+- Current English docs/framework/live recipe now describe the fixed behavior; obsolete
+  pending-rebind warnings are removed. Historical failed/rejected evidence and the approved
+  patch remain for audit. Root's review notes are read and addressed, not silently rewritten.
+- Next: Chief independent final recheck of this delivery, then root's separately authorized
+  A/B/C/native context/ack/restart/handoff/workspace-engineering trials using
+  docs/workspace-onboarding-acceptance.md. Live/human rows remain NOT RUN here. No main,
+  former worker/session, research data, global setting, merge or push was touched.
+
 ## 2026-11-18 — Additional review regressions and field-access correction
 
 - Added new-file regressions for unknown vs archived selected-checkout lifecycle, receipt

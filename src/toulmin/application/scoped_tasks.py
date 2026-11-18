@@ -194,7 +194,8 @@ def frozen_submission(
     if type(intent["schema_version"]) is not int or intent["schema_version"] != 1:
         raise FormatError("unsupported local task intent version")
     if (
-        data["schema_version"] != 2
+        type(data["schema_version"]) is not int
+        or data["schema_version"] != 2
         or data["kind"] != "task-submission"
         or Scope.from_data(data["scope"]) != scope
         or data["proposal_sha256"] != sha256

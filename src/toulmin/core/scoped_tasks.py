@@ -15,6 +15,9 @@ from toulmin.core.workspace_onboarding import (
     source_pin,
     utc,
 )
+from toulmin.core.workspace_onboarding import (
+    scope as parse_scope,
+)
 
 
 @dataclass(frozen=True)
@@ -46,7 +49,7 @@ def validate_request(document: Document) -> ScopedTask:
         )
     if type(h["schema_version"]) is not int or h["schema_version"] != 2:
         document.fail("schema_version", "expected scoped task-request version 2")
-    scope = Scope.from_data(h["scope"])
+    scope = parse_scope(h["scope"], "task.scope")
     pin = source_pin(h["source_pin"])
     if h["source"] != pin["source"]:
         document.fail("source", "request/source pin IDs disagree")
@@ -89,7 +92,7 @@ def parse_import(data: bytes, location: str) -> ScopedImport:
         or value["kind"] != "task-import"
     ):
         raise FormatError(f"{location}: expected scoped task-import v2")
-    scope = Scope.from_data(value["scope"])
+    scope = parse_scope(value["scope"], "task-import.scope")
     pin = source_pin(value["source_pin"])
     checksum(value["submission_sha256"], "submission_sha256")
     utc(value["at"], "at")

@@ -156,6 +156,14 @@ def author(value: Any) -> None:
         raise FormatError("author: expected human or model provenance")
 
 
+def scope(value: Any, location: str) -> Scope:
+    """Portable parsers expose domain errors; Scope's older standalone API stays unchanged."""
+    try:
+        return Scope.from_data(value)
+    except (ValueError, TypeError) as error:
+        raise FormatError(f"{location}: {error}") from error
+
+
 def source_pin(value: Any) -> dict[str, Any]:
     validated = exact(value, PIN_KEYS, "source_pin")
     value = validated
@@ -198,7 +206,7 @@ def _inventory(data: bytes, location: str) -> dict[str, Any]:
     )
     if type(value["schema_version"]) is not int or value["schema_version"] != 2:
         raise FormatError(f"{location}: expected inventory version 2")
-    if value["kind"] not in {"git", "directory"}:
+    if not isinstance(value["kind"], str) or value["kind"] not in {"git", "directory"}:
         raise FormatError(f"{location}: invalid source kind")
     if not re.fullmatch(value["kind"] + r":[0-9a-f]{64}", text(value["identity"], "identity")):
         raise FormatError(f"{location}: invalid identity")
@@ -277,7 +285,7 @@ def overview(data: bytes, location: str) -> dict[str, Any]:
         type(h["schema_version"]) is not int
         or h["schema_version"] != 1
         or h["kind"] != "workspace-overview"
-        or Scope.from_data(h["scope"]) != Scope()
+        or scope(h["scope"], "overview.scope") != Scope()
     ):
         raise FormatError(f"{location}: expected workspace-overview version 1, workspace scope")
     if type(h["revision"]) is not int or h["revision"] < 1:
@@ -332,8 +340,9 @@ def _envelope(data: bytes, location: str) -> dict[str, Any]:
     ):
         raise FormatError(f"{location}: unsupported workspace packet")
     if (
-        value["operation"] not in OPERATIONS
-        or Scope.from_data(value["scope"]) != Scope()
+        not isinstance(value["operation"], str)
+        or value["operation"] not in OPERATIONS
+        or scope(value["scope"], "packet.scope") != Scope()
         or type(value["catalog_version"]) is not int
         or value["catalog_version"] != 2
     ):
@@ -342,9 +351,10 @@ def _envelope(data: bytes, location: str) -> dict[str, Any]:
     author(value["origin"])
     text(value["rationale"], "rationale")
     mode = value["mode"]
-    if (value["operation"] == "onboarding" and mode not in {"A", "B", "C"}) or (
-        value["operation"] != "onboarding" and mode is not None
-    ):
+    if (
+        value["operation"] == "onboarding"
+        and (not isinstance(mode, str) or mode not in {"A", "B", "C"})
+    ) or (value["operation"] != "onboarding" and mode is not None):
         raise FormatError(f"{location}: invalid mode")
     child = mode in {"B", "C"} or value["operation"] == "child-derive"
     if child:
@@ -402,17 +412,20 @@ def _envelope(data: bytes, location: str) -> dict[str, Any]:
         if (
             not isinstance(item["source"], str)
             or not SOURCE_ID.fullmatch(item["source"])
+            or not isinstance(item["action"], str)
             or item["action"] not in {"register", "reuse"}
         ):
             raise FormatError("source_actions: invalid source/action")
         checksum(item["definition_sha256"], "source_action.definition_sha256")
     for item in value["association_changes"]:
         exact(item, {"scope", "source", "before", "after"}, "association_change")
-        Scope.from_data(item["scope"])
+        scope(item["scope"], "association_change.scope")
         if (
             not isinstance(item["source"], str)
             or not SOURCE_ID.fullmatch(item["source"])
+            or (item["before"] is not None and not isinstance(item["before"], str))
             or item["before"] not in {None, "reference", "working"}
+            or not isinstance(item["after"], str)
             or item["after"] not in {"reference", "working"}
         ):
             raise FormatError("association_changes: invalid source/roles")

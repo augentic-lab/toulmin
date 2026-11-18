@@ -474,9 +474,9 @@ sources belong to the workspace. Projects may be created during intake or later.
 This supersedes O's mandatory initial-child assumption; historical completion records
 and existing data remain intact. Design: [workspace onboarding](docs/workspace-onboarding-design.md).
 Current authorization: supervise/accept/merge the permission and WO2 Chief deliveries, then
-implement WO3–WO5 in a new supervised worker from that integrated baseline. Implementation
-and live scenarios remain NOT RUN until actual evidence is recorded. The existing permission
-task retains its scope. The researcher authorized repeated rebuilds of the disposable
+implement WO3–WO5 in a new supervised worker from that integrated baseline. Technical
+implementation checks are recorded in PROGRESS.md; root-owned live/human scenarios remain
+pending. The existing permission task retains its scope. The researcher authorized repeated rebuilds of the disposable
 weekly-projects-research workspace for final trials; original source data must be preserved.
 
 - [x] WO1 — Record accepted A/B/C modes, ownership, workflow, confirmation and compatibility
@@ -489,16 +489,17 @@ weekly-projects-research workspace for final trials; original source data must b
   Specification delivered: [WO2 contract](docs/workspace-onboarding-contract.md), including
   exact schemas/CLI/publication rules and WO3–WO5 acceptance matrix (NOT RUN). Independent
   Chief review passed at 7e7c1b0; the researcher-delegated supervisor accepted the contract
-  for implementation on 2026-11-18. Runtime/live cases remain pending.
-- [ ] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
+  for implementation on 2026-11-18. Current technical evidence is in PROGRESS.md;
+  live/human cases remain pending.
+- [x] WO3 — Implement reviewed intake for all three modes and understanding checkpoints.
   Acceptance: temporary A creates zero children, B exactly one in a new workspace, C exactly
   one in the selected existing workspace. C reuses a registered source or registers it once;
   old children, unrelated workspace context and source bytes stay unchanged. Rejection,
   stale/tampered input, replay and interruption recovery cannot partially publish a child.
-  Implemented and approved cases pass; still open: source rebind must inspect unmanaged
-  all-profile writers, including a moved old checkout inode. The protected successful-bind
-  fixture needs the existing fake native client before that check can be enabled safely;
-  see docs/workspace-onboarding-bind-test-amendment.patch and PROGRESS.md.
+  Implemented and technically verified, including approved all-profile rebind tests,
+  selected old/new canonical paths/saved inode, unknown-state refusal and unrelated-writer
+  control. Supervisor R1–R3 regressions pass; the sole original-test fixture amendment is
+  explicitly approved and committed with all original assertions retained (PROGRESS.md).
 - [x] WO4 — Implement source-backed workspace conversation/state and bounded engineering work.
   Acceptance: fake clients verify explicit workspace/project scopes, cwd, context, native
   permissions, source identity/conflicts and recovery; zero-project work needs no Claim/gate;
@@ -509,5 +510,6 @@ weekly-projects-research workspace for final trials; original source data must b
   include C source reuse, workspace-only work, later child creation and fresh-session recovery.
   Researcher usability acceptance remains a separate explicit ruling.
   Derivation, generated guides/docs and the approved automated matrix are implemented.
-  The new rebind safety cases are expected RED pending test amendment approval; root-owned
-  live A/B/C/native/engineering journeys and human usability remain NOT RUN by this worker.
+  The approved rebind amendment and new R1–R3/D1 regressions pass: complete registered
+  suite 2,112/2,112; independent final Chief review and root-owned live A/B/C/native/
+  engineering journeys remain pending. Human usability is NOT RUN by this worker.

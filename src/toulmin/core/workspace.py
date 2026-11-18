@@ -27,7 +27,9 @@ MAX_LINES = 40
 MAX_NAME = 80
 NO_DIRECTION = "No confirmed direction yet"
 INITIAL_NOTE = f"{NO_DIRECTION}. Change this charter only through a reviewed workspace proposal.\n"
-RECEIPT = re.compile(r"runs/[0-9]{8}T[0-9]{6}Z-(?:proposal|onboard)-[0-9a-f]{32}/receipt\.md")
+RECEIPT = re.compile(
+    r"runs/[0-9]{8}T[0-9]{6}Z-(?:proposal|onboard|understanding|source|derive|catalog)-[0-9a-f]{32}/receipt\.md"
+)
 SESSION = re.compile(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}\.md")
 # YAML treats these as line breaks or forbids them, and a name is one display line.
 FORBIDDEN_CATEGORIES = {"Cc", "Cs", "Zl", "Zp"}

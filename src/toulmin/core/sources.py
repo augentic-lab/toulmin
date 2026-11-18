@@ -248,6 +248,7 @@ def parse_source_catalog(data: bytes) -> SourceCatalog:
             if (
                 type(item["definition_revision"]) is not int
                 or item["definition_revision"] != 1
+                or not isinstance(kind, str)
                 or kind not in {"git", "directory"}
                 or item["identity_method"]
                 != ("git-roots-v1" if kind == "git" else "directory-anchors-v1")
@@ -268,7 +269,7 @@ def parse_source_catalog(data: bytes) -> SourceCatalog:
             source = item["source"]
             if not isinstance(source, str) or source not in ids:
                 raise ValueError("association names a missing definition")
-            if item["role"] not in {"reference", "working"}:
+            if not isinstance(item["role"], str) or item["role"] not in {"reference", "working"}:
                 raise ValueError("invalid association role")
             pair = (scope, source)
             if pair in pairs:

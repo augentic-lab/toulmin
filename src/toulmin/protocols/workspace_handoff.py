@@ -212,8 +212,8 @@ def uncited_receipts(root: Path, cited: tuple[str, ...]) -> list[str]:
     latest = latest_handoff(repository.root)
     since = _moment(latest.record.applied_at) if latest is not None else None
     found = []
-    for directory in sorted(repository.root.glob("runs/*-proposal-*")):
-        relative = f"runs/{directory.name}/receipt.md"
+    for path in sorted(repository.root.glob("runs/*/receipt.md")):
+        relative = path.relative_to(repository.root).as_posix()
         if not RECEIPT.fullmatch(relative) or relative in cited:
             continue
         try:

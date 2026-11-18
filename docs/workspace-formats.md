@@ -1246,3 +1246,9 @@ and conversion from v1 is separately proposed/reviewed with exact legacy bytes r
 Current commands, local native v4 metadata and compatibility/recovery are described in
 [onboarding.md](onboarding.md). The frozen WO2 document's historical NOT RUN labels are not
 live acceptance claims; see current development evidence and the separately pending trial.
+
+V1 workspace receipt fields remain unchanged. Applied workspace-owned v2 envelopes may use
+onboard, understanding, source, derive or catalog archive families in receipt references;
+legacy proposal references retain their meaning. Handoff citation/discovery checks the
+exact sealed envelope, receipt and archived effects, including owned child receipts.
+A filename alone does not make an old project-only transaction a workspace confirmation.

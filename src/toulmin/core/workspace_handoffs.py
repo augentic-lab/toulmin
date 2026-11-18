@@ -95,7 +95,10 @@ def _receipts(document: Document, value: Any, field: str) -> tuple[str, ...]:
         document.fail(field, "expected a list of applied receipt paths")
     for index, item in enumerate(value):
         if not isinstance(item, str) or not RECEIPT.fullmatch(item):
-            document.fail(f"{field}[{index}]", "expected runs/<stamp>-proposal-<hex>/receipt.md")
+            document.fail(
+                f"{field}[{index}]",
+                "expected a reviewed workspace packet receipt runs/<stamp>-<kind>-<hex>/receipt.md",
+            )
     if len(set(value)) != len(value):
         document.fail(field, "list each receipt once")
     return tuple(value)
