@@ -283,7 +283,10 @@ def test_old_native_binding_offline_reads_do_not_upgrade_or_move_archives(wo, na
     assert (first.context_path.parent / "receipt.json").exists()
 
 
-def test_bind_requires_preview_then_explicit_confirmation_and_changes_only_local_mapping(wo):
+def test_bind_requires_preview_then_explicit_confirmation_and_changes_only_local_mapping(
+    wo, native, monkeypatch
+):
+    monkeypatch.setattr("toulmin.adapters.aoe.AoEClient", lambda *a, **kw: native)
     v2_workspace(wo.root, wo.source)
     target = wo.tmp / "clone"
     # Local clone only; git never contacts a remote.

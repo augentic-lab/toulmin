@@ -1,5 +1,20 @@
 # Toulmin development progress
 
+## 2026-11-18 — Approved rebind test amendment (red checkpoint)
+
+- Explicit supervisor/user Decision approved exactly the patch committed at 9f22095.
+  Applied SHA256 7fc9f04e3e7097f1dfd2e9c6951393bf95e1fb55564a5a78362aed356a0c1b05:
+  one existing successful-bind case receives only fake native/monkeypatch fixtures and
+  the adapter constructor; all assertions are unchanged. Added the four proposed cases.
+- Verified **4 failed, 1 passed** (/tmp/wo-bind-approved-red.log): unmanaged old/new/moved
+  old inode writers and unknown all-profile state still permit bind, the intended gap.
+  No runtime change precedes this commit; tests use only local Git fixtures/fake AoE.
+- Read supervisor review in full. Next: add meaningful new-file regressions and address
+  rebind scoping/unrelated writers plus R1 malformed portable types, R2 native-vs-AoE
+  attribution and R3 v2 receipt handoff/discovery/restoration. D1 opaque-v1 refusal is
+  approved. No additional existing test/support edits authorized. Live/human pending.
+  Session ID unavailable; no main, research data, real workers, global settings or push.
+
 ## 2026-11-18 — WO5 derivation/guidance and final technical checkpoint
 
 - Status: **Verified: implementation across WO3–WO5 is present and every registered

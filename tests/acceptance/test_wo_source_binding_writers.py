@@ -1,0 +1,37 @@
+"""WO source rebind checks every profile, including unmanaged checkout writers."""
+
+import pytest
+
+from tests.acceptance.wo_support import git, invoke, tree, v2_workspace
+from toulmin.adapters.aoe import AoESession
+
+
+@pytest.mark.parametrize("checkout", ["old", "new", "moved-old-inode"])
+def test_rebind_refuses_unmanaged_writer_in_another_profile(wo, native, monkeypatch, checkout):
+    v2_workspace(wo.root, wo.source)
+    target = wo.tmp / "clone"
+    git(wo.source, "clone", "-q", str(wo.source), str(target))
+    cwd = target if checkout == "new" else wo.source
+    if checkout == "moved-old-inode":
+        moved = wo.tmp / "moved-old"
+        wo.source.rename(moved)
+        cwd = moved
+    session = AoESession("f" * 16, cwd, "codex", "live", "idle", "native-writer", "External")
+    native.other = [("other-profile", session)]
+    monkeypatch.setattr("toulmin.adapters.aoe.AoEClient", lambda *a, **kw: native)
+    before = tree(wo.root)
+    invoke("source", "bind", "source-main", target, "--root", wo.root, "--confirm", code=1)
+    assert tree(wo.root) == before and not native.created and not native.sent
+
+
+def test_rebind_refuses_unknown_all_profile_inventory_without_mutating_mapping(
+    wo, native, monkeypatch
+):
+    v2_workspace(wo.root, wo.source)
+    target = wo.tmp / "clone"
+    git(wo.source, "clone", "-q", str(wo.source), str(target))
+    native.lookup_error = True
+    monkeypatch.setattr("toulmin.adapters.aoe.AoEClient", lambda *a, **kw: native)
+    before = tree(wo.root)
+    invoke("source", "bind", "source-main", target, "--root", wo.root, "--confirm", code=1)
+    assert tree(wo.root) == before and not native.created and not native.sent
