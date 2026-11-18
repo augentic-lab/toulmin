@@ -291,7 +291,7 @@ def test_verbose_status_lists_settled_objections_with_their_decisions(bench):
     lines = report.stdout.splitlines()
     assert "Settled objections:" in lines
     assert lines[lines.index("Settled objections:") + 1] == (
-        "  O-001 | answered | target=C-001 | by D-001"
+        "  O-001 answered · on C-001 · by D-001"
     )
     assert "Settled objections:" not in status(bench).stdout
 

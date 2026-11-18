@@ -1,5 +1,9 @@
 # Framework changes
 
+- Readable views (2026-11-18): researcher wording in `status`, folded repeats and optional
+  provenance in `map --full`, terminal-only colour (`NO_COLOR` respected), and the project card
+  on every AoE project screen. Display only.
+
 - Summary-first decide (2026-11-18): proposals and build requests show a short summary; `v`
   views all of it, `decide --full` prints everything. Application is unchanged.
 

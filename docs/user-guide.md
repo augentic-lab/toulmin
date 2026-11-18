@@ -40,6 +40,12 @@ its main section and of its Why). Press `v` to read all of it before you decide;
 request's summary lists the checks that will run as you, and `v` adds the worker's full goal.
 `toulmin decide --full` prints everything, as before.
 
+In a terminal, Toulmin colours marks and severities (fatal and major stand out, minor is dim);
+set `NO_COLOR=1` to turn colour off. `toulmin status` describes each Claim in words ("proposed ·
+1 verified support · open Objections · supported conditions not met"), and `toulmin aoe status`
+shows the project card with the session and context lines. `toulmin map NAME --full
+--provenance` names the review that raised each Objection.
+
 ## 3. The working loop
 
 ```text

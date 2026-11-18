@@ -1394,3 +1394,21 @@ or the recorded outcome changes. Other item kinds (intake, review, workspace cha
 creation, handoffs) keep their previews. Reason for the L2 addition: decide began every item
 with a page of text.
 
+## UX4–UX5 — Wording, folding, colour and a shorter AoE status (2026-11-18)
+
+Authorized with "做完之后接着推进剩下的UX开发" and "好，测完继续做 UX4 和 UX5" (design D4, D5).
+Display only; formats, gates, notices, the rule table and the agent's state card are unchanged.
+
+- UX4: card labels read the whole first paragraph of a Claim's Statement and an Objection's
+  Content (status summaries stop at 100 characters). In `map --full`, a Decision already shown
+  is named on later Objections as "by D-NNN (above)" instead of being repeated; review
+  provenance is shown only with `--provenance`; the per-section advice notes become one footer.
+  `status` describes Claims as "C-NNN proposed · N verified support · open Objections ·
+  supported conditions met/not met/unknown" and Objections as "O-NNN major · on C-NNN".
+- UX5: `cli/terminal.py` colours the card and map after layout (rules dim, titles bold, ✓
+  green, ? yellow, ✗/! red, fatal bold red, major and OPEN yellow, minor dim) only when stdout
+  is a terminal, `NO_COLOR` is unset and TERM is not dumb. Every AoE project screen (`open`,
+  `aoe status`, `refresh`, `bind`) shows the project card instead of the agent's state card;
+  invalid data still falls back to the full state view. The agent still receives the full
+  state card in its context files.
+

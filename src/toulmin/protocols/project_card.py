@@ -89,13 +89,21 @@ def project_card(root: Path, project: str, report: ResearchMap) -> ProjectCard:
     groups: dict[str, list[tuple[int, str, str]]] = defaultdict(list)
     for objection in status.open_objections:
         rank = SEVERITIES.index(objection.severity) if objection.severity in SEVERITIES else 3
-        groups[objection.target].append((rank, str(objection.object_id), objection.summary))
+        groups[objection.target].append((rank, str(objection.object_id), str(objection.object_id)))
         if objection.severity == "fatal":
             fatal[objection.target] += 1
         elif objection.severity == "major":
             major[objection.target] += 1
 
     order = {node.object_id: index for index, node in enumerate(report.claims)}
+    by_id = {str(doc.object_id): doc for doc in snapshot.objects}
+
+    def paragraph(object_id: str, section: str, fallback: str) -> str:
+        """The whole first paragraph; status summaries stop at 100 characters (UX4)."""
+        doc = by_id.get(object_id)
+        text = sections(doc).get(section, "").strip().split("\n\n", 1)[0] if doc else ""
+        return " ".join(text.split()) or fallback
+
     answer = []
     for claim in sorted(
         status.claims, key=lambda claim: order.get(str(claim.object_id), len(order))
@@ -111,7 +119,7 @@ def project_card(root: Path, project: str, report: ResearchMap) -> ProjectCard:
                     claim.verified_support_count,
                 ),
                 claim.stored_status,
-                claim.summary,
+                paragraph(key, "Statement", claim.summary),
                 claim.verified_support_count,
                 fatal[key],
                 major[key],
@@ -134,7 +142,7 @@ def project_card(root: Path, project: str, report: ResearchMap) -> ProjectCard:
                 successors.get(target),
                 tuple(count for count in counts if count[1]),
                 tuple(object_id for _, object_id, _ in items[:3]),
-                items[0][2],
+                paragraph(items[0][1], "Content", ""),
             )
         )
     # Fatal first, then the most major, then most Objections; ties by Claim ID.

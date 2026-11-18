@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-18 — UX4 wording and folding, UX5 colour and shorter AoE status
+
+- Decision: authorized with "做完之后接着推进剩下的UX开发" and "好，测完继续做 UX4 和 UX5".
+- UX4: card labels read the whole first paragraph of Statement/Content; `map --full` names repeated Decisions as "by D-NNN (above)", hides review provenance unless `--provenance`, and replaces per-section advice notes with one footer; `status` uses researcher wording for Claims and Objections ("C-001 proposed · 1 verified support · open Objections · supported conditions not met", "O-001 major · on C-001").
+- UX5: `cli/terminal.colour` styles card and map after layout, only on a terminal with NO_COLOR unset and TERM not dumb; every AoE project screen (`open`, `aoe status`, `refresh`, `bind`) shows the project card instead of the agent state card (invalid data falls back). rkey-lifecycle `aoe status`: 109 → 47 lines (read-only check).
+- Not changed: L2 notices (still "stored=..."), the agent's state card and context files, "Data: valid" and workspace status lines.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2215 passed (status/readable/intake/revision/resume assertions updated to the new wording; colour tests added).
+- Session ID: unavailable.
+
 ## 2026-11-18 — UX6 summary-first decide previews
 
 - Decision: the researcher authorized UX6 ("按你的建议，开始 UX6") and, afterwards, the remaining UX slices ("做完之后接着推进剩下的UX开发"; "好，测完继续做 UX4 和 UX5").

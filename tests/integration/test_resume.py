@@ -64,7 +64,7 @@ def test_manual_command_chain_then_fresh_process_recovers_only_from_files(tmp_pa
     new("run")
     new("objection")
     status = command("status", "demo", "--root", str(root))
-    assert "O-001 | major | target=C-001" in status.stdout
+    assert "O-001 major · on C-001" in status.stdout
     handoff_input = manual / "handoff.md"
     handoff_input.write_bytes(
         encode(

@@ -73,7 +73,7 @@ def test_supersede_records_link_and_status_points_dependents_to_successor(bench)
     report = status(bench, "-v")
     assert report.exit_code == 0, report.output
     lines = report.stdout.splitlines()
-    assert not any(line.startswith("  C-001 |") for line in lines)
+    assert not any(line.startswith("  C-001 ") and " · " in line for line in lines)  # not current
     assert lines[lines.index("Superseded:") + 1] == "  C-001 -> C-002"
     for expected in (
         "O-001: target is superseded C-001 (current: C-002); rule it or raise it against C-002",
