@@ -1,5 +1,40 @@
 # Toulmin development progress
 
+## 2026-11-18 — O3 general Codex launch policy and recovery (build)
+
+- The researcher explicitly approved both acceptance-test files and authorized build.
+  Implementation stays in Chief's isolated worktree; approved tests and support are
+  unchanged. No main-checkout files or preexisting TODO/R11 changes are included.
+- Added `--codex-sandbox workspace-write|inherit` to both open entry points. A new
+  external-source Codex session explains code and records directories and offers a
+  default-no terminal choice. Unknown noninteractive choices stop with explicit options;
+  canceling creates no policy or session. Invalid/inapplicable flags fail before init.
+- Ignored tools/native.local.toml holds versioned project-local execution choices,
+  atomically published under the existing binding lock. Choices pin source identity,
+  cwd and both directory filesystem identities; stale/corrupt/symlinked settings refuse
+  without repair. Changes during the prompt are refused and launch uses the frozen cwd.
+  Other projects' choices and all formal research files remain separate.
+- Confirmed new/replacement launches forward `--sandbox workspace-write --add-dir ROOT`
+  in AoE's saved extra arguments. Inherit adds no sandbox override. Reuse never changes
+  session arguments or v1/v2/v3 binding formats. An explicit flag on a bound session is
+  refused; omit it to reuse or explicitly archive/replace. No native restart is triggered.
+- Native launch failures stop startup polling and retain actionable local-policy recovery,
+  including managed-policy errors above dead-pane padding. Claude retains its own native
+  flags/diagnostics. Managed restrictions are not bypassed; startup/attach never imply
+  context delivery, acknowledgment or research approval. README/onboarding document usage,
+  compatibility, ignored local storage and manual recovery.
+- Verification so far: all 41 approved cases pass; 24 new implementation integrity cases
+  are separate from protected tests. Related suite: 268 passed; final affected entry/choice
+  suite: 93 passed. Locked offline dev/TUI sync, Ruff lint/format, mypy (117 modules),
+  installed CLI help and diff checks pass. Full required suite: 1,899 passed in 756.99
+  seconds, with private-socket access for the existing fixture-only tmux tests; no real
+  provider session used. Installed CLI subprocess preflight also passed with a fake AoE
+  executable and isolated homes/config; fresh committed-worktree check next.
+- No real provider session, trust prompt, live AoE/research workspace, global Codex/AoE
+  configuration or main working tree changed. Tests are technical evidence; Chief's
+  independent cross-model delivery review and researcher/native usability acceptance
+  remain separate. Session: 01a1ebde-842e-7163-8675-2167a6cfb01f. No push.
+
 ## 2026-11-18 — O3 general Codex permissions: acceptance-test phase
 
 - Delegated task in Chief's isolated worktree, starting clean at

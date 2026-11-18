@@ -36,6 +36,7 @@ _BLOCKED_REASON = "Native screen contains a busy state or confirmation/menu; res
 _NEEDS_RESEARCHER = (
     "Native screen contains a selection menu",
     "Native input contains text",
+    "Native launch",
     "Readiness supports",
 )
 
@@ -233,6 +234,7 @@ class AoEClient:
         *,
         title: str | None = None,
         add_directory: Path | None = None,
+        codex_sandbox: str | None = None,
     ) -> AoESession:
         """Create and launch one native session at ``root``; ``project`` None is the workspace."""
         try:
@@ -247,6 +249,16 @@ class AoEClient:
             raise AoEError("AoE session title must be one printable line of at most 200 characters")
         if agent not in ("codex", "claude"):
             raise AoEError("AoE native agent must be codex or claude")
+        if codex_sandbox is not None and (
+            codex_sandbox not in {"workspace-write", "inherit"}
+            or agent != "codex"
+            or add_directory is None
+            or project is None
+        ):
+            raise AoEError(
+                "codex_sandbox requires workspace-write or inherit for a Codex project "
+                "with an additional records directory"
+            )
         root = root.expanduser().resolve()
         if not root.is_dir():
             raise AoEError(f"AoE root is not a directory: {root}")
@@ -255,9 +267,10 @@ class AoEClient:
             directory = add_directory.expanduser().resolve()
             if not directory.is_dir():
                 raise AoEError(f"Additional native directory is not a directory: {directory}")
-            # AoE forwards one shell-quoted argument string; never alter native trust or
-            # approval settings to grant the research records directory.
-            extra = ("--extra-args", shlex.join(["--add-dir", str(directory)]))
+            # AoE persists this shell-quoted string for resume/restart. Only a local
+            # explicit choice adds a sandbox; native trust/approvals remain untouched.
+            native = ["--sandbox", "workspace-write"] if codex_sandbox == "workspace-write" else []
+            extra = ("--extra-args", shlex.join([*native, "--add-dir", str(directory)]))
         output = self._run(
             "add",
             str(root),
@@ -349,14 +362,24 @@ class AoEClient:
         # tmux can retain a launch error above blank rows and its dead-pane footer.
         # Inspect that failed pane in full before applying live-composer heuristics.
         if kept and re.match(r"^Pane is dead\b", rows[kept - 1]):
-            failure = re.search(r"(?im)^\s*Error adding directories:[^\n]*", screen)
+            failure = re.search(
+                r"(?im)^\s*(?:error(?: adding directories| loading configuration)?[: ]|"
+                r"failed to launch)[^\n]*",
+                screen,
+            )
             detail = failure.group(0).strip()[:400] if failure else "Native process exited"
-            return (
-                "Native launch failed (dead pane): "
-                + detail
-                + "; inspect the native launch settings, then archive the failed session "
+            recovery = (
+                "; inspect the native launch settings, then archive the failed session "
                 "and open --new-session"
             )
+            if tool == "codex":
+                recovery = (
+                    "; inspect native/managed launch settings; for additional-directory "
+                    "refusals explicitly choose --codex-sandbox workspace-write or inherit, "
+                    "then archive the failed session and open --new-session. "
+                    "Managed restrictions must be resolved by the operator; no bypass was attempted"
+                )
+            return "Native launch failed (dead pane): " + detail + recovery
         lines = rows[:kept][-18:]
         tail = "\n".join(lines)
         if not tail.strip():
@@ -377,15 +400,20 @@ class AoEClient:
         marker = r"^\s*›[^\S\n]*(.*)$" if tool == "codex" else r"^\s*[>❯][^\S\n]*(.*)$"
         prompts = [i for i, line in enumerate(lines) if re.match(marker, line)]
         if not prompts:
-            if re.search(r"(?i)error adding directories|ignoring --add-dir", tail) and re.search(
-                r"(?i)effective permissions|writable roots", tail
+            if (
+                tool == "codex"
+                and re.search(r"(?i)error adding directories|ignoring --add-dir", tail)
+                and re.search(r"(?i)effective permissions|writable roots", tail)
             ):
                 return (
                     "Native launch blocked: Codex refused --add-dir because its effective "
                     "permissions do not allow additional writable roots. Explicitly choose "
-                    "a native permission mode permitting the records directory for this "
-                    "session (Codex suggests workspace-write), then archive the failed session "
-                    "and open --new-session. Toulmin has not changed native permission settings"
+                    "--codex-sandbox workspace-write for this project's code and records "
+                    "directories, or --codex-sandbox inherit to keep native restrictions. "
+                    "Managed restrictions must be resolved by the operator; no bypass was "
+                    "attempted. Then archive the failed session "
+                    "and open --new-session. Toulmin has not changed global native "
+                    "permission settings"
                 )
             failure = re.search(
                 r"(?im)^\s*(?:error(?: adding directories| loading configuration)?[: ]|"
