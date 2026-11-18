@@ -74,7 +74,7 @@ class Facts:
     reviewed: (
         bool  # no current Claim/non-invalidated Evidence created since latest completed review
     )
-    handoff_due: str | None = None  # R4: the stage ruled after the last applied handoff
+    handoff_due: str | None = None  # R10: optional continuity hint after a stage ruling
     builds: tuple[BuildFact, ...] = ()
     supportable: tuple[str, ...] = ()  # Claims meeting supported conditions, no ruling pending
     review_progress: ReviewProgress | None = None
@@ -299,16 +299,6 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             )
         if verification.available:
             moves.append(Move(YOU, f"Verify {build.spec} in `toulmin decide`", "toulmin decide"))
-    if facts.handoff_due:
-        moves.append(
-            Move(
-                AGENT,
-                f"Prepare a handoff draft: the stage changed to {facts.handoff_due} after the "
-                "last applied handoff, so the recorded next step is stale; the researcher may "
-                "then continue in a fresh session.",
-                "toulmin aoe handoff",
-            )
-        )
     if facts.uncovered:
         moves.append(
             Move(
@@ -364,8 +354,10 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             moves.append(
                 Move(
                     AGENT,
-                    "Request a review round of the current Claims; the researcher starts it "
-                    "in `toulmin decide`.",
+                    "Plan review of the current Claims with `toulmin review NAME --dry-run`, "
+                    "then prepare `toulmin draft review NAME`; only researcher approval in "
+                    "`toulmin decide` starts the independent sessions. Continue coordinating "
+                    "in this project conversation.",
                     "runs/proposals/review-…",
                 )
             )
@@ -407,6 +399,18 @@ def next_moves(facts: Facts, limit: int = MOVE_LIMIT) -> tuple[Move, ...]:
             missing = _missing(gate, skip)
             if missing or not skip:
                 moves.append(Move(move.actor, move.text.format(missing=missing), move.how))
+    # R10: a coordinator can continue across stages. A continuity hint must not crowd
+    # out the research entry or imply that review depends on handoff/session replacement.
+    if facts.handoff_due:
+        moves.append(
+            Move(
+                EITHER,
+                f"Optional context management after the stage change to {facts.handoff_due}: "
+                "ask for a handoff draft if pausing or choosing a fresh coordinator session; "
+                "continue the current conversation otherwise.",
+                "optional: toulmin aoe handoff; toulmin open NAME --new-session",
+            )
+        )
     if not moves:
         moves.append(
             Move(
@@ -497,7 +501,7 @@ def move_facts(
 
 
 def _stage_after_handoff(repository: Repository, project: str, handoff: object) -> bool:
-    """Whether an applied stage proposal is newer than the last applied handoff (R4).
+    """Whether a stage ruling merits an optional continuity hint (R4, revised by R10).
 
     Session records are named by their UTC application time, so the names compare as text
     with the outcome's ``at`` in the same compact form. A stage edited by hand has no outcome

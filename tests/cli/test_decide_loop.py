@@ -1,5 +1,7 @@
-"""R3/R4: decide closes the loop (next moves, optional session notice) and suggests a handoff
-and a fresh session after a stage ruling. Temporary workbenches and fake sessions only."""
+"""R3/R10: decide keeps coordination continuous and offers optional context management.
+
+Temporary workbenches and fake sessions only.
+"""
 
 import shlex
 import sys
@@ -10,8 +12,10 @@ from typer.testing import CliRunner
 
 from toulmin.cli import decide
 from toulmin.cli.app import app
+from toulmin.core.inspection import inspect_project
+from toulmin.core.repository import Repository
 from toulmin.protocols.handoff import apply_handoff, draft_handoff
-from toulmin.protocols.research_map import research_map
+from toulmin.protocols.research_map import move_facts, next_moves, research_map
 
 FOLDER = "projects/demo/runs/proposals"
 CLAIM = (
@@ -109,41 +113,88 @@ def test_a_busy_session_gets_no_notice_and_the_researcher_is_told(populated, mon
     assert "Notice not sent: Native input contains text. Tell the agent yourself." in result.stdout
 
 
-def test_a_stage_ruling_suggests_a_handoff_and_a_fresh_session(populated, monkeypatch):
+def test_a_stage_ruling_leads_to_review_in_the_current_coordinator(populated, monkeypatch):
     sessions = Sessions()
     monkeypatch.setattr(decide, "AoEWorkspace", sessions)
     put(populated, "decision-20261109T100000Z-critique.md", DECISION)
     put(populated, "stage-20261109T100001Z-critique.md", STAGE)
     result = run(populated, "a\na\n", "--notify")
     assert result.exit_code == 0, result.output
-    assert "Stage is now critique. Suggested before the next stage's work:" in result.stdout
+    assert "Stage is now critique. Continue in the current project conversation." in result.stdout
+    assert "`toulmin review demo --dry-run`" in result.stdout
+    assert "`toulmin draft review demo`" in result.stdout
+    assert "approve it in `toulmin decide`" in result.stdout
+    assert result.stdout.index("toulmin review demo --dry-run") < result.stdout.index(
+        "Optional context management"
+    )
     assert (
         "aoe -p sim session archive aaaaaaaaaaaaaaaa, then toulmin open demo --new-session"
         in result.stdout
     )
     moves = research_map(populated, "demo").moves
     assert moves[0].text.startswith("The stage critique is past G1")  # R5: the fixture lacks G1
-    assert moves[1].text.startswith("Prepare a handoff draft: the stage changed to critique")
+    assert any("toulmin review NAME --dry-run" in move.text for move in moves)
+    assert not any("handoff" in move.text for move in moves)  # never displaces research work
     message = sessions.sent[0][1]
-    assert "The stage is now critique: prepare a handoff draft now" in message
+    assert "The stage is now critique: continue as coordinator here" in message
+    assert "Only approval starts quota-consuming review" in message
+    assert "Handoff or coordinator replacement is optional" in message
     prefix = shlex.join([sys.executable, "-m", "toulmin"])
-    assert f"`{prefix} aoe handoff demo --root " in message
+    assert f"`{prefix} review demo --root " in message
+    assert "--dry-run`" in message and f"`{prefix} draft review demo --root " in message
+    assert not list((populated / "projects/demo/sessions").glob("*.md"))
 
 
-def test_the_handoff_row_clears_once_a_handoff_is_applied_after_the_stage(populated, monkeypatch):
+def test_an_optional_handoff_clears_only_the_context_hint_not_the_review_entry(
+    populated, monkeypatch
+):
     monkeypatch.setattr(decide, "AoEWorkspace", Sessions(bound=False))
     put(populated, "decision-20261109T100000Z-critique.md", DECISION)
     put(populated, "stage-20261109T100001Z-critique.md", STAGE)
     run(populated, "a\na\n")
-    assert any(
-        move.text.startswith("Prepare a handoff draft")
-        for move in research_map(populated, "demo").moves
-    )
+
+    def all_moves():
+        report = research_map(populated, "demo")
+        assert not report.errors
+        facts = move_facts(
+            populated,
+            "demo",
+            inspect_project(Repository(populated), "demo"),
+            report.gates,
+            report.pending,
+        )
+        return next_moves(facts, limit=20)
+
+    before = all_moves()
+    optional = next(move for move in before if move.text.startswith("Optional context management"))
+    review = next(move for move in before if "toulmin review NAME --dry-run" in move.text)
+    assert before.index(review) < before.index(optional)
     draft = draft_handoff(populated, "demo").relative_to(populated).as_posix()
     apply_handoff(populated, "demo", draft, "Researcher", True)
-    report = research_map(populated, "demo")
-    assert not report.errors
-    assert not any(move.text.startswith("Prepare a handoff draft") for move in report.moves)
+    after = all_moves()
+    assert not any(move.text.startswith("Optional context management") for move in after)
+    assert review in after
+
+
+def test_optional_handoff_does_not_bypass_an_unfinished_application(populated, monkeypatch):
+    monkeypatch.setattr(decide, "AoEWorkspace", Sessions(bound=False))
+    put(
+        populated,
+        "stage-20261109T100001Z-critique.md",
+        STAGE.replace("decision-20261109T100000Z-critique.md", "D-001"),
+    )
+    journal = populated / "projects/demo/.handoff-pending"
+    journal.mkdir()
+    marker = journal / "retain.txt"
+    marker.write_text("Unfinished transaction: preserve for recovery.\n")
+    charter = populated / "projects/demo/PROJECT.md"
+    before = charter.read_bytes()
+    result = run(populated, "s\n")
+    assert result.exit_code == 0, result.output
+    assert "a handoff application is unfinished; finish it before a stage ruling" in result.stdout
+    assert charter.read_bytes() == before
+    assert marker.read_text() == "Unfinished transaction: preserve for recovery.\n"
+    assert not list((populated / FOLDER).glob("*.outcome.md"))
 
 
 def test_a_long_notice_stays_one_line():

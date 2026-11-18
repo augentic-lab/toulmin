@@ -95,6 +95,7 @@ class Calibration:
     # (operation, model, role) -> tally; review drafts and outcomes only for operation review.
     groups: dict[tuple[str, str, str], Tally]
     skipped: tuple[str, ...]  # data left out, with the reason
+    profile_report: str = ""  # optional auxiliary configuration comparisons (R11)
 
 
 def _projects(repository: Repository, project: str | None) -> list[str]:
@@ -173,7 +174,11 @@ def calibration(root: Path, project: str | None = None) -> Calibration:
                     tally.rejected += 1
                 if outcome != "duplicate" and "object" in entry:
                     tally.objections[_status(repository, name, entry["object"], skipped)] += 1
-    return Calibration(tuple(counted), groups, tuple(skipped))
+    from toulmin.protocols.profile_calibration import render_profile_calibration
+
+    return Calibration(
+        tuple(counted), groups, tuple(skipped), render_profile_calibration(root, project)
+    )
 
 
 def _status(repository: Repository, project: str, value: str, skipped: list[str]) -> str:
@@ -297,4 +302,6 @@ def render(report: Calibration, project: str | None) -> str:
         )
     lines += ["", "## Not counted", ""]
     lines += [f"- {item}" for item in report.skipped] or ["Nothing; every file was readable."]
+    if report.profile_report:
+        lines += ["", report.profile_report.rstrip()]
     return "\n".join(lines) + "\n"

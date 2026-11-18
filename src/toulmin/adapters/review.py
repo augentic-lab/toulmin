@@ -8,12 +8,15 @@ the project creation lock refuses rather than waits.
 import shutil
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 from toulmin.adapters.base import Session, stop_all
-from toulmin.adapters.config import ReviewConfig, load_config
+from toulmin.adapters.config import ModelConfig, ReviewConfig, load_config
+from toulmin.adapters.review_profiles import Selection, select, trace_plan, traced
 from toulmin.core.documents import FormatError
+from toulmin.core.review_plan import checksum
 from toulmin.core.usage import Usage
 from toulmin.protocols.review import (
     ArchivedReview,
@@ -44,10 +47,26 @@ def run_round(
     dry_run: bool,
     confirmed: bool,
     echo: Echo,
+    profile: str | None = None,
+    synthesizer: str | None = None,
 ) -> int:
     """Return the number of failed sessions. Validation errors raise before any session."""
-    config, tasks = _plan_round(root, project, personas, models, claims)
+    if profile is not None or synthesizer is not None:
+        planned = prepare_round(
+            root, project, personas, models, claims, echo, profile=profile, synthesizer=synthesizer
+        )
+        if not _authorised(dry_run, confirmed, "review"):
+            return 0
+        result = execute_round(planned, actor, echo)
+        return sum(item.status == "failed" for item in result.reviews) + int(
+            result.synthesis is not None and result.synthesis.status == "failed"
+        )
+    config, tasks, _ = _plan_round(root, project, personas, models, claims)
     _show(config, tasks, echo)
+    echo(
+        "Reviews-only invocation. A review request in decide also plans independent synthesis; "
+        "use --profile or --synthesizer to preview the full round."
+    )
     if notice := review_advisory(root, project):
         echo("Note: " + notice)
     if not _authorised(dry_run, confirmed, "review"):
@@ -63,19 +82,29 @@ def _plan_round(
     personas: list[str] | None,
     models: list[str] | None,
     claims: list[str] | None,
-) -> tuple[ReviewConfig, tuple[ReviewTask, ...]]:
+    profile: str | None = None,
+    synthesizer: str | None = None,
+    with_synthesis: bool = False,
+) -> tuple[ReviewConfig, tuple[ReviewTask, ...], Selection]:
     config = load_config(root)
-    chosen = _models(config, models)
+    selection = select(config, personas, models, profile, synthesizer)
+    chosen = _models(config, selection.models)
     tasks = plan_review(
         root,
         project,
-        personas if personas is not None else list(config.personas),
+        selection.personas,
         chosen,
         config.max_runs,
         claims,
     )
+    if with_synthesis and len(tasks) + 1 > config.max_runs:
+        raise FormatError(
+            f"review round: {len(tasks)} reviews + 1 synthesis = {len(tasks) + 1} sessions "
+            f"exceed the total run cap of {config.max_runs}; "
+            "choose fewer sessions or raise max_runs"
+        )
     _preflight(config, [task.model for task in tasks])
-    return config, tasks
+    return config, tasks, selection
 
 
 @dataclass(frozen=True)
@@ -87,6 +116,9 @@ class PlannedRound:
     config: ReviewConfig
     tasks: tuple[ReviewTask, ...]
     synthesizer: tuple[str, str]  # model name and rotation reason
+    approval_key: str = ""
+    trace: dict[str, Any] | None = None
+    synthesis_template: ReviewTask | None = None
 
 
 @dataclass(frozen=True)
@@ -111,17 +143,43 @@ def prepare_round(
     models: list[str] | None,
     claims: list[str] | None,
     echo: Echo,
+    *,
+    profile: str | None = None,
+    synthesizer: str | None = None,
 ) -> PlannedRound:
     """Plan, preflight and show a decide review round: reviews, then synthesis (D3)."""
-    config, tasks = _plan_round(root, project, personas, models, claims)
-    name, reason = choose_model(root, project, list(config.models), None)
+    config, tasks, selection = _plan_round(
+        root, project, personas, models, claims, profile, synthesizer, with_synthesis=True
+    )
+    name, reason = choose_model(
+        root, project, list(config.models) or selection.models, selection.synthesizer
+    )
     _models(config, [name])
     _preflight(config, [name])
-    _show(config, tasks, echo)
+    template = plan_synthesis(root, project, (), name, reason)
+    trace, key = trace_plan(config, tasks, selection, name)
+    key = checksum([key, template.files, template.prompt])
+    tasks = tuple(traced(task, trace) for task in tasks)
+    if selection.profile:
+        echo(f"Profile: {selection.profile} — {selection.description}")
     if notice := review_advisory(root, project):
-        echo("Note: " + notice)
+        echo(notice)
+    _show(config, tasks, echo)
+    all_roles = {"reviewer-skeptic", "reviewer-industry", "reviewer-theorist", "reviewer-why-not-x"}
+    omitted = sorted(all_roles - set(selection.personas))
+    echo("Coverage omitted: " + (", ".join(omitted) or "none of the four standard critique roles"))
     echo(f"  then synthesis by {name} ({reason}) when two or more outputs complete with drafts")
-    return PlannedRound(root, project, config, tasks, (name, reason))
+    _show_model(config.available[name], echo, "synthesis")
+    echo(
+        f"Round budget: {len(tasks)} reviews + at most 1 synthesis = {len(tasks) + 1} sessions "
+        f"(total cap {config.max_runs}, parallel {config.parallel}, "
+        f"timeout {config.timeout_seconds:g}s)"
+    )
+    echo(
+        "Availability: local prerequisites checked; model/account access is not verified until "
+        "the provider responds. No fallback or substitution is requested."
+    )
+    return PlannedRound(root, project, config, tasks, (name, reason), key, trace, template)
 
 
 def execute_round(planned: PlannedRound, actor: str, echo: Echo) -> RoundResult:
@@ -136,11 +194,20 @@ def execute_round(planned: PlannedRound, actor: str, echo: Echo) -> RoundResult:
         return RoundResult(tuple(reviews), None, note)
     name, reason = planned.synthesizer
     try:
-        task = plan_synthesis(root, project, round_sources(root, project, usable), name, reason)
+        task = plan_synthesis(
+            root,
+            project,
+            round_sources(root, project, usable),
+            name,
+            reason,
+            snapshot=planned.synthesis_template,
+        )
     except (OSError, ValueError) as error:
         note = f"synthesis not run: {error}"
         echo(note[0].upper() + note[1:])
         return RoundResult(tuple(reviews), None, note)
+    if planned.trace is not None:
+        task = traced(task, planned.trace)
     synthesis = _execute(root, project, config, (task,), actor, echo)
     return RoundResult(tuple(reviews), synthesis[0], "")
 
@@ -232,6 +299,18 @@ def _preflight(config: ReviewConfig, names: list[str]) -> None:
         entry = config.available[name]
         if shutil.which(entry.command) is None:
             raise FormatError(f"{name}: command {entry.command!r} not found on PATH")
+        validate_arguments = getattr(entry.adapter, "_validate_extra_args", None)
+        if callable(validate_arguments):
+            validate_arguments(
+                Session(
+                    "",
+                    entry.model,
+                    config.timeout_seconds,
+                    entry.command,
+                    entry.session_args,
+                    entry.env,
+                )
+            )
         problem = entry.adapter.preflight(entry.command, entry.env)
         if problem is not None:
             raise FormatError(f"{name}: {problem}; nothing run")
@@ -241,8 +320,18 @@ def _show(config: ReviewConfig, tasks: tuple[ReviewTask, ...], echo: Echo) -> No
     echo(f"Plan: {len(tasks)} sessions (cap {config.max_runs}, parallel {config.parallel})")
     for task in tasks:
         echo(f"  {task.persona} x {task.model} -> {task.archive}")
+    for name in dict.fromkeys(task.model for task in tasks):
+        _show_model(config.available[name], echo, "review")
     first = tasks[0]
     echo(f"  inputs ({len(first.files)} files for {first.persona}): {', '.join(first.files)}")
+
+
+def _show_model(entry: ModelConfig, echo: Echo, operation: str) -> None:
+    echo(
+        f"  {operation} model {entry.name}: requested {entry.model or 'CLI default (unreported)'}; "
+        f"effort {entry.effort or 'CLI default (unreported)'}; "
+        f"adapter {entry.adapter.name}; command {entry.command}"
+    )
 
 
 def _authorised(dry_run: bool, confirmed: bool, command: str) -> bool:
@@ -264,9 +353,24 @@ def _execute(
     def execute(task: ReviewTask) -> ReviewOutcome:
         entry = config.available[task.model]
         session = Session(task.prompt, entry.model, config.timeout_seconds, entry.command,
-                          entry.extra_args, entry.env)  # fmt: skip
+                          entry.session_args, entry.env)  # fmt: skip
         try:
-            return entry.adapter.run(session)
+            outcome = entry.adapter.run(session)
+            if task.plan is not None and outcome.reported_model is not None:
+                mismatch = entry.model and outcome.reported_model != entry.model
+                outcome = replace(
+                    outcome,
+                    model=outcome.reported_model,
+                    failure=outcome.failure
+                    or (
+                        f"provider reported model {outcome.reported_model!r}, "
+                        f"requested {entry.model!r}; "
+                        "output preserved, no substitution approved"
+                        if mismatch
+                        else None
+                    ),
+                )
+            return outcome
         except OSError as error:
             return ReviewOutcome("", entry.model or f"{entry.adapter.name} default (not reported)",
                                  None, None, f"could not start the tool: {error}")  # fmt: skip

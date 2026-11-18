@@ -1,5 +1,42 @@
 # Toulmin development progress
 
+## 2026-11-18 — R10/R11 continuous critique and explicit bounded review profiles
+
+- Authorization: researcher requested design then implementation of R10 and R11. Design:
+  docs/review-workflow-design.md; use/compatibility: docs/review-profiles.md. Work isolated
+  on feat/r10-r11-continuous-review-profiles in /tmp/toulmin-r10-r11 because another session
+  is editing main. Researcher explicitly requested waiting for its commit before merging.
+- R10: critique leads to dry-run, review request and researcher apply in decide while the
+  existing coordinator continues. Handoff/replacement stays optional; no automatic archive.
+  Restricted independent reviewers/synthesis and unfinished-handoff integrity guards remain.
+- R11: opt-in named profiles, typed effort, explicit synthesizer, concrete requested IDs,
+  omitted-role/identity/budget preview and total cap including synthesis. Fresh templates use
+  nine; existing workspace limits are not rewritten. Legacy direct review stays review-only.
+- Approval fingerprints cover selected configuration (private values hashed), actual command
+  paths, reviewer prompts and synthesizer static inputs. Changes refuse before markers/calls;
+  approved static inputs stay frozen during execution. No silent model substitution.
+- Auxiliary review-plan.json preserves public config/input/round/requested-reported identity
+  provenance without changing formal Run schemas. Read-only calibration reports counts,
+  failures, input fingerprints, known usage/USD/session-seconds and explicit unknown values.
+  Custom critique roles are supported; no model rankings or scientific rulings are inferred.
+- Compatibility: optional review-request v1 profile/synthesizer fields; old requests/configs
+  remain readable. Older readers explicitly reject new fields. No old data migration needed.
+  Canonical/shipped framework documents match and released hashes are retained additively.
+- Verified: all 2,296 collected pytest nodes executed once across eight independent shards,
+  all passed; locked offline dev+tui sync, Ruff lint/format, mypy (132 modules), CLI help and
+  diff whitespace checks passed. Full logs: /tmp/toulmin-r10-r11-validation/branch-final-1795012860.
+  Earlier full run exposed an omitted advisory and a guide constraint regression, both fixed.
+  Final focused coverage also checks stale command paths, static synthesis and custom roles.
+- Bounded fake-provider comparison: 5 versus 9 invocations, identical four shared review
+  prompts, isolated synthesis, no automatic intake. Details: docs/review-profile-trial.md.
+  Real model access, cost/quality benefit and researcher usability remain unverified; no
+  subscription provider, real research workspace, account settings or network used by tests.
+- Internal helper audit found three planning issues plus the custom-role report defect;
+  all fixed with regression coverage. This is development verification, not independent
+  researcher acceptance. Session ID unavailable; not fabricated. No push authorized.
+- Next: commit this branch, integrate after concurrent UX work is committed, then verify the
+  combined version. Real calibration remains a separately authorized follow-up in TODO.md.
+
 ## 2026-11-18 — UX2 short labels and terminal width, UX3 project card
 
 - Decision: the researcher accepted UX1 D1–D6 and authorized UX2 and UX3 ("按你的建议，全部接受，开始 UX2 和 UX3").

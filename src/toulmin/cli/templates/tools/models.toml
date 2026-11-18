@@ -4,7 +4,7 @@
 # current flags before changing extra_args. CLI options override [review] defaults.
 
 [review]
-max_runs = 8            # most sessions one `toulmin review` may start (quota guard)
+max_runs = 9            # total round cap: 8 reviews + at most 1 synthesis
 parallel = 2            # sessions running at the same time
 timeout_seconds = 900   # a session still running after this is killed and recorded as failed
 personas = ["reviewer-skeptic", "reviewer-industry", "reviewer-theorist", "reviewer-why-not-x"]
@@ -26,3 +26,29 @@ model = ""               # e.g. a model name accepted by `codex exec --model`
 # and refuses a home with AGENTS.md or without a login. Log in once with:
 #   mkdir -p ~/.codex-toulmin && CODEX_HOME=~/.codex-toulmin codex login
 env = { CODEX_HOME = "~/.codex-toulmin" }
+
+# R11: optional named profiles, with concrete reviewer/synthesis IDs and effort.
+# Keep commented until you choose models available to your account. See
+# framework/review-profiles.md. No profile or model is silently substituted.
+#
+# [models.sol]
+# adapter = "codex"
+# model = "gpt-6.1-sol"
+# effort = "high"
+# env = { CODEX_HOME = "~/.codex-toulmin" }
+# [models.opus]
+# adapter = "claude-code"
+# model = "claude-opus-5-5"
+# effort = "high"
+# [models.sonnet]
+# adapter = "claude-code"
+# model = "claude-sonnet-5-5"
+# effort = "medium"
+# [profiles.hypothesis]
+# description = "Hypothesis-focused; industry and alternatives omitted"
+# personas = ["reviewer-skeptic", "reviewer-theorist"]
+# models = ["sol", "opus"]
+# synthesizer = "sonnet"
+# Four reviews + at most one synthesis = FIVE sessions, all covered by max_runs.
+# Full four-role coverage with two models is NINE including synthesis; explicitly
+# raise max_runs to nine or reduce selection before starting such a combined round.

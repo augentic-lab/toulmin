@@ -3,8 +3,10 @@
 Model names are plain strings handed to the tool; nothing here enumerates vendors.
 """
 
+import json
+import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +28,24 @@ class ModelConfig:
     command: str
     extra_args: tuple[str, ...]
     env: tuple[tuple[str, str], ...]
+    effort: str | None = None
+
+    @property
+    def session_args(self) -> tuple[str, ...]:
+        if self.effort is None:
+            return self.extra_args
+        if self.adapter.name == "codex":
+            return (*self.extra_args, "-c", "model_reasoning_effort=" + json.dumps(self.effort))
+        return (*self.extra_args, "--effort", self.effort)
+
+
+@dataclass(frozen=True)
+class ReviewProfile:
+    name: str
+    description: str
+    personas: tuple[str, ...]
+    models: tuple[str, ...]
+    synthesizer: str
 
 
 @dataclass(frozen=True)
@@ -36,6 +56,7 @@ class ReviewConfig:
     personas: tuple[str, ...]
     models: tuple[str, ...]
     available: dict[str, ModelConfig]
+    profiles: dict[str, ReviewProfile] = field(default_factory=dict)
 
 
 def load_config(root: Path) -> ReviewConfig:
@@ -69,7 +90,7 @@ def load_config(root: Path) -> ReviewConfig:
             raise fail(field, "expected a positive " + ("integer" if integer else "number"))
         return float(value)
 
-    top = table(data, "", {"review", "models"})
+    top = table(data, "", {"review", "models", "profiles"})
     review = table(top.get("review"), "review", {"max_runs", "parallel", "timeout_seconds",
                                                  "personas", "models"})  # fmt: skip
     available: dict[str, ModelConfig] = {}
@@ -80,7 +101,7 @@ def load_config(root: Path) -> ReviewConfig:
         field = f"models.{name}"
         if not MODEL_NAME.fullmatch(name):
             raise fail(field, "expected lowercase letters, digits and hyphens")
-        entry = table(entry, field, {"adapter", "model", "command", "extra_args", "env"})
+        entry = table(entry, field, {"adapter", "model", "command", "extra_args", "env", "effort"})
         adapter = ADAPTERS.get(entry.get("adapter", ""))
         if adapter is None:
             raise fail(f"{field}.adapter", f"expected one of {sorted(ADAPTERS)}")
@@ -89,6 +110,16 @@ def load_config(root: Path) -> ReviewConfig:
         if not isinstance(model, str) or not isinstance(command, str) or not command.strip():
             raise fail(field, "model and command must be strings; command nonempty")
         extra = names(entry.get("extra_args", []), f"{field}.extra_args")
+        effort = entry.get("effort")
+        if effort is not None and (
+            not isinstance(effort, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", effort)
+        ):
+            raise fail(f"{field}.effort", "expected a lowercase effort name or omission")
+        if effort is not None and any(
+            token.split("=", 1)[0] == "--effort" or "model_reasoning_effort" in token
+            for token in extra
+        ):
+            raise fail(f"{field}.effort", "conflicts with effort in extra_args")
         env = entry.get("env", {})
         if not isinstance(env, dict) or not all(
             isinstance(key, str) and key and "=" not in key and isinstance(value, str)
@@ -99,7 +130,35 @@ def load_config(root: Path) -> ReviewConfig:
             (key, str(Path(value).expanduser()) if value.startswith("~") else value)
             for key, value in sorted(env.items())
         )
-        available[name] = ModelConfig(name, adapter, model.strip(), command, extra, variables)
+        available[name] = ModelConfig(
+            name, adapter, model.strip(), command, extra, variables, effort
+        )
+    profiles: dict[str, ReviewProfile] = {}
+    entries = top.get("profiles", {})
+    if not isinstance(entries, dict):
+        raise fail("profiles", "expected a table")
+    for name, value in entries.items():
+        label = f"profiles.{name}"
+        if not MODEL_NAME.fullmatch(name):
+            raise fail(label, "expected lowercase letters, digits and hyphens")
+        entry = table(value, label, {"description", "personas", "models", "synthesizer"})
+        roles = names(entry.get("personas"), label + ".personas")
+        chosen = names(entry.get("models"), label + ".models")
+        synthesizer = entry.get("synthesizer")
+        description = entry.get("description", "Only the listed roles are covered.")
+        if not roles or len(set(roles)) != len(roles) or not all(roles):
+            raise fail(label + ".personas", "expected nonempty unique role names")
+        if not chosen or len(set(chosen)) != len(chosen) or not all(chosen):
+            raise fail(label + ".models", "expected nonempty unique model names")
+        if not isinstance(synthesizer, str) or not synthesizer.strip():
+            raise fail(label + ".synthesizer", "explicit synthesizer model name required")
+        if not isinstance(description, str) or not description.strip():
+            raise fail(label + ".description", "expected nonempty text")
+        for alias in (*chosen, synthesizer):
+            if alias not in available:
+                raise fail(label, f"model {alias!r} not configured")
+            explicit_model(available[alias])
+        profiles[name] = ReviewProfile(name, description, roles, chosen, synthesizer)
     return ReviewConfig(
         max_runs=int(positive(review.get("max_runs"), "review.max_runs", True)),
         parallel=int(positive(review.get("parallel", 1), "review.parallel", True)),
@@ -107,4 +166,32 @@ def load_config(root: Path) -> ReviewConfig:
         personas=names(review.get("personas", []), "review.personas"),
         models=names(review.get("models", []), "review.models"),
         available=available,
+        profiles=profiles,
     )
+
+
+def explicit_model(entry: ModelConfig) -> None:
+    """Profiles must not hide native defaults or conflicting/fallback model selectors."""
+    if not entry.model:
+        raise FormatError(f"{entry.name}: profile requires an explicit model ID")
+    if any(character.isspace() or ord(character) < 32 for character in entry.model):
+        raise FormatError(f"{entry.name}: profile model ID must not contain whitespace or controls")
+    if entry.adapter.name == "claude-code" and entry.model.removesuffix("[1m]") in {
+        "default",
+        "best",
+        "opus",
+        "sonnet",
+        "haiku",
+        "opusplan",
+    }:
+        raise FormatError(f"{entry.name}: profile requires a pinned model ID, not {entry.model}")
+    for token in entry.extra_args:
+        option = token.split("=", 1)[0]
+        if option == "--effort" or "model_reasoning_effort" in token:
+            raise FormatError(f"{entry.name}: profile effort must use the typed effort field")
+        if option in {"--model", "-m", "--fallback-model", "--fallback-models"} or (
+            token.startswith("-m") and token != "-m"
+        ):
+            raise FormatError(
+                f"{entry.name}: model/fallback selector in extra_args conflicts with profile"
+            )

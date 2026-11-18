@@ -275,6 +275,12 @@ def draft_object(
     models: Annotated[
         list[str] | None, typer.Option("--model", help="review: models (default: config).")
     ] = None,
+    profile: Annotated[
+        str | None, typer.Option("--profile", help="review: named review profile.")
+    ] = None,
+    synthesizer: Annotated[
+        str | None, typer.Option("--synthesizer", help="review: explicit synthesis model alias.")
+    ] = None,
     spec: Annotated[str | None, typer.Option("--spec", help="build: Spec ID (S-NNN).")] = None,
     repo: Annotated[
         Path | None, typer.Option("--repo", help="build: absolute code repository path.")
@@ -299,6 +305,26 @@ def draft_object(
         raise typer.BadParameter("give PROJECT or --workspace")
     if project is None and not workspace:
         raise typer.BadParameter("give PROJECT or explicit --workspace")
+    if (profile is not None or synthesizer is not None) and kind != DraftKind.REVIEW:
+        raise typer.BadParameter("--profile/--synthesizer apply only to review drafts")
+    if kind == DraftKind.REVIEW and (profile is not None or synthesizer is not None):
+        from toulmin.adapters.config import load_config as load_review_config
+        from toulmin.adapters.review_profiles import select
+
+        try:
+            review_config = load_review_config(root)
+            selection = select(
+                review_config, _comma_list(personas), _comma_list(models), profile, synthesizer
+            )
+            for alias in [
+                *selection.models,
+                *([selection.synthesizer] if selection.synthesizer else []),
+            ]:
+                if alias not in review_config.available:
+                    raise ValueError(f"model {alias!r} not configured")
+        except (OSError, ValueError) as error:
+            typer.echo(f"Error: {error}", err=True)
+            raise typer.Exit(1) from error
     if kind == DraftKind.TASK and project is not None and source is None:
         from toulmin.core.sources import read_source_catalog
 
@@ -388,6 +414,8 @@ def draft_object(
                 sections=tuple(sections or ()),
                 personas=tuple(_comma_list(personas) or ()),
                 models=tuple(_comma_list(models) or ()),
+                profile=profile,
+                synthesizer=synthesizer,
                 claims=tuple(_comma_list(claims) or ()),
                 stage=to,
                 spec=spec,
@@ -628,6 +656,13 @@ def review_project(
         list[str] | None,
         typer.Option("--claim", help="Review only these Claims; may be repeated."),
     ] = None,
+    profile: Annotated[
+        str | None, typer.Option("--profile", help="Named profile from models.toml.")
+    ] = None,
+    synthesizer: Annotated[
+        str | None,
+        typer.Option("--synthesizer", help="Explicit synthesis model alias; includes synthesis."),
+    ] = None,
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Show the planned sessions; run nothing.")
     ] = False,
@@ -664,6 +699,8 @@ def review_project(
             dry_run=dry_run,
             confirmed=confirm,
             echo=typer.echo,
+            profile=profile,
+            synthesizer=synthesizer,
         )
     except (OSError, ValueError) as error:
         typer.echo(f"Error: {error}", err=True)

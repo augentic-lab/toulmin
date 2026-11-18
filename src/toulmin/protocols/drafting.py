@@ -122,6 +122,8 @@ class ProposalOptions:
     sections: tuple[str, ...] = ()  # brief
     personas: tuple[str, ...] = ()  # review
     models: tuple[str, ...] = ()  # review
+    profile: str | None = None  # review
+    synthesizer: str | None = None  # review
     claims: tuple[str, ...] = ()  # review
     stage: str | None = None  # stage: the stage to enter; default the next one
     spec: str | None = None  # build
@@ -137,6 +139,8 @@ _OPTION_KINDS = {
     "sections": (BRIEF,),
     "personas": (REVIEW,),
     "models": (REVIEW,),
+    "profile": (REVIEW,),
+    "synthesizer": (REVIEW,),
     "claims": (REVIEW,),
     "stage": (STAGE,),
     "spec": (BUILD,),
@@ -232,7 +236,7 @@ def _review(repository: Repository, project: str, options: ProposalOptions) -> R
         repository.load(project, claim)
     return lambda relative: review_skeleton(
         project, relative, options.personas or None, options.models or None,
-        options.claims or None,
+        options.claims or None, options.profile, options.synthesizer,
     )  # fmt: skip
 
 

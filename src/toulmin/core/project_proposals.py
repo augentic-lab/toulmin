@@ -45,7 +45,7 @@ FILENAME = re.compile(
 )
 RULING_FIELDS = {"schema_version", "kind", "object", "objects", "status", "decision", "links"}
 RULING_SECTIONS = {"Response", "Ruling", "Invalidation", "Rationale"}
-REVIEW_FIELDS = {"schema_version", "kind", "personas", "models", "claims"}
+REVIEW_FIELDS = {"schema_version", "kind", "personas", "models", "claims", "profile", "synthesizer"}
 INTAKE_FIELDS = {"schema_version", "kind", "output", "recommendations"}
 INTAKE_OUTCOMES = ("take", "reject", "partly", "duplicate")
 OUTCOME_ORDER = (
@@ -229,6 +229,8 @@ class ReviewRequest:
     models: list[str] | None
     claims: list[str] | None  # None: every current Claim the persona's manifest gives
     why: str  # "## Why now", shown to the researcher
+    profile: str | None = None
+    synthesizer: str | None = None
 
 
 def validate_review_request(document: Document) -> ReviewRequest:
@@ -242,7 +244,15 @@ def validate_review_request(document: Document) -> ReviewRequest:
     why = sections(document).get("Why now", "").strip()
     if not why:
         document.fail("body.Why now", "explain why this round is needed now")
-    return ReviewRequest(personas, models, claims, why)
+    selected = []
+    for field in ("profile", "synthesizer"):
+        value = h.get(field)
+        if value is not None:
+            value = text(document, value, field)
+            if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value):
+                document.fail(field, "expected lowercase letters, digits and hyphens")
+        selected.append(value)
+    return ReviewRequest(personas, models, claims, why, *selected)
 
 
 @dataclass(frozen=True)

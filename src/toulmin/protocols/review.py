@@ -38,6 +38,7 @@ class ReviewTask:
     kind: str = "review"  # review, crossval or synthesis: selects the output check
     items: tuple[str, ...] = ()  # synthesis only: every R-NNN/label it must group
     note: str = ""  # added to the Run summary, e.g. how the synthesizer was chosen
+    plan: bytes | None = None  # optional auxiliary configuration provenance
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,7 @@ class ReviewOutcome:
     failure: str | None  # None means the session completed
     log: str = ""  # tool diagnostics kept beside a failed output
     usage: Usage | None = None  # R6: as the tool reported it; None when it reported nothing
+    reported_model: str | None = None  # provider report, separate from requested fallback
 
 
 @dataclass(frozen=True)
@@ -163,6 +165,12 @@ def archive_review(
     write_atomic(directory / PROMPT_FILE, task.prompt.encode("utf-8"))
     if outcome.text:
         write_atomic(directory / OUTPUT_FILE, outcome.text.encode("utf-8"))
+    if task.plan is not None:
+        from toulmin.core.review_plan import PLAN_FILE, canonical, decode_plan
+
+        plan = decode_plan(task.plan)
+        plan["reported_model"] = outcome.reported_model
+        write_atomic(directory / PLAN_FILE, canonical(plan))
     if failure is not None and outcome.log:
         write_atomic(directory / LOG_FILE, outcome.log.encode("utf-8"))
     if outcome.usage is not None:

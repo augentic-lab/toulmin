@@ -774,15 +774,31 @@ the one project session grew to 325k tokens of context across all stages.
   "propose, never apply". `AoEWorkspace.notify` sends it only when the session is live and
   passes the readiness check (never into a busy session or over unfinished input); the
   binding, context and receipt are unchanged, and a refusal is reported with its reason.
-- L3 (R4): applying a stage proposal in decide prints two suggestions: a handoff draft
-  applied through decide (it updates PROJECT.md's next step), then a fresh session (`aoe -p
-  PROFILE session archive ID`, then `toulmin open NAME --new-session`). A notice after a stage
-  ruling asks the agent for that handoff draft. guide.md says what a notice means.
-- L2 reason: `next_moves` gains a row after pending proposals: when an applied stage proposal
-  (its outcome's `at`) is newer than the last applied handoff (the session record's UTC name),
-  the agent prepares a handoff because the recorded next step is stale. A stage edited by
-  hand has no outcome and adds no row. The map, the state card and decide's closing moves
-  read the same row. No format change.
+- Historical R4 behavior: a stage ruling printed handoff and fresh-session suggestions,
+  notified the agent to prepare a handoff, and added a prominent `next_moves` handoff row
+  when an applied stage proposal was newer than the last applied handoff. R10 below revises
+  that guidance after the researcher found manual session replacement disruptive; it does
+  not undo R4's recorded implementation or trial evidence.
+
+### R10 continuous entry into critique (L2 guidance, L3 notices)
+
+Reason: the project conversation coordinates the research loop; independent review does
+not require replacing that conversation. Entering critique now leads directly to
+`review NAME --dry-run` → `draft review NAME` → researcher approval in `toulmin decide`.
+- Applying a stage proposal keeps the current coordinator usable. The stage notice asks
+  the agent to refresh its file-derived state and, for critique, prepare the review plan
+  and request. The plan and draft start no review; researcher approval authorizes the
+  quota-consuming round. Reviewers and synthesis remain fresh isolated, tool-restricted
+  sessions with their existing input manifests; coordination is not independent review.
+- `next_moves` gives research/gate actions precedence over the optional stage-change
+  continuity hint. The hint still derives from an applied stage outcome newer than the
+  last applied handoff; applying a handoff clears it. It offers context management when
+  pausing or explicitly choosing replacement, never a prerequisite to review. A stage
+  edited by hand still adds no hint. Map, state card and decide share this rule table.
+- Handoff/application and fresh coordinator replacement remain explicit choices. Plain
+  `open NAME` may resume an existing binding; `open NAME --new-session` explicitly requests
+  replacement. Nothing automatically archives a session. Actual unfinished handoff
+  transactions retain their integrity/recovery guards; no format, gate or ruling changes.
 
 ### R5 honest gates: G3–G5 readiness and stage warnings (L2 read-only, L3)
 
@@ -1376,3 +1392,28 @@ table or decide change, and the agent's state card is unchanged.
   project scope, falling back to the full state view when data is invalid. Reason for the L2
   addition: the researcher could not see the current answer among gates and the full tree.
 
+
+## R11: explicit review profiles and frozen round approval
+
+Reason: separate role coverage, requested model/effort, synthesis and total quota
+before researcher approval; retain comparable provenance without ranking models.
+The optional review-request v1 fields profile and synthesizer are ordinary nonempty
+lowercase names; old requests/configs remain readable without migration. Old readers
+reject new fields explicitly. Seven object schemas/gates/intake authority are unchanged.
+Configuration resolution belongs to L3; L1/L2 never depend on model CLIs. Profiles and
+explicit synthesis enforce the combined review+synthesis cap. No selection starts
+without existing researcher approval. Legacy direct review remains review-only.
+
+Preview/apply fingerprints cover the selected config (private environment/extra-argument
+hashes), exact reviewer prompts and all static synthesizer inputs. Revalidation refuses
+before markers/model calls if any changes. Once approved, static inputs remain frozen
+through the independent synthesis; only that round's archived raw outputs are added.
+
+Auxiliary review-plan.json beside affected outputs records a versioned nonsecret
+configuration, input prompt digest, profile, round and planned session counts, plus
+provider-reported identity when available. It is neither a formal research object nor
+review input. Existing Run/usage fields remain authoritative reports; unreported identity
+is not inferred from a configured request. Malformed metadata is diagnosed by read-only
+profile calibration, with unknown durations/usage explicit and no automatic quality ranking.
+See [profile configuration and comparison](review-profiles.md) and
+[design/acceptance](review-workflow-design.md). No research workspace is edited on read.

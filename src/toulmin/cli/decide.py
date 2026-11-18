@@ -934,11 +934,20 @@ class Run:
                 self.applied += 1
             return choice != "q"
         problems = list(shown.problems)
+        previewed = None
         request = shown.review
         if request is not None and not problems:
             try:
-                prepare_round(self.root, item.project, request.personas, request.models,
-                              request.claims, typer.echo)  # fmt: skip
+                previewed = prepare_round(
+                    self.root,
+                    item.project,
+                    request.personas,
+                    request.models,
+                    request.claims,
+                    typer.echo,
+                    profile=request.profile,
+                    synthesizer=request.synthesizer,
+                )
             except (OSError, ValueError) as error:
                 problems.append(str(error))
         for problem in problems:
@@ -949,8 +958,22 @@ class Run:
         if choice == "a":
             assert request is not None
             # Plan again so a changed configuration fails before the marker is written.
-            planned = prepare_round(self.root, item.project, request.personas, request.models,
-                                    request.claims, lambda _: None)  # fmt: skip
+            planned = prepare_round(
+                self.root,
+                item.project,
+                request.personas,
+                request.models,
+                request.claims,
+                lambda _: None,
+                profile=request.profile,
+                synthesizer=request.synthesizer,
+            )
+            if previewed is None or planned.approval_key != previewed.approval_key:
+                typer.echo(
+                    "Review configuration or inputs changed since preview; nothing started. "
+                    "Run toulmin decide again to review the new plan."
+                )
+                return True
             marker = project_proposals.begin_review(
                 self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
             )
@@ -1012,11 +1035,19 @@ def _name(path: str) -> str:
 
 
 def _hygiene(root: Path, project: str, stage: str) -> None:
-    """After a stage ruling: a handoff, then a fresh session for the new stage (R4)."""
-    typer.echo(f"Stage is now {stage}. Suggested before the next stage's work:")
+    """Keep coordination continuous; context replacement is explicit and optional (R10)."""
+    typer.echo(f"Stage is now {stage}. Continue in the current project conversation.")
+    if stage == "critique":
+        typer.echo(
+            f"  Next: `toulmin review {project} --dry-run`, then ask the agent for "
+            f"`toulmin draft review {project}`; approve it in `toulmin decide` to start "
+            "quota-consuming independent sessions."
+        )
+    else:
+        typer.echo(f"  Refresh with `toulmin map {project}` for the next research action.")
     typer.echo(
-        "  1. Ask the project agent for a handoff draft and apply it with `toulmin decide`; "
-        "it brings PROJECT.md's next step up to date."
+        "  Optional context management: ask for a handoff draft and apply it with "
+        "`toulmin decide` when pausing or choosing a fresh coordinator session."
     )
     try:
         binding = AoEWorkspace(root, project).bound_session()
@@ -1028,8 +1059,8 @@ def _hygiene(root: Path, project: str, stage: str) -> None:
         else ""
     )
     typer.echo(
-        f"  2. Continue in a fresh session: {archive}toulmin open {project} --new-session. "
-        "The files and the handoff carry the state; the long conversation is not needed."
+        f"  Explicit replacement only: {archive}toulmin open {project} --new-session. "
+        "Plain open may resume the existing binding; nothing is archived automatically."
     )
 
 
@@ -1046,11 +1077,20 @@ def notice(root: Path, project: str, notes: list[str], stage: str | None) -> str
         f"refresh your view with `{agent_command('map', project, '--root', where)}`; propose, "
         "never apply."
     )
-    if stage is not None:
-        handoff = agent_command("aoe", "handoff", project, "--root", where, "--input", "FILE")
+    if stage == "critique":
+        plan = agent_command("review", project, "--root", where, "--dry-run")
+        draft = agent_command("draft", "review", project, "--root", where)
         text += (
-            f" The stage is now {stage}: prepare a handoff draft now (summary under "
-            f"runs/drafts/, then `{handoff}`) so PROJECT.md's next step is current."
+            f" The stage is now critique: continue as coordinator here; plan with `{plan}`, "
+            f"then prepare `{draft}` for researcher approval in `toulmin decide`. Only "
+            "approval starts quota-consuming review; reviewers and synthesis stay in fresh "
+            "isolated restricted sessions. Handoff or coordinator replacement is optional."
+        )
+    elif stage is not None:
+        text += (
+            f" The stage is now {stage}: continue as coordinator here using the refreshed "
+            "next moves. Handoff and fresh coordinator sessions are optional context "
+            "management; never archive automatically."
         )
     return text
 

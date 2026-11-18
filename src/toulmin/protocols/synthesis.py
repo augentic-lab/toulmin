@@ -166,25 +166,47 @@ def plan_synthesis(
     model: str,
     reason: str,
     now: datetime | None = None,
+    snapshot: ReviewTask | None = None,
 ) -> ReviewTask:
     """Build the synthesis task: static manifest plus exactly the named raw outputs."""
     repository = Repository(root)
-    inputs = resolve_inputs(root, project, SYNTHESIZER)
-    if inputs.operation != "synthesize":
-        raise FormatError(f"{SYNTHESIZER}: role: expected operation synthesize")
+    if snapshot is None:
+        inputs = resolve_inputs(root, project, SYNTHESIZER)
+        if inputs.operation != "synthesize":
+            raise FormatError(f"{SYNTHESIZER}: role: expected operation synthesize")
+        static_files = inputs.files
+    else:
+        if (
+            snapshot.kind != "synthesis"
+            or snapshot.persona != SYNTHESIZER
+            or snapshot.model != model
+        ):
+            raise FormatError("synthesis snapshot differs from the approved role/model")
+        static_files = snapshot.files
     items = tuple(item for source in sources for item in source.items)
     lines = ["Outputs in this round, by Run (group every item below exactly once):"]
     for source in sources:
         lines.append(f"- {source.run}: {source.output}")
         lines += [f"  - {item}" for item in source.items]
-    files = inputs.files + tuple(source.output for source in sources)
+    outputs = tuple(source.output for source in sources)
+    files = static_files + outputs
+    if snapshot is None:
+        prompt = build_prompt(repository, SYNTHESIZER, files, "\n".join(lines))
+    else:
+        # Static role/Brief/Claim bytes were approved before the independent reviews.
+        # Only newly archived outputs are read now; coordinator edits stay out.
+        extra = [snapshot.prompt.rstrip(), "", *lines, ""]
+        for path in outputs:
+            content = repository.path(path, "file").read_text(encoding="utf-8")
+            extra += [f"<<<FILE {path}>>>", content.rstrip("\n"), f"<<<END FILE {path}>>>", ""]
+        prompt = "\n".join(extra)
     archive = _archive(repository, project, now, f"synthesis-{model}")
     return ReviewTask(
         SYNTHESIZER,
         model,
         archive,
         files,
-        build_prompt(repository, SYNTHESIZER, files, "\n".join(lines)),
+        prompt,
         kind="synthesis",
         items=items,
         note=f"Synthesizer model {reason}. Sources: "

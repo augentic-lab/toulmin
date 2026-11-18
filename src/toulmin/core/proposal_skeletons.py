@@ -130,6 +130,8 @@ def review_skeleton(
     personas: Sequence[str] | None = None,
     models: Sequence[str] | None = None,
     claims: Sequence[str] | None = None,
+    profile: str | None = None,
+    synthesizer: str | None = None,
 ) -> str:
     notes = ["# Leave personas/models/claims out for the defaults (every current Claim)."]
     lines = _head("Review request", project, path, notes)
@@ -137,6 +139,9 @@ def review_skeleton(
     for field, values in (("personas", personas), ("models", models), ("claims", claims)):
         if values:
             lines.append(f"{field}: [{', '.join(values)}]")
+    for field, value in (("profile", profile), ("synthesizer", synthesizer)):
+        if value is not None:
+            lines.append(f"{field}: {json.dumps(value)}")
     lines.append("---")
     return "\n".join(lines) + "\n" + _section("Why now", "why this round is needed now")
 

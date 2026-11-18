@@ -53,10 +53,13 @@ question → smallest measurement or prototype → observation (notebook) → Cl
    - Evidence is `verified` only when it can be re-checked: it names a method and the raw
      files under `runs/`. `model-asserted` and `intuition` Evidence can never support a
      Claim on their own.
-3. **Optionally look for mistakes.** Ask the agent to review a Claim. Apply the review
-   request in `decide`; independent model sessions run for a few minutes. The agent then
-   recommends intake for each finding; findings you take become Objections. In explore the
-   map does not suggest reviews, so ask when you want one.
+3. **Optionally look for mistakes.** Keep discussing in the current project conversation.
+   Ask the agent to plan with `toulmin review NAME --dry-run`, then prepare a request with
+   `toulmin draft review NAME`. The plan starts no review. Apply the request in your own
+   `toulmin decide` to authorize quota-consuming independent model sessions. Reviewers and
+   synthesis use fresh isolated sessions with restricted inputs; the project agent remains
+   your coordinator. The agent then recommends intake for each finding; findings you take
+   become Objections. In explore the map does not suggest reviews, so ask when you want one.
 4. **Deal with Objections.** Discuss them, and add measurements and Evidence where needed.
    Each Objection ends in one of three states:
    - **answered**: a Response addresses it;
@@ -90,6 +93,13 @@ question → smallest measurement or prototype → observation (notebook) → Cl
 `stage` (explore → critique → brief-final → build → accept → done) and gates G1–G5 still
 exist, but they are information, not tasks. The agent does not draft Claims to fill a gate
 and does not propose a stage change on its own; ask when you want to move on.
+
+After you approve entry into critique, continue in the same project conversation: review
+dry-run → review request draft → approval in `toulmin decide`. A handoff, manual archive or
+replacement coordinator session is not required to prepare or start independent review.
+Choose a handoff and a fresh coordinator only when you want to manage a long conversation
+or pause work. Nothing archives automatically. Plain `toulmin open NAME` may resume the
+existing binding; use `--new-session` only for an explicit replacement.
 
 ## 4. Large tasks: handing work to Chief
 
@@ -236,3 +246,11 @@ mapping; --confirm replaces only that entry after identity/writer checks. It nev
 source selection or redirects a native session. Source selection, native permissions, Chief
 kickoff and scientific approval stay separate. See [onboarding](onboarding.md) for exact
 commands/recovery/legacy conversion and the [pending supervisor live trial](workspace-onboarding-acceptance.md).
+
+## Explicit review profiles (R11)
+
+For a bounded round, configure tools/models.toml and preview `toulmin review NAME
+--profile hypothesis --dry-run`, then draft the request with the same profile and
+confirm in decide. The total cap includes the independent synthesis. See
+[review profiles](review-profiles.md) for configuration, identity/availability limits
+and calibration. Existing legacy direct reviews stay review-only by default.

@@ -204,6 +204,7 @@ class ClaudeCode:
             failure=failure,
             log=log,
             usage=tokens,
+            reported_model=reported if isinstance(reported, str) else None,
         )
 
 

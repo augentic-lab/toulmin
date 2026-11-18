@@ -1,5 +1,15 @@
 # Framework changes
 
+## R10/R11 — 2026-11-18
+
+- Critique continues in the current coordinator; handoff/replacement is optional.
+- Optional named profiles show exact requested model/effort, coverage, synthesis and total.
+- Optional review-request v1 profile/synthesizer fields: existing data needs no migration;
+  older readers reject these new fields. No scientific object/gate schema changed.
+- Total cap now includes synthesis; fresh templates allow nine for eight reviews + one
+  synthesis. Existing settings are never rewritten: explicitly adjust an old cap if needed.
+- Additive archived review-plan provenance and read-only profile calibration.
+
 - Project card (2026-11-18): `toulmin map` and `toulmin open` lead with a derived project
   card (question, Claim states, grouped doubts, waiting items, next moves); `map --full` keeps
   the earlier view. Labels cut at word boundaries; terminal-only wrapping. No format change.
