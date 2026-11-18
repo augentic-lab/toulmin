@@ -1,5 +1,22 @@
 # Toulmin development progress
 
+## 2026-11-18 — WO3–WO5 acceptance tests approved; implementation underway
+
+- Reviewed test commit 33d4f44: 132 collected scenarios across WO3 intake/integrity,
+  WO4 native/workspace engineering and WO5 derivation/compatibility, with independent
+  v2 fixtures and fake AoE/Chief boundaries. No original runtime/test files changed.
+  Initial 105 failures and 11 unsupported-task fixture errors are missing-feature gates,
+  not claimed passes; all must be eliminated during implementation.
+- Under the researcher's delegated routine-approval authority, accepted decision
+  wo3-wo5-workspace-first-onboar:2. All seven acceptance/support files are protected;
+  Chief metadata verified build phase and base 33d4f44. Watch restart returned a stop
+  cgroup warning but start succeeded; worker was not interrupted by that supervisor action.
+- Worker cherry-picked only verified baseline correction 497c0c1 as 5cdb704, preserving
+  both PROGRESS histories, then started source-v2 implementation. No arbitrary main merge.
+- Next: supervise incremental WO3–WO5 implementation, meaningful extra tests, full checks,
+  independent review and local integration; root-owned Weekly Projects trials remain pending.
+  Original user TODO diff preserved. Ongoing execution; session ID unavailable, no push.
+
 ## 2026-11-18 — Repair WO2 released-contract baseline drift
 
 - WO3–WO5's test-first full run exposed three old failures: workspace-format packaged
