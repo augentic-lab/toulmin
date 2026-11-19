@@ -1,5 +1,27 @@
 # Toulmin development progress
 
+## 2026-11-19 — NPU workspace onboarding/continuation review after PE1
+
+- PE1 committed on main as 1d74402. Integration staged exactly the isolated task's eight
+  file images; the other session's user-guide/UI changes remained unstaged and preserved.
+  Post-integration project/entry/registry checks: 71 passed. The 2,448-test full-suite claim
+  is for the isolated PE1 delivery, not the concurrent uncommitted UI implementation.
+- User requested a review of ~/workspace/npu-race-research after that commit. Read local
+  files/receipts, seven notebook entries, setup/failure archives and source branch/HEAD refs.
+  Read-only status/projects exited 0: four explore projects, distinct worktree bindings,
+  no formal objects/applied handoffs; workspace next_step null and records Git has no commits.
+  Initial Mode A receipt is applied at 2026-11-18T19:45:35Z, so MI1's confirmation TODO is met.
+- Findings: input-kind and overlapping-prefix preparation failures needed manual recovery;
+  current progress/continuation lives mainly in notebook history; multi-project setup relied
+  on an agent-built Git/source/project plan and four sequential Mode C transactions.
+  Recommend preparation validation/recovery first, then a derived continuation view and a
+  thin reviewed setup coordinator. Preserve typed inputs, confirmed/unconfirmed distinctions,
+  native permissions and human scientific rulings. These are recommendations, not new scope.
+- Detailed evidence/limits/acceptance suggestions saved outside Git:
+  ~/notes/toulmin/npu-workspace-onboarding-review-20261119.md. No source code, research records,
+  permissions or native sessions changed; historical experiments were not rerun. No push.
+  Session ID unavailable; not fabricated. Next: researcher reviews prioritized findings.
+
 ## 2026-11-19 — PE1 project discovery and interactive entry
 
 - Researcher authorized `toulmin projects` and a workspace/project picker in `open`, then

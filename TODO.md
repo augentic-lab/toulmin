@@ -544,9 +544,11 @@ workspace for final trials; original source data is preserved.
   Ascend repository, focused on DefenceTools/symbolic_executor; zero child projects. Exact
   source/charter/overview packet awaits researcher confirmation before formal publication.
 
-- [ ] MI1 researcher confirmation — Review and apply the sealed source/charter/overview
-  packet in ~/workspace/npu-race-research; then open its workspace session. No receipt
-  or scientific approval is inferred from preparation or automated tests.
+- [x] MI1 researcher confirmation — Initial source/charter/overview packet applied at
+  2026-11-18T19:45:35Z (runs/20261118T193831Z-onboard-8e192128a160418994315f766631d9ad/receipt.md);
+  workspace context subsequently acknowledged in binding 17877112070f4668. Verified by the
+  2026-11-19 read-only review, not inferred from preparation/tests. Administrative source/
+  context approval and context-read acknowledgment do not constitute scientific acceptance.
 
 
 ### AC — Automatic native context loading (2026-11-18)
