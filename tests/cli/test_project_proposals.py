@@ -282,3 +282,28 @@ def test_decide_colours_headers_and_effects_only_on_a_terminal(monkeypatch):
     monkeypatch.setattr(decide, "colour_enabled", lambda: True)
     assert "\x1b[1m[1/2] New Claim\x1b[0m" in decide.header("[1/2]", "New Claim", "demo", 40)
     assert "\x1b[32mcreates C-2\x1b[0m" in "".join(decide.view_lines(view, 60))
+
+
+def test_group_apply_lists_each_member_and_records_each_outcome(populated):
+    first = put(populated, "claim-20261105T100000Z-a.md", CLAIM)
+    second = put(populated, "claim-20261105T100001Z-b.md", CLAIM.replace("SRPT", "FIFO"))
+    result = run(populated, "g\ny\n")
+    assert result.exit_code == 0, result.output
+    assert "g applies this and 1 more alike (listed first)." in result.stdout
+    assert "[a]pply / [r]eject / [s]kip / [g]roup apply / [v]iew all / [q]uit" in result.stdout
+    assert "Group apply: 2 items, each exactly as previewed:" in result.stdout
+    assert "  2. New Claim · core mechanism — creates the next ID (proposed)" in result.stdout
+    assert result.stdout.count("Created: C-00") == 2 and "[2/2]" not in result.stdout
+    for proposal in (first, second):
+        outcome = (populated / project_proposals.outcome_path(proposal)).read_text()
+        assert "disposition: applied" in outcome and "toulmin decide: g" in outcome
+
+
+def test_declining_a_group_decides_the_item_alone(populated):
+    put(populated, "claim-20261105T100000Z-a.md", CLAIM)
+    put(populated, "claim-20261105T100001Z-b.md", CLAIM.replace("SRPT", "FIFO"))
+    before = snapshot(populated)
+    result = run(populated, "g\nn\ns\ns\n")
+    assert result.exit_code == 0, result.output
+    assert "Nothing applied; deciding this item alone." in result.stdout
+    assert "Skipped: 2" in result.stdout and snapshot(populated) == before

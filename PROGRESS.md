@@ -1,5 +1,14 @@
 # Toulmin development progress
 
+## 2026-11-19 — Readable decide, second batch
+
+- Decision: "按你的建议，推送并开始第二批" (0e720fb pushed first).
+- Change: intake recommendations (title with drafts left, per draft the targeted Claim, Objection text, grounds, uncertainty, synthesis, suggestion; uncut), review round requests (reviewers, models, profile, Why, Effect, `v`) and project handoffs (next step, decisions, session summary first paragraph, Effect, `v`) use the new header and rows; overview titles for these kinds. Group action `g` for later alike items (same new-object type; rulings with the same status move/sections/links; finished intake recommendations): lists members and effects, asks yes/no (default no), applies each as previewed with its own outcome ("toulmin decide: g"). Items with problems or interrupted applications are never grouped.
+- Not changed: workspace changes, child creation, workspace handoffs and Chief items keep their previews (new header only); finished intake recommendations stay queued (closing writes their outcome) but are titled "close it" and closable as a group.
+- Agent-run check (not acceptance): seven historical rkey-lifecycle proposals replayed on a job-tmp copy in a pseudo-terminal.
+- Checks: ruff check, ruff format --check, mypy passed; pytest 2425 passed (group apply/decline, finished-intake closing, updated intake/review assertions).
+- Session ID: unavailable.
+
 ## 2026-11-19 — NPU workspace onboarding/continuation review after PE1
 
 - PE1 committed on main as 1d74402. Integration staged exactly the isolated task's eight

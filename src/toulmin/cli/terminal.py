@@ -51,7 +51,7 @@ def sayer() -> Callable[..., None]:
 
 
 # UX5: colour after layout, so widths never count escape codes; terminals only, NO_COLOR wins.
-CODES = {"bold": "1", "dim": "2", "red": "31", "green": "32", "yellow": "33"}
+CODES = {"bold": "1", "dim": "2", "red": "31", "green": "32", "yellow": "33", "cyan": "36"}
 RULE = re.compile(r"^[─-]{20,}$")
 TITLE = re.compile(r"^([A-Z][A-Za-z]+)( +)")
 MARK = re.compile(r"^( {10}|[A-Z][A-Za-z]+ +)([✓?✗!·+x.]) (?=[A-Z]-[0-9])")

@@ -1,5 +1,8 @@
 # Framework changes
 
+- Readable decide, second batch (2026-11-19): intake, review and handoff screens in the same
+  blocks, and `g` to apply a listed group of alike items, each with its own outcome.
+
 - Readable decide (2026-11-18): an opening overview, one block per proposal (what it is,
   what it answers, what applying changes, why), plain problems and terminal colour.
   Application is unchanged.

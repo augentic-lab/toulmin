@@ -210,7 +210,7 @@ def test_a_review_request_starts_only_on_apply_then_synthesizes(bench, fakes):
         ),
     )
     shown = run(bench, "s\ns\n").stdout
-    assert "    Synthesis: R-004 g1 agreement with R-002/draft-2, R-003/draft-1" in shown
+    assert "Synthesis R-004 g1 agreement with R-002/draft-2, R-003/draft-1" in shown
     assert ": All agree." in shown
 
 
@@ -219,7 +219,7 @@ def test_an_invalid_or_unplannable_request_starts_nothing(bench, fakes):
     put(bench, "review-20261106T100001Z-b.md", REQUEST.replace("[reviewer-skeptic]", "[nobody]"))
     result = run(bench, "a\ns\nr\nNo such persona.\n")
     assert "body.Why now" in result.stdout
-    assert "Choose one of: reject, skip, quit" in result.stdout
+    assert "Choose one of: reject, skip, view all, quit" in result.stdout
     assert "Problem: " in result.stdout.split("[2/2]")[1]
     assert sessions(fakes) == []
     assert outcome(bench, f"{FOLDER}/review-20261106T100001Z-b.md").reason == "No such persona."
@@ -258,8 +258,8 @@ def test_intake_is_decided_label_by_label_against_the_recommendation(reviewed):
     )
     result = run(reviewed, "a\nr\n\n")  # as recommended; reject, keeping the proposed reason
     assert result.exit_code == 0, result.output
-    assert "Review output: " + first + " (R-002)" in result.stdout
-    assert "Recommended: take as minor - Real but small." in result.stdout
+    assert "Review    " + first + " (R-002)" in result.stdout
+    assert "Suggests  take as minor — Real but small." in result.stdout
     assert "draft-1: partly as O-002 (R-002)" in result.stdout  # a severity override is partly
     assert "draft-2: rejected (R-002)" in result.stdout
     created = decode((reviewed / "projects/demo/objections/O-002.md").read_bytes()).header
@@ -335,3 +335,27 @@ def test_inventory_follows_the_loop_order(populated):
         put(populated, name, "x\n")
     kinds = [item.kind for item in project_proposals.inventory(populated, "demo").items]
     assert kinds == ["intake", "claim", "ruling", "review"]
+
+
+def test_finished_recommendations_are_titled_and_closed_together(reviewed):
+    first = output(reviewed, "R-002")
+    entries = (
+        {"label": "draft-1", "outcome": "take", "severity": "minor", "reason": "Small."},
+        {"label": "draft-2", "outcome": "reject", "reason": "Out of scope."},
+    )
+    put(reviewed, "intake-20261106T100000Z-a.md", recommendation(first, *entries))
+    assert run(reviewed, "a\nr\n\n").exit_code == 0  # every label of R-002 now has an outcome
+    later = [
+        put(reviewed, f"intake-20261106T10000{n}Z-b.md", recommendation(first, *entries))
+        for n in (1, 2)
+    ]
+    result = run(reviewed, "g\ny\n")
+    assert result.exit_code == 0, result.output
+    assert "Intake · R-002 · every draft decided; close it" in result.stdout  # the overview
+    assert (
+        "Effect    records that this recommendation is done; nothing else changes" in result.stdout
+    )
+    assert "g closes this and 1 more finished recommendations." in result.stdout
+    for relative in later:
+        assert outcome(reviewed, relative).disposition == "applied"
+    assert "[2/2]" not in result.stdout

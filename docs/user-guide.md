@@ -53,7 +53,13 @@ or targets, its own text (up to six lines), an Effect line saying exactly what a
 changes, and its Why. Press `v` to read all of it before you decide; a build request's summary
 lists the checks that will run as you, and `v` adds the worker's full goal. Problems say why
 an item cannot be applied and what to do. In a terminal, headers, effects and problems are
-coloured (`NO_COLOR=1` turns colour off). `toulmin decide --full` prints everything, as before.
+coloured (`NO_COLOR=1` turns colour off). Intake recommendations show each review draft with the
+Claim it targets, its grounds and the agent's suggestion; review round requests show who
+reviews which Claims and that apply starts sessions; project handoffs show the next step and
+what applying records. When several items of the same kind follow (new objects of one type,
+rulings with the same effect, intake recommendations whose drafts are all decided), `g` lists
+them with their effects and, after your yes, applies each exactly as previewed with its own
+outcome record. `toulmin decide --full` prints everything, as before.
 
 In a terminal, Toulmin colours marks and severities (fatal and major stand out, minor is dim);
 set `NO_COLOR=1` to turn colour off. `toulmin status` describes each Claim in words ("proposed ·

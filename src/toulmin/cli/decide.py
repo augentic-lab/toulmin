@@ -40,7 +40,13 @@ from toulmin.protocols.build_import import read_record
 from toulmin.protocols.handoff import apply_handoff
 from toulmin.protocols.labels import short_label
 from toulmin.protocols.proposal_summary import proposal_summary
-from toulmin.protocols.proposal_view import ProposalView, plain_problem, proposal_view
+from toulmin.protocols.proposal_view import (
+    ProposalView,
+    Row,
+    context_row,
+    plain_problem,
+    proposal_view,
+)
 from toulmin.protocols.research_map import AGENT, YOU
 from toulmin.protocols.synthesis import synthesis_groups
 from toulmin.protocols.workspace_state import RootState, workspace_status
@@ -63,7 +69,14 @@ LABEL = {
     "build-verify": "Verify",
     "project-handoff": "Project handoff",
 }
-WORDS = {"a": "apply", "r": "reject", "s": "skip", "q": "quit", "v": "view all"}
+WORDS = {
+    "a": "apply",
+    "r": "reject",
+    "s": "skip",
+    "g": "group apply",
+    "q": "quit",
+    "v": "view all",
+}
 YES_NO = {"y": "yes", "n": "no"}
 NOTICE_ITEMS = 8  # a notice is one line; longer lists end with "and N more"
 # Per draft label of an intake recommendation (H4).
@@ -350,6 +363,18 @@ class Run:
     notes: dict[str, list[str]] = field(default_factory=dict)  # per project, in order (R3)
     full: bool = False  # UX6: print every proposal in full instead of its summary
     position: str = ""  # "[2/5]" of the item being shown, for its header
+    queue: list[Item] = field(default_factory=list)  # items after this one (group actions)
+
+    def _header(self, title: str, project: str | None, path: str | None = None) -> None:
+        width = terminal_width()
+        room = max(width - len(self.position) - len(project or "") - 12, 20)
+        typer.echo(header(self.position, short_label(title, room), project, width))
+        if path is not None:
+            typer.echo(styled(path, "dim"))
+
+    def _rows(self, rows: list[Row], limited: bool = True) -> None:
+        for line in view_lines(ProposalView("", tuple(rows)), terminal_width(), limited):
+            typer.echo(line)
 
     def _note(self, project: str, text: str) -> None:
         self.notes.setdefault(project, []).append(text)
@@ -598,24 +623,19 @@ class Run:
             choices = "sq" if shown.problems else "asq"
         else:
             choices = "rsq" if shown.problems else "arsq"
-        choice = self._choose(choices if self.full else choices[:-1] + "vq")
+        alike = self._alike(item, shown)
+        if alike and not self.full:
+            typer.echo(styled(f"g applies this and {len(alike)} more alike (listed first).", "dim"))
+        offered = choices if self.full else choices[:-1] + ("g" if alike else "") + "vq"
+        choice = self._choose(offered)
         while choice == "v":
             typer.echo(shown.text.rstrip("\n"))
             typer.echo("")
-            choice = self._choose(choices)
+            choice = self._choose(offered.replace("v", ""))
+        if choice == "g":
+            return self._group(item, shown, alike)
         if choice == "a":
-            done = project_proposals.apply(
-                self.root, item.project, item.path, self.actor, shown.sha256, "toulmin decide: a"
-            )
-            verb = {"ruling": "Ruled", "brief": "Updated", "stage": "Stage ruled"}
-            typer.echo(styled(f"{verb.get(item.kind, 'Created')}: {done.result}", "green"))
-            typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
-            self.applied += 1
-            self._note(item.project, f"applied {_name(item.path)} ({done.result})")
-            if item.kind == "stage":
-                self.staged.add(item.project)
-                assert shown.stage is not None
-                _hygiene(self.root, item.project, shown.stage.stage)
+            self._apply_proposal(item, shown)
         elif choice == "r":
             reason = _reason()
             project_proposals.reject(
@@ -627,6 +647,78 @@ class Run:
             self.rejected += 1
             self._note(item.project, f"rejected {_name(item.path)}")
         return choice != "q"
+
+    def _apply_proposal(
+        self, item: Item, shown: project_proposals.Preview, how: str = "toulmin decide: a"
+    ) -> None:
+        assert item.project is not None
+        done = project_proposals.apply(
+            self.root, item.project, item.path, self.actor, shown.sha256, how
+        )
+        verb = {"ruling": "Ruled", "brief": "Updated", "stage": "Stage ruled"}
+        typer.echo(styled(f"{verb.get(item.kind, 'Created')}: {done.result}", "green"))
+        typer.echo(f"Outcome: {project_proposals.outcome_path(item.path)}")
+        self.applied += 1
+        self._note(item.project, f"applied {_name(item.path)} ({done.result})")
+        if item.kind == "stage":
+            self.staged.add(item.project)
+            assert shown.stage is not None
+            _hygiene(self.root, item.project, shown.stage.stage)
+
+    def _alike(
+        self, item: Item, shown: project_proposals.Preview
+    ) -> list[tuple[Item, project_proposals.Preview]]:
+        """Later items of the same group that could be applied as they are (E4)."""
+        key = group_key(self.root, item, shown)
+        if key is None or item.project is None:
+            return []
+        found = []
+        for other in self.queue:
+            if other.project != item.project or other.kind != item.kind:
+                continue
+            try:
+                preview = project_proposals.preview(self.root, item.project, other.path)
+            except (OSError, ValueError):
+                continue
+            if group_key(self.root, other, preview) == key:
+                found.append((other, preview))
+        return found
+
+    def _group(
+        self,
+        item: Item,
+        shown: project_proposals.Preview,
+        alike: list[tuple[Item, project_proposals.Preview]],
+    ) -> bool:
+        """Apply a group after listing every member and its effect; each keeps its own outcome."""
+        assert item.project is not None
+        members = [(item, shown), *alike]
+        typer.echo(f"Group apply: {len(members)} items, each exactly as previewed:")
+        for number, (member, preview) in enumerate(members, 1):
+            assert member.project is not None
+            view = proposal_view(self.root, member.project, preview)
+            effect = next((row.text for row in view.rows if row.label == "Effect"), "")
+            # Each preview predicts the same next ID; the real IDs print as they are created.
+            effect = re.sub(r"^creates [A-Z]-[0-9]+", "creates the next ID", effect)
+            typer.echo(f"  {number}. {view.title} — {effect}")
+        if _ask("yn", YES_NO, default="n") != "y":
+            typer.echo("Nothing applied; deciding this item alone.")
+            choice = self._choose("arsq")
+            if choice == "a":
+                self._apply_proposal(item, shown)
+            elif choice == "r":
+                self._reject_proposal(item, shown)
+            return choice != "q"
+        for member, preview in members:
+            try:
+                self._apply_proposal(member, preview, "toulmin decide: g")
+            except (OSError, ValueError) as error:
+                typer.echo(styled(f"Error: {plain_problem(self.root, str(error))}", "red"))
+                typer.echo("That item is unchanged and stays pending.")
+                self.failed += 1
+            if member is not item:
+                self.queue.remove(member)
+        return True
 
     def _reject_proposal(self, item: Item, shown: project_proposals.Preview) -> None:
         assert item.project is not None
@@ -644,13 +736,13 @@ class Run:
         if shown.problems and shown.problems[0].startswith("already "):
             typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
             return True
-        typer.echo(f"Project: {item.project}")
         if shown.intake is None:
+            self._header("Intake recommendation", item.project, item.description)
             typer.echo("")
             typer.echo(shown.text.rstrip("\n"))
             typer.echo("")
-            for problem in shown.problems:
-                typer.echo(f"Problem: {problem}")
+            for line in problem_lines(self.root, shown.problems, terminal_width()):
+                typer.echo(line)
             choice = self._choose("rsq")
             if choice == "r":
                 self._reject_proposal(item, shown)
@@ -658,22 +750,59 @@ class Run:
         intake = shown.intake
         state = intake.state
         recommended = {entry.label: entry for entry in intake.recommendation.items}
-        typer.echo(f"Review output: {intake.recommendation.output} ({state.run})")
+        left, total = len(intake.remaining), len(state.drafts)
+        title = f"Intake · {state.run} · " + (
+            f"{left} of {total} drafts to decide" if left else "every draft already decided"
+        )
+        self._header(title, item.project, item.description)
+        rows = [Row("Review", f"{intake.recommendation.output} ({state.run})")]
+        if state.recorded:
+            done = []
+            for label, entry in state.recorded.items():
+                target = f" of {entry['object']}" if entry["outcome"] == "duplicate" else ""
+                done.append(f"{label}: already {entry['outcome']}{target}")
+            rows.append(Row("Decided", "; ".join(done)))
         grouped, unreadable = synthesis_groups(self.root, item.project, state.run)
-        for problem in unreadable:
-            typer.echo(f"Note: {problem}")
-        for label, entry in state.recorded.items():
-            target = f" of {entry['object']}" if entry["outcome"] == "duplicate" else ""
-            typer.echo(f"  {label}: already {entry['outcome']}{target}")
+        rows += [Row("Note", problem) for problem in unreadable]
         if not intake.remaining:
-            typer.echo("Every draft label already has an outcome in intake.md.")
-            choice = self._choose("asq")
+            rows.append(
+                Row("Effect", "records that this recommendation is done; nothing else changes")
+            )
+            self._rows(rows)
+            typer.echo("")
+            finished = [] if self.full else self._finished_intakes(item)
+            if finished:
+                typer.echo(
+                    styled(
+                        f"g closes this and {len(finished)} more finished recommendations.", "dim"
+                    )
+                )
+            choice = self._choose("ag" + "sq" if finished else "asq")
+            if choice == "g":
+                typer.echo(f"Close {len(finished) + 1} finished intake recommendations:")
+                for member, preview in [(item, shown), *finished]:
+                    assert preview.intake is not None
+                    typer.echo(f"  {preview.intake.state.run}: {_name(member.path)}")
+                if _ask("yn", YES_NO, default="n") != "y":
+                    typer.echo("Nothing recorded; this item stays pending.")
+                    self.skipped += 1
+                    return True
+                for member, preview in [(item, shown), *finished]:
+                    self._record_intake(member, preview, {}, {}, {})
+                    if member is not item:
+                        self.queue.remove(member)
+                return True
             if choice == "a":
                 self._record_intake(item, shown, {}, {}, {})
             return choice != "q"
+        self._rows(rows)
         typer.echo(
-            "Decide each draft label; the recommendation is the agent's, the choice is yours. "
-            "Choices are recorded when this output's walk ends; quit records nothing for it."
+            styled(
+                "Decide each draft label; the recommendation is the agent's, the choice is "
+                "yours. Choices are recorded when this output's walk ends; quit records nothing "
+                "for it.",
+                "dim",
+            )
         )
         take: dict[str, str | None] = {}
         reject: dict[str, str] = {}
@@ -682,14 +811,22 @@ class Run:
         duplicate_reasons: dict[str, str] = {}
         for index, label in enumerate(intake.remaining, 1):
             draft, advice = state.drafts[label], recommended[label]
-            typer.echo(f"\n  ({index}/{len(intake.remaining)}) {label} -> {draft.target} "
-                       f"({draft.severity}): {draft.content}")  # fmt: skip
-            typer.echo(f"    Grounds: {draft.grounds}")
+            typer.echo("")
+            typer.echo(styled(
+                f"  ({index}/{left}) {label} · {draft.severity} on {draft.target}", "bold"
+            ))  # fmt: skip
+            rows = []
+            context = context_row(self.root, item.project, draft.target)
+            if context is not None:
+                rows.append(context)
+            rows.append(Row("Objection", draft.content, main=True))
+            rows.append(Row("Grounds", draft.grounds))
             if draft.uncertainty:
-                typer.echo(f"    Uncertainty: {draft.uncertainty}")
-            for line in grouped.get(label, ()):
-                typer.echo(f"    Synthesis: {line}")
-            typer.echo(f"    Recommended: {_advice(advice)} - {advice.reason}")
+                rows.append(Row("Unsure", draft.uncertainty))
+            if grouped.get(label):
+                rows.append(Row("Synthesis", " · ".join(grouped[label])))
+            rows.append(Row("Suggests", f"{_advice(advice)} — {advice.reason}"))
+            self._rows(rows, limited=False)  # no "v" here: the whole draft is the decision
             choice = _ask("atodrsq", LABEL_WORDS)
             if choice == "q":
                 typer.echo("Nothing recorded for this output; it stays pending.")
@@ -730,6 +867,20 @@ class Run:
             return True
         self._record_intake(item, shown, take, reject, partly, duplicate, duplicate_reasons)
         return True
+
+    def _finished_intakes(self, item: Item) -> list[tuple[Item, project_proposals.Preview]]:
+        """Later intake recommendations whose every draft label already has an outcome."""
+        found = []
+        for other in self.queue:
+            if other.kind != "intake" or other.project is None:
+                continue
+            try:
+                preview = project_proposals.preview(self.root, other.project, other.path)
+            except (OSError, ValueError):
+                continue
+            if preview.intake is not None and not preview.intake.remaining and not preview.problems:
+                found.append((other, preview))
+        return found
 
     def _record_intake(
         self,
@@ -943,9 +1094,29 @@ class Run:
         if shown.problems and shown.problems[0].startswith("already "):
             typer.echo(f"No longer pending ({shown.problems[0]}); skipped.")
             return True
-        typer.echo(f"Project: {item.project}")
-        typer.echo("")
-        typer.echo(shown.text.rstrip("\n"))
+        request = shown.review
+        claims = ", ".join(request.claims) if request and request.claims else "every current Claim"
+        self._header(f"Review round · {claims}", item.project, item.description)
+        if request is None or self.full:
+            typer.echo("")
+            typer.echo(shown.text.rstrip("\n"))
+        else:
+            self._rows(
+                [
+                    Row(
+                        "Reviewers", ", ".join(request.personas or ["the defaults in models.toml"])
+                    ),
+                    Row("Models", ", ".join(request.models or ["the defaults in models.toml"])),
+                    *([Row("Profile", request.profile)] if request.profile else []),
+                    *([Row("Synthesis", request.synthesizer)] if request.synthesizer else []),
+                    Row("Why", request.why, main=True),
+                    Row(
+                        "Effect",
+                        "starts independent review sessions now in this terminal (uses quota); "
+                        "their output is archived in runs/ for intake",
+                    ),
+                ]
+            )
         typer.echo("")
         if shown.interrupted:
             typer.echo("This round started earlier and did not finish; it is never started again.")
@@ -963,7 +1134,6 @@ class Run:
             return choice != "q"
         problems = list(shown.problems)
         previewed = None
-        request = shown.review
         if request is not None and not problems:
             try:
                 previewed = prepare_round(
@@ -978,11 +1148,14 @@ class Run:
                 )
             except (OSError, ValueError) as error:
                 problems.append(str(error))
-        for problem in problems:
-            typer.echo(f"Problem: {problem}")
-        if not problems:
-            typer.echo("Apply starts these sessions now in this terminal (uses quota).")
-        choice = self._choose("rsq" if problems else "arsq")
+        for line in problem_lines(self.root, tuple(problems), terminal_width()):
+            typer.echo(line)
+        choices = "rsq" if problems else "arsq"
+        choice = self._choose(choices if self.full else choices[:-1] + "vq")
+        while choice == "v":
+            typer.echo(shown.text.rstrip("\n"))
+            typer.echo("")
+            choice = self._choose(choices)
         if choice == "a":
             assert request is not None
             # Plan again so a changed configuration fails before the marker is written.
@@ -1036,19 +1209,34 @@ class Run:
             typer.echo(f"Stale: {reason}; skipped.")
             self.skipped += 1
             return True
-        typer.echo(f"Project: {item.project}")
-        typer.echo(f"Draft: {item.path}")
-        typer.echo(f"Next step: {document.header['next_step']}")
+        self._header(f"Project handoff · {item.project}", item.project, item.description)
         decisions = document.header.get("recent_decisions") or []
-        typer.echo("Recent decisions: " + (", ".join(map(str, decisions)) or "none"))
+        body = document.body.strip()
+        rows = [Row("Next step", str(document.header["next_step"]), main=True)]
+        rows.append(Row("Decisions", ", ".join(map(str, decisions)) or "none"))
+        if self.full:
+            self._rows(rows)
+            typer.echo("")
+            typer.echo(body)
+        else:
+            first = body.split("\n\n", 1)[0] if body else ""
+            rows.append(Row("Session", " ".join(first.lstrip("#").split()), main=True))
+            self._rows(rows)
         typer.echo("")
-        typer.echo(document.body.rstrip("\n"))
-        typer.echo("")
-        typer.echo(
-            "Confirming records this session and updates PROJECT.md recent_decisions, "
-            "next_step and last_handoff only."
+        self._rows(
+            [
+                Row(
+                    "Effect",
+                    "records this session and updates PROJECT.md recent_decisions, next_step "
+                    "and last_handoff only",
+                )
+            ]
         )
-        choice = self._choose("asq")
+        choice = self._choose("asq" if self.full else "asvq")
+        while choice == "v":
+            typer.echo(body)
+            typer.echo("")
+            choice = self._choose("asq")
         if choice == "a":
             record = apply_handoff(self.root, item.project, item.path, self.actor, True)
             typer.echo(f"Record: {record.relative_to(repository.root).as_posix()}")
@@ -1191,6 +1379,8 @@ def summary_lines(text: str, width: int) -> list[str]:
 
 
 MAIN_LINES = 6  # the proposal's own text before "v" is needed (E2)
+# Item kinds whose handler prints its own header with a researcher title (E1, E5).
+HEADED = {"object", "ruling", "brief", "stage", "intake", "review", "project-handoff"}
 CONTEXT_LINES = 3  # the object it answers or targets (E3)
 COLUMN = 10  # label column, as on the project card
 
@@ -1216,8 +1406,14 @@ def header(position: str, title: str, project: str | None, width: int) -> str:
     )
 
 
-def view_lines(view: ProposalView, width: int) -> list[str]:
-    """Labelled rows: context, the proposal's content, its effect and why (E1–E3)."""
+ROW_COLOUR = {"Effect": ("green",), "Suggests": ("cyan",), "Decided": ("dim",)}
+
+
+def view_lines(view: ProposalView, width: int, limited: bool = True) -> list[str]:
+    """Labelled rows: context, the proposal's content, its effect and why (E1–E3).
+
+    ``limited`` cuts long rows with "… (v)"; screens without ``v`` show every line.
+    """
     lines: list[str] = []
     room = max(width - COLUMN, 20)
     shaped = interactive()  # off a terminal each row stays one exact, uncut line
@@ -1225,7 +1421,7 @@ def view_lines(view: ProposalView, width: int) -> list[str]:
         limit = MAIN_LINES if row.main else CONTEXT_LINES if row.label != "Effect" else 4
         body = textwrap.wrap(row.text, room, break_on_hyphens=False) if shaped else [row.text]
         body = body or [""]
-        if len(body) > limit:
+        if limited and len(body) > limit:
             body = body[:limit]
             tail = " … (v)"
             body[-1] = short_label(body[-1] + " …", room - len(tail)).rstrip("…").rstrip() + tail
@@ -1233,7 +1429,7 @@ def view_lines(view: ProposalView, width: int) -> list[str]:
         if len(label) >= COLUMN:
             lines.append(styled(label, "bold"))
             label = ""
-        colour = ("green",) if row.label == "Effect" else ()
+        colour = ROW_COLOUR.get(row.label, ())
         for index, text in enumerate(body):
             head = label.ljust(COLUMN) if index == 0 else " " * COLUMN
             lines.append(styled(head, "bold") + (styled(text, *colour) if colour else text))
@@ -1328,6 +1524,21 @@ def _show_proposal(
         typer.echo("The Why section is shown to you only; it is not written to the target.")
 
 
+def group_key(root: Path, item: Item, shown: project_proposals.Preview) -> tuple[str, ...] | None:
+    """Items that may be applied together: the same kind of new object, or the same kind of
+    ruling (same status move, or only a Response); never anything with problems (E4)."""
+    if shown.problems or shown.interrupted or item.project is None:
+        return None
+    if item.kind == "object":
+        return ("object", shown.kind)
+    if item.kind == "ruling":
+        change = shown.changes[0] if shown.changes else shown.change
+        if change is None:
+            return None
+        return ("ruling", change.previous_status, change.status, *change.sections, *change.links)
+    return None
+
+
 def item_kind(kind: str) -> str:
     """The decide item kind of a proposal kind: object drafts share one."""
     return kind if kind in {"ruling", "brief", "stage"} else "object"
@@ -1344,6 +1555,22 @@ def agenda_title(root: Path, item: Item) -> str:
             return title + (" — cannot be applied as written" if shown.problems else "")
         except (OSError, ValueError):
             return item.description
+    if item.project is not None and item.kind in {"intake", "review"}:
+        try:
+            shown = project_proposals.preview(root, item.project, item.path)
+        except (OSError, ValueError):
+            return item.description
+        if shown.intake is not None:
+            left = len(shown.intake.remaining)
+            run = shown.intake.state.run
+            return f"Intake · {run} · " + (
+                f"{left} drafts to decide" if left else "every draft decided; close it"
+            )
+        if shown.review is not None:
+            claims = ", ".join(shown.review.claims or ["every current Claim"])
+            return f"Review round · {claims} (starts sessions on apply)"
+    if item.kind == "project-handoff":
+        return "Project handoff"
     name = item.path.rsplit("/", 1)[-1] if item.kind != "build-verify" else item.path
     return f"{LABEL[item.kind]} · {name}" if item.kind != "build-verify" else item.description
 
@@ -1455,9 +1682,10 @@ def decide_command(
         item = queue.pop(0)
         index += 1
         offered.add((item.kind, item.spec or item.path, item.project))
+        run.queue = queue  # the same list: a group apply removes the members it applied
         run.position = f"[{index}/{index + len(queue)}]"
         typer.echo("")
-        if item.kind not in {"object", "ruling", "brief", "stage"}:
+        if item.kind not in HEADED:
             title = "Verify" if item.kind == "build-verify" else LABEL[item.kind]
             typer.echo(header(run.position, title, item.project, terminal_width()))
             typer.echo(styled(item.description, "dim"))

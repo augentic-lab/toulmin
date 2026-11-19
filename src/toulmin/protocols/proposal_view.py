@@ -112,6 +112,11 @@ def _context(objects: dict[str, Document], reference: str) -> Row | None:
     return Row(f"{_bare(reference)}", f"({label}) {text}" if label else text)
 
 
+def context_row(root: Path, project: str, reference: str) -> Row | None:
+    """The named object as the researcher wrote it, for screens beyond proposals."""
+    return _context(_objects(root, project), reference)
+
+
 def _object_view(shown: Preview, objects: dict[str, Document]) -> ProposalView:
     noun = NOUN.get(shown.kind, shown.kind.capitalize())
     doc = _parsed(shown.text)

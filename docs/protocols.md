@@ -1518,3 +1518,23 @@ yellow rejections, red problems and errors. Other item kinds get the same header
 their previews (second batch). Application, digests, outcomes and confirmation semantics are
 unchanged. Group actions in the overview remain part of the second batch.
 
+## Readable decide, second batch (2026-11-19)
+
+Authorized with "按你的建议，推送并开始第二批". Intake recommendations, review round requests
+and project handoffs get a researcher title (`Intake · R-005 · 2 of 3 drafts to decide`,
+`Review round · C-001`, `Project handoff · NAME`) and labelled rows: for intake, per draft the
+targeted Claim, the Objection text, grounds, uncertainty, synthesis and the agent's suggestion
+(no limits, since the draft is the decision); for review, reviewers, models, profile, Why and
+the Effect (sessions start on apply, using quota; `v` shows the request); for handoffs, next
+step, decisions, the first paragraph of the session summary (`v` for all) and the Effect.
+Group action (E4): when later items share a group key (a new object of the same type; a
+ruling with the same status move, sections and links; an intake recommendation whose every
+label already has an outcome), the prompt offers `g`. It lists every member with its effect
+(predicted IDs shown as "the next ID"), asks yes/no (default no), then applies each member
+exactly as previewed through the same protocol call with its own outcome record (approval
+text "toulmin decide: g"); a member that fails stays pending. Items with problems or an
+interrupted application are never grouped; stage, Brief, build and workspace items are not
+grouped. Finished intake recommendations stay listed (closing one writes its outcome), titled
+"every draft decided; close it". Workspace changes, child creation, workspace handoffs and
+Chief items keep their previews under the new header.
+
