@@ -16,6 +16,7 @@ import typer
 from toulmin.cli.aoe import Agent, Attach, CodexSandbox, NewSession, Profile, open_scope
 from toulmin.cli.decide import inventory
 from toulmin.cli.initialize import initialize_workspace, workspace_setup
+from toulmin.cli.projects import choose, collect, show
 from toulmin.cli.registry import Known, normal, note, registry_path
 from toulmin.cli.settings import (
     ACTOR_VARIABLE,
@@ -118,8 +119,13 @@ def _pick(root: Path, state: RootState, here: Path, items: list[Known]) -> Path:
         typer.echo(f"Choose one of: {keys}")
 
 
-def _select(value: str) -> Path:
+def _select(value: str, *, local_only: bool = False) -> Path:
     """``--in``: a path (contains a separator or starts with ~ or .) or a known name."""
+
+    def label(item: Known) -> str:
+        # Error suggestions in file-only commands must not query Chief task state.
+        return f"{item.name}  {item.entry.path} ({item.state})" if local_only else describe(item)
+
     if "/" in value or value.startswith(("~", ".")):
         return normal(Path(value))
     items = listing()
@@ -131,7 +137,7 @@ def _select(value: str) -> Path:
     if len(usable) > 1:
         typer.echo(f"Error: several known workspaces are named {value!r}:", err=True)
         for item in usable:
-            typer.echo(f"  {describe(item)}", err=True)
+            typer.echo(f"  {label(item)}", err=True)
         typer.echo("Give the path instead: toulmin open --in PATH", err=True)
         raise typer.Exit(2)
     if matches:
@@ -141,7 +147,7 @@ def _select(value: str) -> Path:
         )
     typer.echo(f"Error: no known workspace is named {value!r}.", err=True)
     for item in items:
-        typer.echo(f"  {describe(item)}", err=True)
+        typer.echo(f"  {label(item)}", err=True)
     typer.echo("`toulmin workspaces` lists them; `toulmin workspaces scan` finds more.", err=True)
     raise typer.Exit(2)
 
@@ -163,11 +169,39 @@ def _classify(target: Path) -> tuple[Path, RootState]:
     return report.root, report.state
 
 
+def projects_command(
+    root: Annotated[
+        Path | None,
+        typer.Option("--root", help="Workbench root; otherwise discover it above this directory."),
+    ] = None,
+    within: Annotated[
+        str | None,
+        typer.Option(
+            "--in", metavar="NAME_OR_PATH", help="Known workspace name or workspace path."
+        ),
+    ] = None,
+) -> None:
+    """List projects, their goals, stages and local pending proposals. Never starts an agent."""
+    if within is not None:
+        if root is not None:
+            raise typer.BadParameter("give either --in or --root", param_hint="--in")
+        root = _select(within, local_only=True)
+    try:
+        here = Path.cwd() if root is None else root
+        target = root if root is not None else (find_workbench(here) or here)
+        found = collect(target)
+    except (OSError, ValueError) as error:
+        raise _fail(str(error)) from error
+    show(found)
+    if found.problems:
+        raise typer.Exit(1)
+
+
 def open_research(
     project: Annotated[
         str | None,
         typer.Argument(
-            help="Child project. Omitted: the child whose directory you are in, else the workspace."
+            help="Child project. Omitted: infer from its directory, else offer a scope picker."
         ),
     ] = None,
     root: Annotated[
@@ -200,9 +234,10 @@ def open_research(
     """Open the workspace session, or a child's, from wherever you are.
 
     Finds the workbench above the current directory; if there is none, offers the known
-    workspaces or to initialize an empty directory (terminal only, default no). Notes items
-    awaiting your review, then runs `aoe open` for the chosen scope. Preferences come from
-    `toulmin config show`; `toulmin workspaces` lists the known workspaces.
+    workspaces or to initialize an empty directory (terminal only, default no). If projects
+    exist, a terminal offers workspace/project choices unless the scope is explicit or
+    inferred from a child directory. Without a terminal, keep workspace scope. Preferences
+    come from `toulmin config show`; `toulmin projects` lists the current workspace's children.
     """
     if workspace and project is not None:
         raise typer.BadParameter("give PROJECT or --workspace, not both")
@@ -224,21 +259,12 @@ def open_research(
     if (
         codex_sandbox is not None
         and project is None
-        and (workspace or root is not None or _child(here, base) is None)
+        and state not in {RootState.WORKSPACE, RootState.LEGACY}
     ):
-        from toulmin.application.sources import resolve_working_source
-
-        try:
-            selected_source = (
-                resolve_working_source(base, None) if state == RootState.WORKSPACE else None
-            )
-        except (OSError, ValueError) as error:
-            raise _fail(str(error)) from error
-        if selected_source is None:
-            raise typer.BadParameter(
-                "select an external-source project or a source-backed workspace",
-                param_hint="--codex-sandbox",
-            )
+        raise typer.BadParameter(
+            "select an external-source project or a source-backed workspace",
+            param_hint="--codex-sandbox",
+        )
     unfound = {RootState.MISSING, RootState.EMPTY, RootState.INCOMPLETE, RootState.UNRELATED}
     if state in unfound and root is None and project is None:
         items = listing()
@@ -258,6 +284,13 @@ def open_research(
         )
     if project is None and root is None and not workspace:
         project = _child(here, base)
+    if project is None and not workspace and _interactive():
+        try:
+            found = collect(base)
+            if found.items:
+                project = choose(found)
+        except (OSError, ValueError) as error:
+            raise _fail(str(error)) from error
     if state is RootState.LEGACY and project is None:
         typer.echo(
             f"{base} is an existing workbench without workspace state. Open a project with "
@@ -265,6 +298,18 @@ def open_research(
             f"{shlex.join(['toulmin', 'workspace', 'adopt', str(base)])}"
         )
         raise typer.Exit(1)
+    if codex_sandbox is not None and project is None:
+        from toulmin.application.sources import resolve_working_source
+
+        try:
+            selected_source = resolve_working_source(base, None)
+        except (OSError, ValueError) as error:
+            raise _fail(str(error)) from error
+        if selected_source is None:
+            raise typer.BadParameter(
+                "select an external-source project or a source-backed workspace",
+                param_hint="--codex-sandbox",
+            )
     note(base)
     _pending(base)
     if codex_sandbox is None:

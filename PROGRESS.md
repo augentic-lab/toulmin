@@ -1,5 +1,31 @@
 # Toulmin development progress
 
+## 2026-11-19 — PE1 project discovery and interactive entry
+
+- Researcher authorized `toulmin projects` and a workspace/project picker in `open`, then
+  requested a commit followed by a read-only investigation of the NPU workspace journey.
+- Added a file-only CLI view of sorted project names, full goals, stored stages and local
+  pending research/engineering proposal counts. Decided outcomes are excluded; unreadable
+  counts are unknown with diagnostics and nonzero listing exit. Handoff drafts and live
+  Chief results are outside this count; `decide` remains the complete decision queue.
+- Interactive `open` offers workspace/project scope after workspace selection, including
+  single-child workspaces. Project-free roots open workspace directly. Explicit PROJECT,
+  --workspace and inferred child directories bypass the menu; noninteractive scope rules
+  remain unchanged. Quit defaults to no action; selected charters are revalidated. Native
+  flags/permission checks are preserved. No schema, migration, ruling or provider changes.
+- Targeted verification: 71 project-list/entry/registry tests and 70 permission/workspace/
+  architecture tests passed on temporary files with fake clients. All 2,448 collected tests
+  ran once across eight shards and passed. Locked offline dev+tui sync, Ruff lint/format,
+  mypy (137 modules), CLI help and whitespace checks passed. Final logs:
+  /tmp/toulmin-pe1-validation/verified-1795046433. The --in error suggestions are file-only too.
+- Isolation: implemented in /tmp/toulmin-project-picker from 0e720fb; another session's
+  uncommitted decide/terminal/proposal_view/test edits remain outside this task and its
+  full-suite claim. README, user guide and TODO record usage and the acceptance boundary.
+- No actual model session or research state was created/changed. Researcher usability
+  acceptance remains pending. Follow-up: inspect ~/workspace/npu-race-research read-only
+  after committing this feature and report practical improvements. No automatic push.
+  Session ID unavailable; not fabricated.
+
 ## 2026-11-18 — Readable decide, first batch (E1–E6)
 
 - Decision: after a decide replay showed path-titled, cut summaries, the researcher accepted E1–E6 (`~/notes/toulmin/decide-readability-diagnosis.md`) and authorized the first batch with colour and blocks ("可以，而且最好也添加颜色和分块的效果").

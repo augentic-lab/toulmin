@@ -556,3 +556,18 @@ workspace for final trials; original source data is preserved.
   startup menus, with no menu autoaccept, implicit resend or acknowledgment fabrication.
   Verify readiness/cancellation/rebinding/races, workspace/project compatibility and CLI
   wiring with fake sessions. No real model invocation or current-session interruption.
+
+### PE — Project discovery and entry (2026-11-19)
+
+- [x] PE1 — Add `toulmin projects [--root PATH | --in NAME_OR_PATH]`: deterministic project
+  names, full goals, stages and counts of local pending research/engineering proposals.
+  Acceptance: file-only reads; preserve workspace/registry bytes and mtimes; report invalid
+  children/outcomes and unknown counts; no native or Chief clients; support legacy roots.
+- [x] PE1 — In a terminal, `toulmin open` offers workspace/project selection after workspace
+  resolution, including exactly one project. Acceptance: zero children open workspace
+  directly; explicit PROJECT/--workspace and child-directory inference bypass selection;
+  noninteractive behavior remains unchanged; quit/invalid/unavailable choices launch nothing;
+  revalidate the chosen charter; native flags and existing permission checks remain effective.
+- [ ] PE1 researcher trial — Try listing/selection on a workspace with projects and judge
+  usability. Automated tests and a read-only observation of a project-free workspace do
+  not establish this ruling. No data migration or research-stage change is involved.

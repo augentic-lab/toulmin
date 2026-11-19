@@ -22,6 +22,11 @@ question, work on it, and turn results into formal records when they are worth k
    creation proposal; apply it in `toulmin decide`; then run `toulmin open NAME` from the
    workspace root to open the project's own session.
 
+Forgot a project's name? Run `toulmin projects` (or `--in WORKSPACE_NAME_OR_PATH`) to see
+goals, stages and local pending proposal counts. Interactive `toulmin open` offers workspace
+and project conversations; `--workspace` enters the workspace directly. A workspace without
+projects opens directly, and scripts keep the existing noninteractive scope rules.
+
 Initial project state: `PROJECT.md` has `stage: explore`, a goal and constraints; `brief.md`
 holds a first outline from the creation proposal (question, motivation, scale, known
 counterarguments, kill criteria, smallest validating experiment), all still hypotheses. The
@@ -185,6 +190,7 @@ records.
 | When | What |
 | --- | --- |
 | Start | `toulmin open` (anywhere; it lists known workspaces) or `toulmin open --in WORKSPACE NAME`; if the git line says `behind`, `git pull --ff-only` first |
+| Find a project | `toulmin projects [--in WORKSPACE]`; or choose a project in interactive `toulmin open` |
 | During work | the agent says at natural pauses how many items wait and which (at most three) need real thought; run `toulmin decide` |
 | After a Toulmin update | when the session is idle, `toulmin aoe refresh NAME` delivers the new guidance |
 | Long conversation | optionally: handoff → `decide` → archive the old AoE session → `toulmin open NAME --new-session` |

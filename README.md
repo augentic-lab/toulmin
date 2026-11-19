@@ -52,6 +52,7 @@ verification), read the [user guide](docs/user-guide.md).
 | When | Command |
 | --- | --- |
 | Start or resume | `toulmin open` in the workspace; from elsewhere it lists your workspaces, or `toulmin open --in NAME` |
+| Find a project | `toulmin projects` (or `--in WORKSPACE_NAME_OR_PATH`); interactive `toulmin open` offers workspace and project conversations |
 | Something awaits your review | `toulmin decide` (in your own terminal; each proposal shows a short summary, `v` shows all of it, `--full` always prints everything); it ends with each project's next moves and offers to tell the project session what you decided (`--notify`/`--no-notify` skip the question) |
 | A review repeats an existing Objection | Recommend `duplicate` with its O-ID; choose duplicate in `decide`, or `toulmin intake NAME OUTPUT --duplicate LABEL=O-NNN --confirm`. It creates nothing and calibration excludes it from adoption/rejection rates. |
 | Considering another review round | Add new Evidence or a substantive Claim revision first. With no new material, review previews warn about repeats; you can still apply. Independent reviewer inputs are unchanged. |
@@ -112,23 +113,40 @@ native CLI with a project board are older interfaces that remain supported.
 
 ## Entry, decisions and preferences
 
-`toulmin open` finds the nearest workbench at or above the current directory. It opens the
-workspace session, or the child project whose directory you are in (`toulmin open NAME` picks
-one explicitly), and runs `toulmin aoe open` for that scope. It initializes only after an
-explicit yes in a terminal and never on an unrelated, non-empty directory. A legacy workbench
-needs a project name; it prints the `workspace adopt` preview command instead. When items await
-your decision it says so.
+`toulmin open` finds the nearest workbench at or above the current directory. In a terminal,
+if the workspace has projects, it offers a numbered choice: `0` for the workspace conversation,
+a project number, or `q` to quit (the default). Even a single project is an explicit choice.
+`toulmin open NAME`, `--workspace`, and being inside `projects/NAME/` select a scope directly;
+`--root` or `--in` selects the workspace directory and still offers the scope menu. A workspace
+with no projects opens its workspace conversation directly. Without an interactive terminal,
+the previous scope rules remain: an inferred child, otherwise the workspace, without prompting.
+All paths delegate to the same `toulmin aoe open` operation; `--no-attach` still opens a session.
+Initialization requires an explicit yes in a terminal and refuses unrelated, non-empty folders.
+A legacy workbench can list/select projects but has no workspace conversation until adoption;
+without a selected project in noninteractive use, it prints the `workspace adopt` preview.
+When items await your decision it says so.
 
 From anywhere else, `toulmin open` lists the workspaces it knows and asks which to open (in an
 empty directory it also offers to initialize there):
 
 ```sh
-toulmin open --in serving              # a known workspace by name (or --in PATH)
+toulmin open --in serving              # choose its workspace or a project (terminal only)
 toulmin open --in serving scheduling   # its child project
+toulmin open --in serving --workspace  # workspace conversation directly
+toulmin projects                      # local projects: full goals, stages, pending proposals
+toulmin projects --in serving          # list from anywhere; --root PATH also works
 toulmin workspaces                     # known workspaces, last opened, pending decisions
 toulmin workspaces forget PATH         # drop an entry; the folder is not touched
 toulmin workspaces scan                # add workspaces that have sessions in your AoE profile
 ```
+
+`projects` reads files only: it starts no Agent/Chief sessions and changes neither the
+workspace nor the known-workspace registry. Its pending counts cover local research and
+engineering proposals, excluding already decided outcomes. Handoff drafts and live Chief
+result availability are not included; `toulmin decide` remains the full decision queue.
+Damaged projects and unknown counts are diagnosed with exit code 1, never silently counted
+as zero. Unavailable projects cannot be selected; the chosen charter is checked again after
+the menu answer. No project is created or adopted by listing or selecting it.
 
 The list is `~/.local/state/toulmin/workspaces.json` (or `$XDG_STATE_HOME/toulmin/...`). It is a
 user-level cache, not research data: `init`, `open` and a confirmed `workspace adopt` add to it,

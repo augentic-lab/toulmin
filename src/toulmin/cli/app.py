@@ -13,7 +13,7 @@ from toulmin.cli.aoe import app as aoe_app
 from toulmin.cli.build import app as build_app
 from toulmin.cli.commit import commit_command
 from toulmin.cli.decide import decide_command
-from toulmin.cli.entry import config_app, open_research
+from toulmin.cli.entry import config_app, open_research, projects_command
 from toulmin.cli.initialize import initialize, initialize_workspace, workspace_setup
 from toulmin.cli.migration import app as migration_app
 from toulmin.cli.onboarding import onboard_command, overview_command, source_app
@@ -57,6 +57,7 @@ app.add_typer(config_app, name="config")
 app.add_typer(workspaces_app, name="workspaces")
 app.command("commit")(commit_command)
 app.command("open")(open_research)
+app.command("projects")(projects_command)
 app.command("decide")(decide_command)
 
 
